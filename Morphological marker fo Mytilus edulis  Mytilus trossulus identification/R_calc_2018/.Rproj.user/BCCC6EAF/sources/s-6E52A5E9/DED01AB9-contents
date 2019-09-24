@@ -1,0 +1,471 @@
+library(pROC)
+library(dplyr)
+library(ggplot2)
+library(car)
+
+
+
+#####################
+
+
+myt <- read.table("data_salinity3.csv", header = T, sep = ";")
+
+unique(myt$pop)
+
+# myt <- myt[!(myt$pop %in% c("kuvsh", "banka")), ] #Удаляем kuvsh по просьбе ППС и banka по аналогии
+
+
+
+
+myt$Sp [myt$str > 0.5] <- "M.trossulus" #Лучше обозначать так!
+myt$Sp [myt$str <= 0.5] <- "M.edulis"
+myt$Sp <- factor(myt$Sp)
+
+
+myt$sal_place <- factor(myt$sal_place)
+
+str(myt$sal_place)
+
+
+myt$Sp [myt$str > 0.5] <- "M.trossulus" #Лучше обозначать так!
+myt$Sp [myt$str <= 0.5] <- "M.edulis"
+myt$Sp <- factor(myt$Sp)
+
+# Оставляем только мидий, у которых есть оценка морфотипа
+myt2 <- myt[!is.na(myt$ind), ]
+
+
+# Вводим обозначения для морфотипов
+myt2$morph <- ifelse(myt2$ind == 1, "T_m", "E_m")
+myt2$morph <- factor(myt2$morph)
+
+#Оставляем только данные, на основе, которых строится модель
+myt3 <- myt2[myt2$dataset == "testing", ]
+myt2 <- myt2[myt2$dataset == "training", ]
+
+
+myt2$congr <- ifelse((myt2$ind == 1 & myt2$Sp == "M.trossulus") | (myt2$ind == 0 & myt2$Sp == "M.edulis"), 1, 0   )
+
+
+# Частота M.trossulus в популяции, вычисленная как срденее значение structure
+freq_MT <- summaryBy( str ~ pop, data = myt2)
+names(freq_MT) <- c("pop", "freq_MT")
+
+myt2 <- merge(myt2, freq_MT)
+
+myt2$Sp2 <- ifelse(myt2$Sp == "M.trossulus", 1, 0)
+
+myt2$Location <- paste(myt2$sea,"_", myt2$sal_place, sep = "") #Перемменная для кодирования четырех выделов
+
+myt3$Location <- paste(myt3$sea,"_", myt3$sal_place, sep = "") #Перемменная для кодирования четырех выделов
+
+
+# переменная congr - это событие правильного определения 1 если T-морфотип совпадает с MT и E-морфотип совпадает с ME, 0 - если не свопадает
+
+myt2$congr <- ifelse((myt2$ind == 1 & myt2$Sp == "M.trossulus") | (myt2$ind == 0 & myt2$Sp == "M.edulis"), 1, 0   )
+
+
+## Убираем данные testing
+
+myt2 <- myt2[!(myt2$dataset %in% c("testing")), ]
+
+
+################### Functions ############################
+
+probs_calc_3 <- function(variable = "Location", place = "white_normal", P_MT = 0.5) {
+  n <- which(names(myt2) == variable)
+  d <- myt2[myt2[,n] == place, ]
+  dd <- melt(table(d$Sp, d$morph))
+  freq_dd <- dcast(data = dd, formula = Var2 ~ Var1)
+  
+  P_T_MT <- round(with(data = freq_dd, M.trossulus[2] /(M.trossulus[2] + M.trossulus[1])), 2)
+  P_T_ME <- round(with(data = freq_dd, M.edulis[2] /(M.edulis[2] + M.edulis[1])), 2)
+  # P_ME <- round(with(data = freq_dd, sum(M.edulis) /(sum(freq_dd[,-1]))), 2)
+  
+  P_E_ME <- round(with(data = freq_dd, M.edulis[1] /(M.edulis[1] + M.edulis[2])), 2)
+  P_E_MT <- round(with(data = freq_dd, M.trossulus[1] /(M.trossulus[1] + M.trossulus[2])), 2)
+  # P_MT <- round(with(data = freq_dd, sum(M.trossulus) /(sum(freq_dd[,-1]))), 2)
+  
+  
+  P_MT_T <- (P_T_MT*P_MT)/(P_T_MT*P_MT + P_T_ME*(1-P_MT))
+  P_ME_E <- (P_E_ME*(1-P_MT))/(P_E_ME*(1-P_MT) + P_E_MT*P_MT)
+  
+  c(P_MT_T, P_ME_E)
+}
+
+
+
+freq_calc2 <- function(df = myt2, pop=NULL, variable = "Location", place = "barents_fresh"){
+  library(dplyr)
+  n <- which(names(df) == variable)
+  d <- df[df[,n] == place, ]
+  
+  if(!is.null(pop)) d <- df[df[,n] == place & df$pop == pop, ]
+  if(is.null(place)) d <- df[df$pop == pop, ]
+  
+  dd <- melt(table(d$Sp, d$morph))
+  freq_dd <- dcast(data = dd, formula = Var2 ~ Var1)
+  
+  #Вероятность встретить M,trossulus среди Т морфотипа оценка условной веротяности P_MT|T
+  P_MT_T <- freq_dd$M.trossulus[2]/(freq_dd$M.trossulus[2] + freq_dd$M.edulis[2])
+  
+  #Вероятность встретить M.edulis среди E морфотипа
+  P_ME_E <- freq_dd$M.edulis[1]/(freq_dd$M.edulis[1] + freq_dd$M.trossulus[1])
+  
+  #Вероятность встретить M.trossulus среди E морфотипа
+  P_MT_E <- freq_dd$M.trossulus[1]/(freq_dd$M.edulis[1] + freq_dd$M.trossulus[1])
+  
+  #Вероятность встретить M.edulis среди T морфотипа
+  P_ME_T <- freq_dd$M.edulis[2]/(freq_dd$M.edulis[2] + freq_dd$M.trossulus[2])
+  
+  #Вероятность встретить T морфотп среди M.trossulus морфотипа
+  P_T_MT <- freq_dd$M.trossulus[2]/(freq_dd$M.trossulus[2] + freq_dd$M.trossulus[1])
+  
+  #Вероятность встретить E морфотп среди M.trossulus морфотипа
+  P_E_MT <- freq_dd$M.trossulus[1]/(freq_dd$M.trossulus[2] + freq_dd$M.trossulus[1])
+  
+  #Вероятность встретить T морфотп среди M.edulis морфотипа
+  P_T_ME <- freq_dd$M.edulis[2]/(freq_dd$M.edulis[2] + freq_dd$M.edulis[1])
+  
+  #Вероятность встретить E морфотп среди M.edlis морфотипа
+  P_E_ME <- freq_dd$M.edulis[1]/(freq_dd$M.edulis[2] + freq_dd$M.edulis[1])
+  
+  #Вероятность встретить M.trossulus любого морфотипа
+  P_MT   <- sum(freq_dd$M.trossulus)/(sum(freq_dd$M.trossulus) + sum(freq_dd$M.edulis))
+  
+  #Вероятность встретить M.edulis любого морфотипа
+  P_ME   <- sum(freq_dd$M.edulis)/(sum(freq_dd$M.trossulus) + sum(freq_dd$M.edulis))
+  
+  #Вероятность встретить M.trossulus T морфотипа
+  P_MT_of_T   <- (freq_dd$M.trossulus[2])/(sum(freq_dd$M.trossulus) + sum(freq_dd$M.edulis))
+  
+  #Вероятность встретить M.trossulus E морфотипа
+  P_MT_of_E   <- (freq_dd$M.trossulus[1])/(sum(freq_dd$M.trossulus) + sum(freq_dd$M.edulis))
+  
+  #Вероятность встретить M.edulis T морфотипа
+  P_ME_of_T   <- (freq_dd$M.edulis[2])/(sum(freq_dd$M.trossulus) + sum(freq_dd$M.edulis))
+  
+  #Вероятность встретить M.edulis E морфотипа
+  P_ME_of_E   <- (freq_dd$M.edulis[1])/(sum(freq_dd$M.trossulus) + sum(freq_dd$M.edulis))
+  
+  #Вероятность встретить  E морфотип
+  P_E   <- sum(freq_dd[1, -1])/sum(freq_dd[,-1])
+  
+  #Вероятность встретить  T морфотип
+  P_T   <- sum(freq_dd[2, -1])/sum(freq_dd[,-1])
+  
+  
+  props <- c(P_MT_T, P_ME_E, P_MT_E, P_ME_T, P_T_MT, P_E_MT, P_T_ME,  P_E_ME, P_MT, P_ME, P_MT_of_T, P_MT_of_E, P_ME_of_T, P_ME_of_E, P_E, P_T)
+  
+  names(props) <- c("P_MT_T", "P_ME_E", "P_MT_E", "P_ME_T", "P_T_MT", "P_E_MT", "P_T_ME",  "P_E_ME", "P_MT", "P_ME", "P_MT_of_T", "P_MT_of_E", "P_ME_of_T", "P_ME_of_E", "P_E", "P_T")
+  
+  props
+}
+
+
+
+
+# Характерстики вероятностей для каждой популяции
+
+pop_freq <- data.frame((myt2 %>% group_by(Location, pop) %>% summarize(sea = unique(sea), sal_place =unique(sal_place))),  P_MT_T = NA, P_ME_E = NA, P_MT_E = NA, P_ME_T = NA,     P_T_MT = NA,   P_E_MT = NA,  P_T_ME = NA,     P_E_ME = NA, P_MT = NA,  P_ME = NA,  P_MT_of_T = NA,  P_MT_of_E = NA,  P_ME_of_T=NA,  P_ME_of_E = NA, P_E =NA, P_T = NA)
+
+
+i <- 1
+for(pop in unique(pop_freq$pop)){
+  pop_freq[i,5:20] <- round(freq_calc2(df = myt2, place = NULL, pop = pop), 3) 
+  i<-i+1
+}
+
+
+
+pop_freq #Датафрейм с частотами по каждой отдельной популяции
+
+
+
+pop_freq_test <- data.frame((myt3 %>% group_by(Location, pop) %>% summarize(sea = unique(sea), sal_place =unique(sal_place))),  P_MT_T = NA, P_ME_E = NA, P_MT_E = NA, P_ME_T = NA,     P_T_MT = NA,   P_E_MT = NA,  P_T_ME = NA,     P_E_ME = NA, P_MT = NA,  P_ME = NA,  P_MT_of_T = NA,  P_MT_of_E = NA,  P_ME_of_T=NA,  P_ME_of_E = NA, P_E =NA, P_T = NA)
+
+
+i <- 1
+for(pop in unique(pop_freq_test$pop)){
+  pop_freq_test[i,5:20] <- round(freq_calc2(df = myt3, place = NULL, pop = pop), 3) 
+  i<-i+1
+}
+
+
+
+pop_freq_test #Датафрейм с частотами по каждой отдельной популяции из тестового датасета
+
+
+
+
+pop_freq_modelling <- data.frame((myt2 %>% group_by(Location, pop) %>% summarize(sea = unique(sea), sal_place =unique(sal_place))),  P_MT_T = NA, P_ME_E = NA, P_MT_E = NA, P_ME_T = NA,     P_T_MT = NA,   P_E_MT = NA,  P_T_ME = NA,     P_E_ME = NA, P_MT = NA,  P_ME = NA,  P_MT_of_T = NA,  P_MT_of_E = NA,  P_ME_of_T=NA,  P_ME_of_E = NA, P_E =NA, P_T = NA)
+
+
+i <- 1
+for(pop in unique(pop_freq_modelling$pop)){
+  pop_freq_modelling[i,5:20] <- round(freq_calc2(df = myt2, place = NULL, pop = pop), 3) 
+  i<-i+1
+}
+
+
+##############################################
+
+
+
+# Частоты в разных выделах 
+
+All_freq <- data.frame(barents_normal = freq_calc2(place = "barents_normal"),
+                       barents_fresh = freq_calc2(place = "barents_fresh"),
+                       white_normal = freq_calc2(place = "white_normal"),
+                       white_fresh = freq_calc2(place = "white_fresh"))
+
+
+
+All_freq <- as.data.frame(t(All_freq))
+All_freq$Location <- row.names(All_freq)
+
+
+
+
+
+
+
+## Частота мидий T-морфотипа в отдельных поселеинях
+library(doBy)
+
+ind_pop <-summaryBy(ind ~ pop, data = myt2) 
+
+names(ind_pop) <- c("pop", "freq_Tmorph")
+
+myt2 <- merge(myt2, ind_pop, by = "pop")
+
+
+myt2$morph <- ifelse(myt2$ind == 1, "T_m", "E_m")
+myt2$morph <- factor(myt2$morph)
+
+
+
+
+# Частота корректных определений в разных популяциях у разных видов
+
+myt2$Location <- paste(myt2$sea,"_", myt2$sal_place, sep = "") 
+
+pops <- summaryBy(Location ~ pop, data = myt2, FUN = function(x) unique(x), keep.names = T)
+
+pops$sea <- ifelse(pops$Location == "white_normal" | pops$Location == "white_fresh", "white", "barents") 
+
+pops$sal_place <- ifelse(pops$Location == "barents_normal" | pops$Location == "white_normal", "normal", "fresh") 
+
+
+
+accur_MT <- summaryBy(congr ~ pop + Sp, data = myt2[myt2$Sp == "M.trossulus", ])
+names(accur_MT)[3] <- "congr_MT"
+
+
+accur_ME <- summaryBy(congr ~ pop + Sp, data = myt2[myt2$Sp != "M.trossulus", ])
+names(accur_ME)[3] <- "congr_ME"
+
+
+Accuracy <- merge(accur_MT, accur_ME, by = "pop")
+
+Accuracy <- merge(Accuracy, pops, by = "pop")
+
+Accuracy$P_T_MT <- Accuracy$congr_MT
+Accuracy$P_E_ME <- Accuracy$congr_ME
+Accuracy$P_T_ME <- 1 - Accuracy$congr_ME
+
+
+
+# Пердсказанные значения для модели
+fits <- data.frame(ME_fit = newdata$fit[newdata$morph == "E_m"], MT_fit = newdata$fit[newdata$morph == "T_m"], sea = newdata$sea[newdata$morph == "E_m"], sal_place = newdata$sal_place[newdata$morph == "E_m"])
+
+
+ROC_total <- roc(Sp ~ ind, data = myt2)
+plot(ROC_total)
+
+ROC_curve_total <- data.frame(sensitivity = ROC_total$sensitivities, specif = ROC_total$specificities) 
+
+
+
+ROC_white <- roc(Sp ~ ind, data = myt2[myt2$Location =="white_fresh" | myt2$Location =="white_normal", ], ci = TRUE)
+
+ROC_barents <- roc(Sp ~ ind, data = myt2[myt2$Location =="barents_normal" | myt2$Location =="barents_fresh", ], ci = TRUE)
+
+roc.test(ROC_barents, ROC_white, paired = FALSE, method = "venkatraman")
+
+
+
+
+
+
+ROC_white_fresh <- roc(Sp ~ ind, data = myt2[myt2$Location =="white_fresh", ], ci = TRUE)
+ROC_curve_white_fresh <- data.frame(sensitivity = ROC_white_fresh$sensitivities, specif = ROC_white_fresh$specificities, sea = "white", sal_place = "fresh") 
+
+ROC_white_normal <- roc(Sp ~ ind, data = myt2[myt2$Location =="white_normal", ], ci = TRUE)
+ROC_curve_white_normal <- data.frame(sensitivity = ROC_white_normal$sensitivities, specif = ROC_white_normal$specificities, sea = "white", sal_place = "normal") 
+
+
+
+
+ROC_barents_normal <- roc(Sp ~ ind, data = myt2[myt2$Location =="barents_normal", ], ci = TRUE)
+ROC_curve_barents_normal <- data.frame(sensitivity = ROC_barents_normal$sensitivities, specif = ROC_barents_normal$specificities, sea = "barents", sal_place = "normal") 
+
+
+ROC_barents_fresh <- roc(Sp ~ ind, data = myt2[myt2$Location =="barents_fresh", ], ci = TRUE)
+ROC_curve_barents_fresh <- data.frame(sensitivity = ROC_barents_fresh$sensitivities, specif = ROC_barents_fresh$specificities, sea = "barents", sal_place = "fresh") 
+
+
+
+ROC_barents_fresh_test <- roc(Sp ~ ind, data = myt3[myt3$Location =="barents_fresh", ], ci = TRUE)
+
+
+ROC_barents_normal_test <- roc(Sp ~ ind, data = myt3[myt3$Location =="barents_normal", ], ci = TRUE)
+
+
+
+roc.test(ROC_barents_normal, ROC_barents_normal_test, paired = FALSE, method = "delong")
+
+roc.test(ROC_barents_fresh, ROC_barents_fresh_test, paired = FALSE, method = "delong")
+
+roc.test(ROC_barents_normal, ROC_barents_normal_test, paired = FALSE, method = "delong")
+
+roc.test(ROC_barents_fresh_test, ROC_barents_normal_test, paired = FALSE, method = "delong")
+
+
+
+
+ROC_curves <- rbind(ROC_curve_white_fresh, ROC_curve_white_normal, ROC_curve_barents_fresh, ROC_curve_barents_normal)
+
+ROC_curves$Location <- paste(ROC_curves$sea,"_", ROC_curves$sal_place, sep = "")
+
+
+
+ggplot(Aaccuracy, aes(y = P_T_MT, x = P_E_ME)) + geom_point() + scale_x_reverse( lim=c(1,0)) + geom_path(data = data.frame(spec = c(1,0), sens = c(0,1)), aes(x =spec, y = sens)) + geom_path(data = ROC_curves, aes(x = specif, y = sensitivity, group = ), color = "blue")  
+
+# + facet_grid( sea ~ sal_place )
+# + geom_path(data = probs_all, aes(x=P_ME_E, y = P_MT_T)) 
+
+# + geom_text(aes(label = pop))
+
+
+
+ggplot(Accuracy [Accuracy$Location == "barents_fresh" , ], aes(y = P_T_MT, x = P_E_ME)) + geom_point()  + geom_path(data = data.frame(spec = c(1,0), sens = c(0,1)), aes(x =spec, y = sens)) + scale_x_reverse( lim=c(1,0)) + geom_path(data = ROC_curve_barents_fresh, aes(x = specif, y = sensitivity), color = "blue") + labs(x = "Specificity (P_E_ME)", "Sensitivity (P_T_MT) ") + geom_point(data = All_freq[All_freq$Location == "barents_normal", ], aes(x = P_E_ME, y = P_T_MT), shape = 21, fill = "green", size = 4)  
+
+
+
+
+
+ggplot(Accuracy, aes(y = P_T_MT, x = P_E_ME, color = Location)) + geom_point() +  scale_x_reverse( lim=c(1,0)) + geom_point(data = All_freq, aes(x = P_E_ME, y = P_T_MT, color = Location), size = 4 ) + labs(x = "Specificity (P_E_ME)", y = "Sensitivity (P_T_MT) ") + geom_abline(intercept = 1, slope = 1)
+
+
+
+
+### ROC анализ для отдельных популяций
+
+
+
+
+roc_all <- roc(Sp ~ ind, data = myt2)
+
+str(roc_all)
+
+plot(roc_all)
+
+plot(roc_all)
+
+
+
+
+# переменная congr - это событие правильного определения 1 если T-морфотип совпадает с MT и E-морфотип совпадает с ME, 0 - если не свопадает
+
+myt2$congr <- ifelse((myt2$ind == 1 & myt2$Sp == "M.trossulus") | (myt2$ind == 0 & myt2$Sp == "M.edulis"), 1, 0   )
+
+
+Mod_fT_congr <- glm (congr ~ morph * place * freq_Tmorph, data = myt2, family = "binomial")
+
+drop1(Mod_fT_congr, test = "Chi")
+
+summary(Mod_fT_congr)
+
+levels(myt2$sal_place)
+
+
+
+
+
+
+### ROC анализ по отдельным популяцям
+
+
+
+
+
+myt_d <- myt2[myt2$pop == "umba_06", ]
+
+roc(myt_d$Sp ~  myt_d$ind)$auc
+
+
+
+
+
+
+
+
+ROC <- data.frame(AUC = rep(NA, length(unique(myt2$pop)) ))
+
+
+
+i <- 1
+for(pop in unique(myt2$pop)){
+  d <- myt2[myt2$pop == pop, ]
+  if(sum(d$ind) != 0){
+    ROC$AUC[i] <- roc(d$Sp ~ d$ind)$auc
+      
+  }
+  else
+    ROC$AUC[i] <-NA
+
+    ROC$pop [i] <- pop
+  
+  i <- i+1
+}
+
+names(myt2)
+
+
+myt2$Sp2 <- ifelse(myt2$Sp == "M.trossulus", 1, 0)
+
+
+salinity <- summaryBy(sal_place ~ pop + sea, FUN = function(x) mean(x), data = myt2, keep.names = T)
+
+Spec_freq <- summaryBy(str + Sp2 ~ pop + sea, data = myt2)
+
+qplot(Spec_freq$str.mean, Spec_freq$Sp2.mean)
+
+
+dd <- merge(ROC, salinity)
+
+dd <- merge(dd, Spec_freq)
+
+ROC_sal <- dd 
+
+ROC_sal$sal_place <- factor(ROC_sal$sal_place)
+
+levels (ROC_sal$sal_place) = c("fresh", "normal")
+
+
+
+ggplot(ROC_sal, aes(x = sal_place, y = AUC, fill = sea)) + geom_boxplot(notch = F)
+
+
+Mod <- lm(AUC ~ sea * sal_place, data = ROC_sal)
+
+step(Mod, direction = "backward")
+
+
+summary(Mod)
+
+Anova(Mod, type = 3)
+
+
+

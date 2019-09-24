@@ -1,0 +1,368 @@
+---
+title: "Calculator"
+author: "Вадим Хайтов"
+date: '11 марта 2019 г '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, cache = TRUE)
+```
+
+<style type="text/css">
+
+body{ /* Normal  */
+      font-size: 18px;
+  }
+td {  /* Table  */
+  font-size: 20px;
+}
+h1.title {
+  font-size: 38px;
+  color: DarkRed;
+}
+h1 { /* Header 1 */
+  font-size: 28px;
+  color: DarkBlue;
+}
+h2 { /* Header 2 */
+    font-size: 22px;
+  color: DarkBlue;
+}
+h3 { /* Header 3 */
+  font-size: 18px;
+  font-family: "Times New Roman", Times, serif;
+  color: DarkBlue;
+}
+code.r{ /* Code block */
+    font-size: 12px;
+}
+pre { /* Code block - determines code spacing between lines */
+    font-size: 14px;
+}
+</style>
+
+
+
+<br>
+<br><br><br>
+
+Я полный дебил!!!!
+
+Впрочем, вы тоже...
+
+(Это был эпиграф.)
+
+
+<br>
+<br><br><br>
+```{r, echo=TRUE}
+library(lme4)
+library(ggplot2)
+library(reshape2)
+library(sjstats)
+library(dplyr)
+library(car)
+library(doBy)
+library(pROC)
+library(betareg)
+library(knitr)
+
+
+
+
+myt <- read.table("data_salinity3.csv", header = T, sep = ";")
+
+myt$Sp [myt$str > 0.5] <- "M.trossulus" #Лучше обозначать так!
+myt$Sp [myt$str <= 0.5] <- "M.edulis"
+myt$Sp <- factor(myt$Sp)
+
+# Оставляем только мидий, у которых есть оценка морфотипа
+myt2 <- myt[!is.na(myt$ind), ]
+
+
+# Вводим обозначения для морфотипов
+myt2$morph <- ifelse(myt2$ind == 1, "T_m", "E_m")
+myt2$morph <- factor(myt2$morph)
+
+#Оставляем только данные, на основе, которых строится модель
+myt3 <- myt2[myt2$dataset == "testing", ]
+myt2 <- myt2[myt2$dataset == "training", ]
+
+
+myt2$congr <- ifelse((myt2$ind == 1 & myt2$Sp == "M.trossulus") | (myt2$ind == 0 & myt2$Sp == "M.edulis"), 1, 0   )
+
+
+# Частота M.trossulus в популяции, вычисленная как срденее значение structure
+freq_MT <- summaryBy( str ~ pop, data = myt2)
+names(freq_MT) <- c("pop", "freq_MT")
+
+myt2 <- merge(myt2, freq_MT)
+
+myt2$Sp2 <- ifelse(myt2$Sp == "M.trossulus", 1, 0)
+
+myt2$Location <- paste(myt2$sea,"_", myt2$sal_place, sep = "") #Перемменная для кодирования четырех выделов
+
+
+
+# Регрессионная модель, описывающая связь между долей Т-морфотипа вероятностью встретить M.trossulus в популяции
+
+
+prop_T_MT <- summaryBy(Sp2 + ind  ~ pop + sea + sal_place, data = myt2, keep.names = T)
+names(prop_T_MT)[4:5] <- c("Prop_MT", "Prop_T")
+
+prop_T_MT$Prop_MT_adj <- ifelse(prop_T_MT$Prop_MT == 0, 0.000001, prop_T_MT$Prop_MT)
+
+
+prop_T <- summaryBy(ind  ~ pop, data = myt2, keep.names = T)
+names(prop_T) <- c("pop", "Prop_T")
+
+myt4 <- merge(myt2, prop_T, by = "pop")
+
+Model_T_MT <- betareg(Prop_MT_adj ~ Prop_T + sea*sal_place, data = prop_T_MT)
+
+
+new_data <- prop_T_MT %>% group_by(sea, sal_place) %>% do(data.frame(Prop_T = seq(min(.$Prop_T), max(.$Prop_T), length.out = 100)))
+
+
+predicted <- predict(Model_T_MT, newdata = new_data,  type="response")
+
+new_data$fit <- predicted
+
+# new_data$se <- predicted$se.fit
+
+# 
+# 
+# 
+# ggplot(data = new_data, aes(x = Prop_T)) + geom_line(aes(y = fit, color = sal_place, linetype = sea), size = 1) + theme_bw() + geom_point(data = prop_T_MT, aes(x = Prop_T, y = Prop_MT, color = sal_place, shape = sea), size = 4) + labs(x = "Proportion of T-morphotype in population", y = "Proportion of M.trossulus", color = "Freshness")  
+# 
+
+```
+
+
+
+
+## Немного теории веротяностей
+
+Для описания наших выделов мы можем использовать очень много различных показателей. Все они сведены в таблицу, приведенную ниже. Для начала дадим им расшифровку. Вот их перечень.
+
+
+- Вероятность встретить M,trossulus среди Т морфотипа. Это оценка условной вероятности $P_{MT|T}$. В таблице -- `P_MT_T`
+- Вероятность встретить M.edulis среди E морфотипа. Это оценка условной вероятности $P_{ME|E}$. В таблице -- `P_ME_E`
+- Вероятность встретить M.trossulus среди E морфотипа. Это оценка условной вероятности $P_{MT|E}$. В таблице -- `P_MT_E`
+- Вероятность встретить M.edulis среди T морфотипа. Это оценка условной вероятности $P_{ME|T}$. В таблице -- `P_ME_T`
+
+
+- Вероятность встретить T морфотип среди M.trossulus. Это оценка условной вероятности $P_{T|MT}$. В таблице -- `P_T_MT`
+- Вероятность встретить E морфотип среди M.trossulus. Это оценка условной вероятности $P_{E|MT}$. В таблице -- `P_E_MT`
+- Вероятность встретить T морфотип среди M.edulis. Это оценка условной вероятности $P_{T|ME}$. В таблице -- `P_T_ME`
+- Вероятность встретить E морфотип среди M.edlis. Это оценка условной вероятности $P_{E|ME}$. В таблице -- `P_E_ME`
+
+
+- Вероятность встретить M.trossulus любого морфотипа. Вероятность события $P_{MT}$. В таблице -- `P_MT`
+- Вероятность встретить M.edulis любого морфотипа. Вероятность события $P_{ME}$. В таблице -- `P_MT` 
+
+- Вероятность встретить M.trossulus c T морфотипом. **At!** Не путать с `P_MT_T` или `P_T_MT`. Это вероятность события $P_{MT of T}$. В таблице `P_MT_of_T`
+- Вероятность встретить M.trossulus E морфотипа. **At!** Не путать с `P_MT_E` или `P_E_MT`. Это вероятность события $P_{MT of E}$. В таблице `P_MT_of_E`
+- Вероятность встретить M.edulis T морфотипа. Аналогично предыдущему. В таблице `P_ME_of_T`
+- Вероятность встретить M.edulis E морфотипа. Аналогично предыдущему. В таблице `P_ME_of_E`
+
+- Вероятность встретить  E морфотип. Это вероятность события $P_{E}$. В таблице `P_E`
+- Вероятность встретить  T морфотип. Это вероятность события $P_{T}$. В таблице `P_T`.
+
+
+### Собственно таблица
+
+```{r}
+
+
+probs_calc_3 <- function(variable = "Location", place = "white_normal", P_MT = 0.5) {
+  n <- which(names(myt2) == variable)
+  d <- myt2[myt2[,n] == place, ]
+  dd <- melt(table(d$Sp, d$morph))
+  freq_dd <- dcast(data = dd, formula = Var2 ~ Var1)
+  
+  P_T_MT <- round(with(data = freq_dd, M.trossulus[2] /(M.trossulus[2] + M.trossulus[1])), 2)
+  P_T_ME <- round(with(data = freq_dd, M.edulis[2] /(M.edulis[2] + M.edulis[1])), 2)
+  # P_ME <- round(with(data = freq_dd, sum(M.edulis) /(sum(freq_dd[,-1]))), 2)
+  
+  P_E_ME <- round(with(data = freq_dd, M.edulis[1] /(M.edulis[1] + M.edulis[2])), 2)
+  P_E_MT <- round(with(data = freq_dd, M.trossulus[1] /(M.trossulus[1] + M.trossulus[2])), 2)
+  # P_MT <- round(with(data = freq_dd, sum(M.trossulus) /(sum(freq_dd[,-1]))), 2)
+  
+  
+  P_MT_T <- (P_T_MT*P_MT)/(P_T_MT*P_MT + P_T_ME*(1-P_MT))
+  P_ME_E <- (P_E_ME*(1-P_MT))/(P_E_ME*(1-P_MT) + P_E_MT*P_MT)
+  
+  c(P_MT_T, P_ME_E)
+}
+
+
+
+freq_calc2 <- function(variable = "Location", place = "barents_fresh"){
+  n <- which(names(myt2) == variable)
+  d <- myt2[myt2[,n] == place, ]
+  dd <- melt(table(d$Sp, d$morph))
+  freq_dd <- dcast(data = dd, formula = Var2 ~ Var1)
+
+  #Вероятность встретить M,trossulus среди Т морфотипа оценка условной веротяности P_MT|T
+  P_MT_T <- freq_dd$M.trossulus[2]/(freq_dd$M.trossulus[2] + freq_dd$M.edulis[2])
+  
+  #Вероятность встретить M.edulis среди E морфотипа
+  P_ME_E <- freq_dd$M.edulis[1]/(freq_dd$M.edulis[1] + freq_dd$M.trossulus[1])
+  
+  #Вероятность встретить M.trossulus среди E морфотипа
+  P_MT_E <- freq_dd$M.trossulus[1]/(freq_dd$M.edulis[1] + freq_dd$M.trossulus[1])
+
+  #Вероятность встретить M.edulis среди T морфотипа
+  P_ME_T <- freq_dd$M.edulis[2]/(freq_dd$M.edulis[2] + freq_dd$M.trossulus[2])
+
+  #Вероятность встретить T морфотп среди M.trossulus морфотипа
+  P_T_MT <- freq_dd$M.trossulus[2]/(freq_dd$M.trossulus[2] + freq_dd$M.trossulus[1])
+
+  #Вероятность встретить E морфотп среди M.trossulus морфотипа
+  P_E_MT <- freq_dd$M.trossulus[1]/(freq_dd$M.trossulus[2] + freq_dd$M.trossulus[1])
+
+  #Вероятность встретить T морфотп среди M.edulis 
+  P_T_ME <- freq_dd$M.edulis[2]/(freq_dd$M.edulis[2] + freq_dd$M.edulis[1])
+  
+  #Вероятность встретить E морфотп среди M.edlis 
+  P_E_ME <- freq_dd$M.edulis[1]/(freq_dd$M.edulis[2] + freq_dd$M.edulis[1])
+
+  #Вероятность встретить M.trossulus любого морфотипа
+  P_MT   <- sum(freq_dd$M.trossulus)/(sum(freq_dd$M.trossulus) + sum(freq_dd$M.edulis))
+
+  #Вероятность встретить M.edulis любого морфотипа
+  P_ME   <- sum(freq_dd$M.edulis)/(sum(freq_dd$M.trossulus) + sum(freq_dd$M.edulis))
+
+  #Вероятность встретить M.trossulus T морфотипа
+  P_MT_of_T   <- (freq_dd$M.trossulus[2])/(sum(freq_dd$M.trossulus) + sum(freq_dd$M.edulis))
+  
+  #Вероятность встретить M.trossulus E морфотипа
+  P_MT_of_E   <- (freq_dd$M.trossulus[1])/(sum(freq_dd$M.trossulus) + sum(freq_dd$M.edulis))
+
+  #Вероятность встретить M.edulis T морфотипа
+  P_ME_of_T   <- (freq_dd$M.edulis[2])/(sum(freq_dd$M.trossulus) + sum(freq_dd$M.edulis))
+  
+  #Вероятность встретить M.edulis E морфотипа
+  P_ME_of_E   <- (freq_dd$M.edulis[1])/(sum(freq_dd$M.trossulus) + sum(freq_dd$M.edulis))
+
+  #Вероятность встретить  E морфотип
+  P_E   <- sum(freq_dd[1, -1])/sum(freq_dd[,-1])
+  
+  #Вероятность встретить  T морфотип
+  P_T   <- sum(freq_dd[2, -1])/sum(freq_dd[,-1])
+  
+    
+  props <- c(P_MT_T, P_ME_E, P_MT_E, P_ME_T, P_T_MT, P_E_MT, P_T_ME,  P_E_ME, P_MT, P_ME, P_MT_of_T, P_MT_of_E, P_ME_of_T, P_ME_of_E, P_E, P_T)
+
+  names(props) <- c("P_MT_T", "P_ME_E", "P_MT_E", "P_ME_T", "P_T_MT", "P_E_MT", "P_T_ME",  "P_E_ME", "P_MT", "P_ME", "P_MT_of_T", "P_MT_of_E", "P_ME_of_T", "P_ME_of_E", "P_E", "P_T")
+  
+  props
+}
+
+
+All_freq <- data.frame(barents_normal = freq_calc2(place = "barents_normal"), 
+                       barents_fresh = freq_calc2(place = "barents_fresh"),
+                       white_normal = freq_calc2(place = "white_normal"),
+                       white_fresh = freq_calc2(place = "white_fresh"))
+kable(All_freq)
+
+```
+
+
+**Внимание! Проверьте, пожалуйста, совпадают ли эти числа с тем, чем оперируете вы. Если нет, то срочно дайте знать.**
+
+## Продолжение про теорию веротяностей
+
+**Здесь читаем очень внмательно и критично** Если я ошибся здесь, то все, что будет в калькуляторе -- полная лажа. 
+
+
+Поскольку мидия вида M.trossulus может иметь либо морфотип T, либо морфотип E, то события $MT of T$ и $MT of E$ взаимоисключающие. Следовательно, по теореме о сумме вероятностей, можно написать следующее уравнение. 
+
+$$
+P_{MT} = P_{MT of T} + P_{MT of E} 
+$$
+
+
+Проверьте по таблице!
+
+По тем же причинам справедливо вот такое выражение
+
+$$
+P_{T} = P_{MT of T} + P_{ME of T} 
+$$
+
+
+Тогда, выражая одно через другое, получаем следующее
+
+$$
+P_{MT of T} = P_{T} -  P_{ME of T}
+$$
+
+Следовательно
+
+
+$$
+P_{MT} =  P_{T} + (P_{MT of E} - P_{ME of T})
+$$
+
+Здесь нетрудно увидеть линейную функцию: $P_{MT} = b_0 + b_1 \cdot  P_{T}$. При этом $b1 = 1$ (Как и предполагал ППС), но вот $b_0$ точно не равен нулю (о чем говорил ВМХ).
+
+
+
+Иным словами вероятность встретить M.trossulus линейно зависит от вероятности встретить T-морфотип, но с некоторой поправкой ($b_0$), равной разнице вероятности встретить мидию вида M.trossulus с E-морфотипом и вероятности встретить мидию вида M.edulis с T-морфотипом. 
+
+Биологический смысл этой поправки, как мне видится прост и информативен. Она равна нулю если $P_{MT of E} = P_{ME of T}$.  Это будет тогда, когда мы одинаково часто лажаем с определением вида, как по Т-морфотипу, так и по Е-морфотипу. Если $b_0 > 0$, то чаще лажаем в использовании Е-морфотипа, а если  $b_0 < 0$, то чаще лажаем в использовании T-морфотипа.
+
+Если в этих рассуждениях нет ошибки, то тогда калькулятор выглядит вот так.
+
+
+# Калькулятор
+
+```{r}
+
+
+P_MT_calc2 <- function(P_T=0.5, P_MT_of_E, P_ME_of_T){
+  P_MT <-P_T + (P_MT_of_E - P_ME_of_T)
+  P_MT
+  
+}
+
+
+
+props <- expand.grid(Prop_T = seq(0, 1, 0.01), sea = c("barents", "white"), sal_place = c("fresh", "normal"))
+
+props$place <- paste(props$sea,"_", props$sal_place, sep = "")
+
+
+for(i in 1:nrow(props)){
+  freq_calc_result <- freq_calc2(place = props$place[i])
+  
+  P_MT_of_E <-   freq_calc_result [12]
+  P_ME_of_T <-  freq_calc_result [13]
+  
+  props$Prop_MT [i] <- P_MT_calc2(P_T = props$Prop_T[i], P_MT_of_E = P_MT_of_E, P_ME_of_T = P_ME_of_T )
+  props$P_MT_T [i] <- probs_calc_3(place = props$place[i], P_MT = props$Prop_MT[i])[1]  
+  props$P_ME_E [i] <- probs_calc_3(place = props$place[i], P_MT = props$Prop_MT[i])[2]  
+}   
+  
+
+ 
+
+(Pl_calc <- ggplot(props, aes(x = Prop_T, y = Prop_MT)) + geom_line(color = "black") + facet_grid(sea~sal_place) + geom_line(aes(y=P_MT_T), color = "red", linetype = 2, size = 1) + geom_line(aes(y=P_ME_E), color = "blue", linetype = 2, size = 1) + geom_line(data = new_data, aes(x = Prop_T, y = fit), color = "gray", size = 1) + labs(x="Proportion of T_morphotype", y = "Accuracy")  + theme_bw() +  scale_x_continuous(breaks = seq(0, 1, 0.1)) + geom_point(data = prop_T_MT, aes(x = Prop_T, y = Prop_MT, color = sal_place, shape = sea))  + scale_y_continuous( sec.axis = sec_axis(trans = ~., name = "Proportion of M.trossulus"), limits = c(0,1) )) 
+
+```
+
+
+Как видим, теперь все очень хорошо согласуется с данными. 
+
+
+
+
+
+
+
+
+
+

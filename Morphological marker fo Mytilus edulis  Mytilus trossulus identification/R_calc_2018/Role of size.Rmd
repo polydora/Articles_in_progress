@@ -1,0 +1,191 @@
+---
+title: "Про размеры"
+author: "Вадим Хайтов"
+date: '24 марта 2019 г '
+output: html_document
+---
+
+
+<style type="text/css">
+
+body{ /* Normal  */
+      font-size: 18px;
+  }
+td {  /* Table  */
+  font-size: 20px;
+}
+h1.title {
+  font-size: 38px;
+  color: DarkRed;
+}
+h1 { /* Header 1 */
+  font-size: 28px;
+  color: DarkBlue;
+}
+h2 { /* Header 2 */
+    font-size: 22px;
+  color: DarkBlue;
+}
+h3 { /* Header 3 */
+  font-size: 18px;
+  font-family: "Times New Roman", Times, serif;
+  color: DarkBlue;
+}
+code.r{ /* Code block */
+    font-size: 12px;
+}
+pre { /* Code block - determines code spacing between lines */
+    font-size: 14px;
+}
+</style>
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+
+Про размеры. Витает в воздухе идея, что размеры играют роль в том как работает морфотип. Давай посмотрим на первичку-первичку. На рисунках ниже приведены графики, где по оси ОХ отложена длина мидии, а по оси ОУ -- вероятность правильного определения (переменная congr, которая принимает значения 1 если T = MT или E = ME, 0 если T = ME или E = MT). На всякий случай, то что ранее показывала Юля, имеет отношение к к моделям, описывающим связь вероятности встретить Т-морфотип (переменная "ind") с набором предикторов.
+
+
+На рисунках ниже приводятся логистическе кривые, описывающие связь между вероятностью встретить правильное определение (congr = 1) и размером мидии. Серые области - это доверительные интервалы. Точки - это отдельные мидии, по которым подобраны логистические кривые (добавлена небольшая случайная величина, чтобы убрать оверплоттнг). 
+
+На всякий случай: если можно провести горизонтальную линию, не вылезая за пределы доверительного интервала, то связь статистически не значимая.  **NB!** На самом деле, интервалы должны быть заметно шире из-за множественности сравнений. Ну пока закроем глаза...
+
+
+Остальные предикторы намеренно не включаю в анализ, чтобы показать, на максимально сыром материале, что связь с размерами несколько преувеличена. 
+
+Итак.
+
+```{r}
+
+library(ggplot2)
+library(doBy)
+theme_set(theme_bw())
+
+myt <- read.table("data_salinity3.csv", header = T, sep = ";")
+
+# unique(myt$pop)
+
+# myt <- myt[!(myt$pop %in% c("kuvsh", "banka")), ] #Удаляем kuvsh по просьбе ППС и banka по аналогии
+
+
+
+
+myt$Sp [myt$str > 0.5] <- "M.trossulus" #Лучше обозначать так!
+myt$Sp [myt$str <= 0.5] <- "M.edulis"
+myt$Sp <- factor(myt$Sp)
+
+
+myt$sal_place <- factor(myt$sal_place)
+
+# str(myt$sal_place)
+
+
+myt$Sp [myt$str > 0.5] <- "M.trossulus" #Лучше обозначать так!
+myt$Sp [myt$str <= 0.5] <- "M.edulis"
+myt$Sp <- factor(myt$Sp)
+
+# Оставляем только мидий, у которых есть оценка морфотипа
+myt2 <- myt[!is.na(myt$ind), ]
+
+
+# Вводим обозначения для морфотипов
+myt2$morph <- ifelse(myt2$ind == 1, "T_m", "E_m")
+myt2$morph <- factor(myt2$morph)
+
+#Оставляем только данные, на основе, которых строится модель
+myt3 <- myt2[myt2$dataset == "testing", ]
+myt2 <- myt2[myt2$dataset == "training", ]
+
+
+myt2$congr <- ifelse((myt2$ind == 1 & myt2$Sp == "M.trossulus") | (myt2$ind == 0 & myt2$Sp == "M.edulis"), 1, 0   )
+
+
+# Частота M.trossulus в популяции, вычисленная как срденее значение structure
+freq_MT <- summaryBy( str ~ pop, data = myt2)
+names(freq_MT) <- c("pop", "freq_MT")
+
+myt2 <- merge(myt2, freq_MT)
+
+myt2$Sp2 <- ifelse(myt2$Sp == "M.trossulus", 1, 0)
+
+myt2$Location <- paste(myt2$sea,"_", myt2$sal_place, sep = "") #Перемменная для кодирования четырех выделов
+
+myt3$Location <- paste(myt3$sea,"_", myt3$sal_place, sep = "") #Перемменная для кодирования четырех выделов
+
+
+# переменная congr - это событие правильного определения 1 если T-морфотип совпадает с MT и E-морфотип совпадает с ME, 0 - если не свопадает
+
+myt2$congr <- ifelse((myt2$ind == 1 & myt2$Sp == "M.trossulus") | (myt2$ind == 0 & myt2$Sp == "M.edulis"), 1, 0   )
+
+
+## Убираем данные testing
+
+myt2 <- myt2[!(myt2$dataset %in% c("testing")), ]
+
+# names(myt2)
+
+# Mod_congr_L <- glmer(congr ~ morph * freq_MT*sea*sal_place +  (1 + size | pop), data = myt2, family = binomial(link = "logit"), control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# 
+# Mod_congr_L_rs <- glmer(congr ~ morph * freq_MT*sea*sal_place + size + (1 + size | pop), data = myt2, family = binomial(link = "logit"), control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+```
+
+
+
+```{r}
+ggplot(myt2, aes(x = size, y = congr))+ geom_point(position = position_jitter(height = 0.01)) + geom_smooth(method = "glm", method.args= list(family = "binomial")) + facet_grid(sea~sal_place)
+
+
+
+```
+
+Итого, что-то подозрительное есть особенно в случае с barents-normal. 
+
+Посмотрим на отдельные популяции. Для более жесткого контроля здесь еще будем учитывать морфотип и  подберем логистические кривые разные для разных морфотипов.  
+
+В barents-normal. Видно, что  в двух популяциях "banka" и "ustie_sub" какая-то херня. Эти график показывают, что в данных двух популяциях вероятность правильного определения высока у любых мидий если они имеют Е морфотип. Однако у мидий имеющих Т-морфотип вероятность правильного определения низка у мелких мидий, но у крупных она выше. То есть у мелких мидий почему-то вдруг и только в этих двух популяциях морфотип перестал работать. 
+
+```{r}
+ggplot(myt2[myt2$Location == "barents_normal", ], aes(x = size, y = congr, color = morph)) + geom_point(position = position_jitter(height = 0.05))+ geom_smooth(method = "glm", method.args= list(family = "binomial")) + facet_wrap(~pop) + scale_color_manual(values = c("blue","red"))
+
+```
+
+В barents-fresh. Здесь есть тоже какая-то странность в популяции "sevsk", где вероятность правильного определения была низка среди мелких мидий, но уже Е-морфотипа (в популяции "mi" значимой связи явно нет, хотя тенденция похожая). 
+
+```{r}
+
+ggplot(myt2[myt2$Location == "barents_fresh", ], aes(x = size, y = congr, color = morph))+ geom_point(position = position_jitter(height = 0.05)) + geom_smooth(method = "glm", method.args= list(family = "binomial")) + facet_wrap(~pop) + scale_color_manual(values = c("blue","red"))
+
+
+
+```
+
+
+В white-normal. Видим связь -- это "chupa". Опять же вероятность правильного определения ниже у мелких моллюсков E-морфотипа. Но! в случае с популяцией "umba" в отношении E-морфотипа: вероятность правильного определения  низка у мелких особей. НО! здесь еще фокус выкидывает Т-морфотип, у которого вероятность правильного определения меньше среди крупных особей (там правда, всего 3 особи, которые оттянули на себя кривую, но все-таки...)
+
+```{r}
+
+ggplot(myt2[myt2$Location == "white_normal", ], aes(x = size, y = congr, color = morph)) + geom_point(position = position_jitter(height = 0.05))+ geom_smooth(method = "glm", method.args= list(family = "binomial")) + facet_wrap(~pop) + scale_color_manual(values = c("blue","red"))
+
+
+
+```
+
+В случае white-fresh. Все ОК! 
+
+```{r}
+ggplot(myt2[myt2$Location == "white_fresh", ], aes(x = size, y = congr, color = morph)) + geom_point(position = position_jitter(height = 0.05))+ geom_smooth(method = "glm", method.args= list(family = "binomial")) + facet_wrap(~pop) + scale_color_manual(values = c("blue","red"))
+
+
+```
+
+
+Итого, в 5 случаях из 39 связь с размером как-то видна. С одной стороны, это локальный эффект, который не даст сильного влияния на общую модель (к тому же регрессионные модели, которые мы строим, включают случайные эффекты популяций). О том, что эффект размера слаб, говорит и отсутствие явного паттерна в остатках если их рассматривать в связи с размером (смотри report_VM_4.html). Короче, по сумме доводов считаю, что роль размера в работе морфотипа, как диагностического признака, мала. 
+
+
+Но с другой стороны, как-то странно все это. Почему в ряде случаев, не связанных друг с другом каким-то естественным фактором, появляется какая-то хрень - мелкие моллюски хуже определяются чем крупные. Кроме сбоев в обработке (ошибки в определении генотипов или ошибки в определении морфотипов) есть какие-нибудь еще идеи?
+
+
+

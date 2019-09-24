@@ -1,0 +1,404 @@
+---
+title: "Язычки и  моря"
+author: "Вадим Хайтов"
+date: '17 января 2019 г '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+library(knitr)
+```
+
+
+Коллеги, извините, но мне проще сформулировать вопросы для себя и решить это так как я бы стал это делать. Поэтому, смотрите и решайте, может быть надо все иначе делать, можете переубедить меня, если получится. 
+
+Итак, я вижу задачу следующим образом.
+
+## Постановка вопроса
+
+Что мы знаем после исследований в Белом море?
+
+1.Частота морфотипов коррелирует с генетическим статусом: среди M.trossulus большинство являются T-морфотипом, среди ME - большинство E-морфотипом.
+
+2.Чем выше частота MT в популяции, тем больше доля T-морфотипа.
+
+3.Чем больше размер мидии, тем ниже вероятность встретить T-морфотип
+
+4.MT, а стало быть и T-морфотип, чаще встречаются в опресненных местообитаниях.
+
+5.Доля MT (а стало быть и частота T- морфотипа) выше на талломах водорослей, чем на грунте в данной точке. В данном документе я пока не буду решать эту проблему, а сосредоточусь только на пп. 1-4. 
+
+Главный вопрос: будут ли наблюдаться аналогичные зависимости в Баренцевом море. 
+
+
+# Как выглядят ответы на эти вопросы.
+
+## Вопрос 1.
+Частота морфотипов коррелирует с генетическим статусом: среди M.trossulus большинство являются T-морфотипом, среди ME - большинство E-морфотпом.
+
+**Если в Баренцевом море все так же, как в Белом**
+
+1. Между факторами Sp и sea нет взаимодействия. 
+
+2. В двух морях частота T-морфотипа выше среди MT, чем среди ME.
+
+3. В двух морях большинство MT (более 50%) имеют T-морфотип
+
+**Если в Баренцевом море все не так, как в Белом**
+
+1. Между факторами Sp и sea есть значимое взаимодействия. 
+
+2. В двух морях частота T-морфотипа выше среди MT, чем среди ME.
+
+3. В двух морях большинство MT (более 50%) имеют T-морфотип
+
+
+
+## Вопрос 2.
+
+Чем выше частота MT в популяции, тем больше доля T-морфотипа.
+
+**Если в Баренцевом море все так же, как в Белом**
+
+Между факторами freq_MT и sea нет взаимодействия. 
+
+
+**Если в Баренцевом море все не так, как в Белом**
+
+Между факторами freq_MT и sea есть значимое взаимодействия. 
+
+
+## Вопрос 3.
+
+Чем больше размер мидии, тем ниже вероятность встретить T-морфотип
+
+
+**Если в Баренцевом море все так же, как в Белом**
+
+Между факторами size и sea нет взаимодействия. 
+
+
+**Если в Баренцевом море все не так, как в Белом**
+
+Между факторами size и sea есть значимое взаимодействия. 
+
+
+
+
+## Вопрос 4.
+MT, а стало быть и T-морфотип, чаще встречаются в опресненных местообитаниях.
+
+**Если в Баренцевом море все так же, как в Белом**
+
+Между факторами sal_place и sea нет взаимодействия. 
+
+
+**Если в Баренцевом море все не так, как в Белом**
+
+Между факторами sal_place и sea есть значимое взаимодействия. 
+
+
+## Читаем и подготавливаем данные
+
+```{r}
+library(lme4)
+library(ggplot2)
+library(reshape2)
+library(sjstats)
+library(dplyr)
+library(car)
+
+myt <- read.table("data_salinity2.csv", header = T, sep = ",")
+
+myt$Sp [myt$str > 0.5] <- "M.trossulus" #Лучше обозначать так!
+myt$Sp [myt$str <= 0.5] <- "M.edulis"
+myt$Sp <- factor(myt$Sp)
+
+
+myt$sal_place <- factor(myt$sal_place, levels = c("low", "meadle", "high")) 
+myt$sal_place2 <- ifelse(myt$sal_place == "low", "fresh", "normal") 
+
+```
+
+Поскольку я полагаю, что выделение большого количества градаций солености от лукавого, то предлагаю упростить анализ, введя только две градации солености `"fresh"` (находится в устье какого-то источника опреснения, то что при у вас названо `"low"`) и "normal" (все остальное).
+
+Далее, в датасете есть пропуски измерений.
+```{r}
+
+colSums(is.na(myt))
+# 30 мидий не имеют размеров. Удаляем их из датасета
+
+myt2 <- myt[!is.na(myt$size), ]
+
+
+colSums(is.na(myt2))
+# 14 мидий не имеют измерений язычка. Сломаны чтоли? Удаляем их датасета.
+
+myt2 <- myt2[!is.na(myt2$ind), ]
+
+```
+
+Далее работаем с датасетом `myt2`
+
+
+## Модель
+На основе поставленных вопросов строим модель. В этой модели есть следующие части
+
+ind - зависимая переменная
+
+Предикторы в фиксированной части модели       
+
+sea - море   
+Sp - генетически определенный вид
+size - размер 
+freq_MT - частота MT в популяции
+
+
+
+pop - популяция, случайный фактор.
+
+
+Поскольку ключевой, с моей точки зрения, вопрос - это вопрос о связи с морем, то не вижу необходимости моделировать сложные взаимодействия предиктров. В связи с этим модель выглядит вот так.
+
+```{r}
+Mod <- glmer(ind ~ Sp + sea + size + sal_place2 + freq_MT +  Sp:sea + size:sea + sal_place2:sea + freq_MT:sea + (1 | sea:pop), data = myt2, family = "binomial", control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+```
+
+
+Поверяем на избыточную дисперсию
+
+```{r}
+overdisp(Mod)
+```
+
+
+Все OK.
+
+
+Упрощаем модель
+
+```{r}
+drop1(Mod)
+
+Mod2 <- update(Mod, . ~. -sea:freq_MT )
+
+drop1(Mod2)
+
+```
+
+Больше ничего не выкинуть.
+
+Проверяем финальную модель на сверхдисперсию
+
+```{r}
+
+overdisp(Mod2)
+```
+
+Все ОК.
+
+
+## Диагностика финальной модели
+
+```{r}
+
+Mod2_diagn <- fortify(Mod2)
+
+ggplot(Mod2_diagn, aes(x = .fitted, y = .scresid, color = sea)) + geom_point() + geom_smooth()
+
+# здес все ОК
+
+
+ggplot(Mod2_diagn, aes(x = size, y = .scresid, color = sea)) + geom_point() + geom_smooth()
+# здес все ОК
+
+
+
+
+ggplot(Mod2_diagn, aes(x = Sp, y = .scresid, fill = sea)) + geom_boxplot() + geom_hline(yintercept = 0)
+#Не очень... 
+
+# А вот в терминах str
+ggplot(Mod2_diagn, aes(x = str, y = .scresid, color = sea)) + geom_point() + geom_smooth()
+#Бывает и хуже... Короче, на это можно забить.
+
+
+
+ggplot(Mod2_diagn, aes(x = sal_place, y = .scresid, fill = sea)) + geom_boxplot() + geom_hline(yintercept = 0)
+
+
+ggplot(Mod2_diagn, aes(x = sal_place2, y = .scresid, fill = sea)) + geom_boxplot() + geom_hline(yintercept = 0)
+#Не очень... Бывает и хуже... Короче, на это можно забить.
+
+ggplot(Mod2_diagn, aes(x = sea, y = .scresid, fill = sea)) + geom_boxplot() + geom_hline(yintercept = 0)
+# ОК
+
+
+ggplot(Mod2_diagn, aes(x = freq_MT, y = .scresid, color = sea)) + geom_point() + geom_smooth()
+# Безупречно
+
+ggplot(Mod2_diagn, aes(x = substrate, y = .scresid, fill = sea)) + geom_boxplot() + geom_hline(yintercept = 0)
+# ОК
+
+```
+
+
+Вывод: Модель небезупречна, но приемлема.
+
+
+
+## Анализ результатов 
+
+
+Смотрим на значимость предикторов. 
+
+```{r}
+
+Anova(Mod2)
+
+```
+
+Все части модели значимы!
+
+При этом freq_MT не взаимодействует с фактором sea. Отсюда ответ на Вопрос 2. Характер связи частоты T-морфотипа и частоты MT в популяциях одинаков (ниже на визуализации  будет понятно как именно связаны эти величины).
+
+Далее смотрим на intraclass correaltion coefficient. Это очень важный показатель в мире смешанных моделей.  Он показывает за какую долю общей изменчивости отвечает введение в модель группирующего фактора. В нашем случае это фактор `pop`.
+
+```{r}
+icc(Mod2)
+```
+
+
+
+То есть 11% варьирования в системе определяется наличием группировок типа `pop`. Немного, но все же...  С биологической точки зрения это означает что формирование паттерна связи частоты T-морфотпа с предикторами определяется чем-то локальным. 
+
+
+Далее углубляемся в анализ результатов. 
+В summary, конечно, тоже можно посмотреть.
+
+```{r}
+summary(Mod2)
+```
+
+
+
+Но лучше всего смотреть на визуализацию. Поскольку в модели два непрерывных предиктора, то надо одни их них сделать константным. Мне кажется, что связь с размером не самая интересная (о ней ниже), то возьмем ее в качестве средней.
+
+
+```{r}
+
+logit_back <- function(x) exp(x)/(1 + exp(x)) # обратная логит-трансформация
+
+## Пердсказания для фиксированной части модели
+newdata <- myt2 %>% group_by(sea, sal_place2, Sp) %>% do(data.frame(freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 100), size = mean(.$size)))
+
+newdata$fit <- predict(Mod2, newdata = newdata, type = "response", re.form = NA) 
+
+newdata$fit_eta <- predict(Mod2, newdata = newdata, re.form = NA) 
+
+
+X <- model.matrix(~ Sp + sea + size + sal_place2 + freq_MT + Sp:sea + sea:size + sea:sal_place2, data = newdata)
+
+b <- fixef(Mod2)
+
+newdata$se_eta <- sqrt(diag(X %*% vcov(Mod2) %*% t(X)))
+
+newdata$lwr <- logit_back(newdata$fit_eta - 2 * newdata$se_eta)
+newdata$upr <- logit_back(newdata$fit_eta + 2 * newdata$se_eta)
+
+ggplot(newdata, aes(x = freq_MT, y = fit)) + geom_ribbon(aes(ymin = lwr, ymax = upr, group = Sp), alpha = 0.2)  + geom_line(aes(color = Sp)) + facet_grid(sal_place2 ~ sea) + scale_color_manual(values = c("blue", "red")) + theme_bw()
+```
+
+
+
+Зная любовь ПП к приведению первичных данных на визуализациях модели, спешу отметить, что сделать это максимально первично нельзя, так как зависимая переменная имеет значения 1 или 0. В связи с этим в качестве отражения первичных данных (хотя и не лучшего из-за сильного варьирования объемов выборок) берем долю T-морфотипа среди MT и ME в каждом из локальных поселений (pop).
+
+```{r}
+
+library(doBy)
+freq_T <- summaryBy(ind + freq_MT ~ Sp + pop + sea + sal_place2, data = myt2)
+
+
+
+ggplot(newdata, aes(x = freq_MT, y = fit)) + geom_ribbon(aes(ymin = lwr, ymax = upr, group = Sp), alpha = 0.2)  + geom_line(aes(color = Sp)) + facet_grid(sal_place2 ~ sea) + scale_color_manual(values = c("blue", "red")) + geom_point(data = freq_T, aes(x = freq_MT.mean, y = ind.mean, color = Sp), size = 2) + theme_bw() + geom_hline(yintercept = 0.5, linetype = 2)+ theme(legend.position = "bottom")
+
+```
+
+
+
+Или, если хотите, вот так
+
+```{r}
+
+ggplot(newdata, aes(x = freq_MT, y = fit)) + geom_ribbon(aes(ymin = lwr, ymax = upr, group = Sp), alpha = 0.2)  + geom_line(aes(color = Sp)) + facet_grid(sal_place2 ~ sea) + scale_color_manual(values = c("blue", "red")) + geom_text(data = freq_T, aes(x = freq_MT.mean, y = ind.mean, color = Sp, label = pop), size = 4) + theme_bw() + geom_hline(yintercept = 0.5, linetype = 1) + theme(legend.position = "bottom")
+
+```
+
+
+
+## К вопросу о размерах
+
+Здесь придется за постоянную величину взять freq_MT. Лучше пусть это будет не среднее значение, а два значения: мало (0.25) и много (0.75). 
+
+```{r}
+
+myt2$freq_MT_class <- ifelse(myt2$freq_MT < 0.5, 0.25, 0.75) 
+  
+  
+newdata2 <- myt2 %>% group_by(sea, sal_place2, Sp, freq_MT_class) %>% do(data.frame(freq_MT = c(0.25, 0.75), size =seq(min(.$size), max(.$size), length.out = 100)))
+
+newdata2$fit <- predict(Mod2, newdata = newdata2, type = "response", re.form = NA) 
+
+newdata2$fit_eta <- predict(Mod2, newdata = newdata2, re.form = NA) 
+
+
+X <- model.matrix(~  Sp + sea + size + sal_place2 + freq_MT + Sp:sea + sea:size + sea:sal_place2, data = newdata2)
+
+b <- fixef(Mod2)
+
+newdata2$se_eta <- sqrt(diag(X %*% vcov(Mod2) %*% t(X)))
+
+newdata2$lwr <- logit_back(newdata2$fit_eta - 2 * newdata2$se_eta)
+newdata2$upr <- logit_back(newdata2$fit_eta + 2 * newdata2$se_eta)
+
+ggplot(newdata2, aes(x = size, y = fit, linetype = factor(freq_MT))) + geom_ribbon(aes(ymin = lwr, ymax = upr, group = Sp), alpha = 0.2)  + geom_line(aes(color = Sp)) + facet_grid(freq_MT ~ sal_place2 ~ sea) + scale_color_manual(values = c("blue", "red")) + theme_bw()
+
+```
+
+
+Как нанести сюда первичку не знаю, так как размер он ведь у каждой мидии, а она имеет по оси OY только значение 1 или 0. Могу посчитать доли каждом размерном классе. Получится вот так.
+
+
+```{r}
+size_classes <- ntile(myt2$size, n = 5)
+
+myt2$size_classes <- size_classes 
+
+freq_T_size <- summaryBy(ind + size + freq_MT ~ Sp + pop + sea + sal_place2 + size_classes, data = myt2)
+
+freq_T_size$freq_MT <- ifelse (freq_T_size$freq_MT.mean < 0.5, 0.25, 0.75)
+
+
+
+ggplot(newdata2, aes(x = size, y = fit, linetype = factor(freq_MT))) + geom_ribbon(aes(ymin = lwr, ymax = upr, group = Sp), alpha = 0.2)  + geom_line(aes(color = Sp))  + scale_color_manual(values = c("blue", "red")) + theme_bw() +  geom_point(data = freq_T_size, aes(x = size.mean, y = ind.mean, color = Sp), size = 2) + facet_grid(freq_MT ~ sal_place2 ~ sea)
+
+```
+
+
+
+
+В тех выборках из Белого моря, которые использовали для построения данной модели (это ведь совсем не все выборки, которые были в работе Katolikova et al (2016)) связи с размером нет. Зато в Баренцевом море, чем больше размер, тем меньше вероятность встретить T-морфотип. По-моему, эта ровно так же, как было показано в Белом море. 
+
+
+
+
+## Итого
+
+На вопрос №2 мы уже ответили. И в Белом и в Баренцевом морях чем больше в популяции MT тем больше там доля особей, имеющих T-морфотип.  
+
+На вопрос №3 Мы тоже отвечаем утвердительно. Несмотря на то, что есть взаимодействие факторов size и sea. Последнее  вызвано тем, что в выборку по Белому морю были включены только такие выборки, где крупных моллюсков нет. 
+
+На вопрос №1. Скорее, тоже надо дать положительный ответ. Оно, конечно, взаимодействие факторов есть и, действительно, в Баренцевом море частота T-морфотипа среди MT меньше отличается от частоты этого морфотипа среди ME, нежели это наблюдается в Белом море. Однако все равно связь генетического статуса с язычком в двух морях однотипна - у MT частота T-морфотипа всегда выше. Кроме того, в опресненных местах в Баренцевом и Белом морях, согласно этой модели, все связи одинаковы. Отличия наблюдаются в не опресненных местах. 
+

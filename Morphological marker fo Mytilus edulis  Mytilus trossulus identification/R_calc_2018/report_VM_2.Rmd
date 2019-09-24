@@ -1,0 +1,285 @@
+---
+title: "Использование конхиологического признака для определения видов мидий"
+author: "Вадим Хайтов"
+date: '20 января 2019 г '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+library(knitr)
+
+```
+
+Определим корректное определение вида за счет морфологического признака, как событие, при котором произошло совпадение морфотипа и вида. То есть мидия, которая по морфологическому признаку была определена, как T-морфотип, при корректном определении должна иметь генотип, соответствующий M.trossulus (MT), а мидия E-морфотипа,должна иметь генотип, соответствующих M.edulis (ME). Такие события будут маркироваться 1, а альтернативное событие (неправильное определение), как 0.
+
+
+Задача: Установить как зависит вероятность корректного определения вида мидии по ее морфотипу от параметров, доступных для экспресс-оценки в полевых условиях. К числу таких параметров относятся: уровень солености, частота одного из двух альтернативных морфотипов (T- или E-морфотип) и, собственно, морфотипа.
+
+
+## Подготавливаем данные 
+
+```{r, message=FALSE, warning=FALSE}
+
+library(lme4)
+library(ggplot2)
+library(reshape2)
+library(sjstats)
+library(dplyr)
+library(car)
+library(doBy)
+
+
+
+# Подготовка данных
+
+myt <- read.table("data_salinity2.csv", header = T, sep = ",")
+
+myt$Sp [myt$str > 0.5] <- "M.trossulus" #Лучше обозначать так!
+myt$Sp [myt$str <= 0.5] <- "M.edulis"
+myt$Sp <- factor(myt$Sp)
+
+
+myt$sal_place <- factor(myt$sal_place, levels = c("low", "meadle", "high")) 
+myt$sal_place2 <- ifelse(myt$sal_place == "low", "fresh", "normal") 
+
+
+
+myt2 <- myt[!is.na(myt$size), ]
+
+myt2 <- myt2[!is.na(myt2$ind), ]
+
+
+# переменная congr - это событие правильного определения 1 если T-морфотип совпадает с MT и E-морфотип совпадает с ME, 0 - если не свопадает
+
+myt2$congr <- ifelse((myt2$ind == 1 & myt2$Sp == "M.trossulus") | (myt2$ind == 0 & myt2$Sp == "M.edulis"), 1, 0   )
+
+
+
+ind_pop <-summaryBy(ind ~ pop, data = myt2) 
+
+names(ind_pop) <- c("pop", "freq_Tmorph")
+
+myt2 <- merge(myt2, ind_pop, by = "pop")
+
+
+myt2$morph <- ifelse(myt2$ind == 1, "T_m", "E_m")
+myt2$morph <- factor(myt2$morph)
+
+
+```
+
+
+## Оценки значений предикторов
+
+**Морфотип** - бинарная переменная с двумя градациями T-морфотип и E-морфотип в соответствии со степенью развития перламутрового слоя в районе лигамента.
+
+**Частота одного из морфотипов:** Оценивается, как доля мидий T-морфотипа в общем количестве моллюсков, собранных в данном локальном поселении.
+
+**Соленость** Все локальные выборки были разбиты на несколько 5 групп, приблизительно соответствующие градиенту солености.
+
+Для дальнейшего анализа введем дискретный фактор `place2` со следующими градациями. 
+
+
+```{r}
+myt2$place2 <- factor(myt2$place2, levels = c( "kand_cut" , "kand_main", "kola_cut"  ,  "kola_tuva", "kola_dz"))
+```
+
+Характер связи этих выделов с соленостью демонстрирует следующий рисунок.
+
+```{r, message=FALSE, warning=FALSE}
+# stat_sum_df <- function(fun, geom="crossbar", ...) {
+#   stat_summary(fun.data = fun, geom = geom, width = 0.2, ...)
+# }
+
+ggplot(myt2, aes(x = place2, y = sal_low)) + stat_summary(fun.data = "median_hilow", mapping = aes(group = place2), geom="crossbar") + theme_bw() + labs(x = "Area", y = "Salinity") + geom_point(color ="blue")
+
+```
+
+
+Итого, видно, что пять выделов демонстрируют некоторый градиент: 
+опресненный кут Кандалакшского залива -> области со средней соленостью (основная акватория Кандалакшского залива и кут Кольского залива) -> Область с достаточно высокой соленостью (г.Тюва) -> участок с нормальной океанической соленостью (Дальние Зеленцы). Поскольку строгое определение солености не проводилось, то для ее оценки будем использовать дискретный фактор. 
+
+При этом явного градиента в доле мидий T-морфотипа в этом ряду не наблюдается.
+
+```{r}
+props <- summaryBy(freq_Tmorph + freq_MT  ~ pop + place2, data = myt2)
+ggplot(props, aes(x = place2, y = freq_Tmorph.mean)) + stat_summary(fun.data = "median_hilow", mapping = aes(group = place2), geom="crossbar") + theme_bw() + labs(x = "Area", y = "Proportion of T-morphotype in population") + geom_point(color ="blue")
+
+```
+
+
+На всякий случай проверяем на наличие мультиколлинеарности предикторов. 
+
+```{r}
+vif(glm(congr ~ morph + place2 + freq_Tmorph, family = "binomial", data = myt2))
+
+```
+
+В легкой степени она присутствует, но в допустимых пределах (считается что VIF > 3 это не есть хорошо, 2 <VIF< 3 - нормально).
+
+
+## Модель
+
+Поскольку никакой особой гипотезы у нас нет, то модель будет включать все возможные взаимодействия. 
+
+```{r}
+Mod_fT_congr <- glmer(congr ~ morph * place2 * freq_MT  + (1 | pop), data = myt2, family = "binomial", control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+Anova(Mod_fT_congr)
+
+
+```
+
+
+Модель упростить нельзя.
+
+
+
+
+## Диагностика
+
+```{r, message=FALSE, warning=FALSE}
+overdisp(Mod_fT_congr)
+
+
+Mod_fT_congr_diagn <- fortify(Mod_fT_congr)
+
+
+ggplot(Mod_fT_congr_diagn, aes(x = .fitted, y = .scresid, color = sea)) + geom_point() + geom_smooth()
+
+
+ggplot(Mod_fT_congr_diagn, aes(x = size, y = .scresid, color = sea)) + geom_point() + geom_smooth(method = "lm")
+
+
+ggplot(Mod_fT_congr_diagn, aes(x = sea, y = .scresid)) + geom_boxplot() 
+
+ggplot(Mod_fT_congr_diagn, aes(x = Sp, y = .scresid)) + geom_boxplot() 
+
+ggplot(Mod_fT_congr_diagn, aes(x = place2, y = .scresid)) + geom_boxplot() 
+
+ggplot(Mod_fT_congr_diagn, aes(x = sal_place, y = .scresid)) + geom_boxplot() 
+
+ggplot(Mod_fT_congr_diagn, aes(x = morph, y = .scresid)) + geom_boxplot() 
+
+ggplot(Mod_fT_congr_diagn, aes(x = sal_low, y = .scresid, color = sea)) + geom_point() + geom_smooth(method = "lm")
+
+ggplot(Mod_fT_congr_diagn, aes(x = freq_MT, y = .scresid, color = sea)) + geom_point() + geom_smooth(method = "lm")
+
+
+ggplot(Mod_fT_congr_diagn, aes(x = str, y = .scresid, color = sea)) + geom_point() + geom_smooth(method = "lm")
+
+
+
+```
+
+
+
+
+Итого. Не все идеально, но и не ужасно. 
+
+Смущает в основном паттерн, связанный со `str` (см. последний график). Как трактовать этот паттерн? Точно ли это нормальная идея, проводить границы между видами по str = 0.5 в обеих морях? Я бы сказал,глядя на этот график, что граница между видами в разных регионах  должна проводиться по разным значениям structure.
+
+На всякий случай вот так выглядит частотное распределение structure в каждом из регионов.
+
+```{r}
+
+ggplot(myt2, aes(x = str, fill = sea)) + geom_density() + theme_bw() + facet_wrap(~place2)
+
+ 
+```
+
+
+
+
+
+## Визуализация модели 
+
+```{r}
+newdata <- myt2 %>% group_by(place2, morph) %>% do(data.frame(freq_Tmorph = seq(min(.$freq_Tmorph), max(.$freq_Tmorph), length.out = 100)))
+
+newdata$fit <- predict(Mod_fT_congr, newdata = newdata, type = "response", re.form = NA) 
+
+newdata$fit_eta <- predict(Mod_fT_congr, newdata = newdata, re.form = NA) 
+
+
+X <- model.matrix(  ~ morph *place2 * freq_Tmorph , data = newdata)
+
+
+
+b <- fixef(Mod_fT_congr)
+
+
+
+newdata$se_eta <- sqrt(diag(X %*% vcov(Mod_fT_congr) %*% t(X)))
+
+logit_back <- function(x) exp(x)/(1 + exp(x)) # обратная логит-трансформация
+
+
+
+newdata$lwr <- logit_back(newdata$fit_eta - 2 * newdata$se_eta)
+newdata$upr <- logit_back(newdata$fit_eta + 2 * newdata$se_eta)
+
+
+
+Pl_fit <- ggplot(newdata, aes(x = freq_Tmorph, y = fit)) + geom_ribbon(aes(ymin = lwr, ymax = upr, group = morph), alpha = 0.2)  + geom_line(aes(color = morph)) + facet_wrap( ~ place2) + scale_color_manual(values = c("blue", "red")) + theme_bw() + xlim(0,1) + geom_hline(yintercept = 0.5, linetype = 2 ) + labs(y = "Probability of correct identification") + theme(legend.position = "bottom")
+
+Pl_fit
+```
+
+Наносим "первичные данные" - это доля корректно определенных мидий в каждой из популяций (в пределах каждого из морфотипов).
+
+```{r}
+correct_prop <- summaryBy(congr + freq_Tmorph  ~ pop + place2 + morph, data = myt2)
+
+Pl_fit + geom_point(data = correct_prop, aes(x = freq_Tmorph.mean, y = congr.mean, color = morph))
+
+
+```
+
+
+Если считать, что вероятность правильной идентификации, меньше 0.5 нас не устраивает, то выводы из полученной картинки могут быть следующие.
+
+1. В условиях сильного опреснения (кут Кандалакшского залива). Идентифицировать М.trossulus, используя T-морфотип в качестве маркера мы можем везде. Однако идентификация M.edulis по E-морфотипу возможна только в тех местах, где доля T-морфотипа в поселении не превосходит 0.75. 
+
+2. В условиях средней солености, но вдалеке от океанического побережья (основная часть Кандалакшского залива, кут Кольского залива). Мы можем свободно использовать морфотипы для идентификации видов. Более точная идентификация будет идти в Белом море, но опять же если доля T-морфотипа не очень велика. В куту Кольского залива точность идентификации немного ниже. При этом важно отметить, что в этих двух выделах оба морфотипа дают более или менее одинаковое качество определения.    
+
+3. Вероятно, какие-то ключевые "перестройки" происходят по мере приближения к открытому океаническому побережью. В районе г. Тюва надежно  идентифицировать можно только M.edulis, используя E-морфотип в качестве маркера вида. Использовать T-морфотип в качестве маркера M.trossulus можно только если в популяции доля T-морфотипа очень высока (более 80-90%). Эта тенденция усугубляется в районе Дальних зеленцов. Здесь вообще нельзя идентифицировать M.trossulus по морфологическому маркеру. Однако если, мидия имеет E-морфотип, то она практически наверняка будет M.edulis. 
+
+
+4. Если наблюдаемая картина - это отражение влияния солености, то закономерность может быть сформулирована так. В условиях пониженной солености мы, используя соответствующий морфотип, надежно сможем определить только M.trossulus, а в условиях океанической солености - только M.edulis.
+
+Этот результат можно генерализовать в виде следующей таблицы.
+
+
+
+| Соленость                               	| E-морфотип 	|  T-морфотип 	|
+|-----------------------------------------	|:----------:	|:-----------:	|
+| Низкая (возможно, эстуарии крупных рек) 	|      ?     	| M.trossulus 	|
+| Средняя                                 	|  M.edulis  	| M.trossulus 	|
+| Высокая, близкая к океанической         	|  M.edulis  	|      ?      	|
+
+
+
+На самом деле, в "крайних" местообитаниях присутствует только один вид, ну или второго ничтожно мало. Смотрим на следующий график:
+
+Здесь всесто первичных данных точки отражают частоту M.trossulus в популяциях. Видно, что во всех местах чем больше доля T-морфотипа, тем выше часта M.trossulus. За исключением Дальних Зеленцов. 
+
+```{r}
+Pl_fit + geom_point(data = props, aes(x = freq_Tmorph.mean, y = freq_MT.mean))
+
+
+# props[props$place2 == "kola_cut",]
+
+```
+
+
+А отсюда сомнения.
+
+
+## Сомнения
+
+А кто сказал, что это соленость? Может быть это близость к гнезду вида. 
+
+Например, гнездо-гнездо M.trossulus в Кандалакшском заливе приурочено к опресненному куту (гнездышки в Умбе не считаем), а в Баренцевом море гнездо-гнездо M.edulis  - это океанические побережья, типа Зеленцов. 
+
