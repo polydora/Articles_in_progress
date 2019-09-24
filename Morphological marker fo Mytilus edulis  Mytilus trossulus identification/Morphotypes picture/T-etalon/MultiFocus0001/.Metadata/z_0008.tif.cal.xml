@@ -1,0 +1,416 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Item xmlns:i="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://schemas.datacontract.org/2004/07/LeicaMicrosystems.DataEntities.V3_2">
+  <Id>2030abd0-8396-4491-aa9c-6ecf940d7ab1</Id>
+  <ParentId i:nil="true" />
+  <LinkedItemId i:nil="true" />
+  <Type>Computer</Type>
+  <SubType i:nil="true" />
+  <Index i:nil="true" />
+  <Name>Computer</Name>
+  <FolderTypeId i:nil="true" />
+  <Keywords i:nil="true" />
+  <LastModifiedDate>0001-01-01T00:00:00</LastModifiedDate>
+  <Owner i:nil="true" />
+  <Reader i:nil="true" />
+  <Children>
+    <Item>
+      <Id>d032434f-2060-447a-8cdd-82e5436381de</Id>
+      <ParentId>2030abd0-8396-4491-aa9c-6ecf940d7ab1</ParentId>
+      <LinkedItemId i:nil="true" />
+      <Type>Drive</Type>
+      <SubType>Local Fixed Disk (C:)</SubType>
+      <Index i:nil="true" />
+      <Name>C:\</Name>
+      <FolderTypeId i:nil="true" />
+      <Keywords i:nil="true" />
+      <LastModifiedDate>0001-01-01T00:00:00</LastModifiedDate>
+      <Owner i:nil="true" />
+      <Reader i:nil="true" />
+      <Children>
+        <Item>
+          <Id>9581f161-04d9-482d-89ff-ced41864c9ed</Id>
+          <ParentId>d032434f-2060-447a-8cdd-82e5436381de</ParentId>
+          <LinkedItemId i:nil="true" />
+          <Type>Folder</Type>
+          <SubType i:nil="true" />
+          <Index i:nil="true" />
+          <Name>Users</Name>
+          <FolderTypeId i:nil="true" />
+          <Keywords i:nil="true" />
+          <LastModifiedDate>0001-01-01T00:00:00</LastModifiedDate>
+          <Owner i:nil="true" />
+          <Reader i:nil="true" />
+          <Children>
+            <Item>
+              <Id>d86b8bee-34c0-4129-af8c-c5194e94cca2</Id>
+              <ParentId>9581f161-04d9-482d-89ff-ced41864c9ed</ParentId>
+              <LinkedItemId i:nil="true" />
+              <Type>Folder</Type>
+              <SubType i:nil="true" />
+              <Index i:nil="true" />
+              <Name>lab130</Name>
+              <FolderTypeId i:nil="true" />
+              <Keywords i:nil="true" />
+              <LastModifiedDate>0001-01-01T00:00:00</LastModifiedDate>
+              <Owner i:nil="true" />
+              <Reader i:nil="true" />
+              <Children>
+                <Item>
+                  <Id>ac86dbde-0c9b-47a8-bdc6-521f47b4533a</Id>
+                  <ParentId>d86b8bee-34c0-4129-af8c-c5194e94cca2</ParentId>
+                  <LinkedItemId i:nil="true" />
+                  <Type>Folder</Type>
+                  <SubType i:nil="true" />
+                  <Index i:nil="true" />
+                  <Name>Desktop</Name>
+                  <FolderTypeId i:nil="true" />
+                  <Keywords i:nil="true" />
+                  <LastModifiedDate>0001-01-01T00:00:00</LastModifiedDate>
+                  <Owner i:nil="true" />
+                  <Reader i:nil="true" />
+                  <Children>
+                    <Item>
+                      <Id>734faa43-d49a-4397-8afc-f619225e6110</Id>
+                      <ParentId>ac86dbde-0c9b-47a8-bdc6-521f47b4533a</ParentId>
+                      <LinkedItemId i:nil="true" />
+                      <Type>Folder</Type>
+                      <SubType i:nil="true" />
+                      <Index i:nil="true" />
+                      <Name>2019-2020</Name>
+                      <FolderTypeId i:nil="true" />
+                      <Keywords i:nil="true" />
+                      <LastModifiedDate>0001-01-01T00:00:00</LastModifiedDate>
+                      <Owner i:nil="true" />
+                      <Reader i:nil="true" />
+                      <Children>
+                        <Item>
+                          <Id>36b17f04-4076-4211-a43a-d5d5cecc2eeb</Id>
+                          <ParentId>734faa43-d49a-4397-8afc-f619225e6110</ParentId>
+                          <LinkedItemId i:nil="true" />
+                          <Type>Folder</Type>
+                          <SubType i:nil="true" />
+                          <Index i:nil="true" />
+                          <Name>Khaitov</Name>
+                          <FolderTypeId i:nil="true" />
+                          <Keywords i:nil="true" />
+                          <LastModifiedDate>0001-01-01T00:00:00</LastModifiedDate>
+                          <Owner i:nil="true" />
+                          <Reader i:nil="true" />
+                          <Children>
+                            <Item>
+                              <Id>21fdf31a-6761-4178-ad66-a4ce05c19d8d</Id>
+                              <ParentId>36b17f04-4076-4211-a43a-d5d5cecc2eeb</ParentId>
+                              <LinkedItemId i:nil="true" />
+                              <Type>Folder</Type>
+                              <SubType i:nil="true" />
+                              <Index i:nil="true" />
+                              <Name>T-etalon</Name>
+                              <FolderTypeId i:nil="true" />
+                              <Keywords i:nil="true" />
+                              <LastModifiedDate>0001-01-01T00:00:00</LastModifiedDate>
+                              <Owner i:nil="true" />
+                              <Reader i:nil="true" />
+                              <Children>
+                                <Item>
+                                  <Id>b95b91e4-adf0-4441-a1dc-e829f47914b0</Id>
+                                  <ParentId>21fdf31a-6761-4178-ad66-a4ce05c19d8d</ParentId>
+                                  <LinkedItemId i:nil="true" />
+                                  <Type>MultiCollection</Type>
+                                  <SubType>Montage</SubType>
+                                  <Index i:nil="true" />
+                                  <Name>MultiFocus0001</Name>
+                                  <FolderTypeId i:nil="true" />
+                                  <Keywords></Keywords>
+                                  <LastModifiedDate>2019-09-23T12:53:21.7642178+03:00</LastModifiedDate>
+                                  <Owner i:nil="true" />
+                                  <Reader i:nil="true" />
+                                  <Children>
+                                    <Item>
+                                      <Id>8052d300-bba9-43cb-8f8a-5cfc033acd06</Id>
+                                      <ParentId>b95b91e4-adf0-4441-a1dc-e829f47914b0</ParentId>
+                                      <LinkedItemId i:nil="true" />
+                                      <Type>Collection</Type>
+                                      <SubType>Image</SubType>
+                                      <Index i:nil="true" />
+                                      <Name>z_0008.tif</Name>
+                                      <FolderTypeId i:nil="true" />
+                                      <Keywords></Keywords>
+                                      <LastModifiedDate>2019-09-23T12:52:58.9862178+03:00</LastModifiedDate>
+                                      <Owner i:nil="true" />
+                                      <Reader i:nil="true" />
+                                      <Children>
+                                        <Item>
+                                          <Id>89e26a7e-5b47-4969-bdb4-101a9630a8cf</Id>
+                                          <ParentId>8052d300-bba9-43cb-8f8a-5cfc033acd06</ParentId>
+                                          <LinkedItemId i:nil="true" />
+                                          <Type>Leaf</Type>
+                                          <SubType>Image</SubType>
+                                          <Index i:nil="true" />
+                                          <Name>z_0008.tif</Name>
+                                          <FolderTypeId i:nil="true" />
+                                          <Keywords></Keywords>
+                                          <LastModifiedDate>2019-09-23T12:52:58.9862178+03:00</LastModifiedDate>
+                                          <Owner i:nil="true" />
+                                          <Reader i:nil="true" />
+                                          <Children>
+                                            <Item>
+                                              <Id>d33e29d9-e378-4aa0-80c4-d274628cc746</Id>
+                                              <ParentId>89e26a7e-5b47-4969-bdb4-101a9630a8cf</ParentId>
+                                              <LinkedItemId i:nil="true" />
+                                              <Type>Derived</Type>
+                                              <SubType>Image</SubType>
+                                              <Index i:nil="true" />
+                                              <Name>z_0008.tif.thb</Name>
+                                              <FolderTypeId i:nil="true" />
+                                              <Keywords></Keywords>
+                                              <LastModifiedDate>2019-09-23T12:52:58.9862178+03:00</LastModifiedDate>
+                                              <Owner i:nil="true" />
+                                              <Reader i:nil="true" />
+                                            </Item>
+                                          </Children>
+                                        </Item>
+                                        <Item>
+                                          <Id>8d37a33d-bd0b-4890-98ff-5c046e29f5f9</Id>
+                                          <ParentId>8052d300-bba9-43cb-8f8a-5cfc033acd06</ParentId>
+                                          <LinkedItemId i:nil="true" />
+                                          <Type>Leaf</Type>
+                                          <SubType>SNR</SubType>
+                                          <Index i:nil="true" />
+                                          <Name>z_0008.tif.snr</Name>
+                                          <FolderTypeId i:nil="true" />
+                                          <Keywords></Keywords>
+                                          <LastModifiedDate>2019-09-23T12:52:58.9862178+03:00</LastModifiedDate>
+                                          <Owner i:nil="true" />
+                                          <Reader i:nil="true" />
+                                        </Item>
+                                      </Children>
+                                      <ItemValues>
+                                        <ItemValue>
+                                          <Id>fe21715f-1702-46c1-a687-67dede140225</Id>
+                                          <ItemId>8052d300-bba9-43cb-8f8a-5cfc033acd06</ItemId>
+                                          <Name>Image_Description</Name>
+                                          <Value xmlns:d22p1="http://www.w3.org/2001/XMLSchema" i:type="d22p1:string"></Value>
+                                        </ItemValue>
+                                        <ItemValue>
+                                          <Id>7758026b-68d2-4dd1-9570-0fee22f081b2</Id>
+                                          <ItemId>8052d300-bba9-43cb-8f8a-5cfc033acd06</ItemId>
+                                          <Name>Image_Notes</Name>
+                                          <Value xmlns:d22p1="http://www.w3.org/2001/XMLSchema" i:type="d22p1:string"></Value>
+                                        </ItemValue>
+                                      </ItemValues>
+                                      <LasImage>
+                                        <Id>8052d300-bba9-43cb-8f8a-5cfc033acd06</Id>
+                                        <Included>true</Included>
+                                        <Processed>false</Processed>
+                                        <UnitName>Millimeters</UnitName>
+                                        <CreationUserName>CR10514\lab130</CreationUserName>
+                                        <ModificationUserName>CR10514\lab130</ModificationUserName>
+                                        <AcquiredDate>2019-09-23T12:52:58.9862178+03:00</AcquiredDate>
+                                        <CreationDate>2019-09-23T12:52:58.9862178+03:00</CreationDate>
+                                        <ImportDate i:nil="true" />
+                                        <XMetresPerPixel>3.4133969004326009E-06</XMetresPerPixel>
+                                        <YMetresPerPixel>3.4133969004326009E-06</YMetresPerPixel>
+                                        <BitDepth>24</BitDepth>
+                                        <NumPixelsX>3264</NumPixelsX>
+                                        <NumPixelsY>2448</NumPixelsY>
+                                        <FileSize>23971228</FileSize>
+                                        <DecimalPlaces>3</DecimalPlaces>
+                                        <Camera>
+                                          <Id>8052d300-bba9-43cb-8f8a-5cfc033acd06</Id>
+                                          <Name>DFC495</Name>
+                                          <Serial_Number>576954511</Serial_Number>
+                                          <Exposure>33,2 ms</Exposure>
+                                          <Gamma>0,99</Gamma>
+                                          <Gain>2,4 x</Gain>
+                                          <Auto_Exposure>Вкл.</Auto_Exposure>
+                                          <Brightness>49 %</Brightness>
+                                          <Black_Clip>0</Black_Clip>
+                                          <White_Clip>255</White_Clip>
+                                          <Image_Type>Цвет</Image_Type>
+                                          <Capture_Format>3264 x 2448,    Interlaced Large HQ</Capture_Format>
+                                          <Shading>(None)</Shading>
+                                          <Sharpening>Выкл.</Sharpening>
+                                        </Camera>
+                                        <ImageValues>
+                                          <ImageValue>
+                                            <Id>c037c7b7-7d7c-4e8a-a959-3129716ac3ff</Id>
+                                            <LasImageId>8052d300-bba9-43cb-8f8a-5cfc033acd06</LasImageId>
+                                            <Name>Microscope_Contrast_Method</Name>
+                                            <Type>System.String</Type>
+                                            <Value xmlns:d23p1="http://www.w3.org/2001/XMLSchema" i:type="d23p1:string">FREE</Value>
+                                          </ImageValue>
+                                          <ImageValue>
+                                            <Id>bb17e416-bec2-42cd-926e-c14822033639</Id>
+                                            <LasImageId>8052d300-bba9-43cb-8f8a-5cfc033acd06</LasImageId>
+                                            <Name>Microscope_M205c_Stand_Name</Name>
+                                            <Type>System.String</Type>
+                                            <Value xmlns:d23p1="http://www.w3.org/2001/XMLSchema" i:type="d23p1:string">M205C</Value>
+                                          </ImageValue>
+                                          <ImageValue>
+                                            <Id>d7d9a334-e5bd-4cf4-8cf9-78f13c4e3dd2</Id>
+                                            <LasImageId>8052d300-bba9-43cb-8f8a-5cfc033acd06</LasImageId>
+                                            <Name>Microscope_Stand_Name</Name>
+                                            <Type>System.String</Type>
+                                            <Value xmlns:d23p1="http://www.w3.org/2001/XMLSchema" i:type="d23p1:string">MST5x-DCI</Value>
+                                          </ImageValue>
+                                          <ImageValue>
+                                            <Id>9474204e-6428-4260-a92f-44647108f3b4</Id>
+                                            <LasImageId>8052d300-bba9-43cb-8f8a-5cfc033acd06</LasImageId>
+                                            <Name>Microscope_Zoom_Magnification</Name>
+                                            <Type>System.String</Type>
+                                            <Value xmlns:d23p1="http://www.w3.org/2001/XMLSchema" i:type="d23p1:string">1,26</Value>
+                                          </ImageValue>
+                                          <ImageValue>
+                                            <Id>ad26c3aa-b27c-48bc-869f-26828b6e5700</Id>
+                                            <LasImageId>8052d300-bba9-43cb-8f8a-5cfc033acd06</LasImageId>
+                                            <Name>Microscope_Visual_Magnification</Name>
+                                            <Type>System.String</Type>
+                                            <Value xmlns:d23p1="http://www.w3.org/2001/XMLSchema" i:type="d23p1:string">20</Value>
+                                          </ImageValue>
+                                          <ImageValue>
+                                            <Id>18e74c52-b9cc-4095-9004-50ccc055fc9d</Id>
+                                            <LasImageId>8052d300-bba9-43cb-8f8a-5cfc033acd06</LasImageId>
+                                            <Name>Microscope_Video_Magnification</Name>
+                                            <Type>System.String</Type>
+                                            <Value xmlns:d23p1="http://www.w3.org/2001/XMLSchema" i:type="d23p1:string">0,79</Value>
+                                          </ImageValue>
+                                          <ImageValue>
+                                            <Id>99dac3d2-75b2-49e9-a19d-759d0eead457</Id>
+                                            <LasImageId>8052d300-bba9-43cb-8f8a-5cfc033acd06</LasImageId>
+                                            <Name>Microscope_Visual_Na</Name>
+                                            <Type>System.String</Type>
+                                            <Value xmlns:d23p1="http://www.w3.org/2001/XMLSchema" i:type="d23p1:string">0,030</Value>
+                                          </ImageValue>
+                                          <ImageValue>
+                                            <Id>48e56562-dfbb-4ad1-9230-86f658b2d2af</Id>
+                                            <LasImageId>8052d300-bba9-43cb-8f8a-5cfc033acd06</LasImageId>
+                                            <Name>Microscope_Video_Dof</Name>
+                                            <Type>System.String</Type>
+                                            <Value xmlns:d23p1="http://www.w3.org/2001/XMLSchema" i:type="d23p1:string">0,560000 mm</Value>
+                                          </ImageValue>
+                                          <ImageValue>
+                                            <Id>6f732207-3a71-4522-8cbe-80206271548a</Id>
+                                            <LasImageId>8052d300-bba9-43cb-8f8a-5cfc033acd06</LasImageId>
+                                            <Name>Microscope_Video_Fov_Width</Name>
+                                            <Type>System.String</Type>
+                                            <Value xmlns:d23p1="http://www.w3.org/2001/XMLSchema" i:type="d23p1:string">8,278000 mm</Value>
+                                          </ImageValue>
+                                          <ImageValue>
+                                            <Id>9274dd42-6cad-4a01-919d-4d47397af6b1</Id>
+                                            <LasImageId>8052d300-bba9-43cb-8f8a-5cfc033acd06</LasImageId>
+                                            <Name>Microscope_Main_Objective</Name>
+                                            <Type>System.String</Type>
+                                            <Value xmlns:d23p1="http://www.w3.org/2001/XMLSchema" i:type="d23p1:string">1</Value>
+                                          </ImageValue>
+                                          <ImageValue>
+                                            <Id>f1184c0d-8383-4c31-89e3-bc6a4b03b108</Id>
+                                            <LasImageId>8052d300-bba9-43cb-8f8a-5cfc033acd06</LasImageId>
+                                            <Name>Microscope_Main_Objective_Magnification</Name>
+                                            <Type>System.String</Type>
+                                            <Value xmlns:d23p1="http://www.w3.org/2001/XMLSchema" i:type="d23p1:string">1</Value>
+                                          </ImageValue>
+                                          <ImageValue>
+                                            <Id>5de01f78-eebd-484c-84bf-99f19590cd74</Id>
+                                            <LasImageId>8052d300-bba9-43cb-8f8a-5cfc033acd06</LasImageId>
+                                            <Name>Microscope_Main_Objective_Article_No</Name>
+                                            <Type>System.Int32</Type>
+                                            <Value xmlns:d23p1="http://www.w3.org/2001/XMLSchema" i:type="d23p1:int">10450028</Value>
+                                          </ImageValue>
+                                          <ImageValue>
+                                            <Id>b8073891-a61a-447d-8bbd-41cfb6deed1f</Id>
+                                            <LasImageId>8052d300-bba9-43cb-8f8a-5cfc033acd06</LasImageId>
+                                            <Name>Microscope_Main_Objective_Focal_Length</Name>
+                                            <Type>System.String</Type>
+                                            <Value xmlns:d23p1="http://www.w3.org/2001/XMLSchema" i:type="d23p1:string">80</Value>
+                                          </ImageValue>
+                                          <ImageValue>
+                                            <Id>f0aeefaa-0394-4334-8b7c-8ee05232a643</Id>
+                                            <LasImageId>8052d300-bba9-43cb-8f8a-5cfc033acd06</LasImageId>
+                                            <Name>Microscope_Main_Objective_Working_Distance</Name>
+                                            <Type>System.String</Type>
+                                            <Value xmlns:d23p1="http://www.w3.org/2001/XMLSchema" i:type="d23p1:string">61,50</Value>
+                                          </ImageValue>
+                                          <ImageValue>
+                                            <Id>924fafe9-b0f4-4dcb-877a-9f3e2f8a5abc</Id>
+                                            <LasImageId>8052d300-bba9-43cb-8f8a-5cfc033acd06</LasImageId>
+                                            <Name>Microscope_Zoom_Iris</Name>
+                                            <Type>System.String</Type>
+                                            <Value xmlns:d23p1="http://www.w3.org/2001/XMLSchema" i:type="d23p1:string">1</Value>
+                                          </ImageValue>
+                                          <ImageValue>
+                                            <Id>fe9c6c15-c98f-4e27-a1a2-5440e07ccfe8</Id>
+                                            <LasImageId>8052d300-bba9-43cb-8f8a-5cfc033acd06</LasImageId>
+                                            <Name>Microscope_Focus_Position</Name>
+                                            <Type>System.String</Type>
+                                            <Value xmlns:d23p1="http://www.w3.org/2001/XMLSchema" i:type="d23p1:string">-93,889000 mm</Value>
+                                          </ImageValue>
+                                          <ImageValue>
+                                            <Id>efb73471-6f87-4baa-b282-1c156552c5cc</Id>
+                                            <LasImageId>8052d300-bba9-43cb-8f8a-5cfc033acd06</LasImageId>
+                                            <Name>Microscope_Focus_Position_Control_Positioning</Name>
+                                            <Type>System.Int32</Type>
+                                            <Value xmlns:d23p1="http://www.w3.org/2001/XMLSchema" i:type="d23p1:int">0</Value>
+                                          </ImageValue>
+                                          <ImageValue>
+                                            <Id>e1c08a99-e74b-48d2-ab9a-2eda25e71673</Id>
+                                            <LasImageId>8052d300-bba9-43cb-8f8a-5cfc033acd06</LasImageId>
+                                            <Name>Microscope_Led_MCI_Intensity</Name>
+                                            <Type>System.Int32</Type>
+                                            <Value xmlns:d23p1="http://www.w3.org/2001/XMLSchema" i:type="d23p1:int">6</Value>
+                                          </ImageValue>
+                                          <ImageValue>
+                                            <Id>f36e4ad5-9bec-4a3f-af20-40ee686be154</Id>
+                                            <LasImageId>8052d300-bba9-43cb-8f8a-5cfc033acd06</LasImageId>
+                                            <Name>Microscope_Led_MCI_Shutter</Name>
+                                            <Type>System.String</Type>
+                                            <Value xmlns:d23p1="http://www.w3.org/2001/XMLSchema" i:type="d23p1:string">1</Value>
+                                          </ImageValue>
+                                          <ImageValue>
+                                            <Id>1c22eaa4-b990-4d31-bc52-69a0f257ae4f</Id>
+                                            <LasImageId>8052d300-bba9-43cb-8f8a-5cfc033acd06</LasImageId>
+                                            <Name>Microscope_Led_MCI_Scene</Name>
+                                            <Type>System.String</Type>
+                                            <Value xmlns:d23p1="http://www.w3.org/2001/XMLSchema" i:type="d23p1:string">1</Value>
+                                          </ImageValue>
+                                          <ImageValue>
+                                            <Id>9beb9c56-b973-4dee-a50c-d3d382c7fbce</Id>
+                                            <LasImageId>8052d300-bba9-43cb-8f8a-5cfc033acd06</LasImageId>
+                                            <Name>Microscope_Led_RL_Intensity</Name>
+                                            <Type>System.Int32</Type>
+                                            <Value xmlns:d23p1="http://www.w3.org/2001/XMLSchema" i:type="d23p1:int">10</Value>
+                                          </ImageValue>
+                                          <ImageValue>
+                                            <Id>3a27abd4-d77e-4540-b3a2-7e78fd5e5c7c</Id>
+                                            <LasImageId>8052d300-bba9-43cb-8f8a-5cfc033acd06</LasImageId>
+                                            <Name>Microscope_Led_RL_Shutter</Name>
+                                            <Type>System.String</Type>
+                                            <Value xmlns:d23p1="http://www.w3.org/2001/XMLSchema" i:type="d23p1:string">1</Value>
+                                          </ImageValue>
+                                          <ImageValue>
+                                            <Id>e7e3110c-a650-4d2a-8c6b-955e1b89ad68</Id>
+                                            <LasImageId>8052d300-bba9-43cb-8f8a-5cfc033acd06</LasImageId>
+                                            <Name>Microscope_Led_RL_Scene</Name>
+                                            <Type>System.String</Type>
+                                            <Value xmlns:d23p1="http://www.w3.org/2001/XMLSchema" i:type="d23p1:string">1</Value>
+                                          </ImageValue>
+                                        </ImageValues>
+                                      </LasImage>
+                                    </Item>
+                                  </Children>
+                                </Item>
+                              </Children>
+                            </Item>
+                          </Children>
+                        </Item>
+                      </Children>
+                    </Item>
+                  </Children>
+                </Item>
+              </Children>
+            </Item>
+          </Children>
+        </Item>
+      </Children>
+    </Item>
+  </Children>
+</Item>

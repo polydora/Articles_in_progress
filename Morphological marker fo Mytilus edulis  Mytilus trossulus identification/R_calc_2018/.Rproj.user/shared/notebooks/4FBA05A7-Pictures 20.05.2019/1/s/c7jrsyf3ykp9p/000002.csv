@@ -1,0 +1,5 @@
+"0","ROC_result <- data.frame(Subset = c(""White"", ""Barents_fresh"", ""Barents_normal""),  CI_low = NA, AUC = NA, CI_up = NA)"
+"0","ROC_result[1, 2:4] <- as.numeric(ROC_white$ci)"
+"0","ROC_result[2, 2:4] <- as.numeric(ROC_barents_fresh$ci)"
+"0","ROC_result[3, 2:4] <- as.numeric(ROC_barents_normal$ci)"
+"0","ggplot(ROC_result, aes(x = Subset, y = AUC)) + geom_col(fill = ""blue"") + geom_errorbar(aes(ymin = CI_low, ymax = CI_up), width = 0.2) + geom_hline(yintercept = 0.5, linetype = 2) + theme_bw() + geom_text(aes(y = c(0.9,  0.9, 0.7), label = c(""a"", ""a"", ""b"")))"

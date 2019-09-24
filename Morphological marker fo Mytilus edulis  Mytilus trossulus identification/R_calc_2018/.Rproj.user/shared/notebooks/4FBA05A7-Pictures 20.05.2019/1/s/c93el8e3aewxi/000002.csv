@@ -1,0 +1,4 @@
+"0","myt2_reduced <- myt2"
+"0","# myt2_reduced <- myt2[!(myt2$pop %in% c(""nm"", ""padan"", ""umba_06"", ""umba_bridge"", ""umba_pioner"", ""vor2"")), ]"
+"0","# unique(myt2$pop)"
+"0","Mod_fT_congr <- glmer(congr ~ morph * freq_MT*Subset + (1 | pop), data = myt2_reduced, family = binomial(link = ""logit""), control=glmerControl(optimizer=""bobyqa"",optCtrl=list(maxfun=2e5)))"

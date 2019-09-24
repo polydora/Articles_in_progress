@@ -1,0 +1,3 @@
+"0","new_data <-  myt2 %>% group_by(facet) %>% do(expand.grid(str = seq(min(.$str), max(.$str), length.out = 100), freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 100))) "
+"0","new_data$Predict_gam <- predict(mod_gam, newdata = new_data,type = ""response"" )"
+"0","ggplot(new_data, aes(x = freq_MT, y = str)) + geom_raster(aes(fill = Predict_gam)) + facet_wrap(~facet) + scale_fill_gradient(low = ""yellow"", high = ""red"") + geom_density2d(data = myt2, n = 20) + geom_point(data = myt2, aes(fill = ind), position = position_jitter(width = 0.01), shape = 21) + theme_bw() + labs(x = ""Prevalence (proportion of M.trossulus)"", y = ""Structure"", fill = ""Вероятность \n встретить Т-морфотип"")"

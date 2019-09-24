@@ -1,0 +1,181 @@
+---
+title: "Structure, prevalence and morphotype"
+author: 
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = TRUE, warning = FALSE, message = FALSE)
+library(knitr)
+
+```
+
+<style type="text/css">
+
+body{ /* Normal  */
+      font-size: 18px;
+  }
+td {  /* Table  */
+  font-size: 20px;
+}
+h1.title {
+  font-size: 38px;
+  color: DarkRed;
+}
+h1 { /* Header 1 */
+  font-size: 28px;
+  color: DarkBlue;
+}
+h2 { /* Header 2 */
+    font-size: 22px;
+  color: DarkBlue;
+}
+h3 { /* Header 3 */
+  font-size: 18px;
+  font-family: "Times New Roman", Times, serif;
+  color: DarkBlue;
+}
+code.r{ /* Code block */
+    font-size: 12px;
+}
+pre { /* Code block - determines code spacing between lines */
+    font-size: 14px;
+}
+</style>
+
+ПП предложил разбивать мидий на три группы: с высоким structure (типа чистые trossulus), низким structure (типа чистые edulis) и серединки (гибриды). Далее он предложил рассмотреть как зависит вероятность встречи Т-морфотипа от частоты встречи *M.tossulus* в популяции (prevalence) для каждой из этих групп. Эту связь можно актуализировать так, как это делала Юля (см. ее презентацию), рассматривая каждую из групп отдельно.  
+
+Однако, здесь кроется более интересная штука, которая плохо видна при такой визуализации. Коллеги, посмотрите на визуализацию, построенную по мотивам того, что предложил П.П. но, как мне кажется, более информативную. Это, конечно не материал для текущей статьи про морфотипы, как инструмент идентификации, но, наверное, это задел на будущее.
+
+Базовая идея, которую предложил ПП, заключается в том, что мидия живет как бы в двумерном мире: у нее есть ее собственный генетический статус (structure) и есть популяционное окружение (prevalence). Кроме того, у каждой мидии есть два варианта морфотипа Т vs E. Соответственно, собранный материал можно визуализировать вот так.
+
+
+```{r}
+library(lme4)
+library(ggplot2)
+library(reshape2)
+library(sjstats)
+library(dplyr)
+library(car)
+library(doBy)
+library(pROC)
+library(betareg)
+library(lmtest)
+library(broom)
+library(mgcv)
+
+
+
+myt <- read.table("data_salinity3.csv", header = T, sep = ";")
+
+myt <- myt[myt$dataset != "overseas", ]
+
+myt$Sp [myt$str > 0.5] <- "M.trossulus" #Лучше обозначать так!
+myt$Sp [myt$str <= 0.5] <- "M.edulis"
+myt$Sp <- factor(myt$Sp)
+
+# Оставляем только мидий, у которых есть оценка морфотипа
+myt2 <- myt[!is.na(myt$ind), ]
+
+
+
+
+
+# Вводим обозначения для морфотипов
+myt2$morph <- ifelse(myt2$ind == 1, "T_m", "E_m")
+myt2$morph <- factor(myt2$morph)
+
+
+
+# Бинарное обозначение видов
+
+myt2$Sp2 <- ifelse(myt2$Sp == "M.trossulus", 1, 0)
+
+
+#Correct identification
+myt2$congr <- ifelse((myt2$ind == 1 & myt2$Sp == "M.trossulus") | (myt2$ind == 0 & myt2$Sp == "M.edulis"), 1, 0   )
+
+
+
+# Частота M.trossulus в популяции, вычисленная как срденее значение structure
+
+freq_MT <- summaryBy( str ~ pop, data = myt2)
+names(freq_MT) <- c("pop", "freq_MT")
+
+myt2 <- merge(myt2, freq_MT)
+
+theme_set(theme_bw())
+
+Pl_base <- ggplot(myt2, aes(x = freq_MT, y = str))  + facet_wrap(~facet) + scale_fill_gradient(low = "yellow", high = "red") + guides(fill = "none") + labs(x = "Prevalence (proportion of M.trossulus)", y = "Structure")
+
+
+Pl_base + geom_point(aes(fill = ind), shape = 21)
+
+```
+
+Для большей наглядности и избежания оверплоттинга точек добавим небольшой случайный разброс.
+
+```{r}
+Pl_base + geom_point(aes(fill = ind), shape = 21, position = position_jitter(width = 0.01))
+```
+
+На этом графике удобно показать в каких частях этого двумерного поля у нас наблюдается максимальная концентрация точек.
+
+```{r}
+Pl_base + geom_point(aes(fill = ind), shape = 21, position = position_jitter(width = 0.01)) + geom_density2d(n = 20)
+```
+
+Видим, что максимальное количество мидий (области в пределах изолиний) приходится на крайние значения Structure. Это проявление уже знакомой картинки, говорящей, что гибридов у нас мало (бимодальное распределение Structure). 
+
+Теперь посмотрим на то, как ведет себя в данном пространстве вероятность встретить T-морфотип (красные точки). Для этого воспользуемся двумерными аддитивными моделями (GAM). Формула для этой модели будет такая:
+
+$$
+P_T = s[(Structure, Prevalence): Area] + Area + \varepsilon
+$$
+
+Здесь
+
+$P_T$ - вероятность встретить особь Т-морфотипа    
+$Structure$ - понятно    
+$Prevalence$ - понятно    
+$Area$ - Область (Белое море, Баренцево опресненное или Баренцево соленое)    
+$\varepsilon$ - Случайные отклонения от среднего (остатки)    
+$s$ - двумерный сплайн, то есть поверхность, которая вписывается так, чтобы максимально хорошо описывать связь вероятности $P_T$ со значениями $Structure$ и $Prevalence$, причем сплайн подбирается отдельно для каждой акватории ($(Structure, Prevalence): Area$).      
+
+Вот информация, которая описывает данную модель
+
+```{r echo = FALSE}
+mod_gam <- gam(ind ~ s(str, freq_MT, by = facet) + facet, data = myt2, family = "binomial")
+
+summary(mod_gam)
+```
+
+Цифровой вывод результатов нас сейчас не столь интересует. Важно лишь то, что сплайны, подобранные для каждой области (Area), не могут быть описаны как плоскости, идущие параллельно плоскости Structure vs Prevalence (см. достоверные уровни значимости). Это означает, что поверхности изогнуты,  т.е. связь существует и вероятность встретить T-морфотип **зависит** от  совместного влияния Structure и Prevalence. 
+
+
+Теперь визуализируем поведение этой  модели. 
+
+```{r}
+
+new_data <-  myt2 %>% group_by(facet) %>% do(expand.grid(str = seq(min(.$str), max(.$str), length.out = 100), freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 100))) 
+
+
+new_data$Predict_gam <- predict(mod_gam, newdata = new_data,type = "response" )
+
+ggplot(new_data, aes(x = freq_MT, y = str)) + geom_raster(aes(fill = Predict_gam)) + facet_wrap(~facet) + scale_fill_gradient(low = "yellow", high = "red") + geom_density2d(data = myt2, n = 20) + geom_point(data = myt2, aes(fill = ind), position = position_jitter(width = 0.01), shape = 21) + theme_bw() + labs(x = "Prevalence (proportion of M.trossulus)", y = "Structure", fill = "Вероятность \n встретить Т-морфотип")
+  
+  
+```
+
+Здесь, чем краснее, тем больше вероятность встретить особь Т-морфотипа. 
+
+
+Для наглядности, уберем точки с первичными данными, оставим лишь изолинии, отражающие места с максимальной концентрацией точек.
+
+```{r}
+ggplot(new_data, aes(x = freq_MT, y = str)) + geom_raster(aes(fill = Predict_gam)) + facet_wrap(~facet) + scale_fill_gradient(low = "yellow", high = "red") + geom_density2d(data = myt2, n = 20)  + theme_bw() + labs(x = "Prevalence (proportion of M.trossulus)", y = "Structure", fill = "Вероятность \n встретить Т-морфотип")
+```
+
+Оставлю эту картинку без комментариев, но, по-моему, она очень говорящая. 
+
+

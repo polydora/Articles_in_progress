@@ -1,0 +1,6 @@
+"0","Model_T_MT_final_result <- tidy(Model_T_MT_final)"
+"0","Model_T_MT_final_result$estimate <- round(Model_T_MT_final_result$estimate, 1)"
+"0","Model_T_MT_final_result$std.error <- round(Model_T_MT_final_result$std.error, 2)"
+"0","Model_T_MT_final_result$statistic <- round(Model_T_MT_final_result$statistic, 2)"
+"0","Model_T_MT_final_result$p.value <- round(Model_T_MT_final_result$p.value, 4)"
+"0","kable(Model_T_MT_final_result, col.names = c(""Model term"", ""Estimated value"", ""SE"", ""Chi sq."", ""p-value""))"

@@ -1,0 +1,301 @@
+<?xml version="1.0"?>
+<MontageConfigData xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <StackOrientation>First Image top of Z-Stack</StackOrientation>
+  <MontagePreviewOption>Multifocus Image</MontagePreviewOption>
+  <AnaglyphMethod>Red/Green</AnaglyphMethod>
+  <AnaglyphColourise>false</AnaglyphColourise>
+  <AnaglyphSeparation>10</AnaglyphSeparation>
+  <ColReliefMethod>Light Features</ColReliefMethod>
+  <ColReliefConfidence>false</ColReliefConfidence>
+  <ColReliefColours>Rainbow</ColReliefColours>
+  <ColReliefSaturation>50</ColReliefSaturation>
+  <StereoSource />
+  <StereoLayout />
+  <StereoSeparation>10</StereoSeparation>
+  <EnhanceMaskThresh>0</EnhanceMaskThresh>
+  <EnhanceMaskFuzz>Soft Edges (Med)</EnhanceMaskFuzz>
+  <EnhanceCompositeBackground>No Effect</EnhanceCompositeBackground>
+  <EnhanceComposite>No Effect</EnhanceComposite>
+  <EnhanceDepthBackground>Smooth (Med)</EnhanceDepthBackground>
+  <EnhanceDepth>Smooth (Med)</EnhanceDepth>
+  <EnhancePreviewOption>Multifocus Image</EnhancePreviewOption>
+  <ThreeDDisplayMode />
+  <ThreeDColour>-65536</ThreeDColour>
+  <ThreeDIllumination>5</ThreeDIllumination>
+  <RenderingMode />
+  <SynopticsXMLDoc>
+    <MontageMultifocus>
+      <MontageMultifocus.Engine>
+        <EngineVersion>2.5.0036</EngineVersion>
+        <ImageAlignment>
+          <AlignAlgorithm>AlignAlgorithmShiftMag</AlignAlgorithm>
+          <AlignRegion>AlignRegionMax</AlignRegion>
+          <AlignMagCorrection>0</AlignMagCorrection>
+        </ImageAlignment>
+        <DepthComposite>
+          <DepthCompositeAlgorithm>DCAlgorithmBlended</DepthCompositeAlgorithm>
+          <DepthCompositeContrast>DCContrastHT2</DepthCompositeContrast>
+          <DepthCompositePatchSize>8</DepthCompositePatchSize>
+          <DepthCompositeBackground>DCBackgroundGeneral</DepthCompositeBackground>
+        </DepthComposite>
+        <StereoAnaglyph>
+          <StereoAnaglyphAlgorithm>SAAlgorithmRedGreen</StereoAnaglyphAlgorithm>
+          <StereoAnaglyphDisparity>10</StereoAnaglyphDisparity>
+        </StereoAnaglyph>
+        <StereoPair>
+          <StereoPairLayout>SPLayoutHorizontalLeftRight</StereoPairLayout>
+          <StereoPairDisparity>10</StereoPairDisparity>
+        </StereoPair>
+        <ColorRelief>
+          <ColorReliefAlgorithm>CRAlgorithmLightFeatures</ColorReliefAlgorithm>
+          <ColorReliefPalette>CRPaletteRainbow</ColorReliefPalette>
+          <ColorReliefSaturation>50</ColorReliefSaturation>
+        </ColorRelief>
+        <Enhance>
+          <EnhanceMaskThreshold>0</EnhanceMaskThreshold>
+          <EnhanceMaskFuzz>2</EnhanceMaskFuzz>
+          <EnhanceCompositeBackground>EBActionNone</EnhanceCompositeBackground>
+          <EnhanceCompositeSmoothness>FilterNone</EnhanceCompositeSmoothness>
+          <EnhanceCompositeSharpness>FilterNone</EnhanceCompositeSharpness>
+          <EnhanceDepthMapBackground>EBActionSmoothMed</EnhanceDepthMapBackground>
+          <EnhanceDepthMapSmoothness>Filter6</EnhanceDepthMapSmoothness>
+        </Enhance>
+      </MontageMultifocus.Engine>
+      <MontageMultifocus.SourceImageTable IndexMin="1" IndexMax="15">
+        <SourceStackTopDatum>SourceDatumFirstIndex</SourceStackTopDatum>
+        <ImageAlignment>
+          <SourceAlignAction>AlignActionShiftMag</SourceAlignAction>
+        </ImageAlignment>
+        <SourceBrightnessAction>BrightnessActionLinear</SourceBrightnessAction>
+        <Image Index="1">
+          <FileName>C:\Users\lab130\Desktop\2019-2020\Khaitov\T-etalon\MultiFocus0001\z_0001.tif</FileName>
+          <ImageAlignment>
+            <X>-50</X>
+            <Y>0</Y>
+            <Mag>1</Mag>
+          </ImageAlignment>
+          <ImageBrightness>
+            <Gain>1</Gain>
+            <Offset>0</Offset>
+          </ImageBrightness>
+        </Image>
+        <Image Index="2">
+          <FileName>C:\Users\lab130\Desktop\2019-2020\Khaitov\T-etalon\MultiFocus0001\z_0002.tif</FileName>
+          <ImageAlignment>
+            <X>-43</X>
+            <Y>0</Y>
+            <Mag>1,001901</Mag>
+          </ImageAlignment>
+          <ImageBrightness>
+            <Gain>1,014747</Gain>
+            <Offset>0</Offset>
+          </ImageBrightness>
+        </Image>
+        <Image Index="3">
+          <FileName>C:\Users\lab130\Desktop\2019-2020\Khaitov\T-etalon\MultiFocus0001\z_0003.tif</FileName>
+          <ImageAlignment>
+            <X>-37</X>
+            <Y>0</Y>
+            <Mag>1,002877</Mag>
+          </ImageAlignment>
+          <ImageBrightness>
+            <Gain>1,018918</Gain>
+            <Offset>0</Offset>
+          </ImageBrightness>
+        </Image>
+        <Image Index="4">
+          <FileName>C:\Users\lab130\Desktop\2019-2020\Khaitov\T-etalon\MultiFocus0001\z_0004.tif</FileName>
+          <ImageAlignment>
+            <X>-29</X>
+            <Y>0</Y>
+            <Mag>1,003944</Mag>
+          </ImageAlignment>
+          <ImageBrightness>
+            <Gain>1,020368</Gain>
+            <Offset>0</Offset>
+          </ImageBrightness>
+        </Image>
+        <Image Index="5">
+          <FileName>C:\Users\lab130\Desktop\2019-2020\Khaitov\T-etalon\MultiFocus0001\z_0005.tif</FileName>
+          <ImageAlignment>
+            <X>-21</X>
+            <Y>0</Y>
+            <Mag>1,00496</Mag>
+          </ImageAlignment>
+          <ImageBrightness>
+            <Gain>1,022428</Gain>
+            <Offset>0</Offset>
+          </ImageBrightness>
+        </Image>
+        <Image Index="6">
+          <FileName>C:\Users\lab130\Desktop\2019-2020\Khaitov\T-etalon\MultiFocus0001\z_0006.tif</FileName>
+          <ImageAlignment>
+            <X>-14</X>
+            <Y>0</Y>
+            <Mag>1,005704</Mag>
+          </ImageAlignment>
+          <ImageBrightness>
+            <Gain>1,025073</Gain>
+            <Offset>0</Offset>
+          </ImageBrightness>
+        </Image>
+        <Image Index="7">
+          <FileName>C:\Users\lab130\Desktop\2019-2020\Khaitov\T-etalon\MultiFocus0001\z_0007.tif</FileName>
+          <ImageAlignment>
+            <X>-7</X>
+            <Y>0</Y>
+            <Mag>1,006639</Mag>
+          </ImageAlignment>
+          <ImageBrightness>
+            <Gain>1,027615</Gain>
+            <Offset>0</Offset>
+          </ImageBrightness>
+        </Image>
+        <Image Index="8">
+          <FileName>C:\Users\lab130\Desktop\2019-2020\Khaitov\T-etalon\MultiFocus0001\z_0008.tif</FileName>
+          <ImageAlignment>
+            <X>0</X>
+            <Y>0</Y>
+            <Mag>1,007565</Mag>
+          </ImageAlignment>
+          <ImageBrightness>
+            <Gain>1,030518</Gain>
+            <Offset>0</Offset>
+          </ImageBrightness>
+        </Image>
+        <Image Index="9">
+          <FileName>C:\Users\lab130\Desktop\2019-2020\Khaitov\T-etalon\MultiFocus0001\z_0009.tif</FileName>
+          <ImageAlignment>
+            <X>7</X>
+            <Y>0</Y>
+            <Mag>1,008517</Mag>
+          </ImageAlignment>
+          <ImageBrightness>
+            <Gain>1,033978</Gain>
+            <Offset>0</Offset>
+          </ImageBrightness>
+        </Image>
+        <Image Index="10">
+          <FileName>C:\Users\lab130\Desktop\2019-2020\Khaitov\T-etalon\MultiFocus0001\z_0010.tif</FileName>
+          <ImageAlignment>
+            <X>14</X>
+            <Y>0</Y>
+            <Mag>1,009414</Mag>
+          </ImageAlignment>
+          <ImageBrightness>
+            <Gain>1,036905</Gain>
+            <Offset>0</Offset>
+          </ImageBrightness>
+        </Image>
+        <Image Index="11">
+          <FileName>C:\Users\lab130\Desktop\2019-2020\Khaitov\T-etalon\MultiFocus0001\z_0011.tif</FileName>
+          <ImageAlignment>
+            <X>21</X>
+            <Y>0</Y>
+            <Mag>1,010606</Mag>
+          </ImageAlignment>
+          <ImageBrightness>
+            <Gain>1,040009</Gain>
+            <Offset>0</Offset>
+          </ImageBrightness>
+        </Image>
+        <Image Index="12">
+          <FileName>C:\Users\lab130\Desktop\2019-2020\Khaitov\T-etalon\MultiFocus0001\z_0012.tif</FileName>
+          <ImageAlignment>
+            <X>29</X>
+            <Y>0</Y>
+            <Mag>1,011517</Mag>
+          </ImageAlignment>
+          <ImageBrightness>
+            <Gain>1,043324</Gain>
+            <Offset>0</Offset>
+          </ImageBrightness>
+        </Image>
+        <Image Index="13">
+          <FileName>C:\Users\lab130\Desktop\2019-2020\Khaitov\T-etalon\MultiFocus0001\z_0013.tif</FileName>
+          <ImageAlignment>
+            <X>36</X>
+            <Y>0</Y>
+            <Mag>1,01253</Mag>
+          </ImageAlignment>
+          <ImageBrightness>
+            <Gain>1,046686</Gain>
+            <Offset>0</Offset>
+          </ImageBrightness>
+        </Image>
+        <Image Index="14">
+          <FileName>C:\Users\lab130\Desktop\2019-2020\Khaitov\T-etalon\MultiFocus0001\z_0014.tif</FileName>
+          <ImageAlignment>
+            <X>44</X>
+            <Y>0</Y>
+            <Mag>1,013539</Mag>
+          </ImageAlignment>
+          <ImageBrightness>
+            <Gain>1,05022</Gain>
+            <Offset>0</Offset>
+          </ImageBrightness>
+        </Image>
+        <Image Index="15">
+          <FileName>C:\Users\lab130\Desktop\2019-2020\Khaitov\T-etalon\MultiFocus0001\z_0015.tif</FileName>
+          <ImageAlignment>
+            <X>51</X>
+            <Y>1</Y>
+            <Mag>1,014737</Mag>
+          </ImageAlignment>
+          <ImageBrightness>
+            <Gain>1,053701</Gain>
+            <Offset>0</Offset>
+          </ImageBrightness>
+        </Image>
+      </MontageMultifocus.SourceImageTable>
+      <MontageMultifocus.ResultImageTable IndexMin="1" IndexMax="20">
+        <IndexRawComposite>1</IndexRawComposite>
+        <IndexComposite>4</IndexComposite>
+        <IndexRawDepthMap>2</IndexRawDepthMap>
+        <IndexDepthMap>5</IndexDepthMap>
+        <IndexConfidence>3</IndexConfidence>
+        <Image Index="3">
+          <FileName>Confidence Map.tif</FileName>
+          <RescaleStorage>
+            <Format>Format1Byte</Format>
+            <Min>0</Min>
+            <Max>100</Max>
+          </RescaleStorage>
+          <ImageAlignment>
+            <X>71</X>
+            <Y>21</Y>
+          </ImageAlignment>
+        </Image>
+        <Image Index="4">
+          <FileName>Montage.tif</FileName>
+          <ImageAlignment>
+            <X>71</X>
+            <Y>21</Y>
+          </ImageAlignment>
+        </Image>
+        <Image Index="5">
+          <FileName>Depth Map.tif</FileName>
+          <RescaleStorage>
+            <Format>FormatFloat</Format>
+            <Min>1</Min>
+            <Max>15</Max>
+          </RescaleStorage>
+          <ImageAlignment>
+            <X>71</X>
+            <Y>21</Y>
+          </ImageAlignment>
+        </Image>
+      </MontageMultifocus.ResultImageTable>
+    </MontageMultifocus>
+  </SynopticsXMLDoc>
+  <StackStart>-92517</StackStart>
+  <StackEnd>-95261</StackEnd>
+  <OptimiseStepSizeChecked>false</OptimiseStepSizeChecked>
+  <StepSize>196</StepSize>
+  <CreateMultifocus>true</CreateMultifocus>
+  <SaveSubImages>true</SaveSubImages>
+  <ZStackName>MultiFocus</ZStackName>
+  <AlignImages>true</AlignImages>
+  <ManualFocus>false</ManualFocus>
+  <WaitBeforeAcquire>0</WaitBeforeAcquire>
+</MontageConfigData>
