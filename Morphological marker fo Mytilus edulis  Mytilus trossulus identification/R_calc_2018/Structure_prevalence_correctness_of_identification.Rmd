@@ -45,7 +45,7 @@ pre { /* Code block - determines code spacing between lines */
 
 Еще раз привет!
 
-В прошлом файле была информация о том, как распределена вероятность встретить Т-морфотип в двумерном поле Structure vs Prevalence. По мотивам этого анализа сразу встала идея посмотреть а как в этом поле ведет себя вероятность правильного определения вида по морфотипу. И вот что получилось.
+В прошлом файле была информация о том, как распределена вероятность встретить Т-морфотип в двумерном поле Structure vs Prevalence. По мотивам этого анализа сразу встала идея посмотреть, а как в этом поле ведет себя вероятность правильного определения вида по морфотипу. И вот что получилось.
 
 ```{r}
 library(lme4)
@@ -101,16 +101,34 @@ names(freq_MT) <- c("pop", "freq_MT")
 
 myt2 <- merge(myt2, freq_MT)
 
+
+# 
+# # Оставляем только данные, на основе, которых строится модель
+# myt3 <- myt2[myt2$dataset == "testing", ]
+# myt2 <- myt2[myt2$dataset == "training", ]
+
+
+
+
 theme_set(theme_bw())
 
-ggplot(myt2, aes(x = freq_MT, y = str))  + facet_wrap(~facet)  + labs(x = "Prevalence (proportion of M.trossulus)", y = "Structure") + geom_point(aes(fill = congr), shape = 21, position = position_jitter(width = 0.01)) + scale_fill_gradient(low = "white", high = "blue") + guides(fill = "none")+ geom_density2d(data = myt2[myt2$congr == 1, ], n = 10, color = "yellow") + theme_grey()
+ggplot(myt2, aes(x = freq_MT, y = str))  + facet_wrap(~facet)  + labs(x = "Prevalence (proportion of M.trossulus)", y = "Structure") + geom_point(aes(fill = congr), shape = 21, position = position_jitter(width = 0.06)) + scale_fill_gradient(low = "white", high = "blue") + guides(fill = "none")+ geom_density2d(data = myt2[myt2$congr == 1, ], color = "gray60") + theme_grey()
 
 
 ```
 
-Здесь синие точки - это правильно определнные мидии (то есть trossulus с Т-морфотипом или edulis с Е-морфотипом), а белые - неправильно (то есть не совпадающие). Желтые изолинии показывают места максимальной концентрации правильно идентифицированных мидий (то есть места сгущения синих точек). Уже здесь видно, что в "гибриднай области" провал во всех акваториях. 
+Здесь синие точки - это правильно определенные мидии (то есть trossulus с Т-морфотипом или edulis с Е-морфотипом), а белые - неправильно (то есть не совпадающие). Изолинии показывают места максимальной концентрации правильно идентифицированных мидий (то есть места сгущения синих точек). Уже здесь видно, что в "гибридной области" провал во всех акваториях. Большинство неправльных определений сосредоточено в районе 0.25 < Structure < 0.75. 
 
-Мижно усилить эту картинку, раскрасив поле с помощью GAM, которая будет отражать связь вероятности встретить правильно определнную мидию в зависимости от Structure, Pevalence и Area. Будет это выглядеть вот так.
+Можно усилить эту картинку, раскрасив поле Structure vs Prevalence с помощью GAM, которая будет отражать связь вероятности встретить правильно определенную мидию в зависимости от Structure, Pevalence и Area. 
+
+Модель здесь будет аналогична тому, что было в прошлом файле, только зависимая переменная будет другая.
+
+
+$$
+P_{correct} = s[(Structure, Prevalence): Area] + Area + \varepsilon
+$$
+
+визуализация данной модели будет это выглядеть вот так.
 
 
 ```{r}
@@ -124,18 +142,32 @@ new_data2 <-  myt2 %>% group_by(facet) %>% do(expand.grid(str = seq(min(.$str), 
 
 new_data2$Predict_gam2 <- predict(mod_gam2, newdata = new_data2,type = "response" )
 
-ggplot(new_data2, aes(x = freq_MT, y = str)) + geom_raster(aes(fill = Predict_gam2)) + facet_wrap(~facet) + scale_fill_gradient(low = "white", high = "blue") + geom_point(data = myt2, aes(fill = congr), position = position_jitter(width = 0.05), shape = 21) + geom_density2d(data = myt2[myt2$congr == 1, ], n = 10, color = "yellow") + labs(x = "Prevalence (proportion of M.trossulus)", y = "Structure", fill = "Вероятность \n правильного \nопределения по морфотипу")
+ggplot(new_data2, aes(x = freq_MT, y = str)) + geom_raster(aes(fill = Predict_gam2)) + facet_wrap(~facet) + scale_fill_gradient(low = "white", high = "darkblue") + geom_point(data = myt2, aes(fill = congr), position = position_jitter(width = 0.06), shape = 21, size = 1) + geom_density2d(data = myt2[myt2$congr == 1, ],  color = "yellow") + labs(x = "Prevalence (proportion of M.trossulus)", y = "Structure", fill = "Вероятность \n правильного \nопределения по морфотипу")
   
 
 
 
 ```
 
+Та же самая картинка, но без точек, соответствующих отдельным мидиям.
+
+```{r}
+ggplot(new_data2, aes(x = freq_MT, y = str)) + geom_raster(aes(fill = Predict_gam2)) + facet_wrap(~facet) + scale_fill_gradient(low = "white", high = "darkblue")  + geom_density2d(data = myt2[myt2$congr == 1, ],  color = "yellow") + labs(x = "Prevalence (proportion of M.trossulus)", y = "Structure", fill = "Вероятность \n правильного \nопределения по морфотипу")
+
+```
 
 Таки, да! Получается, что вероятность правильной идентификации минимальна у гибридов и минорных генотипов. 
 
-Я бы подобную картинку в статью засунул. Она хорша! 
+Здесь видно, что в опресненном Баренцевом море признак работает почти везде (светлая область почти не выделяется). 
 
-Здесь видно, что в опресненном баренцевом море признак работает почти везде. В белом море он работает в чистых поселениях, но только для мажорных генотипов или в смешанных для любых генотипов. Но плохо работает для гибридов (второго поколения? эдулисные гены все портят?). В Баренцевом море с нормальной соленостью похожая картинка, но в отношении гибридо как бы наоборот (троссулусные гены все портят?).   
+В Белом море он работает в чистых поселениях, но только для мажорных генотипов или в смешанных для любых генотипов. Однако в Белом море этот признак плохо работает  для гибридов (второго поколения?). При этом у эдулисных гибридов (Structure<0.5) в популяциях, где много эдулисов (Prevalence ~ 0) определение работает нормально. А вот у троссулусных гибридов  (Structure>0.5) везде правильность идентификации хромает. Эдулисные гены все портят?
 
-ы
+В Баренцевом море с нормальной соленостью похожая картинка. Однако в отношении гибридов она как бы противоположна Белому морю, как бы наоборот: эдулисные гибриды определяются плохо, зато троссулусные гибриды - хорошо. Троссулусные гены все портят?   
+
+
+Я бы подобную картинку в статью засунул, в конец. Она хороша! 
+
+Да, важное замечание. Во всех этих картинках использованы оба датасета (training + testing)
+
+
+

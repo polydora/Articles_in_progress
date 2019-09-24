@@ -1,8 +1,0 @@
-"0","new_data <- prop_T_MT %>% group_by(Subset) %>% do(data.frame(Prop_T = seq(min(.$Prop_T), max(.$Prop_T), length.out = 100)))"
-"0","predicted <- predict(Model_T_MT_final, newdata = new_data,  type=""response"", se.fit = TRUE)"
-"0","new_data$fit <- predicted$fit  "
-"0","new_data$SE <- predicted$se.fit  "
-"0","# ggplot(prop_T_MT, aes(x = Prop_T, y = prop_MT_adj, color = sal_place)) + geom_point(aes(color = sal_place)) + facet_grid( ~ sea) + geom_line(data = new_data, aes(x = Prop_T, y = fit, group = sal_place), size = 1) + theme_bw() + labs(x = ""Proportion of T-morphotype in population"", y = ""Proportion of M.trossulus"", color = ""Freshness"")"
-"0","new_data$Subset <- factor(new_data$Subset, levels = c(""White"", ""Barents_fresh"", ""Barents_normal""))"
-"0","  "
-"0","ggplot(data = new_data, aes(x = Prop_T, y = fit, linetype = Subset))  + geom_ribbon(aes(ymin = fit - 1.96*SE, ymax = fit + 1.96*SE, fill = Subset),  alpha = 0.2) + geom_line(size = 1) + theme_bw() + labs(x = ""Proportion of T-morphotype in population (PT)"", y = ""M.trossulus prevalence (MTprev)"") + geom_abline() + geom_point(data = prop_T_MT, aes(x = Prop_T, y = Prop_MT, shape = Subset), size = 2) + geom_point(data = prop_T_MT_testing, aes(x = Prop_T, y = Prop_MT), shape = 21, size = 4, fill = ""white"") + facet_wrap( ~ Subset, ncol = 3) + theme(legend.position = ""bottom"") + guides(shape = ""none"")"

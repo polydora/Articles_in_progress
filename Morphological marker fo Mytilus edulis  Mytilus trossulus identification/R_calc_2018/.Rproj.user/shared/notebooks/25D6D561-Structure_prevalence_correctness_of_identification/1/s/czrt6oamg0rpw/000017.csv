@@ -1,9 +1,0 @@
-"0","ggplot(new_data2, aes(x = freq_MT, y = str)) + geom_raster(aes(fill = Predict_gam2)) + facet_wrap(~facet) + scale_fill_gradient(low = ""white"", high = ""blue"") + geom_point(data = myt2, aes(fill = congr), position = position_jitter(width = 0.05), shape = 21) + geom_density2d(data = myt2[myt2$congr == 1, ], n = 10, color = ""yellow"") + labs(x = ""Prevalence (proportion of M.trossulus)"", y = ""Structure"", fill = ""Вероятность \n правильного \nопределения по морфотипу"")
-"
-"2","Warning in gzfile(file, ""wb"") :"
-"2","
- "
-"2"," cannot open compressed file 'D:/Text/Article/Morphological marker fo Mytilus edulis  Mytilus trossulus identification/R_calc_2018/.Rproj.user/shared/notebooks/25D6D561-Structure_prevalence_correctness_of_identification/1/BCCC6EAF2A020139/czrt6oamg0rpw_t/070f53ab4791468e8121a60cd7c93798.snapshot', probable reason 'No such file or directory'
-"
-"2","Error in gzfile(file, ""wb"") : cannot open the connection
-"
