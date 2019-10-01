@@ -1,0 +1,103 @@
+Species,Stage,Level,Var_ID
+Calanus glacialis,female VI,0-10,V1
+Calanus glacialis,female VI,10-25,V2
+Calanus glacialis,female VI,25-bottom,V3
+Calanus glacialis,male VI,0-10,V4
+Calanus glacialis,male VI,10-25,V5
+Calanus glacialis,male VI,25-bottom,V6
+Calanus glacialis,cop V,0-10,V7
+Calanus glacialis,cop V,10-25,V8
+Calanus glacialis,cop V,25-bottom,V9
+Calanus glacialis,cop IV,0-10,V10
+Calanus glacialis,cop IV,10-25,V11
+Calanus glacialis,cop IV,25-bottom,V12
+Calanus glacialis,cop III,0-10,V13
+Calanus glacialis,cop III,10-25,V14
+Calanus glacialis,cop III,25-bottom,V15
+Calanus glacialis,cop II,0-10,V16
+Calanus glacialis,cop II,10-25,V17
+Calanus glacialis,cop II,25-bottom,V18
+Calanus glacialis,cop I,0-10,V19
+Calanus glacialis,cop I,10-25,V20
+Calanus glacialis,cop I,25-bottom,V21
+Calanus glacialis,nauplii,0-10,V22
+Calanus glacialis,nauplii,10-25,V23
+Calanus glacialis,nauplii,25-bottom,V24
+Calanus glacialis,Total,0-10,V25
+Calanus glacialis,Total,10-25,V26
+Calanus glacialis,Total,25-bottom,V27
+Centropages hamatus,female VI,0-10,V28
+Centropages hamatus,female VI,10-25,V29
+Centropages hamatus,female VI,25-bottom,V30
+Centropages hamatus,male VI,0-10,V31
+Centropages hamatus,male VI,10-25,V32
+Centropages hamatus,male VI,25-bottom,V33
+Centropages hamatus,cop.,0-10,V34
+Centropages hamatus,cop.,10-25,V35
+Centropages hamatus,cop.,25-bottom,V36
+Centropages hamatus,juv.,0-10,V37
+Centropages hamatus,juv.,10-25,V38
+Centropages hamatus,juv.,25-bottom,V39
+Centropages hamatus,nauplii,0-10,V40
+Centropages hamatus,nauplii,10-25,V41
+Centropages hamatus,nauplii,25-bottom,V42
+Centropages hamatus,Total,0-10,V43
+Centropages hamatus,Total,10-25,V44
+Centropages hamatus,Total,25-bottom,V45
+Temora longicornis,female VI,0-10,V46
+Temora longicornis,female VI,10-25,V47
+Temora longicornis,female VI,25-bottom,V48
+Temora longicornis,male VI,0-10,V49
+Temora longicornis,male VI,10-25,V50
+Temora longicornis,male VI,25-bottom,V51
+Temora longicornis,cop.,0-10,V52
+Temora longicornis,cop.,10-25,V53
+Temora longicornis,cop.,25-bottom,V54
+Temora longicornis,juv.,0-10,V55
+Temora longicornis,juv.,10-25,V56
+Temora longicornis,juv.,25-bottom,V57
+Temora longicornis,nauplii,0-10,V58
+Temora longicornis,nauplii,10-25,V59
+Temora longicornis,nauplii,25-bottom,V60
+Temora longicornis,Total,0-10,V61
+Temora longicornis,Total,10-25,V62
+Temora longicornis,Total,25-bottom,V63
+Oithona similis,female VI,0-10,V64
+Oithona similis,female VI,10-25,V65
+Oithona similis,female VI,25-bottom,V66
+Oithona similis,male VI,0-10,V67
+Oithona similis,male VI,10-25,V68
+Oithona similis,male VI,25-bottom,V69
+Oithona similis,cop.,0-10,V70
+Oithona similis,cop.,10-25,V71
+Oithona similis,cop.,25-bottom,V72
+Oithona similis,juv.,0-10,V73
+Oithona similis,juv.,10-25,V74
+Oithona similis,juv.,25-bottom,V75
+Oithona similis,nauplii,0-10,V76
+Oithona similis,nauplii,10-25,V77
+Oithona similis,nauplii,25-bottom,V78
+Oithona similis,Total,0-10,V79
+Oithona similis,Total,10-25,V80
+Oithona similis,Total,25-bottom,V81
+Pseudocalanus spp.,cop.,0-10,V82
+Pseudocalanus spp.,cop.,10-25,V83
+Pseudocalanus spp.,cop.,25-bottom,V84
+Pseudocalanus spp.,Total,0-10,V85
+Pseudocalanus spp.,Total,10-25,V86
+Pseudocalanus spp.,Total,25-bottom,V87
+Acartia spp.,cop.,0-10,V88
+Acartia spp.,cop.,10-25,V89
+Acartia spp.,cop.,25-bottom,V90
+Acartia spp.,Total,0-10,V91
+Acartia spp.,Total,10-25,V92
+Acartia spp.,Total,25-bottom,V93
+Microsetella norvegica,cop.,0-10,V94
+Microsetella norvegica,cop.,10-25,V95
+Microsetella norvegica,cop.,25-bottom,V96
+Microsetella norvegica,Total,0-10,V97
+Microsetella norvegica,Total,10-25,V98
+Microsetella norvegica,Total,25-bottom,V99
+Triconia spp.,Total,0-10,V100
+Triconia spp.,Total,10-25,V101
+Triconia spp.,Total,25-bottom,V102

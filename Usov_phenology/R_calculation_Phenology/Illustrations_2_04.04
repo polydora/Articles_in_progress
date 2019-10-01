@@ -1,0 +1,464 @@
+---
+title: "Иллюстрации к статье"
+author: "Вадим Хайтов"
+date: '12 марта 2019 г '
+output: html_document
+---
+
+```{r setup, include=FALSE }
+library(knitr)
+opts_chunk$set(echo = FALSE, cache = FALSE, message = FALSE, warning = FALSE)
+```
+
+<style type="text/css">
+
+body{ /* Normal  */
+      font-size: 18px;
+  }
+td {  /* Table  */
+  font-size: 20px;
+}
+h1.title {
+  font-size: 38px;
+  color: DarkRed;
+}
+h1 { /* Header 1 */
+  font-size: 28px;
+  color: DarkBlue;
+}
+h2 { /* Header 2 */
+    font-size: 22px;
+  color: DarkBlue;
+}
+h3 { /* Header 3 */
+  font-size: 18px;
+  font-family: "Times New Roman", Times, serif;
+  color: DarkBlue;
+}
+code.r{ /* Code block */
+    font-size: 12px;
+}
+pre { /* Code block - determines code spacing between lines */
+    font-size: 14px;
+}
+</style>
+
+```{r}
+library(ggplot2)
+
+library(dplyr)
+
+library(reshape2)
+
+library(vegan)
+
+theme_set(theme_bw())
+
+# library(cowplot)
+
+library(gridExtra)
+
+
+
+# первичные фенологические данные
+
+phen_acartia <- read.csv("data/Phenological_tables/Acartia_phenology.csv", header = TRUE)
+
+phen_calanus <- read.csv("data/Phenological_tables/Calanus_phenology.csv", header = TRUE)
+
+phen_centropages <- read.csv("data/Phenological_tables/Centropages_phenology.csv", header = TRUE)
+
+phen_microsetella <- read.csv("data/Phenological_tables/Microsetella_phenology.csv", header = TRUE)
+
+phen_oithona <- read.csv("data/Phenological_tables/Oithona_phenology.csv", header = TRUE)
+
+phen_pseudocalanus <- read.csv("data/Phenological_tables/Pseudocalanus_phenology.csv", header = TRUE)
+
+phen_temora <- read.csv("data/Phenological_tables/Temora_phenology.csv", header = TRUE)
+
+# phen_triconia <- read.csv("data/Phenological_tables/Triconia_phenology.csv", header = TRUE)
+
+
+year_exclude <- c(1961, 1962)
+
+phen_all <- rbind(phen_acartia, phen_calanus, phen_centropages, phen_microsetella,phen_oithona, phen_pseudocalanus,  phen_temora)
+
+
+phen_all <- phen_all[!(phen_all$Year %in% year_exclude), ]
+
+
+median_peak <- phen_all %>% group_by(Species) %>% summarise(Median_peak = median(Days_perc_50))
+
+
+phen_all$Species <- factor(phen_all$Species, levels = median_peak$Species[order(median_peak$Median_peak)], ordered = TRUE)
+
+# Новые имена для переменных
+
+names(phen_all) <- c("Year", "Begin", "Meadle", "End", "Peak", "Species")
+
+# phen_all <- phen_all[phen_all$Species != "Triconia", ]
+```
+
+
+
+
+```{r}
+
+Abundance <- read.csv("data/abundance.csv", header = TRUE) # Данные по обилию видов, усреденнные по всему столбу воды за март-сентябрь.
+
+env <- read.csv("data/env_gap_filled_short.csv", header = TRUE)  #Данные по средовым показателям
+
+
+
+```
+
+## Рисунок с датами ключевых событий
+
+
+```{r}
+phen_all$Species <- factor(phen_all$Species, levels = c("Pseudocalanus", "Calanus", "Microsetella", "Oithona",  "Centropages", "Acartia", "Temora"))
+
+Pl_begin <- ggplot(phen_all, aes(x = Species, y = Begin)) + geom_boxplot() + ggtitle("The date of appearence start") + labs(x = "Species", y = "Julian day") + theme(axis.text.x = element_text(angle = 90)) + ylim(50, 350)
+
+Pl_peak <- ggplot(phen_all, aes(x = Species, y = Peak)) + geom_boxplot() + ggtitle("The date of abundance peak") + labs(x = "Species", y = "") + theme(axis.text.x = element_text(angle = 90))+ ylim(50, 350)
+
+
+
+# ggplot(phen_all, aes(x = Species, y = Meadle)) + geom_boxplot() + ggtitle("Дата середины")
+# 
+# 
+# ggplot(phen_all, aes(x = Species, y = End)) + geom_boxplot() + ggtitle("Дата окончания")
+
+# plot_grid(Pl_begin, Pl_peak, ncol = 2)
+
+grid.arrange(Pl_begin, Pl_peak, ncol = 2)
+
+```
+
+
+
+## Многолетние изменения фенологических показателей.
+
+Мне кажется, чтобы не загромождать статью, для демонстрации смешения фенологии лучше выбрать какой-то один фенологический показатель (начало или дату пика). Далее рисунки и парамтеры моделей давть для него.
+
+
+```{r}
+ggplot(phen_all, aes(x = Year, y = Begin)) + geom_point(color = "gray") + facet_wrap(~Species, scales = "free_y", ncol = 4) + geom_smooth(method = "lm", se = FALSE, color = "black") + scale_x_continuous(breaks = seq(min(phen_all$Year), max(phen_all$Year), 10)) + theme(axis.text.x = element_text(angle = 90)) + ggtitle("The date of appearence start") + labs(y = "Julian day")
+```
+
+```{r}
+ggplot(phen_all, aes(x = Year, y = Peak)) + geom_point(color = "gray") + facet_wrap( ~ Species, scales = "free_y", ncol = 4) + geom_smooth(method = "lm", se = FALSE, color = "black") + scale_x_continuous(breaks = seq(min(phen_all$Year), max(phen_all$Year), 10)) + theme(axis.text.x = element_text(angle = 90)) + ggtitle("The date of abundance peak") + labs(y = "Julian day")
+```
+
+
+
+Угловые коэффициенты линейных моделей, описывающих изменение даты ключевых событий.
+
+**Важно!** Оценка достоверости происходит с помощью теста Матела. Но! Для этого анализза берется не каждый отдельно фенологический показатель, а полная фенологическая матрица, которая сравнивается с градиентной модельной атрицей. То есть, дается оценка статистической значимости наличия тренда во всей матрице. Так, по-моему, корректнее, хотя и сложно для объясненния.
+
+```{r}
+
+fitted_models_Begin = phen_all %>% group_by(Species) %>% do(model = lm(Begin ~ Year, data = .))
+fitted_models_Peak = phen_all %>% group_by(Species) %>% do(model = lm(Peak ~ Year, data = .))
+fitted_models_Meadle = phen_all %>% group_by(Species) %>% do(model = lm(Meadle ~ Year, data = .))
+fitted_models_End = phen_all %>% group_by(Species) %>% do(model = lm(End ~ Year, data = .))
+
+
+
+
+library(broom)
+
+model_print_Begin <- fitted_models_Begin %>% tidy(model)
+model_print_Peak <- fitted_models_Peak %>% tidy(model)
+model_print_Meadle <- fitted_models_Meadle %>% tidy(model)
+model_print_End <- fitted_models_End %>% tidy(model)
+
+
+model_print_short_Begin <- model_print_Begin[model_print_Begin$term == "Year", c(1,3)]
+model_print_short_Peak <- model_print_Peak[model_print_Peak$term == "Year", c(1,3)]
+model_print_short_Meadle <- model_print_Meadle[model_print_Meadle$term == "Year", c(1,3)]
+model_print_short_End <- model_print_End[model_print_End$term == "Year", c(1,3)]
+
+model_print_short_all = data.frame(Species = model_print_short_Begin$Species, 
+           Slope_Begin = model_print_short_Begin$estimate,
+           Slope_Peak = model_print_short_Peak$estimate, 
+           Slope_Meadle = model_print_short_Meadle$estimate,
+           Slope_End = model_print_short_End$estimate)
+
+model_print_short_all[, 2:5] <- round(model_print_short_all[, 2:5], 2)
+
+
+# Оценка статистической значимости
+
+
+mantel_trend <- function(df){
+years <- 1963:2018
+trend_dist <- dist(years)
+df <- df[,2:5]
+dist_df <- dist(df)
+mantel_test <- mantel(dist_df, trend_dist, permutations = 9999)
+p_value <- mantel_test$signif 
+p_value
+}
+
+p_values <- phen_all %>% group_by(Species) %>% do(data.frame (Mantel_P_value = mantel_trend(df =.)))
+
+model_print_short_all$Mantel_p <- p_values$Mantel_P_value 
+
+
+options(knitr.kable.NA = '')
+
+
+kable(model_print_short_all, caption = "Slope terms of linear models fitted and Mantel test p-value for comaprison of phenologiacal matrix of each species with gradient model-matrix")
+```
+
+
+
+
+## Факторы, определяющие сдвиги в фенологии сообщества копепод
+
+```{r}
+
+phen_melt <- melt(phen_all, id.vars = c("Year", "Species"))
+
+phenol <- dcast(phen_melt, formula = Year ~ Species  + variable, value.var = "value" ) 
+
+log_abundance <- log(Abundance[!(Abundance$Year %in% year_exclude),-1])
+
+env2 <- env[!(env$Year %in% year_exclude), -1 ]
+
+```
+
+
+
+### Результаты ССА 
+
+```{r}
+
+env_abund <- cbind(env2, log_abundance)
+
+
+row.names(phenol) <- phenol$Year  
+
+
+phen_cca_0 <- cca(phenol[, -1] ~ 1, data =  env_abund)
+
+phen_cca <- cca(phenol[, -1] ~ ., data =  env_abund)
+
+phen_cca_reduced <- ordistep(phen_cca, trace = FALSE, direction = "backward", scope = formula(phen_cca_0))
+
+
+```
+
+
+```{r}
+Total_inertia <- summary(phen_cca_reduced)$ tot.chi
+Constr_inertia <- summary(phen_cca_reduced)$constr.chi
+Unconstr_inertia <- summary(phen_cca_reduced)$unconst.chi
+
+constr_proporion <- Constr_inertia/Total_inertia
+
+CCA1_importance <- summary(phen_cca_reduced)$cont$ importance [2, 1]
+CCA2_importance <- summary(phen_cca_reduced)$cont$ importance [2, 2]
+
+
+```
+
+Полученная модель (при учете всех канонических корреспондентных осей)  объясняет `r round(constr_proporion*100, 1)`% суммарной изменчивости. При этом на первую и вторую оси приходится `r round(CCA1_importance*100, 1)` и `r round(CCA2_importance*100, 1)`% соответственно (то есть приведенная на рисунке ординация отражает `r round(CCA1_importance*100 + CCA2_importance*100, 1)`% общей изменчивости.
+
+
+### Оценка значимости модели
+
+
+```{r}
+anova_phen_cca_reduced <- tidy(anova(phen_cca_reduced, permutations = 9999))
+
+anova_phen_cca_reduced_axis <- tidy(anova(phen_cca_reduced, by = "axis", permutations = 9999))
+
+anova_phen_cca_reduced_margin <- tidy(anova(phen_cca_reduced, by = "margin", permutations = 9999))
+
+kable(anova_phen_cca_reduced, caption = "Permutation significance test of the CCA model")
+
+kable(anova_phen_cca_reduced, caption = "Permutation significance test of CCA constrained axis")
+
+kable(anova_phen_cca_reduced_margin, caption = "Permutation significance test of each terms included in the CCA model")
+
+
+```
+
+
+
+
+### Картинка, визуализирующая модель ССА
+
+```{r}
+# phen_cca_reduced <- cca(phenol[, -1] ~ Su_start + Su_start_1 + Su_duration_1 + N_Acartia + N_Calanus+ N_Microsetella + N_Oithona , data = env_abund)
+
+
+# plot(phen_cca_reduced, scaling = "sites")
+
+
+
+library(ggvegan)
+library(ggrepel)
+
+gg_phen_cca_reduced <- fortify(phen_cca_reduced, scaling = "symmetric")
+
+
+
+points <- data.frame(Label = gg_phen_cca_reduced[gg_phen_cca_reduced$Score == "species",  ]$Label)
+
+points$Num <- 1:nrow(points)
+
+points$CCA1 <- gg_phen_cca_reduced[gg_phen_cca_reduced$Score == "species",  ]$CCA1
+points$CCA2 <- gg_phen_cca_reduced[gg_phen_cca_reduced$Score == "species",  ]$CCA2
+
+q_cca1 <- quantile(points$CCA1, probs = c(0.25, 0.75)) #границы квартилей
+
+q_cca2 <- quantile(points$CCA2, probs = c(0.25, 0.75)) #границы квартилей
+
+points$CCA_quart <- ifelse(points$CCA1 <= q_cca1[1] | points$CCA1 >= q_cca1[2] | points$CCA2 <= q_cca2[1]|points$CCA2 >= q_cca2[2], "high", "low")
+
+points$CCA_quart_num <- ifelse(points$CCA1 <= q_cca1[1]|points$CCA1 >= q_cca1[2]|points$CCA2 <= q_cca2[1]|points$CCA2 >= q_cca2[2], points$Num, NA)
+
+
+
+
+ggplot(gg_phen_cca_reduced[gg_phen_cca_reduced$Score == "species", ],  aes(x = CCA1, y = CCA2))  +
+   geom_point(shape = 21, fill = "yellow", aes(size = points$CCA_quart)) + scale_size_manual(values = c(5, 1)) + 
+  geom_segment(data = gg_phen_cca_reduced[gg_phen_cca_reduced$Score == "biplot",  ], aes(x = 0, y = 0, xend = CCA1, yend = CCA2), arrow = arrow(type = "closed", length = unit(0.02, "native")), size = 0.5, color = "blue") +
+  geom_text_repel(data = gg_phen_cca_reduced[gg_phen_cca_reduced$Score == "biplot",  ], aes(x =  CCA1, y = CCA2, label = Label), size = 4) +
+  geom_text_repel (aes(label = points$CCA_quart_num), size = 3, min.segment.length = 1) +
+     labs(x = "CCA1", y = "СCA2") + guides(size = "none")
+
+
+
+
+```
+
+
+<!-- ```{r, fig.align='center'} -->
+
+<!-- Pl <- autoplot(phen_cca_reduced, layers = c("species", "biplot"))  -->
+
+
+<!-- Pl + geom_point(data = points, aes(x = CCA1, y = CCA2, size = CCA1_quart), color = "gray", alpha = 0.8) + geom_point(data = points, aes(x = CCA1, y = CCA2, size = CCA2_quart), color = "gray", alpha = 0.8) + scale_size_manual(values = c(4, 1)) + geom_text_repel(data = points, aes(x =  CCA1, y = CCA2, label = points$CCA_quart_num), size = 3) + theme(legend.position = "bottom")  -->
+
+
+<!-- Pl + geom_text_repel(data = points, aes(x =  CCA1, y = CCA2, label = points$CCA_quart_num), size = 3) + theme(legend.position = "bottom")  -->
+
+
+<!-- Pl + geom_text_repel(data = gg_phen_cca_reduced[gg_phen_cca_reduced$Score == "species",  ], aes(x =  CCA1, y = CCA2, label = points$Num), size = 3) + theme(legend.position = "bottom")  -->
+
+<!-- ``` -->
+
+
+
+Обозначения фенологических характеристик приведены в следующей таблице.
+
+
+
+```{r}
+
+points_print <- points[!is.na(points$CCA_quart_num), ]
+
+points_print_out <-  data.frame(Label = points_print$Label[1:14], Num = points_print$Num[1:14], Label = points_print$Label[15:28], Num = points_print$Num[15:28])
+
+kable(points_print_out, col.names = rep(c("Phenological Event", "Label"), 2), align = "rcrc")
+
+```
+
+## Мнолетние изенения факторов, значимых для фенологии
+
+```{r}
+Pl_t3 <- ggplot(env, aes(x = Year, y = t_3)) + geom_point() + geom_smooth(method = "lm", se = FALSE) + labs(y="Julian day") + ggtitle("Spring beginning \ndate")
+
+Pl_Ice_clear_G <- ggplot(env, aes(x = Year, y = Ice_clear_G)) + geom_point() + geom_smooth(method = "lm", se = FALSE) + labs(y="Julian day") + ggtitle("Ice melting \ndate")
+
+Pl_Su_end_1 <- ggplot(env, aes(x = Year, y = Su_end_1)) + geom_point() + geom_smooth(method = "lm", se = FALSE)+ labs(y="Julian day") + ggtitle("Summer end date \nin the previous year")
+
+
+library(gridExtra)
+
+grid.arrange(Pl_t3, Pl_Ice_clear_G, Pl_Su_end_1, ncol=3)
+
+```
+
+
+
+## Многолетняя динамика обилия видов
+
+```{r}
+Abundance_melt <- melt(Abundance, id.vars = "Year")
+Abundance_melt$variable <- gsub("_N", "", Abundance_melt[, 2]) 
+names(Abundance_melt)[2] <- "Species"
+Abundance_melt$Species <- factor(Abundance_melt$Species, levels = c("Pseudocalanus", "Calanus", "Microsetella", "Oithona",  "Centropages", "Acartia", "Temora"))
+
+Abundance_melt$Log_N <- log(Abundance_melt$value)
+
+
+ggplot(Abundance_melt, aes(x = Year, y = Log_N)) + geom_point() + facet_wrap(~Species, scales = "free", ncol = 4) + geom_smooth(method = "loess") + xlim(1963, 2018) + labs(y = "log(N)")
+
+```
+
+
+
+
+## Зависимость обилия видов от параметров среды
+
+Здесь надо подумать. Может быть надо менно с этого начать. Этот результат показывает, что обилие видов, как таковое, находится в зависимости от климатических факторов.  НО! Это не совсем то, что хотелось, как я понимаю (хотелось выявить, как обилие связано с фенологическими сдвигами). Как показать именно то, что хотелось, пока не понял. Еще думаю.
+
+```{r}
+
+abund_cca_0 <- cca(log_abundance ~ 1, data =  env[-c(1:2),-1])
+
+abund_cca <- cca(log_abundance ~ ., data =  env[-c(1:2),-1])
+
+
+abund_cca_reduced <- ordistep(abund_cca, trace = FALSE, direction = "backward", scope = formula(abund_cca_0))
+# 
+# anova(abund_cca_reduced)
+# 
+# anova(abund_cca_reduced, by = "axis")
+# 
+# anova(abund_cca_reduced, by = "margin")
+
+# autoplot(abund_cca_reduced, layers = c("species", "biplot"))
+
+plot(abund_cca_reduced, scaling =  "symmetric", display = c("sp", "bp"))
+
+```
+
+## Связь обилия и фенологических показателей 
+
+В качестве фенологического показателя взята дата начала
+
+
+```{r}
+
+Pl_pseudocal <- ggplot(phenol, aes(x = phenol$Pseudocalanus_Begin , y = env_abund$Pseudocalanus_N)) + geom_point() + geom_smooth(method = "lm") + labs(x ="The date of appearence start", y = "log(N)") + ggtitle("Pseudocalanus")
+
+Pl_cal <- ggplot(phenol, aes(x = phenol$Calanus_Begin , y = env_abund$Calanus_N)) + geom_point() + geom_smooth(method = "lm") + labs(x ="The date of appearence start", y = "log(N)") + ggtitle("Calanus")
+
+Pl_micros <- ggplot(phenol, aes(x = phenol$Microsetella_Begin , y = env_abund$Microsetella_N)) + geom_point() + geom_smooth(method = "lm") + labs(x ="The date of appearence start", y = "log(N)") + ggtitle("Microsetella")
+
+Pl_oit <-  ggplot(phenol, aes(x = phenol$Oithona_Begin , y = env_abund$Oithona_N)) + geom_point() + geom_smooth(method = "lm") + labs(x ="The date of appearence start", y = "log(N)") + ggtitle("Oithona")
+
+Pl_centr <- ggplot(phenol, aes(x = phenol$Centropages_Begin , y = env_abund$Centropages_N)) + geom_point() + geom_smooth(method = "lm") + labs(x ="The date of appearence start", y = "log(N)") + ggtitle("Centropages")
+
+Pl_acart <- ggplot(phenol, aes(x = phenol$Acartia_Begin , y = env_abund$Acartia_N)) + geom_point() + geom_smooth(method = "lm") + labs(x ="The date of appearence start", y = "log(N)") + ggtitle("Acartia")
+
+
+Pl_temor <- ggplot(phenol, aes(x = phenol$Temora_Begin , y = env_abund$Temora_N)) + geom_point() + geom_smooth(method = "lm")  + labs(x ="The date of appearence start", y = "log(N)") + ggtitle("Temora")
+
+
+
+grid.arrange(Pl_pseudocal, Pl_cal, Pl_micros, Pl_oit, Pl_centr, Pl_acart,  Pl_temor, ncol = 3)
+
+
+```
+
+
+
+
+
