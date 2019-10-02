@@ -93,12 +93,36 @@ pr_value$PME_E <- with(pr_value, N_E_ME / N_E)
 
 pr_value$PME_T <- with(pr_value, N_T_ME / N_E)
 
+
+
+
+
+
+ggplot(pr_value, aes(x = N_T_MT, y = N_E_ME)) + geom_point()
+
+ggplot(pr_value, aes(x = Freq_MT, color = color)) + 
+  geom_segment(aes(x = Freq_MT, y = PME_E, xend = Freq_MT, yend = PMT_T), color="darkgrey") +
+  geom_point(aes(y = PME_E), fill = "white", shape = 21) +
+  geom_point(aes(y = PMT_T), fill = "black", shape = 21) +
+  geom_hline(aes(yintercept=0.5), color="black") + 
+  facet_wrap(~facet, nrow=1) 
+
+
+ggplot(pr_value, aes(x = Freq_MT, y = (PME_E - PMT_T))) + 
+  geom_point() +
+  geom_hline(yintercept = 0)+
+  geom_vline(xintercept = 0.5) + 
+  geom_smooth(method = "lm")+
+  facet_wrap(~facet, nrow=1) 
+
+
+
 # делаю второй датасет, тк ошибки выдавал..
 pr_value2 <- myt %>% group_by(facet, color, pop) %>% summarise(Freq_MT = mean(str), N_T = sum(ind == 1),  N_T_MT = sum(Sp2 == 1 & ind == 1), N_E_MT = sum(Sp2 == 1 & ind == 0), N_E = sum(ind == 0), N_E_ME = sum(Sp2 == 0 & ind == 0), N_T_ME = sum(Sp2 == 0 & ind == 1))
 
 pr_value2$PMT_T <- with(pr_value2, N_T_MT / N_T)
 
-pr_value <- ggplot(data = pr_value, aes(x = Freq_MT, y = PME_E, group = color)) + geom_hline(aes(yintercept=0.5), color="black") + facet_wrap(~facet, nrow=1) + geom_segment(aes(xend = Freq_MT, yend = PMT_T), color="darkgrey", size = 0.5)+ geom_point(aes(color=color, size=N_E), position = position_jitter(width=0, height=0), shape=21)  + theme_bw() + geom_point(data = pr_value2, aes(x = Freq_MT, y = PMT_T, group = color, fill = color, size=N_T), shape=21) + scale_fill_manual(values= c("green", "yellow", "brown", "blue", "red", "black")) + scale_color_manual(values= c("green", "yellow", "brown", "blue", "red", "black"))+ xlim(0,1) + theme(axis.title.x = element_text(size = 13), axis.title.y = element_text(size = 13), axis.text= element_text(size = 11)) + labs(y =  "Predictive values", x = "Frequency of MT", fill = "") 
+pr_value <- ggplot(data = pr_value, aes(x = Freq_MT, y = PME_E, group = color)) + geom_hline(aes(yintercept=0.5), color="black") + facet_wrap(~facet, nrow=1) + geom_segment(aes(xend = Freq_MT, yend = PMT_T), color="darkgrey", size = 0.5)+ geom_point(aes(fill=color, size=N_E), position = position_jitter(width=0, height=0), shape=21)  + theme_bw() + geom_point(data = pr_value2, aes(x = Freq_MT, y = PMT_T, group = color, fill = color, size=N_T), shape=21) + scale_fill_manual(values= c("green", "yellow", "brown", "blue", "red", "black")) + scale_color_manual(values= c("green", "yellow", "brown", "blue", "red", "black"))+ xlim(0,1) + theme(axis.title.x = element_text(size = 13), axis.title.y = element_text(size = 13), axis.text= element_text(size = 11)) + labs(y =  "Predictive values", x = "Frequency of MT", fill = "") 
 
 # объединяем 4 графика
 ggarrange(link_over_plot, pops_over_plot, acc_over_plot, pr_value, ncol = 1, common.legend = TRUE, legend="right")
