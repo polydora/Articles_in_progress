@@ -1,1 +1,0 @@
-"0","ggplot(new_data, aes(x = freq_MT, y = str)) + geom_raster(aes(fill = Predict_gam)) + facet_wrap(~facet) + scale_fill_gradient(low = ""yellow"", high = ""red"") + geom_density2d(data = myt2, n = 20)  + theme_bw() + labs(x = ""Prevalence (proportion of M.trossulus)"", y = ""Structure"", fill = ""Вероятность \n встретить Т-морфотип"")"

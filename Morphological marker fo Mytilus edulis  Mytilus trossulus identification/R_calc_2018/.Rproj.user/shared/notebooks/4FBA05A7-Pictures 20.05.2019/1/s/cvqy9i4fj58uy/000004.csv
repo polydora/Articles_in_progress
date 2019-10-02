@@ -1,3 +1,0 @@
-"0","correct_prop <- myt2_reduced %>% group_by(Subset,  pop, morph) %>%  do(data.frame(Prop_correct = mean(.$congr), freq_MT = mean(.$freq_MT) ))"
-"0","Pl_fit_init_data <- Pl_fit + geom_point(data = correct_prop, aes(x = freq_MT, y = Prop_correct, color = morph), size = 1)"
-"0","Pl_fit_init_data"
