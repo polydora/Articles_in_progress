@@ -12,7 +12,7 @@ library(knitr)
 
 
 
-myt <- read.table("data_salinity3.csv", header = T, sep = ",")
+myt <- read.table("data_salinity3.csv", header = T, sep = ";")
 
 myt$Sp [myt$str > 0.5] <- "M.trossulus" #Лучше обозначать так!
 myt$Sp [myt$str <= 0.5] <- "M.edulis"
