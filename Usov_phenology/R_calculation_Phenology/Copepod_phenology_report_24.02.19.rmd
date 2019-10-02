@@ -1,0 +1,740 @@
+---
+title: "Фенология копепод"
+author: ""
+date: '24 февраля 2019 г '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, cache = TRUE)
+library(knitr)
+```
+
+<style type="text/css">
+
+body{ /* Normal  */
+      font-size: 18px;
+  }
+td {  /* Table  */
+  font-size: 14px;
+}
+h1.title {
+  font-size: 38px;
+  color: DarkRed;
+}
+h1 { /* Header 1 */
+  font-size: 30px;
+  color: DarkBlue;
+}
+h2 { /* Header 2 */
+    font-size: 20px;
+  color: DarkBlue;
+}
+h3 { /* Header 3 */
+  font-size: 16px;
+  font-family: "Times New Roman", Times, serif;
+  color: DarkBlue;
+}
+code.r{ /* Code block */
+    font-size: 18px;
+}
+pre { /* Code block - determines code spacing between lines */
+    font-size: 14px;
+}
+</style>
+
+
+
+
+```{r}
+library(vegan)
+library(reshape2)
+library(doBy)
+library(ggplot2)
+library (plyr)
+
+# Подготовка данных ####
+plankt_wide <- read.csv("data/Plankton_raw_tidy.csv", header = TRUE)
+vars <- read.csv("data/Plankton_raw_tidy_variables.csv", header = T)
+
+
+d <- (melt(plankt_wide, id.vars = c("Day", 	"Month", 	"Year", 	"Data"), variable.name = "Var_ID", value.name = "Abundance"))
+
+
+plankt <- merge(d, vars)
+
+## Среденвзвешанные значения, объединение слоев
+
+plankt_1 <- plankt[plankt$Level == "0-10", ]
+
+plankt_2 <- plankt[plankt$Level == "10-25", ]
+
+plankt_3 <- plankt[plankt$Level == "25-bottom", ]
+
+
+plankt_mean <- plankt_1
+
+plankt_mean$Abund_mean <- (plankt_1$Abundance*10 + plankt_2$Abundance*15)/25
+
+```
+
+# Часть 1. Как описывать фенологию?
+
+# Данные 
+
+В качестве первичных данных для анализа взяты средние численности копепод в горизонте глубины 0-25 м.  Расчеты проводились по формуле:
+
+$$
+N_{0-25} = \frac{N_{0-10} \cdot 10 , N_{10-25} \cdot 15}{25}
+$$
+
+
+После пересчета, для каждого вида были отобраны только данные по обилию копеподитов. 
+
+
+```{r}
+
+plankt_mean$Date2 <- strptime(paste(plankt_mean$Day,"/", plankt_mean$Month, "/", plankt_mean$Year, sep = ""), format=("%d/%m/%Y"))
+
+Start_day <- strptime(paste(plankt_mean$Year,"/01/01", sep = ""), format=("%Y/%d/%m"))
+
+
+plankt_mean$Days_from_year_start <-  as.numeric(round(difftime(plankt_mean$Date2, as.Date(Start_day))))
+
+##разделяем датасет на четыре части по видам
+
+
+
+
+
+calanus <- plankt_mean[plankt_mean$Species == "Calanus glacialis", ]
+calanus <- calanus[calanus$Stage == "cop I", ]
+calanus$Abund_mean2 <- calanus$Abund_mean
+calanus$Abund_mean2[is.na(calanus$Abund_mean)] <- 0
+calanus <- calanus[!is.na(calanus$Year), ]
+
+
+centrop <- plankt_mean[plankt_mean$Species == "Centropages hamatus", ]
+centrop <- centrop[centrop$Stage == "cop.", ]
+centrop$Abund_mean2 <- centrop$Abund_mean
+centrop$Abund_mean2[is.na(centrop$Abund_mean)] <- 0 
+centrop <- centrop[!is.na(centrop$Year), ]
+
+
+temor <- plankt_mean[plankt_mean$Species == "Temora longicornis", ]
+temor <- temor[temor$Stage == "cop.", ]
+temor$Abund_mean2 <- temor$Abund_mean
+temor$Abund_mean2[is.na(temor$Abund_mean)] <- 0 
+temor <- temor[!is.na(temor$Year), ]
+
+
+oit <- plankt_mean[plankt_mean$Species == "Oithona similis", ]
+oit <- oit[oit$Stage == "cop.", ]
+oit$Abund_mean2 <- oit$Abund_mean
+oit$Abund_mean2[is.na(oit$Abund_mean)] <- 0 
+oit <- oit[!is.na(oit$Year), ]
+
+## Строим накопленную сумму для каждого вида 
+
+Total_cum_calanus <- with(data = calanus, tapply(Abund_mean2, INDEX=list(Year), FUN=function(x) as.numeric(cumsum(x))))
+df_count_Total_calanus <- ldply (Total_cum_calanus, data.frame)
+df_count_Total_calanus$Date2 <- calanus$Date2[order(calanus$Date2)]
+names(df_count_Total_calanus) <- c("Year", "N_accum", "Date2")
+df_count_Total_calanus$Time <- as.numeric(df_count_Total_calanus$Date2)
+df_count_Total_calanus$Time2 <- as.POSIXct(df_count_Total_calanus$Time, origin = "1970-01-01", tz = "UTC")           
+
+
+Total_cum_centrop <- with(data = centrop, tapply(Abund_mean2, INDEX=list(Year), FUN=function(x) as.numeric(cumsum(x))))
+df_count_Total_centrop <- ldply (Total_cum_centrop, data.frame)
+df_count_Total_centrop$Date2 <- centrop$Date2 [order(centrop$Date2)]
+names(df_count_Total_centrop) <- c("Year", "N_accum", "Date2")
+df_count_Total_centrop$Time <- as.numeric(df_count_Total_centrop$Date2)
+df_count_Total_centrop$Time2 <- as.POSIXct(df_count_Total_centrop$Time, origin = "1970-01-01", tz = "UTC")           
+
+Total_cum_temor <- with(data = temor, tapply(Abund_mean2, INDEX=list(Year), FUN=function(x) as.numeric(cumsum(x))))
+df_count_Total_temor <- ldply (Total_cum_temor, data.frame)
+df_count_Total_temor$Date2 <- temor$Date2 [order(temor$Date2)]
+names(df_count_Total_temor) <- c("Year", "N_accum", "Date2")
+df_count_Total_temor$Time <- as.numeric(df_count_Total_temor$Date2)
+df_count_Total_temor$Time2 <- as.POSIXct(df_count_Total_temor$Time, origin = "1970-01-01", tz = "UTC")  
+
+
+Total_cum_oit <- with(data = oit, tapply(Abund_mean2, INDEX=list(Year), FUN=function(x) as.numeric(cumsum(x))))
+df_count_Total_oit <- ldply (Total_cum_oit, data.frame)
+df_count_Total_oit$Date2 <- oit$Date2[order(oit$Date2)]
+names(df_count_Total_oit) <- c("Year", "N_accum", "Date2")
+df_count_Total_oit$Time <- as.numeric(df_count_Total_oit$Date2)
+df_count_Total_oit$Time2 <- as.POSIXct(df_count_Total_oit$Time, origin = "1970-01-01", tz = "UTC")      
+
+
+
+
+# Функция для вычисления параметров логистической кумуляты на выходе три парамтера логистической кривой
+
+log_param <- function(df, species = NULL){
+  df_param <- data.frame(Year = rep(NA, length(unique(df$Year))), Asym = NA, xmid = NA, scal = NA)
+  i <- 1
+  for(year in unique(df$Year)){
+    fit <- tryCatch(expr = nls(N_accum ~ SSlogis(Time, Asym, xmid, scal), data = df[df$Year == year, ]), error = function(e)NA)
+    
+    df_param$Year[i] <-  year
+    
+    if(is.na(fit)) {df_param$Asym[i] <-  df_param$xmid[i] <- df_param$scal[i] <- NA}
+    else{
+      df_param$Asym[i] <-  coef(fit)[1]
+      df_param$xmid[i] <- coef(fit)[2]
+      df_param$scal[i] <- coef(fit)[3]
+    }
+    i <- i+1
+  }
+  
+  df_param$perc_15 <- with(df_param, xmid - log(Asym/(0.15*Asym) - 1)*scal )
+  df_param$perc_50 <- with(df_param, xmid - log(Asym/(0.5*Asym) - 1)*scal )
+  df_param$perc_85 <- with(df_param, xmid - log(Asym/(0.85*Asym) - 1)*scal )
+  df_param$Time_perc_15 <- as.POSIXct(df_param$perc_15, origin = "1970-01-01", tz = "UTC")
+  df_param$Time_perc_50 <- as.POSIXct(df_param$perc_50, origin = "1970-01-01", tz = "UTC") 
+  df_param$Time_perc_85 <- as.POSIXct(df_param$perc_85, origin = "1970-01-01", tz = "UTC") 
+  
+  df_param$Start_day <- as.POSIXct(paste(df_param$Year,"-01-01", sep = ""), tz = "UTC") 
+  df_param$Days_perc_15 <- as.numeric(round(difftime( df_param$Time_perc_15, as.Date(df_param$Start_day))))
+  df_param$Days_perc_50 <- as.numeric(round(difftime( df_param$Time_perc_50, as.Date(df_param$Start_day))))
+  df_param$Days_perc_85 <- as.numeric(round(difftime( df_param$Time_perc_85, as.Date(df_param$Start_day))))
+  
+  df_param$Species = species
+  df_param
+    
+}
+
+########################
+
+log_param_Calanus <- log_param(df = df_count_Total_calanus, species = "Calanus")
+log_param_Centropages <- log_param(df = df_count_Total_centrop, species = "Centropages")
+log_param_Temora <- log_param(df = df_count_Total_temor, species = "Temora")
+log_param_Oithona <- log_param(df = df_count_Total_oit, species = "Oithona")
+
+
+##Даты пиков численности видов
+
+peaks <- function(df, species = NULL){
+  df_param <- data.frame(Year = rep(NA, length(unique(df$Year))))
+  i <- 1
+  for(year in unique(df$Year)){
+    df_param$Year[i] <-  year
+    df_param$Peak_Days_from_year_start[i] <- mean(df$Days_from_year_start[df$Year == year & df$Abund_mean2 == max(df$Abund_mean2[df$Year == year])])
+    i <- i + 1
+  }
+  df_param
+  
+}
+
+log_param_Calanus <- merge(log_param_Calanus, peaks(df = calanus), by="Year")
+log_param_Centropages <- merge(log_param_Centropages, peaks(df = centrop), by="Year")
+log_param_Temora <- merge(log_param_Temora, peaks(df = temor), by="Year")
+log_param_Oithona <- merge(log_param_Oithona, peaks(df = oit), by="Year")
+
+
+
+
+
+# Функция для рисования кумулят
+
+plot_cum <- function(df =df_count_Total_calanus,  year = 1961){
+  library(ggplot2)
+  fit <- tryCatch(expr = nls(N_accum ~ SSlogis(Time, Asym, xmid, scal), data = df[df$Year == year, ]), error = function(e)NA)
+  
+  if(is.na(fit[1])){
+    Pl <- ggplot(df[df$Year == year, ], aes(x = Time2, y = N_accum)) + geom_point() + scale_x_datetime(date_breaks = "4 week", date_labels = "%d-%m")
+    
+  }
+  else{
+    predict <- predict(fit, newdata = df[df$Year == year, ])
+    Pl <- ggplot(df[df$Year == year, ], aes(x = Time2, y = N_accum)) + geom_point() + geom_line(aes(y = predict)) + scale_x_datetime(date_breaks = "4 week", date_labels = "%d-%m")
+    
+  }
+  
+  Pl + theme_bw()
+}
+
+
+
+
+```
+
+
+
+# Фенологическая матрица
+Для описания фенологических событий была создана матрица, содержащая в себе даты (количество дней от 1 января соответствующего года) следующих ключевых событий для каждого вида:
+
+1. Наблюдаемый пик численности в точке наблюдения   
+2. Появление в точке наблюдения   
+3. Исчезновение из точки наблюдения   
+4. Ожидаемый пик численности в точке наблюдения.    
+
+
+Первый показатель вычислялся, как дата, когда физически наблюдалось самое высокое значение численности (в тех, редких, ситуациях, когда наблюдалось два абсолютно равных по высоте пика, бралась средняя дата между ними).
+
+Три оставшихся показателя были вычислены в соответствии со следующим алгоритмом. 
+
+**Шаг 1.** Для каждого года, для каждого вида была построена кумулята, отражающая накопленное количество особей, приходящееся на данную дату.
+
+**Шаг 2.** Для полученного ряда чисел были подобраны параметры логистической кривой, которая наилучшим образом вписывается в наблюдаемый ряд.
+
+Вот пример такой кумуляты для в 2013 г. для *Oithona*. 
+
+```{r}
+year <- 2013
+plot_cum(year = year, df = df_count_Total_oit)  + geom_line(color = "gray")
+
+```
+
+В тот же год для *Temora*
+
+
+```{r}
+plot_cum(year = year, df = df_count_Total_temor)  + geom_line(color = "gray")
+```
+
+
+В тот же год для *Centropages*
+
+
+```{r}
+plot_cum(year = year, df = df_count_Total_centrop)  + geom_line(color = "gray")
+```
+
+
+
+Однако в ряде случаев подобрать кривые подобрать не удается. Вот, например, в 2013 г. для *Calanus*.  
+
+
+```{r}
+year <- 2013
+plot_cum(year = year, df = df_count_Total_calanus)  + geom_line(color = "gray")
+
+```
+
+Собственно почти все неудачи подбора логистической кривой были связаны с *Calanus*. Это связано с узкими и острыми пиками численности, характерными для данного вида. На кумуляте это выглядит, как очень резкая зона перегиба. 
+
+Единственный случай, когда не удалось подобрать логистическую кривую для других видов -- это 2014 год у *Oithona*. Вот ее кумулята.
+
+```{r}
+year <- 2014
+plot_cum(year = year, df = df_count_Total_oit)  + geom_line(color = "gray")
+
+```
+
+Здесь причина неудачи с подбором логистической кривой заключается в том, что кумулята не достигла максимума за весь период наблюдений. Если не придумаем ничего интереснее, то этот год, вероятно, надо исключить.
+
+**Шаг 3.** Имея в руках параметры логистической кривой, мы можем вычислить все интересующие нас параметры. В качестве начала появления вида в точке наблюдений берем дату, когда логистическая кривая достигает 15% от ее максимума (точнее значения асимптоты). В качестве окончания периода регистрации вида в точке наблюдения -- 85% от максимума логистической кривой. Ожидаемый пик численности - это точка перегиба логистической кривой.
+
+**Шаг 4.** Для *Calanus*, в случаях, когда наблюдались острые и сжатые пики, все события (1. Наблюдаемый пик численности в точке наблюдения; 2. Появление в точке наблюдения; 3. Исчезновение из точки наблюдения; 4. Ожидаемый пик численности в точке наблюдения) считались произошедшими одновременно. Их дата считалась совпадающей с датой наблюдаемого пика численности.
+
+**Шаг 5.** Все параметры были сведены в фенологическую матрицу. 
+
+
+Вот матрицы для каждого из видов.
+
+*Calanus*. 
+Там, где стоит NA - это случаи, когда не удалось подобрать параметры логистической кривой. 
+
+```{r}
+param_print <- log_param_Calanus[, c( "Year", "Peak_Days_from_year_start", "Days_perc_15", "Days_perc_50", "Days_perc_85")]
+kable (param_print, col.names = c("Year", "Peak", "Begin", "Meadle", "End"))
+```
+
+
+*Centropages*. 
+
+```{r}
+param_print <- log_param_Centropages[, c( "Year", "Peak_Days_from_year_start", "Days_perc_15", "Days_perc_50", "Days_perc_85")]
+kable (param_print, col.names = c("Year", "Peak", "Begin", "Meadle", "End"))
+```
+
+
+*Temora*. 
+
+```{r}
+param_print <- log_param_Temora[, c( "Year", "Peak_Days_from_year_start", "Days_perc_15", "Days_perc_50", "Days_perc_85")]
+kable (param_print, col.names = c("Year", "Peak", "Begin", "Meadle", "End"))
+```
+
+*Oithona*. 
+
+```{r}
+param_print <- log_param_Oithona[, c( "Year", "Peak_Days_from_year_start", "Days_perc_15", "Days_perc_50", "Days_perc_85")]
+kable (param_print, col.names = c("Year", "Peak", "Begin", "Meadle", "End"))
+```
+
+# Визуализация сезонной динамики видов 
+
+Ниже на рисунках красная вертикальная линия -- наблюдаемый пик, синяя вертикальная линия -- пик, вычисленный по логистической кривой. Возможно, что различия в датах этих пиков может характеризовать наличие дополнительных пиков в более ранние  или более поздние сроки.   Синяя кривая - это просто сглаживающая функция (loess).
+
+```{r}
+plot_dynam <- function(df_a, df_par, begin, end, Ncol) {
+  library(ggplot2)
+  df_a <- df_a[order(df_a$Date2),]
+  ggplot(df_a[df_a$Year %in% begin:end,], aes(x = Days_from_year_start, y = Abund_mean2)) + geom_line() +  facet_wrap(~Year, ncol=Ncol, scales = "free_y") + geom_vline(data = df_par[df_par$Year%in% begin:end, ], aes(xintercept = Days_perc_50), color = "blue") + geom_vline(data = df_par[df_par$Year%in% begin:end, ], aes(xintercept = Peak_Days_from_year_start), color = "red") + geom_smooth(se = FALSE) + labs(x = "Year days", y = "Abundance") + theme_bw()
+}
+
+```
+
+
+
+## Динамика Calanus
+
+
+
+```{r}
+(Pl_cal_1 <- plot_dynam(calanus, log_param_Calanus, 1961, 1966, 3))
+
+(Pl_cal_2 <- plot_dynam(calanus, log_param_Calanus, 1967, 1972, 3))
+
+(Pl_cal_3 <- plot_dynam(calanus, log_param_Calanus, 1973, 1978, 3))
+
+(Pl_cal_4 <- plot_dynam(calanus, log_param_Calanus, 1979, 1984, 3))
+
+(Pl_cal_5 <- plot_dynam(calanus, log_param_Calanus, 1985, 1990, 3))
+
+(Pl_cal_6 <- plot_dynam(calanus, log_param_Calanus, 1991, 1996, 3))
+
+(Pl_cal_7 <- plot_dynam(calanus, log_param_Calanus, 1997, 2002, 3))
+
+(Pl_cal_8 <- plot_dynam(calanus, log_param_Calanus, 2003, 2008, 3))
+
+(Pl_cal_9 <- plot_dynam(calanus, log_param_Calanus, 2009, 2014, 3))
+
+(Pl_cal_10 <- plot_dynam(calanus, log_param_Calanus, 2015, 2018, 3))
+
+
+```
+
+
+
+## Динамика Centropages
+
+```{r}
+
+(Pl_centrop_1 <- plot_dynam(centrop, log_param_Centropages, 1961, 1966, 3))
+
+(Pl_centrop_2 <- plot_dynam(centrop, log_param_Centropages, 1967, 1972, 3))
+
+(Pl_centrop_3 <- plot_dynam(centrop, log_param_Centropages, 1973, 1978, 3))
+
+(Pl_centrop_4 <- plot_dynam(centrop, log_param_Centropages, 1979, 1984, 3))
+
+(Pl_centrop_5 <- plot_dynam(centrop, log_param_Centropages, 1985, 1990, 3))
+
+(Pl_centrop_6 <- plot_dynam(centrop, log_param_Centropages, 1991, 1996, 3))
+
+(Pl_centrop_7 <- plot_dynam(centrop, log_param_Centropages, 1997, 2002, 3))
+
+(Pl_centrop_8 <- plot_dynam(centrop, log_param_Centropages, 2003, 2008, 3))
+
+(Pl_centrop_9 <- plot_dynam(centrop, log_param_Centropages, 2009, 2014, 3))
+
+(Pl_centrop_10 <- plot_dynam(centrop, log_param_Centropages, 2015, 2018, 3))
+
+
+```
+
+## Динамика Temora
+
+
+```{r}
+# Динамика Temora
+
+
+(Pl_temor_1 <- plot_dynam(temor, log_param_Temora, 1961, 1966, 3))
+
+(Pl_temor_2 <- plot_dynam(temor, log_param_Temora, 1967, 1972, 3))
+
+(Pl_temor_3 <- plot_dynam(temor, log_param_Temora, 1973, 1978, 3))
+
+(Pl_temor_4 <- plot_dynam(temor, log_param_Temora, 1979, 1984, 3))
+
+(Pl_temor_5 <- plot_dynam(temor, log_param_Temora, 1985, 1990, 3))
+
+(Pl_temor_6 <- plot_dynam(temor, log_param_Temora, 1991, 1996, 3))
+
+(Pl_temor_7 <- plot_dynam(temor, log_param_Temora, 1997, 2002, 3))
+
+(Pl_temor_8 <- plot_dynam(temor, log_param_Temora, 2003, 2008, 3))
+
+(Pl_temor_9 <- plot_dynam(temor, log_param_Temora, 2009, 2014, 3))
+
+(Pl_temor_10 <- plot_dynam(temor, log_param_Temora, 2015, 2018, 3))
+
+
+```
+
+## Динамика Oithona
+
+```{r}
+(Pl_0it_1 <- plot_dynam(oit, log_param_Oithona, 1961, 1966, 3))
+
+(Pl_0it_2 <- plot_dynam(oit, log_param_Oithona, 1967, 1972, 3))
+
+(Pl_0it_3 <- plot_dynam(oit, log_param_Oithona, 1973, 1978, 3))
+
+(Pl_0it_4 <- plot_dynam(oit, log_param_Oithona, 1979, 1984, 3))
+
+(Pl_0it_5 <- plot_dynam(oit, log_param_Oithona, 1985, 1990, 3))
+
+(Pl_0it_6 <- plot_dynam(oit, log_param_Oithona, 1991, 1996, 3))
+
+(Pl_0it_7 <- plot_dynam(oit, log_param_Oithona, 1997, 2002, 3))
+
+(Pl_0it_8 <- plot_dynam(oit, log_param_Oithona, 2003, 2008, 3))
+
+(Pl_0it_9 <- plot_dynam(oit, log_param_Oithona, 2009, 2014, 3))
+
+(Pl_0it_10 <- plot_dynam(oit, log_param_Oithona, 2015, 2018, 3))
+
+```
+
+
+
+# Фенология видов
+
+Если обобщить все данные, то наблюдается достаточно явная картина разделения сезонных показателей между видами.
+
+```{r}
+
+
+phen_calanus <- log_param_Calanus[,c("Days_perc_15",	"Days_perc_50",	"Days_perc_85",	"Peak_Days_from_year_start")]
+
+names(phen_calanus) <- c("Cal_15", "Cal_50", "Cal_85", "Cal_peak")
+
+phen_calanus$Cal_15[is.na(phen_calanus$Cal_15)] <- phen_calanus$Cal_peak[is.na(phen_calanus$Cal_15)]
+
+phen_calanus$Cal_50[is.na(phen_calanus$Cal_50)] <- phen_calanus$Cal_peak[is.na(phen_calanus$Cal_50)]
+
+phen_calanus$Cal_85[is.na(phen_calanus$Cal_85)] <- phen_calanus$Cal_peak[is.na(phen_calanus$Cal_85)]
+
+phen_calanus$Sp <- "Calanus"
+
+
+
+
+
+phen_centropages <- log_param_Centropages[,c("Days_perc_15",	"Days_perc_50",	"Days_perc_85",	"Peak_Days_from_year_start")]
+
+names(phen_centropages) <- c("Cent_15", "Cent_50", "Cent_85", "Cent_peak")
+
+phen_centropages$Sp <- "Centropages"
+
+
+
+
+
+phen_temora <- log_param_Temora[,c("Days_perc_15",	"Days_perc_50",	"Days_perc_85","Peak_Days_from_year_start")]
+
+names(phen_temora) <- c("Tem_15", "Tem_50", "Tem_85", "Tem_peak")
+
+
+phen_temora$Sp <- "Temora"
+
+
+
+
+phen_oithona <- log_param_Oithona[,c("Days_perc_15",	"Days_perc_50",	"Days_perc_85","Peak_Days_from_year_start")]
+
+names(phen_oithona) <- c("Oit_15", "Oit_50", "Oit_85", "Oit_peak")
+
+phen_oithona$Sp <- "Oithona"
+
+
+
+
+
+phenol <- cbind(phen_calanus, phen_centropages, phen_temora, phen_oithona)
+phenol <- phenol[, -c(5, 10, 15, 20)]
+
+phen_calanus2 <- phen_calanus
+phen_centropages2 <- phen_centropages
+phen_temora2 <- phen_temora
+phen_oithona2 <- phen_oithona
+
+names(phen_calanus2) <- names(phen_centropages2) <- names(phen_temora2) <- names(phen_oithona2) <- c("Begin_phase", "Meadle_phase", "End_phase", "Peak", "Sp" )
+
+
+
+phen_sp <- rbind(phen_calanus2,phen_centropages2,phen_temora2, phen_oithona2)
+
+phen_sp$Duration <- phen_sp$End_phase - phen_sp$Begin_phase
+
+phen_sp$Phen_Index <- apply(phen_sp[, 1:4], MARGIN = 1, FUN = mean) 
+
+
+```
+
+Даты пиков расходятся у разных видов. 
+
+
+```{r}
+ggplot(phen_sp, aes(x = Sp, y = Peak)) + geom_boxplot() + labs(y = "Day of abundance peak", x = "Species")
+
+
+```
+
+
+А вот так расходятся даты начала появления видов в точке наблюдения
+
+```{r}
+ggplot(phen_sp, aes(x = Sp, y = Begin_phase)) + geom_boxplot() + labs(y = "Day of apearance", x = "Species")
+
+```
+
+Видимо, это хорошо уже известно и описано, что *Calanus* начинает "вегетировать" раньше всех, потом в планктоне появляется *Oithona*. Самые поздние виды  -- *Temora* и *Centropages*. 
+
+
+
+-----------------------------------------------
+
+# Часть 2. Динамика фенологических параметров
+
+
+# Собственно вопросы исследования
+
+Итого. Это все была подготовка к анализу. Далее будем использовать фенологические матрицы для ответа на ключевые вопросы исследования. Я их вижу так.
+
+1. Присутствуют ли многолетние сдвиги в фенологических показателях видов.
+2. Какие из параметров среды могут быть ответственны за наблюдаемые изменения.
+
+
+# Сдвиги в фенологии.
+
+Для выявления сдвигов в фенологических параметрах предлагается такой подход.
+
+1. Формируем тренд-матрицу -- это просто ряд от 1961 до 2018.
+2. Для этой тренд-матрицы находим матрицу евклидовых расстояний между годами.
+3. Строим общую фенологическую матрицу для всех видов. 
+4. Строим матрицу евклидовых расстояний между годами на основе этой матрицы.
+5. С помощью теста Мантела оцениваем совпадение фенологической матрицы и тренд-матрицы.
+
+```{r}
+years <- 1961:2018
+
+trend_dist <- dist(years[!(years %in% c(2014))])
+
+phen_dist <- dist(phenol[!(years %in% c(2014)), ])
+
+mantel_all <- mantel(phen_dist, trend_dist, permutations = 9999)
+
+mantel_all
+```
+
+
+
+Этот результат говорит о том, что существуют многолетние смещения фенологических показателей в целом для всего сообщества копепод.
+
+
+Этот анализ можно проделать и для каждого вида в отдельности.
+
+## Для Calanus
+
+
+```{r}
+trend_dist <- dist(years[!(years %in% c(1972))])
+
+dist_calanus <- dist(phen_calanus[!(years %in% c(1972)), -5])
+
+mantel_calanus <- mantel(dist_calanus, trend_dist, permutations = 9999)
+mantel_calanus
+```
+
+
+
+
+## Для Centropages
+
+```{r}
+trend_dist <- dist(years)
+
+dist_centropages <- dist(phen_centropages[,-5])
+
+mantel_centropages <- mantel(dist_centropages, trend_dist, permutations = 9999)
+
+mantel_centropages
+```
+
+## Для Temora
+
+```{r}
+
+
+trend_dist <- dist(years)
+
+dist_temora <- dist(phen_temora [ ,-5 ])
+
+mantel_temora <- mantel(dist_temora, trend_dist, permutations = 9999)
+
+mantel_temora
+```
+
+
+
+## Для Oithona
+
+
+```{r}
+trend_dist <- dist(years[!(years %in% c(2014))])
+
+dist_oithona <- dist(phen_oithona[!(years %in% c(2014)), -5])
+
+mantel_oithona <- mantel(dist_oithona, trend_dist, permutations = 9999)
+
+mantel_oithona
+```
+
+Эти результаты говорят о том, что сдвиги видны у всех, кроме *Oithona*, у которой, видимо, это не читается из-за сильно размытой сезонности. 
+
+
+Таким образом, гипотеза о сдвиге фенологических параметров подтверждается.
+
+
+Для ответа на вопрос **куда** сдвигаются даты желательно отойти от многомерной оценки фенологии и ввести какую-то одну характеристику. Назовем ее "*фенологический индекс*". Это просто средняя дата всех четырех ключевых событий (1. Наблюдаемый пик численности в точке наблюдения; 2. Появление в точке наблюдения;
+3. Исчезновение из точки наблюдения; 4. Ожидаемый пик численности в точке наблюдения). 
+
+
+```{r}
+
+phen_sp$Year <- rep(years, 4)
+ggplot(phen_sp, aes(x = Year, y = Phen_Index)) + geom_point() + geom_smooth(method = "lm", se = FALSE) + facet_wrap(~Sp, ncol = 2)
+
+```
+
+
+
+Эта картинка показывает, что в среднем даты ключевых событий смещаются на более ранние сроки. 
+
+
+## Какой параметр среды отвечает за наблюдаемые сдвиги?
+
+Для этого наиболее подходящим, на мой взгляд, является процедура BIO-ENV.
+
+```{r}
+
+env <- read.csv("data/env_gap_filled.csv", header = TRUE) 
+
+env2 <- env[ , c( "t_peak" ,"t_3" , "t_4" , "t_7" , "t_8" , "Su_end" , "t_Aug" , "S_Apr" , "S_May" ,      "S_Jun_Aug" , "S_Sep" , "Ice_clear_K" , "Ice_thick_G" , "Ice_thick_K" ,      "Su_end_1" , "t.Spring" , "t_Summer_1" , "AOI_DJFM" , "AOI_1")]
+
+
+trend_dist <- dist(years)
+
+bioenv(phenol,env2, index = "euclidean", partial = trend_dist, upto = 7)
+```
+
+Таким образом, мы видим, что фенологическая матрица наилучшим образом сопряжена с небольшим набором средовых параметров. Согласно этому анализу, это дата, когда температура воды превышает 4 градуса, соленость в сентябре, толщина льда и дата окончания лета в прошлом году. 
+
+**НО! здесь есть масса нюансов, о которых надо говорить очно.**
+
+
+
+
+
+
+
+
+
+
