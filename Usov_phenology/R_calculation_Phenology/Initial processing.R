@@ -16,7 +16,7 @@ d <- (melt(plankt_wide, id.vars = c("Day", 	"Month", 	"Year", 	"Data"), variable
 plankt <- merge(d, vars)
 
 
-
+plankt$Date2 <- 
 
 # Первичный осмотр данных ####
 
@@ -26,28 +26,47 @@ ggplot(plankt[plankt$Species == "Microsetella norvegica", ], aes(x = Abundance, 
 plankt[plankt$Abundance > 10000 & !is.na(plankt$Abundance) & plankt$Species == "Microsetella norvegica",  ]
 
 
+
+
+
+plankt$Date2 <- strptime(paste(plankt$Day,"/", plankt$Month, "/", plankt$Year, sep = ""), format=("%d/%m/%Y"))
+
+Start_day <- strptime(paste(plankt_mean$Year,"/01/01", sep = ""), format=("%Y/%d/%m"))
+
+
+plankt$Days_from_year_start <-  as.numeric(round(difftime(plankt$Date2, as.Date(Start_day))))
+
+hist(plankt$Days_from_year_start)
+
+
 ## Среденвзвешанные значения, объединение слоев
 
-plankt_1 <- plankt[plankt$Level == "0-10", ]
-nrow(plankt_1)
+plankt_total <- plankt[plankt$Stage == "Total", ] %>% group_by(Species, Year, Month, Day) %>% summarise(Abundance_0_10 = sum(Abundance[Level == "0-10"]), Abundance_10_25 =  sum(Abundance[Level == "10-25"]), Abundance_25_bottom =  sum(Abundance[Level == "25-bottom"]) )
 
-plankt_2 <- plankt[plankt$Level == "10-25", ]
-nrow(plankt_2)
-
-plankt_3 <- plankt[plankt$Level == "25-bottom", ]
-nrow(plankt_3)
+plankt_total$N_weig <- round((plankt_total$Abundance_0_10 * 10 + plankt_total$Abundance_10_25 * 15 + plankt_total$Abundance_25_bottom * 40)/65, 1)  
 
 
-names(plankt_1)
+# 
+# plankt_1 <- plankt[plankt$Level == "0-10", ]
+# nrow(plankt_1)
+# 
+# plankt_2 <- plankt[plankt$Level == "10-25", ]
+# nrow(plankt_2)
+# 
+# plankt_3 <- plankt[plankt$Level == "25-bottom", ]
+# nrow(plankt_3)
+# 
+# 
+# names(plankt_1)
 
-plankt_mean <- plankt_1
+# plankt_mean <- plankt_1
+# 
+# plankt_mean$Abund_mean <- (plankt_1$Abundance*10 + plankt_2$Abundance*15 + plankt_3$Abundance *40 )/65
+# 
+# qplot(plankt_mean$Abund_mean, plankt_mean$Abundance)
 
-plankt_mean$Abund_mean <- (plankt_1$Abundance*10 + plankt_2$Abundance*15)/25
 
-qplot(plankt_mean$Abund_mean, plankt_mean$Abundance)
-
-
-names(plankt_mean)
+# names(plankt_mean)
 
 # plankt_mean <- plankt_mean[, -6]
 
@@ -72,10 +91,10 @@ names(plankt_mean)
 Abundance <- read.csv("data/abundance.csv", header = TRUE) # Данные по обилию видов, усреденнные по всему столбу воды за март-сентябрь.
 
 
-ggplot(plankt_mean[plankt_mean$Stage == "Total" & plankt$Month %in% 6:9, ], aes(x = Year, y = (Abund_mean)))  + stat_summary(fun.data = "mean_cl_boot") + facet_wrap(~Species, scales = "free_y") + geom_smooth() 
-
-colSums(is.na(plankt_mean[plankt_mean$Stage == "Total" & plankt$Month %in% 6:9, ]))
-
+# ggplot(plankt_mean[plankt_mean$Stage == "Total" & plankt$Month %in% 6:9, ], aes(x = Year, y = (Abund_mean)))  + stat_summary(fun.data = "mean_cl_boot") + facet_wrap(~Species, scales = "free_y") + geom_smooth() 
+# 
+# colSums(is.na(plankt_mean[plankt_mean$Stage == "Total" & plankt$Month %in% 6:9, ]))
+# 
               
 
 
@@ -96,7 +115,36 @@ names(plankt_mean)
 
 
 
+## Находим средние плотности для каждого вида в период с мая по октябрь
 
+
+plankt_total$Date2 <- strptime(paste(plankt_total$Day,"/", plankt_total$Month, "/", plankt_total$Year, sep = ""), format=("%d/%m/%Y"))
+
+
+plankt_total$Month <- months(plankt_total$Date2)
+
+month_included <- c("Май", "Июнь", "Июль", "Август","Сентябрь", "Октябрь")
+
+plankt_total_summer <- plankt_total[plankt_total$Month %in% month_included, ]
+
+
+table(plankt_total_summer$Month) 
+
+Abundance_summer <-plankt_total_summer %>% group_by(Species, Year, Month, Day) %>% summarise(N = sum(N_weig, na.rm = TRUE)) %>% group_by (Species, Year)  %>% summarise(Mean_N = mean(N, na.rm = TRUE))
+
+ 
+
+Abundance_summer <- round(dcast(Abundance_summer, formula = Year ~ Species ))
+ 
+qplot(x = Abundance$Calanus_N, y = Abundance_summer$`Calanus glacialis`) + geom_abline()
+qplot(x = Abundance$Pseudocalanus_N, y = Abundance_summer$`Pseudocalanus spp.`)+ geom_abline()
+qplot(x = Abundance$Acartia_N, y = Abundance_summer$`Acartia spp.`) + geom_abline()
+qplot(x = Abundance$Centropages_N, y = Abundance_summer$`Centropages hamatus`) + geom_abline()
+qplot(x = Abundance$Oithona_N, y = Abundance_summer$`Oithona similis`) + geom_abline()
+qplot(x = Abundance$Temora_N, y = Abundance_summer$`Temora longicornis`) + geom_abline()
+qplot(x = Abundance$Microsetella_N, y = Abundance_summer$`Microsetella norvegica`) + geom_abline()
+
+write.table(Abundance_summer, "clipboard", sep = "\t", row.names = F)
 
 
 ##разделяем датасет на части по видам
