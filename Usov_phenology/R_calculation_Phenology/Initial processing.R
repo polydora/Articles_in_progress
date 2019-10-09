@@ -3,6 +3,7 @@
 # Packages  ####
 library(reshape2)
 library(ggplot2)
+library(dplyr)
 
 
 # Подготовка данных ####
@@ -16,7 +17,6 @@ d <- (melt(plankt_wide, id.vars = c("Day", 	"Month", 	"Year", 	"Data"), variable
 plankt <- merge(d, vars)
 
 
-plankt$Date2 <- 
 
 # Первичный осмотр данных ####
 
@@ -97,23 +97,23 @@ Abundance <- read.csv("data/abundance.csv", header = TRUE) # Данные по �
 # 
               
 
-
-# Находим пики в сезоны
-
-names(plankt_mean)
-
-
-
-plankt_mean$Date2 <- strptime(paste(plankt_mean$Day,"/", plankt_mean$Month, "/", plankt_mean$Year, sep = ""), format=("%d/%m/%Y"))
-
-Start_day <- strptime(paste(plankt_mean$Year,"/01/01", sep = ""), format=("%Y/%d/%m"))
-
-
-plankt_mean$Days_from_year_start <-  as.numeric(round(difftime(plankt_mean$Date2, as.Date(Start_day))))
-
-names(plankt_mean)
-
-
+# 
+# # Находим пики в сезоны
+# 
+# names(plankt_mean)
+# 
+# 
+# 
+# plankt_mean$Date2 <- strptime(paste(plankt_mean$Day,"/", plankt_mean$Month, "/", plankt_mean$Year, sep = ""), format=("%d/%m/%Y"))
+# 
+# Start_day <- strptime(paste(plankt_mean$Year,"/01/01", sep = ""), format=("%Y/%d/%m"))
+# 
+# 
+# plankt_mean$Days_from_year_start <-  as.numeric(round(difftime(plankt_mean$Date2, as.Date(Start_day))))
+# 
+# names(plankt_mean)
+# 
+# 
 
 ## Находим средние плотности для каждого вида в период с мая по октябрь
 
@@ -123,7 +123,11 @@ plankt_total$Date2 <- strptime(paste(plankt_total$Day,"/", plankt_total$Month, "
 
 plankt_total$Month <- months(plankt_total$Date2)
 
-month_included <- c("Май", "Июнь", "Июль", "Август","Сентябрь", "Октябрь")
+month_included <- if(.Platform$OS.type == "unix") {c("мая", "июня", "июля", "августа","сентября", "октября")}else {c("Май", "Июнь", "Июль", "Август","Сентябрь", "Октябрь")} 
+  
+  
+  
+  
 
 plankt_total_summer <- plankt_total[plankt_total$Month %in% month_included, ]
 
@@ -136,15 +140,16 @@ Abundance_summer <-plankt_total_summer %>% group_by(Species, Year, Month, Day) %
 
 Abundance_summer <- round(dcast(Abundance_summer, formula = Year ~ Species ))
  
-qplot(x = Abundance$Calanus_N, y = Abundance_summer$`Calanus glacialis`) + geom_abline()
-qplot(x = Abundance$Pseudocalanus_N, y = Abundance_summer$`Pseudocalanus spp.`)+ geom_abline()
-qplot(x = Abundance$Acartia_N, y = Abundance_summer$`Acartia spp.`) + geom_abline()
-qplot(x = Abundance$Centropages_N, y = Abundance_summer$`Centropages hamatus`) + geom_abline()
-qplot(x = Abundance$Oithona_N, y = Abundance_summer$`Oithona similis`) + geom_abline()
-qplot(x = Abundance$Temora_N, y = Abundance_summer$`Temora longicornis`) + geom_abline()
-qplot(x = Abundance$Microsetella_N, y = Abundance_summer$`Microsetella norvegica`) + geom_abline()
-
-write.table(Abundance_summer, "clipboard", sep = "\t", row.names = F)
+# qplot(x = Abundance$Calanus_N, y = Abundance_summer$`Calanus glacialis`) + geom_abline()
+# qplot(x = Abundance$Pseudocalanus_N, y = Abundance_summer$`Pseudocalanus spp.`)+ geom_abline()
+# qplot(x = Abundance$Acartia_N, y = Abundance_summer$`Acartia spp.`) + geom_abline()
+# qplot(x = Abundance$Centropages_N, y = Abundance_summer$`Centropages hamatus`) + geom_abline()
+# qplot(x = Abundance$Oithona_N, y = Abundance_summer$`Oithona similis`) + geom_abline()
+# qplot(x = Abundance$Temora_N, y = Abundance_summer$`Temora longicornis`) + geom_abline()
+# qplot(x = Abundance$Microsetella_N, y = Abundance_summer$`Microsetella norvegica`) + geom_abline()
+# 
+# write.table(Abundance_summer, "clipboard", sep = "\t", row.names = F)
+# 
 
 
 ##разделяем датасет на части по видам
@@ -384,6 +389,18 @@ log_param_Triconia <- log_param(df = df_count_Total_tricon, species = "Triconia"
 
 
 
+## Смотрим есть ли зависимость между асимптотой кумулятивной крвой (максимальное количество особей отмеченных в данном году) и датой начала сезона
+
+
+
+ggplot(log_param_Calanus, aes(x = Days_perc_15, y = log(Asym) )) + geom_point() + geom_smooth(method = "lm")
+ggplot(log_param_Centropages, aes(x = Days_perc_15, y = log(Asym) )) + geom_point() + geom_smooth(method = "lm")
+ggplot(log_param_Temora, aes(x = Days_perc_15, y = log(Asym) )) + geom_point() + geom_smooth(method = "lm")
+ggplot(log_param_Oithona, aes(x = Days_perc_15, y = log(Asym) )) + geom_point()+ geom_smooth(method = "lm")
+ggplot(log_param_Pseudocalanus, aes(x = Days_perc_15, y = log(Asym) )) + geom_point()+ geom_smooth(method = "lm")
+ggplot(log_param_Acartia, aes(x = Days_perc_15, y = log(Asym) )) + geom_point() + geom_smooth(method = "lm")
+ggplot(log_param_Microsetella, aes(x = Days_perc_15, y = log(Asym) )) + geom_point() + geom_smooth(method = "lm")
+
 
 
 
@@ -418,8 +435,6 @@ cum_param <- function(df, species = NULL){
 
 cum_param(df = df_count_Total_calanus, species = "Calanus")
 
-
-
 ##Даты пиков численности видов
 
 peaks <- function(df, species = NULL){
@@ -445,8 +460,19 @@ log_param_Triconia <- merge(log_param_Triconia, peaks(df = tricon), by="Year")
 
 
 
-
 write.table(log_param_Calanus, "clipboard", sep = "\t", row.names = FALSE)
+
+
+
+ggplot(log_param_Calanus, aes(x = Peak_Days_from_year_start, y = log(Asym) )) + geom_point() + geom_smooth(method = "lm")
+ggplot(log_param_Centropages, aes(x = Peak_Days_from_year_start, y = log(Asym) )) + geom_point() + geom_smooth(method = "lm")
+ggplot(log_param_Temora, aes(x = Peak_Days_from_year_start, y = log(Asym) )) + geom_point() + geom_smooth(method = "lm")
+ggplot(log_param_Oithona, aes(x = Peak_Days_from_year_start, y = log(Asym) )) + geom_point()+ geom_smooth(method = "lm")
+ggplot(log_param_Pseudocalanus, aes(x = Peak_Days_from_year_start, y = log(Asym) )) + geom_point()+ geom_smooth(method = "lm")
+ggplot(log_param_Acartia, aes(x = Peak_Days_from_year_start, y = log(Asym) )) + geom_point() + geom_smooth(method = "lm")
+ggplot(log_param_Microsetella, aes(x = Peak_Days_from_year_start, y = log(Asym) )) + geom_point() + geom_smooth(method = "lm")
+
+
 
 
 # Функция для рисования кумулят
