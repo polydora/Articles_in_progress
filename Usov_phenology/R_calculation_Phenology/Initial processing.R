@@ -46,6 +46,12 @@ plankt_total <- plankt[plankt$Stage == "Total", ] %>% group_by(Species, Year, Mo
 plankt_total$N_weig <- round((plankt_total$Abundance_0_10 * 10 + plankt_total$Abundance_10_25 * 15 + plankt_total$Abundance_25_bottom * 40)/65, 1)  
 
 
+plankt_total$N_weig_25 <- round((plankt_total$Abundance_0_10 * 10 + plankt_total$Abundance_10_25 * 15)/25, 1)  
+
+
+
+
+
 # 
 # plankt_1 <- plankt[plankt$Level == "0-10", ]
 # nrow(plankt_1)
@@ -140,16 +146,25 @@ Abundance_summer <-plankt_total_summer %>% group_by(Species, Year, Month, Day) %
 
 Abundance_summer <- round(dcast(Abundance_summer, formula = Year ~ Species ))
  
-# qplot(x = Abundance$Calanus_N, y = Abundance_summer$`Calanus glacialis`) + geom_abline()
-# qplot(x = Abundance$Pseudocalanus_N, y = Abundance_summer$`Pseudocalanus spp.`)+ geom_abline()
-# qplot(x = Abundance$Acartia_N, y = Abundance_summer$`Acartia spp.`) + geom_abline()
-# qplot(x = Abundance$Centropages_N, y = Abundance_summer$`Centropages hamatus`) + geom_abline()
-# qplot(x = Abundance$Oithona_N, y = Abundance_summer$`Oithona similis`) + geom_abline()
-# qplot(x = Abundance$Temora_N, y = Abundance_summer$`Temora longicornis`) + geom_abline()
-# qplot(x = Abundance$Microsetella_N, y = Abundance_summer$`Microsetella norvegica`) + geom_abline()
-# 
+
+Abundance_summer_25 <-plankt_total_summer %>% group_by(Species, Year, Month, Day) %>% summarise(N = sum(N_weig_25, na.rm = TRUE)) %>% group_by (Species, Year)  %>% summarise(Mean_N = mean(N, na.rm = TRUE))
+
+
+
+Abundance_summer_25 <- round(dcast(Abundance_summer_25, formula = Year ~ Species ))
+
+
+
+qplot(x = Abundance_summer_25$`Calanus glacialis`, y = Abundance_summer$`Calanus glacialis`) + geom_abline()
+qplot(x = Abundance_summer_25$`Pseudocalanus spp.`, y = Abundance_summer$`Pseudocalanus spp.`)+ geom_abline()
+qplot(x = Abundance_summer_25$`Acartia spp.`, y = Abundance_summer$`Acartia spp.`) + geom_abline()
+qplot(x = Abundance_summer_25$`Centropages hamatus`, y = Abundance_summer$`Centropages hamatus`) + geom_abline()
+qplot(x = Abundance_summer_25$`Oithona similis`, y = Abundance_summer$`Oithona similis`) + geom_abline()
+qplot(x = Abundance_summer_25$`Temora longicornis`, y = Abundance_summer$`Temora longicornis`) + geom_abline()
+qplot(x = Abundance_summer_25$`Microsetella norvegica`, y = Abundance_summer$`Microsetella norvegica`) + geom_abline()
+
 # write.table(Abundance_summer, "clipboard", sep = "\t", row.names = F)
-# 
+# write.table(Abundance_summer_25, "clipboard", sep = "\t", row.names = F)
 
 
 ##разделяем датасет на части по видам

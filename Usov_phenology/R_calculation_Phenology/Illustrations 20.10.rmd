@@ -697,7 +697,7 @@ $$
 Abundance_phen <- merge(Abundance_melt, phen_all, by = c("Year", "Species"))
 Abundance_phen$Log_N <- log(Abundance_phen$N + 1)
 
-ggplot(Abundance_phen, aes(x = Begin, y = Log_N)) + geom_point() + facet_wrap(~Species, ncol = 2, scales = "free_y") + labs(x = "Julian day of begin", y = "log(N)")
+ggplot(Abundance_phen, aes(x = Begin, y = Log_N)) + geom_point() + facet_wrap(~Species, ncol = 2, scales = "free_y") + labs(x = "Julian day of begin", y = "log(N)") 
 ```
 
 Подпись   

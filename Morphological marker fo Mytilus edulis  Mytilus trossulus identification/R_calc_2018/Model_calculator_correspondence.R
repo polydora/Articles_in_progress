@@ -130,9 +130,39 @@ perms <- function(df = myt2[myt2$facet == "W", ], nperm = 1000,...)
 }
 
 
-resamplings <- perms(df = myt2[myt2$facet == "W", ], nperm = 1000, b0 = -2.5, b1 = 5.2)
+
+perms2 <- function(df = myt2[myt2$facet == "W", ], ...) {
+  require(dplyr)
+  df$pop <- as.character(df$pop)
+  perm_pairs <- expand.grid(First = unique(df$pop), Second = unique(df$pop))
+  perm_pairs <- perm_pairs[perm_pairs$First != perm_pairs$Second,]
+  
+  perm_pairs$First <- as.character(perm_pairs$First)
+  perm_pairs$Second <- as.character(perm_pairs$Second)
+  perm_pairs$Delta <- NA
+  for(i in 1:nrow(perm_pairs)){
+    df_selected <- df[df$pop %in% c(perm_pairs$First[i], perm_pairs$Second[i]),] 
+    
+    means <- df_selected %>% group_by(pop) %>% summarise(freq_MT = mean(freq_MT))
+    perm_pairs$Delta[i] <- abs(means$freq_MT[1] - means$freq_MT[2])
+    
+    W <- donat(df_selected)
+    calc1_predict_W <- calc1(W[1], W[2])
+    logist_empir_predict_W <- logist_empir(P_T_vector = calc1_predict_W$P_T )
+    perm_pairs$Goodness[i] <- 1/(mean((logist_empir_predict_W - calc1_predict_W$Ptros)^2))
+    perm_pairs$pop1[i] <- unique(as.character(df_selected$pop))[1]
+    perm_pairs$pop2[i] <- unique(as.character(df_selected$pop))[2]
+
+  }
+  perm_pairs
+}
+
+
+
+
+
+resamplings <- perms2(df = myt2[myt2$facet == "W", ], b0 = -2.5, b1 = 5.2)
 
 
 ggplot(resamplings, aes(x = Delta, y = Goodness)) + geom_point() + geom_smooth()
 
-resamplings[resamplings$Goodness > 1000 & !is.na(resamplings$Goodness),]
