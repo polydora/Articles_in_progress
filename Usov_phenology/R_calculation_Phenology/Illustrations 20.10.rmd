@@ -58,6 +58,7 @@ theme_set(theme_bw())
 # library(cowplot)
 
 library(gridExtra)
+library(broom)
 
 
 
@@ -183,7 +184,7 @@ env_print_short_melt <- melt(env_print_short, variable.name = "Event", value.nam
 
 env_print_short_melt$Event <- factor(env_print_short_melt$Event, levels = c("ICD","SpSD", "SuSD", "TPD", "SuFD" ))
 
-Env_plot1 <- ggplot(env_print_short_melt, aes(x = Event, y = Day)) + geom_boxplot() + ylim(0, 365) + labs(x = "Fenological event", "Julian day") + ggtitle("Date of phenological events")
+Env_plot1 <- ggplot(env_print_short_melt, aes(x = Event, y = Day)) + geom_boxplot() + ylim(0, 365) + labs(x = "Phenological event", y = "Julian day") + ggtitle("Date of phenological events")
 
 
 Env_plot1
