@@ -14,6 +14,9 @@ library(betareg)
 library(lmtest)
 library(broom)
 library(MuMIn)
+library(gridExtra)
+
+
 
 
 
@@ -23,6 +26,8 @@ library(MuMIn)
 myt <- read.table("data_salinity3.csv", header = T, sep = ";")
 
 myt <- myt[myt$dataset != "overseas", ]
+
+
 
 myt$Sp [myt$str > 0.5] <- "M.trossulus" #Лучше обозначать так!
 myt$Sp [myt$str <= 0.5] <- "M.edulis"
@@ -114,6 +119,7 @@ logist_empir <- function(b0 = -2.5, b1 = 5.2, P_T_vector){
 
 # Функция для сравннения результатов предесказания Ptros по P_T в соответствии с "ленивым" калькулятором и в соответсвии с эмпирической моделью 
 
+
 perms2 <- function(df = myt2[myt2$facet == "W", ], ...) {
   require(dplyr)
   df$pop <- as.character(df$pop)
@@ -127,8 +133,8 @@ perms2 <- function(df = myt2[myt2$facet == "W", ], ...) {
     df_selected <- df[df$pop %in% c(perm_pairs$First[i], perm_pairs$Second[i]),] 
     
     means <- df_selected %>% group_by(pop) %>% summarise(freq_MT = mean(freq_MT))
-    perm_pairs$Delta[i] <- abs(means$freq_MT[1] - means$freq_MT[2])
-    
+    # perm_pairs$Delta[i] <- abs(means$freq_MT[1] - means$freq_MT[2])
+    perm_pairs$Delta[i] <- max(c(means$freq_MT[1],means$freq_MT[2])) *(1 - min(c(means$freq_MT[1],means$freq_MT[2])))
     W <- donat(df_selected)
     calc1_predict_W <- calc1(W[1], W[2])
     logist_empir_predict_W <- logist_empir(P_T_vector = calc1_predict_W$P_T )
@@ -139,7 +145,6 @@ perms2 <- function(df = myt2[myt2$facet == "W", ], ...) {
   }
   perm_pairs
 }
-
 
 
 
@@ -161,6 +166,12 @@ probit_back <- function (eta)
   eta <- pmin(pmax(eta, -thresh), thresh)
   pnorm(eta)
 }
+
+
+
+logit_back <- function(x) exp(x)/(1 + exp(x)) # обратная логит-трансформация
+
+
 
 
 overdisp_fun <- function(model) {
@@ -189,6 +200,8 @@ overdisp_fun <- function(model) {
 # Model 5. Ptros ~ P_T*subset (GLM)
 
 
+
+theme_set(theme_bw() + theme(axis.title.x = element_text(size = 12), axis.title.y = element_text(size = 12), axis.text= element_text(size = 11), legend.position = "")  )
 
 
 
@@ -236,15 +249,15 @@ new_data$fit <- predicted$fit
 new_data$SE <- predicted$se.fit 
 
 
-theme_set(theme_bw())
 
-Pl_mod1 <- ggplot(new_data, aes(x = freq_MT, y = fit)) + geom_line(linetype = 2, color = "red", size = 1) + facet_wrap(~Subset) + geom_ribbon(aes(ymin = fit - 1.96*SE, ymax = fit + 1.96*SE), alpha = 0.1) + xlim(0, 1) + ylim(0, 1)
+
+Pl_mod1 <- ggplot(new_data, aes(x = freq_MT, y = fit)) + geom_line(linetype = 2, color = "red", size = 1) + facet_wrap(~Subset) + geom_ribbon(aes(ymin = fit - 1.96*SE, ymax = fit + 1.96*SE), alpha = 0.1) + xlim(0, 1) + ylim(0, 1) +  geom_rug(data = myt2, aes(x = freq_MT, y = 0.05))
 
 
 # иллюстрация с точками
 link_over_M <- myt2 %>% group_by(Subset, pop) %>% summarise(freq_MT = mean(Sp2), freq_Tmorph = mean(ind), N_MT = sum(Sp2 == 1),  N_ME = sum(Sp2 == 0))
 
-Pl_mod1_with_initial_data <- Pl_mod1 + geom_point(data = link_over_M, aes(y = freq_Tmorph, size = (N_MT+N_ME), fill = (freq_MT)), shape = 21) + scale_fill_continuous(high = "black", low = "white" ) + geom_abline() + labs(x =  "Proportion of M. trossulus", y = "Proportion of T-morphotype") + theme( axis.title.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text= element_text(size = 14), legend.text= element_text(size = 14)) + guides(size = "none", fill = "none")
+Pl_mod1_with_initial_data <- Pl_mod1 + geom_point(data = link_over_M, aes(y = freq_Tmorph, size = (N_MT+N_ME), fill = (freq_MT)), shape = 21) + scale_fill_continuous(high = "black", low = "white" ) + geom_abline() + labs(x =  "Proportion of M. trossulus", y = "Proportion of T-morphotype \n") 
 
 Pl_mod1_with_initial_data
 
@@ -253,76 +266,144 @@ Pl_mod1_with_initial_data
 #Модель 2
 ######################################
 
+Model_2_full <- glmer(ind ~  freq_MT * Subset * Sp + (1|pop), data = myt2, family = binomial(link = "logit"), control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
 
 Model_2 <- glmer(ind ~  freq_MT * Subset * Sp + (1|pop), data = myt2, family = binomial(link = "logit"), control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
 
-Model_2_probit <- glmer(ind ~  freq_MT * Subset * Sp + (1|pop), data = myt2, family = binomial(link = "probit"), control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
 
-AIC(Model_2_probit, Model_2)
+Model_2_reduced <- glmer(ind ~  freq_MT + Subset + Sp + Subset : Sp + (1|pop), data = myt2, family = binomial(link = "logit"), control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+
+Model_2_probit <- glmer(ind ~  freq_MT * Subset * Sp + (1|Subset:pop), data = myt2, family = binomial(link = "probit"), control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+
+summary(Model_2_full)
+
+
+AIC(Model_2_probit, Model_2_full)
 
 drop1(Model_2_probit, test = "Chi")
 
-
-new_data2 <- myt2 %>% group_by(Subset, pop, Sp) %>% summarise(freq_MT = mean(freq_MT) ) %>% group_by(Subset, Sp ) %>%  do(data.frame(freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 10)))
+new_data2 <- myt2 %>% group_by(Subset,  Sp) %>% do(data.frame(freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 100)))
 
 
 
 new_data2$eta <- predict(Model_2_probit, newdata = new_data2,  re.form = NA) 
 
-X <- model.matrix(~Subset*Sp*freq_MT, data = new_data2)
+X <- model.matrix(~freq_MT * Subset * Sp , data = new_data2)
+
+
 
 new_data2$SE_eta <- sqrt(diag(X %*% vcov(Model_2_probit) %*% t(X)))
 
 new_data2$fit <- probit_back(new_data2$eta)
 
-new_data2$lwr <- probit_back(new_data2$eta - 1.96 * new_data2$SE_eta )
+new_data2$lwr <- probit_back(new_data2$eta -  1.96 *new_data2$SE_eta)
 
-new_data2$upr <- probit_back(new_data2$eta + 1.96 * new_data2$SE_eta )
+new_data2$upr <- probit_back(new_data2$eta +  1.96 *new_data2$SE_eta)
 
-Pl_mod2 <-  ggplot(new_data2, aes(x = freq_MT, y = fit, group = Sp)) + geom_line(linetype = 2,  size = 1) + facet_wrap(~Subset) + geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.1) + xlim(0, 1) + ylim(0, 1)
+Pl_mod2 <-  ggplot(new_data2, aes(x = freq_MT, y = fit, group = Sp)) + geom_line(linetype = 2,  size = 1, aes(color = Sp)) + geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.1) + facet_wrap(~Subset)  + xlim(0, 1) + ylim(0, 1) + scale_color_manual(values=c("blue", "red")) + guides(color = "none") +  geom_rug(data = myt2, aes(x = freq_MT, y = 0.05))
+
+
+
+pops_over_M <- myt2 %>% group_by(Subset, pop) %>% summarise(freq_MT = mean(freq_MT), N_MT = sum(Sp2 == 1),  N_T_MT = sum(Sp2 == 1 & ind == 1), N_E_MT = sum(Sp2 == 1 & ind == 0), N_ME = sum(Sp2 == 0), N_E_ME = sum(Sp2 == 0 & ind == 0), N_T_ME = sum(Sp2 == 0 & ind == 1))
  
-
-
-
-
-pops_over_M <- myt_train %>% group_by(Location2, pop) %>% summarise(freq_MT = mean(Sp2), N_MT = sum(Sp2 == 1),  N_T_MT = sum(Sp2 == 1 & ind == 1), N_E_MT = sum(Sp2 == 1 & ind == 0), N_ME = sum(Sp2 == 0), N_E_ME = sum(Sp2 == 0 & ind == 0), N_T_ME = sum(Sp2 == 0 & ind == 1)) 
 pops_over_M$P_T_MT <- with(pops_over_M, N_T_MT / N_MT)
 pops_over_M$P_E_MT <- with(pops_over_M, N_E_MT / N_MT)
 pops_over_M$P_E_ME <- with(pops_over_M, N_E_ME / N_ME)
 pops_over_M$P_T_ME <- with(pops_over_M, N_T_ME / N_ME)
-# рисуем 
-pr_value_plot_MT <- ggplot(pops_over_M, aes(x = freq_MT)) + geom_segment(aes(x = freq_MT, y = (1-P_E_ME), xend = freq_MT, yend = P_T_MT), color="darkgrey") + geom_hline(aes(yintercept=0.5), color="black") + geom_point(aes(y = (1-P_E_ME), size= N_ME), fill = "white", shape = 21) + geom_point(aes(y = P_T_MT, size=N_MT), fill = "black", shape = 21)  + facet_wrap(~Location2, nrow=1) + xlim(0,1)+ theme_bw() + labs(y =  "Proportion of T-morphotype \n among  M. trossulus  and  M. edulis", x = "Proportion of M. trossulus", fill = "")+ ylim(0,1) + xlim(0,1) + theme(axis.title.x = element_text(size = 12), axis.title.y = element_text(size = 12), axis.text= element_text(size = 11), legend.position = "") + geom_line(data=newdata2,aes(x = Freq_MT, y = fit, color=Sp), linetype = "dashed", size=1) + scale_color_manual(values=c("blue", "red"))
-# рисуем тестинг
-pops_over_T <- myt_test %>% group_by(Location2, pop) %>% summarise(freq_MT = mean(Sp2), N_MT = sum(Sp2 == 1),  N_T_MT = sum(Sp2 == 1 & ind == 1), N_E_MT = sum(Sp2 == 1 & ind == 0), N_ME = sum(Sp2 == 0), N_E_ME = sum(Sp2 == 0 & ind == 0), N_T_ME = sum(Sp2 == 0 & ind == 1)) 
-pops_over_T$P_T_MT <- with(pops_over_T, N_T_MT / N_MT)
-pops_over_T$P_E_MT <- with(pops_over_T, N_E_MT / N_MT)
-pops_over_T$P_E_ME <- with(pops_over_T, N_E_ME / N_ME)
-pops_over_T$P_T_ME <- with(pops_over_T, N_T_ME / N_ME)
-# 
-pr_value_plot_T <- ggplot(pops_over_M, aes(x = freq_MT)) + geom_segment(aes(x = freq_MT, y = (1-P_E_ME), xend = freq_MT, yend = P_T_MT), color="darkgrey") + geom_hline(aes(yintercept=0.5), color="black") + geom_point(aes(y = (1-P_E_ME), size= N_ME), fill = "white", shape = 21) + geom_point(aes(y = P_T_MT, size=N_MT), fill = "black", shape = 21)  + facet_wrap(~Location2, nrow=1) + xlim(0,1)+ theme_bw() + labs(y =  " \n Proportion of T-morphotype \n among  M. trossulus  and  M. edulis", x = "Proportion of M. trossulus", fill = "")+ ylim(0,1) + xlim(0,1) + theme(axis.title.x = element_text(size = 12), axis.title.y = element_text(size = 9), axis.text= element_text(size = 11), legend.position = "")  + geom_point(data=pops_over_T, aes(y = (1-P_E_ME), size= N_ME), fill = "white", shape = 21, color="orange", stroke=1.5) + geom_point(data=pops_over_T, aes(y = P_T_MT, size=N_MT), fill = "black", shape = 21, color="orange", stroke=1.5) + geom_line(data=newdata2,aes(x = Freq_MT, y = fit, color=Sp), linetype = "dashed", size=1) + scale_color_manual(values=c("blue", "red"))
 
-#Модель 3
+
+Pl_mod2_with_initial_data <- Pl_mod2 +   geom_segment(data = pops_over_M, aes(x = freq_MT, y = (1-P_E_ME), xend = freq_MT, yend = P_T_MT, group = 1), color = "darkgray")+ 
+  geom_hline(aes(yintercept=0.5), color="black") + 
+  geom_point(data = pops_over_M, aes(y = (1-P_E_ME), size= N_ME, group =1), fill = "white", shape = 21)+
+  geom_point(data = pops_over_M, aes(y = P_T_MT, size=N_MT, group =1), fill = "black", shape = 21)  + xlim(0,1)+ 
+  labs(y =  "Proportion of T-morphotype \n among  M. trossulus  and  M. edulis", x = "Proportion of M. trossulus", fill = "") + 
+  ylim(0,1) + xlim(0,1) + 
+  theme(axis.title.x = element_text(size = 12), axis.title.y = element_text(size = 12), axis.text= element_text(size = 11), legend.position = "") 
+
+
+Pl_mod2_with_initial_data
+
+
+
+
+
+
+#Модель 4
 #####################################
-newdata3$fit <- predict(Mod_fT_congr_fin, newdata = newdata3, type = "response", re.form = NA) 
-write.table(file="newdata3.csv", newdata3, row.names=T, sep=";", quote=F)
-pr_value_M <- myt_train %>% group_by(Location2, pop) %>% summarise(freq_MT = mean(Sp2), N_T = sum(ind == 1),  N_T_MT = sum(Sp2 == 1 & ind == 1), N_E_MT = sum(Sp2 == 1 & ind == 0), N_E = sum(ind == 0), N_E_ME = sum(Sp2 == 0 & ind == 0), N_T_ME = sum(Sp2 == 0 & ind == 1))
+
+
+Mod_fT_congr <- glmer(congr ~ morph * freq_MT*Subset + (1 | pop), data = myt2, family = binomial(link = "logit"), control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+Mod_fT_congr_probit <- glmer(congr ~ morph * freq_MT*Subset + (1 | pop), data = myt2, family = binomial(link = "probit"), control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+AIC(Mod_fT_congr, Mod_fT_congr_probit)
+
+drop1(Mod_fT_congr_probit)
+
+
+Mod_fT_congr2 <- update(Mod_fT_congr_probit, .~.-morph:freq_MT:Subset )
+
+drop1(Mod_fT_congr2)
+
+Mod_fT_congr_fin <- Mod_fT_congr2
+
+
+new_data3 <- myt2 %>% group_by(Subset, morph) %>% do(data.frame(freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 100)))
+
+# Предсказанные значеня в шкале вероятностей
+new_data3$fit <- predict(Mod_fT_congr_fin, newdata = new_data3, type = "response", re.form = NA) 
+
+# Предсказанные значеня в шкале логитов
+new_data3$fit_eta <- predict(Mod_fT_congr_fin, newdata = new_data3, re.form = NA) 
+
+# Вычисление доверительного инеравала
+
+X <- model.matrix(  ~ morph + freq_MT + Subset + morph:freq_MT + 
+                      morph:Subset + freq_MT:Subset, data = new_data3) #Модельная матрица для визуализации
+
+
+# Ошибки в шкале логитов
+new_data3$se_eta <- sqrt(diag(X %*% vcov(Mod_fT_congr_fin) %*% t(X)))
+
+new_data3$lwr <- probit_back(new_data3$fit_eta - 1.96 * new_data3$se_eta)
+
+new_data3$upr <- probit_back(new_data3$fit_eta + 1.96 * new_data3$se_eta)
+
+
+
+Pl_mod4 <- ggplot(new_data3, aes(x = freq_MT)) + geom_ribbon(aes(ymin = lwr, ymax = upr, group = morph), alpha = 0.1)  + geom_line(aes(y = fit, color = morph), size=1) + facet_wrap( ~ Subset) + geom_rug(data = myt2) + scale_color_manual(values = c("blue", "red")) + scale_fill_manual(values = c("blue", "red"))  + xlim(0,1)  + labs(y = "Probability of correct identification \n PPV and NPV", x = "M.trossulus prevalence \n (MTprev)") 
+
+
+
+
+
+pr_value_M <- myt2 %>% group_by(Subset, pop) %>% summarise(freq_MT = mean(freq_MT), N_T = sum(ind == 1),  N_T_MT = sum(Sp2 == 1 & ind == 1), N_E_MT = sum(Sp2 == 1 & ind == 0), N_E = sum(ind == 0), N_E_ME = sum(Sp2 == 0 & ind == 0), N_T_ME = sum(Sp2 == 0 & ind == 1))
 pr_value_M$PMT_T <- with(pr_value_M, N_T_MT / N_T)
 pr_value_M$PMT_E <- with(pr_value_M, N_E_MT / N_T)
 pr_value_M$PME_E <- with(pr_value_M, N_E_ME / N_E)
 pr_value_M$PME_T <- with(pr_value_M, N_T_ME / N_E)
-pr_value_plot_M <- ggplot(pr_value_M, aes(x = freq_MT)) + geom_segment(aes(x = freq_MT, y = PME_E, xend = freq_MT, yend = PMT_T), color="darkgrey") + geom_hline(aes(yintercept=0.5), color="black") + geom_point(aes(y = PME_E, size= N_E), fill = "white", shape = 21) + geom_point(aes(y = PMT_T, size=N_T), fill = "black", shape = 21)  + facet_wrap(~Location2, nrow=1) + xlim(0,1)+ theme_bw() + labs(y =  "Proportions of correct species \n identification by morphotypes", x = "Proportion of M. trossulus", fill = "")+ ylim(0,1) + xlim(0,1) + theme(axis.title.x = element_text(size = 12), axis.title.y = element_text(size = 12), axis.text= element_text(size = 11), legend.position = "")  + geom_line(data=newdata3,aes(x = Freq_MT, y = fit, color=morph), linetype = "dashed", size=1) + scale_color_manual(values=c("blue", "red"))
-# рисуем тестинг
-pr_value_T <- myt_test %>% group_by(Location2, pop) %>% summarise(freq_MT = mean(Sp2), N_T = sum(ind == 1),  N_T_MT = sum(Sp2 == 1 & ind == 1), N_E_MT = sum(Sp2 == 1 & ind == 0), N_E = sum(ind == 0), N_E_ME = sum(Sp2 == 0 & ind == 0), N_T_ME = sum(Sp2 == 0 & ind == 1))
 
-pr_value_T$PMT_T <- with(pr_value_T, N_T_MT / N_T)
-pr_value_T$PMT_E <- with(pr_value_T, N_E_MT / N_T)
-pr_value_T$PME_E <- with(pr_value_T, N_E_ME / N_E)
-pr_value_T$PME_T <- with(pr_value_T, N_T_ME / N_E)
 
-pr_value_plot_T2 <- ggplot(pr_value_M, aes(x = freq_MT)) + geom_segment(aes(x = freq_MT, y = PME_E, xend = freq_MT, yend = PMT_T), color="darkgrey") + geom_hline(aes(yintercept=0.5), color="black") + geom_point(aes(y = PME_E, size= N_E), fill = "white", shape = 21) + geom_point(aes(y = PMT_T, size=N_T), fill = "black", shape = 21)  + facet_wrap(~Location2, nrow=1) + xlim(0,1)+ theme_bw() + labs(y =  "Proportions of correct species \n identification by morphotypes \n among M. edulis and M. trossulus", x = "Proportion of M. trossulus", fill = "")+ ylim(0,1) + xlim(0,1) + theme(axis.title.x = element_text(size = 12), axis.title.y = element_text(size = 9), axis.text= element_text(size = 11), legend.position = "") + geom_point(data=pr_value_T, aes(y = PME_E, size= N_E), fill = "white", shape = 21, color="orange", stroke=1.5) + geom_point(data=pr_value_T, aes(y = PMT_T, size=N_T), fill = "black", shape = 21, color="orange", stroke=1.5)  + geom_line(data=newdata3,aes(x = Freq_MT, y = fit, color=morph), linetype = "dashed", size=1) + scale_color_manual(values=c("blue", "red"))
+Pl_mod4_with_initial_data <- Pl_mod4 + geom_segment(data = pr_value_M, aes(x = freq_MT, y = PME_E, xend = freq_MT, yend = PMT_T), color="darkgrey") + 
+  geom_hline(data = pr_value_M, aes(yintercept=0.5), color="black") + 
+  geom_point(data = pr_value_M, aes(y = PME_E, size= N_E), fill = "white", shape = 21) + 
+  geom_point(data = pr_value_M, aes(y = PMT_T, size=N_T), fill = "black", shape = 21) + 
+  labs(y =  "Proportions of correct species \n identification by morphotypes", x = "Proportion of M. trossulus", fill = "")+ 
+  ylim(0,1) + 
+  xlim(0,1) 
+
+Pl_mod4_with_initial_data
+
+
+
+
+
+
 
 #объединяем графики
-ggarrange(link_over_plot_T, pr_value_plot_T, pr_value_plot_T2, ncol = 1)
+grid.arrange(Pl_mod1_with_initial_data, Pl_mod2_with_initial_data, Pl_mod4_with_initial_data, ncol = 1)
 
 
 
