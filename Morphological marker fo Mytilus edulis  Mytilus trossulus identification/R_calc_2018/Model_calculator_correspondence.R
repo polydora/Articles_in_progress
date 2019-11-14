@@ -14,9 +14,16 @@ library(lmtest)
 library(broom)
 
 
+#### Data reading and initial preparation #####
+
 myt <- read.table("data_salinity3.csv", header = T, sep = ";")
 
+
+myt_overseas <- myt[myt$dataset == "overseas", ]
+
 myt <- myt[myt$dataset != "overseas", ]
+
+
 
 myt$Sp [myt$str > 0.5] <- "M.trossulus" #Лучше обозначать так!
 myt$Sp [myt$str <= 0.5] <- "M.edulis"
@@ -26,9 +33,6 @@ myt$Sp <- factor(myt$Sp)
 myt2 <- myt[!is.na(myt$ind), ]
 
 
-
-
-
 # Вводим обозначения для морфотипов
 myt2$morph <- ifelse(myt2$ind == 1, "T_m", "E_m")
 myt2$morph <- factor(myt2$morph)
@@ -36,7 +40,6 @@ myt2$morph <- factor(myt2$morph)
 
 
 # Бинарное обозначение видов
-
 myt2$Sp2 <- ifelse(myt2$Sp == "M.trossulus", 1, 0)
 
 
@@ -44,15 +47,21 @@ myt2$Sp2 <- ifelse(myt2$Sp == "M.trossulus", 1, 0)
 myt2$congr <- ifelse((myt2$ind == 1 & myt2$Sp == "M.trossulus") | (myt2$ind == 0 & myt2$Sp == "M.edulis"), 1, 0   )
 
 
-
-# Частота M.trossulus в популяции, вычисленная как срденее значение structure
+# Частота M.trossulus в популяции
 
 freq_MT <- myt2 %>% group_by(pop) %>% summarise(freq_MT = mean(Sp2))
 
 myt2 <- merge(myt2, freq_MT)
 
-# Подразделяем дмнные на три сабсета
 
+# Частота T-морфотипа в популяции
+
+Prop_T <- myt2 %>% group_by(pop) %>% summarise(Prop_T = mean(ind))
+
+myt2 <- merge(myt2, Prop_T)
+
+
+# Подразделяем данные на три сабсета
 
 myt2$Subset[myt2$sea == "barents" & myt2$sal_place == "fresh"] <- "BL" 
 myt2$Subset[myt2$sea == "barents" & myt2$sal_place == "normal"] <- "BH" 
@@ -61,13 +70,28 @@ myt2$Subset[myt2$sea == "white" & myt2$sal_place == "fresh"] <- "W"
 
 myt2$Subset <- factor(myt2$Subset, levels = c("W", "BL", "BH"))
 
+# 
+# #Оставляем только данные, на основе, которых строится модель
+# myt3 <- myt2[myt2$dataset == "testing", ]
+# myt2 <- myt2[myt2$dataset == "training", ]
+
+# Новое деление на testing and modelling dataset.########
+
+# В формальную тестовую выборку попадают точки наиболее близкие к 20%, 40%, 60% и 80% квантили freq_MT
+
+selected_pop <- myt2 %>% group_by(Subset, pop) %>% summarise(freq_MT = mean(freq_MT)) %>% group_by(Subset) %>% arrange(freq_MT, .by_group = TRUE) %>% mutate(dif_20 = (freq_MT - quantile(freq_MT, probs = 0.2))^2, dif_40 = (freq_MT - quantile(freq_MT, probs = 0.4))^2, dif_60 = (freq_MT - quantile(freq_MT, probs = 0.6))^2, dif_80 = (freq_MT - quantile(freq_MT, probs = 0.8))^2)  %>% group_by(Subset)  %>% summarize (n_pop =n(), q_20_pop = nth(pop, which.min(dif_20)), q_40_pop = nth(pop, which.min(dif_40)), q_60_pop = nth(pop, which.min(dif_60)), q_80_pop = nth(pop, which.min(dif_80))) 
 
 
 
-#Оставляем только данные, на основе, которых строится модель
-myt3 <- myt2[myt2$dataset == "testing", ]
-myt2 <- myt2[myt2$dataset == "training", ]
 
+selected_pop <- melt(selected_pop, id.vars = c("Subset", "n_pop"))$value
+
+
+
+
+myt3 <- myt2[myt2$pop %in% selected_pop, ] #новый testing dataset
+
+myt2 <- myt2[!(myt2$pop %in% selected_pop), ] #новый modelling dataset
 
 
 # Функция для вычисления P_T_MT и P_T_ME в заданном датасете
@@ -371,5 +395,42 @@ BH <- donat(df = myt2[myt2$pop %in% (myt2 %>% group_by(Subset) %>% filter(facet 
 Bayes_prediction <- rbind(data.frame(Subset = "W", calc2(W[1], W[2])), data.frame(Subset = "BL", calc2(BL[1], BL[2])), data.frame(Subset = "BH", calc2(BH[1], BH[2])))
 
 Pl_fit + geom_line(data = Bayes_prediction, aes(y =  P_MT_T), color = "red", linetype = 2) + geom_line(data = Bayes_prediction, aes(y =  P_ME_E), color = "blue", linetype = 2)
+
+
+
+
+
+# Сравниваем модели пр объединении субсетов и без объединении субсетов
+
+
+
+Model_4_full <- glmer(congr ~ morph * freq_MT*Subset + (1 | pop), data = myt2, family = binomial(link = "logit"), control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+# overdisp_fun(Model_4_full)
+
+myt2$Subset2 <- ifelse(myt2$Subset %in% c("W", "BL"), "WBL", "BH")
+
+Model_4_full_mix <- glmer(congr ~ morph * freq_MT*Subset2 + (1 | pop), data = myt2, family = binomial(link = "logit"), control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+BIC(Model_4_full, Model_4_full_mix)
+
+
+
+
+
+Model_3_full <- glm(congr ~ freq_MT*Subset, data = myt2, family = binomial(link = "logit"))
+
+Model_3_full_mix <- glm(congr ~ freq_MT*Subset2, data = myt2, family = binomial(link = "logit"))
+
+
+BIC(Model_3_full, Model_3_full_mix)
+
+
+Model_5_full <- glm(Sp2 ~  Prop_T * Subset, data = myt2, family = binomial(link = "logit"))
+
+Model_5_full_mix <- glm(Sp2 ~  Prop_T * Subset2, data = myt2, family = binomial(link = "logit"))
+
+
+BIC(Model_5_full, Model_5_full_mix)
 
 
