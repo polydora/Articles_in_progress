@@ -96,6 +96,11 @@ congrs <- Deltas %>% group_by(Species) %>% do(data.frame(
            (.$R[2:(length(.$R))] <  .$R[1:(length(.$R)-1)] & .$Delta_Begin[2:(length(.$Delta_Begin))] <  .$Delta_Begin[1:(length(.$Delta_Begin)-1)]))), 1, 0)))
 
 
+library(reshape2)
+dcast(congrs, Species~Congr)
+
+
+
 congrs %>% group_by(Species) %>% summarise( (sum(Congr == 1) - sum(Congr == 0)) / (sum(Congr == 1) + sum(Congr == 0)))
 
 

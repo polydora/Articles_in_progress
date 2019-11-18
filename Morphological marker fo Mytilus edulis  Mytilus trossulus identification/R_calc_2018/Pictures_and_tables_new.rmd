@@ -133,22 +133,22 @@ myt2 <- myt2[!(myt2$pop %in% selected_pop), ] #новый modelling dataset
 
 ```
 
-Итого. В качестве данных для тестового датасета взяты следующие популяции (см. таблицу). Для BL критерием отбора было то, что мидии собраны за пределами Кольского залива в эстуариях рек, для BH - за пределами Кольского залива но без заметного опреснения, для W - отобрано 4 популяции, в которых Ptros была близка к 0.2, 0.4, 0.6 и 0.8. Все эти данные НЕ будут участвовать в процессе подбора парамтеров регерссионных моделей или построения калькуляторов.  
+Итого. В качестве данных для тестового датасета взяты следующие популяции (см. таблицу). Для BL критерием отбора было то, что мидии собраны за пределами Кольского залива в эстуариях рек, для BH - за пределами Кольского залива но без заметного опреснения, для W - отобрано 4 популяции, в которых Ptros была близка к 0.2, 0.4, 0.6 и 0.8. Все эти данные НЕ будут участвовать в процессе подбора парамeтров регерссионных моделей.  
+
+Table ++. Characteristics of testing data set.
 
 ```{r}
-myt3_print <- myt3 %>% group_by(Subset, pop) %>% summarise(N_Tm_T = sum(morph == "T_m" & Sp == "M.trossulus"), N_Em_T = sum(morph == "E_m" & Sp == "M.trossulus"), N_Tm_E = sum(morph == "T_m" & Sp == "M.edulis"), N_Em_E = sum(morph == "E_m" & Sp == "M.edulis"), Ptros = mean(Sp == "M.trossulus"))
+myt3_print <- myt3 %>% group_by(Subset, pop) %>% summarise(N_Tm_T = sum(morph == "T_m" & Sp == "M.trossulus"), N_Em_T = sum(morph == "E_m" & Sp == "M.trossulus"), N_Tm_E = sum(morph == "T_m" & Sp == "M.edulis"), N_Em_E = sum(morph == "E_m" & Sp == "M.edulis"), Ptros = round(mean(Sp == "M.trossulus"), 2 ))
 
 kable(myt3_print)
 ```
 
-На всякий случай привожу таблицу с описанием тех популяций, который ВОШЛИ в моделинг датасет. 
 
-Эти две таблички могут быть предложены в качестве первичных данных для приложения к статье.
-
+Table ++. Characteristics of modelling data set.
 
 
 ```{r}
-myt2_print <- myt2 %>% group_by(Subset, pop) %>% summarise(N_Tm_T = sum(morph == "T_m" & Sp == "M.trossulus"), N_Em_T = sum(morph == "E_m" & Sp == "M.trossulus"), N_Tm_E = sum(morph == "T_m" & Sp == "M.edulis"), N_Em_E = sum(morph == "E_m" & Sp == "M.edulis"), Ptros = mean(Sp == "M.trossulus"))
+myt2_print <- myt2 %>% group_by(Subset, pop) %>% summarise(N_Tm_T = sum(morph == "T_m" & Sp == "M.trossulus"), N_Em_T = sum(morph == "E_m" & Sp == "M.trossulus"), N_Tm_E = sum(morph == "T_m" & Sp == "M.edulis"), N_Em_E = sum(morph == "E_m" & Sp == "M.edulis"), Ptros = round(mean(Sp == "M.trossulus"), 2 ))
 
 kable(myt2_print)
 ```
@@ -284,9 +284,9 @@ perms4 <- function(df = myt2[myt2$Subset == "W", ], ...) {
 
 
 ## Функция для поиска ниболее различающихся выборок
-max_dif <- function(Subset = "W", ...) {
+max_dif <- function(df = myt2, Subset = "W", ...) {
   require(dplyr)
-  df = myt2[myt2$Subset %in% Subset, ]
+  df = df[df$Subset %in% Subset, ]
   df$pop <- as.character(df$pop)
   perm_pairs <- expand.grid(First = unique(df$pop), Second = unique(df$pop))
   perm_pairs <- perm_pairs[perm_pairs$First != perm_pairs$Second,]
@@ -309,9 +309,9 @@ max_dif <- function(Subset = "W", ...) {
 
 
 
-max_mix <- function(Subset = "W", ...) {
+max_mix <- function(df = myt2, Subset = "W", ...) {
   require(dplyr)
-  df = myt2[myt2$Subset %in% Subset, ]
+  df = df[df$Subset %in% Subset, ]
   df$pop <- as.character(df$pop)
   perm_pairs <- expand.grid(First = unique(df$pop), Second = unique(df$pop))
   perm_pairs <- perm_pairs[perm_pairs$First != perm_pairs$Second,]
@@ -337,9 +337,10 @@ max_mix <- function(Subset = "W", ...) {
 
 ### Функция для описания структуры калибровочных выборок
 
-calib_str <- function(pop1, pop2){
-  df = myt2[myt2$pop %in% c(pop1, pop2), ]
-  str_calib <- df %>% group_by(pop) %>% summarize(Subset = unique(df$Subset), N_E = sum(Sp == "M.edulis"), N_T = sum(Sp ==  "M.trossulus"), P_T_ME = mean(Sp == "M.edulis" & morph == "T_m"), P_T_MT = mean(Sp == "M.trossulus" & morph == "T_m") )
+calib_str <- function(df = myt2, pop1, pop2){
+  df =df[df$pop %in% c(pop1, pop2), ]
+  df$Subset <- factor(df$Subset)
+  str_calib <- df %>% group_by(pop, Subset) %>% summarize(N_E = sum(Sp == "M.edulis"), N_T = sum(Sp ==  "M.trossulus"), P_T_ME = mean(Sp == "M.edulis" & morph == "T_m"), P_T_MT = mean(Sp == "M.trossulus" & morph == "T_m"), Ptros = mean(freq_MT) )
   str_calib
 }
 
@@ -482,7 +483,7 @@ Model_3_full <- glm(congr ~ freq_MT*Subset, data = myt2, family = binomial(link 
 # overdisp_fun(Model_3_full)
 
 
-# drop1(Mod_3_full, test = "Chi")
+# drop1(Model_3_full, test = "Chi")
 
 Model_3_final <- Model_3_full
 
@@ -583,6 +584,29 @@ all_models$term_print <- gsub("Prop_T", "PT", as.character(all_models$term_print
 all_models_print <- all_models[, c("term_print", "estimate", "std.error", "statistic", "p.value_print" )] 
 
 all_models_print$term_print [is.na(all_models_print$term_print)] <- c("**Model 1**", "**Model 2**", "**Model 3**", "**Model 4**", " **Model 5**")
+
+
+# Вставляем данные pseudo Rsq
+all_models_print$estimate [is.na(all_models_print$estimate)] <- c(
+  paste("$pseudo R^2$ = ", round(Model_1_R2, 2)),
+  paste("$pseudo R^2_{m}$ = ", round(Model_2_final_R2_m, 2)), 
+  paste("$pseudo R^2$ = ", round(Model_3_R2, 2)),
+  paste("$pseudo R^2_{m}$ = ", round(Model_4_final_R2_m, 2)),
+  paste("$pseudo R^2$ = ", round(Model_5_R2, 2))
+)
+
+
+all_models_print$std.error [is.na(all_models_print$std.error)] <- c(
+  NA,
+  paste("$pseudo R^2_{c}$ = ", round(Model_2_final_R2_c, 2)), 
+  NA,
+  NA,
+  paste("$pseudo R^2_{c}$ = ", round(Model_4_final_R2_c, 2)),
+  NA,
+  NA
+)
+
+options(knitr.kable.NA = '')
 
 # options(knitr.kable.NA = ' ')
 kable(all_models_print, col.names = c("Terms", "Estimate", "SE", "z-statistic", "p-value"))
@@ -788,7 +812,7 @@ test_Model_4$PMT_E <- with(test_Model_4, N_E_MT / N_T)
 test_Model_4$PME_E <- with(test_Model_4, N_E_ME / N_E)
 test_Model_4$PME_T <- with(test_Model_4, N_T_ME / N_E)
 
-Pl_mod4_with_initial_data + geom_point(data = test_Model_4, aes(y = PME_E, size= N_E), fill = "red", shape = 24) +
+Pl_mod4_with_initial_data <- Pl_mod4_with_initial_data + geom_point(data = test_Model_4, aes(y = PME_E, size= N_E), fill = "red", shape = 24) +
   geom_point(data = test_Model_4, aes(y = PMT_T, size=N_T), fill = "blue", shape = 24)  
 
 
@@ -827,7 +851,6 @@ grid.arrange(Pl_mod1_with_initial_data ,
              Pl_mod2_with_initial_data + theme(strip.text = element_blank()), 
              Pl_mod3_with_initial_data + theme(strip.text = element_blank()), 
              Pl_mod4_with_initial_data+ theme(strip.text = element_blank()) ,
-             Pl_mod5_with_initial_data + theme(strip.text = element_blank()), 
              ncol = 1)
 
 ```
@@ -838,36 +861,11 @@ Figure ++. Visualisation of regression models.  Initial data are presented as pr
 
 
 
-## Strategy for finding of calibration samples
-
-
-
-```{r}
-
-
-Pl_teor_empir_5 <- ggplot(perms2(df = rbind(myt2) ), aes(x = Delta, y = Goodness)) + geom_point(size = 0.1) + geom_smooth(se = F)
-
-Pl_teor_empir_5 <- Pl_teor_empir_5 + ggtitle("Regression Model 5 \nvs Theoretical model 1")
-
-Pl_teor_empir_4 <- ggplot(perms4(df = rbind(myt2)), aes(x = Delta, y = Goodness)) + geom_point(size = 0.1) + geom_smooth(se = F)
-
-Pl_teor_empir_4 <- Pl_teor_empir_4 + ggtitle("Regression Model 4 \nvs Theoretical model 2")
-
-grid.arrange(Pl_teor_empir_5, Pl_teor_empir_4, nrow =1)
-
-```
-
-
-
-Figure +. Correspondence between regression and theoretical models. Each point corresponds to one of the possible pairs of populations from modelling data set.  OX axis represents the differencу in genetic structre for each pair of populations. OY axis represents correspondence between prediction of regression model and theoretical model. Lines represent loess-smoother. (A ) Model 5 describing  the dependence of proportion of M.trossulus (Ptros) on proportion of T-morphotype (P_T) ; (B) Model 4  describing  the dependence of probability of correct species identification (Pcorrect) on  proportion of M.trossulus (Ptros)  and morphotype (Morph). 
-
-
-
 
 ## Generalization of data
 
 
-Дальнейший анализ должен показать, как ведут себя теоретические калькуляторы, подобранные в соответствии со стратегией, описанной выше. Но есть мнение (**которого я не придерживаюсь!**), что удобнее было бы приводить данные по генерализованной модели. Под "генерализованной" моделью  понимается модель, в которой фактор "Subset" имеет меньшее число градаций (или вовсе исключен из модели). 
+<!-- Дальнейший анализ должен показать, как ведут себя теоретические калькуляторы, подобранные в соответствии со стратегией, описанной выше. Но есть мнение (**которого я не придерживаюсь!**), что удобнее было бы приводить данные по генерализованной модели. Под "генерализованной" моделью  понимается модель, в которой фактор "Subset" имеет меньшее число градаций (или вовсе исключен из модели).  -->
 
 Для того, чтобы проверить можно ли как-то генерализовать модель,  мы должны проверить на modelling data set, приводит ли объединение данных из разных регионов к существенным изменениям в структуре модели. Единственный (на мой взгляд) путь - это сравнить по информационным критериями несколько моделей-кандидатов:
 
@@ -911,23 +909,42 @@ kable(AIC_print)
 
 
 
+Приведенные данные показывают, что объединене W и BL не приводт к ухудшению регрессионной модели.  
+
+## Theoretical models
+
+Теоретическая модель 1, отражает аналитчески выводимую связь между Ptros и P_T, при заданных значениях P_Tm_T и P_Tm_E.
+
+Теоретическая модель 2, отражает аналитически выводимую связь между вероятностью правильного определния генотипа по морфотипу и Ptros, при заданных P_Tm_T и P_Tm_E.
+
+
+Далее, для выработки стартегии построения теоретических моделей мы будем работать с объединенными данными моделлингового датасета по Белому морю (W) и опресненного Баренува моря (BL). Данные по моделлинговому датасету полносоленого Баренцева моря (BH), где эмпирическая связь между морфотипами и генотипами слабее, в данном анализе не используются.
 
 
 
-Приведенные данные показывают, что объединене W и BL не приводт к ухудшению модели.  
+## Regression models for joined data
 
 ```{r}
 ## Визуализация новой модели с объединенными датасетами
 
-Model5_cand_2 <- glm(Sp2 ~  Prop_T * Subset, data = candidat_data_2, family = binomial(link = "logit"))
+mixed_data <- myt2[myt2$Subset %in% c("W", "BL"), ]
+
+Model_6 <- glm(Sp2 ~  Prop_T , data = mixed_data, family = binomial(link = "logit"))
+
+# overdisp_fun(Model6)
+
+Model_6_final <- Model_6 
+
+Model_6_final_summary <- tidy(Model_6_final)
+
+Model_6_R2 <- r.squaredGLMM(Model_6_final)[1,1]
+
+
+new_data6 <- mixed_data %>% group_by(pop) %>% summarise(Prop_T = mean(Prop_T) ) %>%  do(data.frame(Prop_T = seq(min(.$Prop_T), max(.$Prop_T), length.out = 100)))
 
 
 
-new_data6 <- candidat_data_2 %>% group_by(Subset, pop) %>% summarise(Prop_T = mean(Prop_T) ) %>% group_by(Subset) %>%  do(data.frame(Prop_T = seq(min(.$Prop_T), max(.$Prop_T), length.out = 10)))
-
-
-
-predicted6 <- predict(Model5_cand_2, newdata = new_data6,  type="response", se.fit = T)
+predicted6 <- predict(Model_6_final, newdata = new_data6,  type="response", se.fit = T)
 
 new_data6$fit <- predicted6$fit
 
@@ -936,29 +953,49 @@ new_data6$SE <- predicted6$se.fit
 
 
 
-Pl_mod5_cand2 <- ggplot(new_data6, aes(x = Prop_T, y = fit)) + geom_line(linetype = 2, color = "red", size = 1) + facet_wrap(~Subset) + geom_ribbon(aes(ymin = fit - 1.96*SE, ymax = fit + 1.96*SE), alpha = 0.1) + xlim(0, 1) + ylim(0, 1) +  geom_rug(data = candidat_data_2, inherit.aes = FALSE,  aes(x = Prop_T), size = 0.1) + geom_abline()
+Pl_mod6 <- ggplot(new_data6, aes(x = Prop_T, y = fit)) + geom_line(linetype = 2, color = "red", size = 1) +  geom_ribbon(aes(ymin = fit - 1.96*SE, ymax = fit + 1.96*SE), alpha = 0.1) + xlim(0, 1) + ylim(0, 1) +  geom_rug(data = candidat_data_2, inherit.aes = FALSE,  aes(x = Prop_T), size = 0.1) + geom_abline()
 
 
 
 #########################
 
 
-new_data7 <- candidat_data_2 %>% group_by(Subset, morph) %>% do(data.frame(freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 100)))
+Model_7_full <- glmer(congr ~ morph * freq_MT + (1 | pop), data = mixed_data, family = binomial(link = "logit"), control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# overdisp_fun(Model_7_full)
+
+
+# drop1(Model_7_full, test = "Chi")
+
+Model_7_final <- Model_7_full
+
+
+Model_7_final_summary <- tidy(Model_7_final)
+
+
+Model_7_final_summary <- Model_7_final_summary[,!(names(Model_7_final_summary) %in% c("group"))]
+
+Model_7_final_R2_m <- r.squaredGLMM(Model_7_final)[1,1]
+
+Model_7_final_R2_c <- r.squaredGLMM(Model_7_final)[1, 2]
+
+
+
+
+new_data7 <-mixed_data %>% group_by(morph) %>% do(data.frame(freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 100)))
 
 # Предсказанные значеня в шкале вероятностей
-new_data7$fit <- predict(Model_4_final_cand_2, newdata = new_data7, type = "response", re.form = NA)
+new_data7$fit <- predict(Model_7_final, newdata = new_data7, type = "response", re.form = NA)
 
 # Предсказанные значеня в шкале логитов
-new_data7$fit_eta <- predict(Model_4_final_cand_2, newdata = new_data7, re.form = NA)
+new_data7$fit_eta <- predict(Model_7_final, newdata = new_data7, re.form = NA)
 
 # Вычисление доверительного инеравала
 
-X <- model.matrix(  ~ morph + freq_MT + Subset + morph:freq_MT + 
-    morph:Subset + freq_MT:Subset, data = new_data7) #Модельная матрица для визуализации
+X <- model.matrix(  ~ morph * freq_MT, data = new_data7) #Модельная матрица для визуализации
 
 
 # Ошибки в шкале логитов
-new_data7$se_eta <- sqrt(diag(X %*% vcov(Model_4_final_cand_2) %*% t(X)))
+new_data7$se_eta <- sqrt(diag(X %*% vcov(Model_7_final) %*% t(X)))
 
 new_data7$lwr <- logit_back(new_data7$fit_eta - 1.96 * new_data7$se_eta)
 
@@ -966,22 +1003,100 @@ new_data7$upr <- logit_back(new_data7$fit_eta + 1.96 * new_data7$se_eta)
 
 
 
-Pl_mod4_cand_2 <- ggplot(new_data7, aes(x = freq_MT)) +
+Pl_mod7 <- ggplot(new_data7, aes(x = freq_MT)) +
   geom_ribbon(aes(ymin = lwr, ymax = upr, group = morph), alpha = 0.1)  +
   geom_line(aes(y = fit, color = morph), size=1, linetype = 2) +
   geom_rug(data = candidat_data_2, inherit.aes = FALSE,  aes(x = freq_MT), size = 0.1) +
   scale_color_manual(values = c("blue", "red")) +
   scale_fill_manual(values = c("blue", "red"))  +
-  xlim(0,1)  +
-  facet_wrap( ~ Subset)
+  xlim(0,1)
+  
+```
 
 
 
+## Regression models for joined White Sea and freshned Barents Sea
 
+
+
+```{r}
+model_joined_print <- rbind(empty_row, Model_6_final_summary, empty_row, Model_7_final_summary)
+
+
+model_joined_print$estimate <- round(model_joined_print$estimate, 1)
+
+model_joined_print$std.error <- round(model_joined_print$std.error, 2)
+
+model_joined_print$statistic <- round(model_joined_print$statistic, 2)
+
+model_joined_print$p.value <- round(model_joined_print$p.value, 3)
+
+model_joined_print$p.value_print <- ifelse(model_joined_print$p.value < 0.001, "< 0.001", model_joined_print$p.value)
+
+model_joined_print$term_print <- gsub("freq_MT", "Ptros", as.character(model_joined_print$term))
+model_joined_print$term_print <- gsub("SubsetBL", "Subset(BL)", as.character(model_joined_print$term_print))
+model_joined_print$term_print <- gsub("SubsetBH", "Subset(BH)", as.character(model_joined_print$term_print))
+model_joined_print$term_print <- gsub("morphT_m", "Morph(T)", as.character(model_joined_print$term_print))
+model_joined_print$term_print <- gsub("sd_(Intercept).pop", "SD(Intercept)", as.character(model_joined_print$term_print))
+model_joined_print$term_print <- gsub("SpM.trossulus", "Species(*M.trossulus*)", as.character(model_joined_print$term_print))
+model_joined_print$term_print <- gsub("Prop_T", "PT", as.character(model_joined_print$term_print))
+
+
+
+model_joined_print_print <- model_joined_print[, c("term_print", "estimate", "std.error", "statistic", "p.value_print" )] 
+
+model_joined_print_print$term_print [is.na(model_joined_print_print$term_print)] <- c("**Model 6**", "**Model 7**")
+
+
+# Вставляем данные pseudo Rsq
+model_joined_print_print$estimate [is.na(model_joined_print_print$estimate)] <- c(
+  paste("$pseudo R^2$ = ", round(Model_6_R2, 2)),
+  paste("$pseudo R^2_{m}$ = ", round(Model_7_final_R2_m, 2))
+)
+
+
+model_joined_print_print$std.error [is.na(model_joined_print_print$std.error)] <- c(
+  NA,
+  paste("$pseudo R^2_{c}$ = ", round(Model_7_final_R2_c, 2)),
+  NA
+  )
+
+options(knitr.kable.NA = '')
+
+# options(knitr.kable.NA = ' ')
+kable(model_joined_print_print, col.names = c("Terms", "Estimate", "SE", "z-statistic", "p-value"))
 
 
 
 ```
+
+
+
+
+## Strategy for finding of calibration samples
+
+
+
+```{r}
+
+
+Pl_teor_empir_6 <- ggplot(perms2(df = mixed_data), aes(x = Delta, y = Goodness)) + geom_point(size = 0.1) + geom_smooth(se = F) + labs(y = "Goodness \n")
+
+Pl_teor_empir_6 <- Pl_teor_empir_6 + ggtitle("Regression Model 6 \nvs Theoretical model 1")
+
+Pl_teor_empir_7 <- ggplot(perms4(df = mixed_data), aes(x = Delta, y = Goodness)) + geom_point(size = 0.1) + geom_smooth(se = F) + labs(y = "Goodness \n")
+
+Pl_teor_empir_7 <- Pl_teor_empir_7 + ggtitle("Regression Model 7 \nvs Theoretical model 2")
+
+
+```
+
+
+
+Figure +. Correspondence between regression and theoretical models. Each point corresponds to one of the possible pairs of populations from modelling data set (White Sea joined with low salinity Barens Sea).  OX axis represents the differencу in genetic structre for each pair of populations. OY axis represents correspondence between prediction of regression model and theoretical model. Lines represent loess-smoother. (A ) Model 6 describing  the dependence of proportion of M.trossulus (Ptros) on proportion of T-morphotype (P_T) ; (B) Model 4  describing  the dependence of probability of correct species identification (Pcorrect) on  proportion of M.trossulus (Ptros)  and morphotype (Morph). 
+
+
+
 
 
 
@@ -995,49 +1110,38 @@ Pl_mod4_cand_2 <- ggplot(new_data7, aes(x = freq_MT)) +
 ```{r}
 # Визуализация модели 5 и ленивого калькулятора 1, основанного на выборках максимально далеких по генетической структуре.
 
+# Популяции наиболее различные по генетической структуре
+pops_max_diff <- max_dif(df = mixed_data, Subset = c("W", "BL"))
 
-calc1_calib_pop_str_W <- calib_str(pop1 = max_dif(Subset = c("W", "BL") )[1], pop2 = max_dif(Subset = c("W", "BL"))[2])
-
-donat_max_dif <- donat(df = myt2[myt2$pop %in% max_dif(Subset = c("W", "BL")), ])
-calc1_W <- calc1(donat_max_dif[1], donat_max_dif[2])
-calc1_W$Subset <- "WBL"
-coef_calc1_W  <- coef(lm(Ptros ~ P_T, data = calc1_W )) #Коэффицинты для теоретичекой модели
-
-coef_calc1_W$Subset <- "WBL"
+# Популяции наиболее смешанные
+pops_max_mix <- max_mix(df = mixed_data, Subset = c("W", "BL"))
 
 
-# calc1_calib_pop_str_BL <- calib_str(pop1 = max_dif(Subset = "BL")[1], pop2 = max_dif(Subset = "BL")[2])
-# donat_max_dif <- donat(df = myt2[myt2$pop %in% max_dif(Subset = "BL"), ])
-# calc1_BL <- calc1(donat_max_dif[1], donat_max_dif[2])
-# calc1_BL$Subset <- "BL"
-# coef_calc1_BL  <- coef(lm(Ptros ~ P_T, data = calc1_BL ))#Коэффицинты для теоретичекой модели
+# Бублики для наиболее различных по стуртуре популяций
+donat_max_dif <- donat(df = mixed_data[mixed_data$pop %in% pops_max_diff, ])
+
+# Бублики для наиболее смешанных популяций
+donat_max_mix <- donat(df = mixed_data[mixed_data$pop %in% pops_max_mix, ])
 
 
 
-calc1_calib_pop_str_BH <- calib_str(pop1 = max_dif(Subset = "BH")[1], pop2 = max_dif(Subset = "BH")[2])
-donat_max_dif <- donat(df = myt2[myt2$pop %in% max_dif(Subset = "BH"), ])
-calc1_BH <- calc1(donat_max_dif[1], donat_max_dif[2])
-calc1_BH$Subset <- "BH"
-coef_calc1_BH  <- coef(lm(Ptros ~ P_T, data = calc1_BH ))#Коэффицинты для теоретичекой модели
-coef_calc1_BH$Subset <- "BH"
-
-
-coef_calc1_all <- rbind(coef_calc1_W, coef_calc1_BH)
-
-calc1_res <- rbind(calc1_W,  calc1_BH)
+# Описание структуры калибровочных популяций
+calc1_calib_pop_str <- calib_str(df = mixed_data, pop1 = pops_max_diff [1], pop2 = pops_max_diff [2])
+calc2_calib_pop_str <- calib_str(df = mixed_data, pop1 = pops_max_mix [1], pop2 = pops_max_mix [2])
 
 
 
-calc1_calib_pop <- rbind(calc1_calib_pop_str_W, calc1_calib_pop_str_BH)
 
-calc1_calib_pop$P_T_ME[calc1_calib_pop$N_E == 0] <- NA
-calc1_calib_pop$P_T_MT[calc1_calib_pop$N_T == 0] <- NA
+calc1_W <- calc1(donat_max_dif[1], donat_max_dif[2]) #Предсказания калькулятора 1 на основе наиболее различных по генетической структуре популяций
+
+calc1_B <- calc1(donat_max_mix[1], donat_max_mix[2]) #Предсказания калькулятора 1 на основе наиболее смешанных популяций
 
 
-myt5 <- myt3
-myt5$Subset <- ifelse(myt5$Subset == "BH", "BH", "WBL")
+# coef_calc1_W  <- coef(lm(Ptros ~ P_T, data = calc1_W )) #Коэффицинты для теоретичекой модели, описывющей калькулятор 1
 
-Pl_calc1_cand2 <- Pl_mod5_cand2 + geom_line(data = calc1_res, aes(x = P_T, y = Ptros), color = "blue")  + geom_point(data = myt5, aes(x = Prop_T, y = freq_MT), size = 4, color = "red")  + labs(x = "Proportion of T-morphotype", y = "Proportion of M.trossulus \n")
+myt5 <- myt3[myt3$Subset %in% c("W", "BL"), ]
+
+Pl_calc1_mod6 <- Pl_mod6 + geom_line(data = calc1_W, aes(x = P_T, y = Ptros), color = "blue", size = 1) + geom_line(data = calc1_B, aes(x = P_T, y = Ptros), color = "gray")  + geom_point(data = myt5, aes(x = Prop_T, y = freq_MT), size = 4, color = "red")  + labs(x = "Proportion of T-morphotype", y = "Proportion of M.trossulus \n")
 
 
 ```
@@ -1047,37 +1151,19 @@ Pl_calc1_cand2 <- Pl_mod5_cand2 + geom_line(data = calc1_res, aes(x = P_T, y = P
 ```{r}
 # Визуализация модели 4 и ленивого калькулятора 2, основанного на выборках максимально смешанных.
 
-calc2_calib_pop_str_W <- calib_str(pop1 = max_mix(Subset = c("W", "BL") )[1], pop2 = max_mix(Subset = "W")[2])
-donat_max_mix <- donat(df = myt2[myt2$pop %in% max_mix(Subset = c("W", "BL")), ])
 calc2_W <- calc2(donat_max_mix[1], donat_max_mix[2])
-calc2_W$Subset <- "WBL"
 
-
-# calc2_calib_pop_str_BL <- calib_str(pop1 = max_mix(Subset = "BL")[1], pop2 = max_mix(Subset = "BL")[2])
-# donat_max_mix <- donat(df = myt2[myt2$pop %in% max_mix(Subset = "BL"), ])
-# calc2_BL <- calc2(donat_max_mix[1], donat_max_mix[2])
-# calc2_BL$Subset <- "BL"
-
-
-calc2_calib_pop_str_BH <- calib_str(pop1 = max_mix(Subset = "BH")[1], pop2 = max_mix(Subset = "BH")[2])
-donat_max_mix <- donat(df = myt2[myt2$pop %in% max_mix(Subset = "BH"), ])
-calc2_BH <- calc2(donat_max_mix[1], donat_max_mix[2])
-calc2_BH$Subset <- "BH"
-
-calc2_res <- rbind(calc2_W,  calc2_BH)
-calc2_calib_pop <- rbind(calc2_calib_pop_str_W, calc2_calib_pop_str_BH )
+calc2_B <- calc2(donat_max_dif[1], donat_max_dif[2])
 
 # Числа, необходимые для вычсления предсказанных значений для калькулятора №2
-coef_calc2 <- candidat_data_2[candidat_data_2$pop %in% calc2_calib_pop$pop, ] %>% group_by(Subset) %>% summarise(P_T_ME = mean(Sp == "M.edulis" & morph == "T_m"), P_T_MT = mean(Sp == "M.trossulus" & morph == "T_m"))
+coef_calc2 <- mixed_data[mixed_data$pop %in% calc2_calib_pop_str$pop, ] %>% summarise(P_T_ME = mean(Sp == "M.edulis" & morph == "T_m"), P_T_MT = mean(Sp == "M.trossulus" & morph == "T_m"))
 
 
 
+testing_congr <- myt5 %>% group_by(pop, morph) %>% summarize(Pcorrect = mean(congr == 1), freq_MT = mean(freq_MT))
 
 
-testing_congr <- myt5 %>% group_by(Subset, pop, morph) %>% summarize(Pcorrect = mean(congr == 1), freq_MT = mean(freq_MT))
-
-
-Pl_calc2_cand_2 <- Pl_mod4_cand_2 + geom_line(data = calc2_res, aes(x = freq_MT, y = P_MT_T), color = "red") + geom_line(data = calc2_res, aes(x = freq_MT, y = P_ME_E), color = "blue") + geom_point(data = testing_congr, aes(x = freq_MT, y = Pcorrect, color = morph), size = 4, position = position_dodge(width = 0) ) + labs(x = "Proportion of M.trossulus", y = "Probability of \ncorrect identification ")
+Pl_calc2_mod7 <- Pl_mod7 + geom_line(data = calc2_W, aes(x = freq_MT, y = P_MT_T), color = "red", size = 2) + geom_line(data = calc2_W, aes(x = freq_MT, y = P_ME_E), color = "blue", size = 2) + geom_line(data = calc2_B, aes(x = freq_MT, y = P_MT_T), color = "gray") + geom_line(data = calc2_B, aes(x = freq_MT, y = P_ME_E), color = "gray") + geom_point(data = testing_congr, aes(x = freq_MT, y = Pcorrect, fill = morph), shape = 24, size = 3, position = position_dodge(width = 0) ) + labs(x = "Proportion of M.trossulus", y = "Probability of \ncorrect identification ")
 
 
 ```
@@ -1085,21 +1171,25 @@ Pl_calc2_cand_2 <- Pl_mod4_cand_2 + geom_line(data = calc2_res, aes(x = freq_MT,
 
 
 ```{r}
-grid.arrange(Pl_calc1_cand2, Pl_calc2_cand_2)
+grid.arrange(Pl_teor_empir_6, Pl_teor_empir_7, Pl_calc1_mod6, Pl_calc2_mod7, nrow =2)
 ```
 
 
 Figure +. Visualisation of regression models and theoretical models. Points represent the testing data set.
-На этом рисунке пунктирная линия - это эмпирическая регрессионная модель, построенная по modelling dataset. Сплошная линия - это пердсказания соответствующих теоретических моделей, которые построены на основе калибровочных выборок. Калибровочные выборки были отобраны на основе стратегии, описанной в предыдущем разделе. То есть для теоретической модели №1 - это максимально различные по генетическому составу выборки. Для теоретической моедли №2 это выборки имеющие Ptros близкое к 0.5.  
+На этом рисунке пунктирная линия - это эмпирическая регрессионная модель, построенная по modelling dataset (объединенные данные по Белому и опресненному Баренцевому морю). Сплошная линия - это пердсказания соответствующих теоретических моделей, которые построены на основе калибровочных выборок. Калибровочные выборки были отобраны на основе стратегии, описанной в предыдущем разделе. То есть для теоретической модели №1 - это максимально различные по генетическому составу выборки. Для теоретической моедли №2 это выборки имеющие Ptros близкое к 0.5. Серые линии - это предсказаня теоретической модели, построенной на неправомерных калибровочных выборках.   
 
 
-Можно привести еще вот такую таблицу, в которой будут характеристики калибровочных выборок. Эти данные можно привести в виде врезки на графиках. Надо подумать.
+Можно привести еще вот такую таблицу, в которой будут характеристики калибровочных выборок. Эти данные можно привести в виде врезки на графиках.
 
 ```{r}
-empty_row <- rep(NA, 6)
-all_calibr <- rbind(empty_row, calc1_calib_pop, empty_row, calc2_calib_pop)
+empty_row <- rep(NA, 7)
+all_calibr <- rbind(empty_row, as.data.frame(calc1_calib_pop_str), empty_row, as.data.frame(calc2_calib_pop_str))
 all_calibr$P_T_ME <- round(all_calibr$P_T_ME, 2)
 all_calibr$P_T_MT <- round(all_calibr$P_T_MT, 2)
+all_calibr$Ptros <- round(all_calibr$Ptros, 2)
+
+
+all_calibr$pop <- as.character(all_calibr$pop)
 
 all_calibr$pop[is.na(all_calibr$pop)] <- c("**Theoretical model 1**", "**Theoretical model 2**")
 
@@ -1118,12 +1208,10 @@ kable(all_calibr)
 <!-- # Предсказания калькулятора №1 для тестового датасета -->
 
 
-<!-- test_pop <- myt5 %>% group_by(Subset, pop) %>% summarize(Prop_T = mean(Prop_T), freq_MT = mean(freq_MT)) -->
+<!-- test_pop <- myt5 %>% group_by(pop) %>% summarize(Prop_T = mean(Prop_T), freq_MT = mean(freq_MT)) -->
 
 <!-- test_pop$P_T_Calc1_predict <- c( -->
-<!--   (coef_calc1_W[1] + coef_calc1_W[2] *  test_pop %>% filter(., Subset == "WBL") %>%  pull(Prop_T)),  -->
-
-<!--   (coef_calc1_BH[1] + coef_calc1_BH[2] *  test_pop %>% filter(., Subset == "BH") %>%  pull(Prop_T)) -->
+<!--   (coef_calc1_W[1] + coef_calc1_W[2] *  test_pop %>% pull(Prop_T)) -->
 <!--   ) -->
 
 <!-- test_pop$P_T_Calc1_predict[test_pop$P_T_Calc1_predict<0] <- NA -->
@@ -1131,20 +1219,20 @@ kable(all_calibr)
 
 <!-- # Предсказания калькулятора №2 для тестового датасета -->
 
-<!-- dd <- merge(myt5, test_pop[ , c("Subset", "pop", "P_T_Calc1_predict")], by = c("Subset", "pop")) -->
+<!-- dd <- merge(myt5, test_pop[ , c("pop", "P_T_Calc1_predict")], by = c("pop")) -->
 
-<!-- myt3_with_predictions <- merge(dd,coef_calc2, by = "Subset" ) -->
+<!-- myt5_with_predictions <- merge(dd,coef_calc2) -->
 
-<!-- myt3_with_predictions$Calc2_predictions <- with(myt3_with_predictions, ifelse(morph == "T_m", -->
-<!--               (P_T_MT * P_T_Calc1_predict)/(P_T_MT * P_T_Calc1_predict + P_T_ME*(1-P_T_Calc1_predict)),  -->
-<!--               ((1 - P_T_ME) * (1 - P_T_Calc1_predict))/ (1 - P_T_ME + P_T_Calc1_predict * (P_T_ME - P_T_MT))                                    -->
+<!-- myt5_with_predictions$Calc2_predictions <- with(myt5_with_predictions, ifelse(morph == "T_m", -->
+<!--               (P_T_MT * P_T_Calc1_predict)/(P_T_MT * P_T_Calc1_predict + P_T_ME*(1-P_T_Calc1_predict)), -->
+<!--               ((1 - P_T_ME) * (1 - P_T_Calc1_predict))/ (1 - P_T_ME + P_T_Calc1_predict * (P_T_ME - P_T_MT)) -->
 <!-- )) -->
 
 
 
-<!-- test_calc2_summary <- myt3_with_predictions %>% group_by(Subset, pop, morph) %>% summarise(Pcorrect = mean(congr), Calc2_pred = mean(Calc2_predictions)) -->
+<!-- test_calc2_summary <- myt5_with_predictions %>% group_by(pop, morph) %>% summarise(Pcorrect = mean(congr), Calc2_pred = mean(Calc2_predictions)) -->
 
-<!-- ggplot(test_calc2_summary, aes(x = Calc2_pred, y = Pcorrect, color = morph)) +  facet_grid(~morph ) + geom_abline() + xlim(0,1)+ ylim(0,1) + geom_text(aes(label = Subset)) + labs(x = "Probabilit of correct identification predicted by theoretical Model 2", y = "Observed probability of correct identification") -->
+<!-- ggplot(test_calc2_summary, aes(x = Calc2_pred, y = Pcorrect, color = morph)) +  facet_grid(~morph ) + geom_abline() + xlim(0,1)+ ylim(0,1) + geom_text(aes(label = pop)) + labs(x = "Probabilit of correct identification predicted by theoretical Model 2", y = "Observed probability of correct identification") -->
 
 
 <!-- ``` -->
