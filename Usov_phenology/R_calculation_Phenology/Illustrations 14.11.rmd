@@ -323,7 +323,7 @@ p_values_event$Mantel_P_value_adj [p_values_event$Event == "End"] <- round(p.adj
 
 slopes_event <- merge(slopes_event, p_values_event, by = c("Species", "Event"))
 
-slopes_event$label <- with(slopes_event, paste(estimate, ", adj. p = ", Mantel_P_value_adj, sep = ""))
+slopes_event$label <- with(slopes_event, ifelse(Mantel_P_value_adj >= 0.01, paste(estimate, ", adj.p = ", Mantel_P_value_adj, sep = ""), paste(estimate, ", adj.p ", "<0.01", sep = "")))
 
 
 
@@ -351,7 +351,7 @@ slopes_Abund2 <- merge(slopes_Abund, p_values_Abund)
 slopes_Abund2$Mantel_P_value_adj <- round(p.adjust(slopes_Abund2$Mantel_P_value, method = "BH"), 3)
 
 
-slopes_Abund2$label <- with(slopes_Abund2, paste(estimate, ", adj. p = ", Mantel_P_value_adj, sep = ""))
+slopes_Abund2$label <- with(slopes_Abund2, ifelse(Mantel_P_value_adj >=0.01, paste(estimate, ", adj.p = ", Mantel_P_value_adj, sep = ""), paste(estimate, ", adj.p ", "< 0.01", sep = "")))
 
 
 Y <- Abundance_melt %>% group_by(Species) %>% summarise(max = max(N, na.rm = TRUE))
@@ -365,12 +365,12 @@ slopes_Abund3$Species <- factor(slopes_Abund3$Species, levels = c("Pseudocalanus
 
 # Комбинируем рисунки на одну панель
 
-Pl_phen1 <- Pl_phen_begin + geom_text(data = slopes_event [slopes_event$Event == "Begin", ], aes(label = label, x = 1961, y = max + 5), size = 2, hjust = "inward") + scale_y_continuous(breaks=c(50,100, 150, 200, 250, 300, 350))
+Pl_phen1 <- Pl_phen_begin + geom_text(data = slopes_event [slopes_event$Event == "Begin", ], aes(label = label, x = 1961, y = max + 5), size = 3, hjust = "inward") + scale_y_continuous(breaks=c(50,100, 150, 200, 250, 300, 350))
 
-Pl_phen2 <- Pl_phen_end + geom_text(data = slopes_event[slopes_event$Event == "End", ], aes(label = label, x = 1961, y = max + 5), size = 2, hjust = "inward") + scale_y_continuous(breaks=c(50,100, 150, 200, 250, 300, 350))
+Pl_phen2 <- Pl_phen_end + geom_text(data = slopes_event[slopes_event$Event == "End", ], aes(label = label, x = 1961, y = max + 5), size = 3, hjust = "inward") + scale_y_continuous(breaks=c(50,100, 150, 200, 250, 300, 350))
 
 
-Pl_abund2 <- Pl_abund + geom_text(data = slopes_Abund3, aes(label = label, x = 1961, y = max + 0.05*max), size = 2, hjust = "inward") + labs(y = bquote('Abundance ('~ind ~m^-3 ~')')) + theme(strip.text = element_text(size = 10))
+Pl_abund2 <- Pl_abund + geom_text(data = slopes_Abund3, aes(label = label, x = 1961, y = max + 0.05*max), size = 3, hjust = "inward") + labs(y = bquote('Abundance ('~ind ~m^-3 ~')')) + theme(strip.text = element_text(size = 10))
 
 
 
@@ -460,21 +460,36 @@ slopes_Env$Event <- factor(slopes_Env$Event, levels = c(c("ICD", "SpSD", "SuSD",
 
 
 # levels(slopes_Env$Event)
-labels_events <- c( "ICD" = "ICD, Julian day of Ice cleaning",   
-                    "SpSD" = "SpSD, Julian day of Spring start",
-                    "SuSD" = "SuSD, Julian day of Summer start",
-                    "TPD" = "TPD, Julian day of Temp. peak ",
-                    "SuFD" = "SuFD, Julian day of Summer finish",
-                    "SuDur"= "SuDur, Summer duration (days)",
-                    "SpT" = "SpT, Spring Temperature (°C)",
-                    "SuT" = "SuT, Summer Temperature (°C)",
+# labels_events <- c( "ICD" = "ICD, Julian day of Ice cleaning",   
+#                     "SpSD" = "SpSD, Julian day of Spring start",
+#                     "SuSD" = "SuSD, Julian day of Summer start",
+#                     "TPD" = "TPD, Julian day of Temp. peak ",
+#                     "SuFD" = "SuFD, Julian day of Summer finish",
+#                     "SuDur"= "SuDur, Summer duration (days)",
+#                     "SpT" = "SpT, Spring Temperature (°C)",
+#                     "SuT" = "SuT, Summer Temperature (°C)",
+#                     "NAO" = "NAO",
+#                     "AOI" = "AOI"  
+#                   )
+# 
+
+labels_events <- c( "ICD" = "Julian day of Ice cleaning",   
+                    "SpSD" = "Julian day of Spring start",
+                    "SuSD" = "Julian day of Summer start",
+                    "TPD" = "Julian day of Temp. peak ",
+                    "SuFD" = "Julian day of Summer finish",
+                    "SuDur"= "Summer duration (days)",
+                    "SpT" = "Spring Temperature (°C)",
+                    "SuT" = "Summer Temperature (°C)",
                     "NAO" = "NAO",
                     "AOI" = "AOI"  
                   )
 
+
+
 Pl_factors <- ggplot(env2_melt, aes(x = Year, y = Value)) + geom_line() + geom_smooth(method = "lm", se = FALSE) + facet_wrap( ~ Event, scales = "free_y", ncol = 2, labeller = as_labeller(labels_events) )   + labs(y = "") + scale_x_continuous(breaks = seq(min(phen_all$Year), max(phen_all$Year), 10)) + theme(axis.text.x = element_text(angle = 90)) +  theme(strip.text = element_text(size = 5), strip.background.y = element_blank()) + theme(aspect.ratio = 0.4) + labs(y = "Values")
 
-Pl_factors2 <- Pl_factors +  geom_text(data = slopes_Env, aes(label = label, x = 1963, y = max + 0.05*max), size = 2, hjust = "inward")
+Pl_factors2 <- Pl_factors +  geom_text(data = slopes_Env, aes(label = label, x = 1963, y = max + 0.05*max), size = 3, hjust = "inward")
 
 
 Pl_factors2 + theme(strip.text = element_text(size = 10))
@@ -655,7 +670,7 @@ signif_term <-  anova_phen_cca_reduced_margin$term [anova_phen_cca_reduced_margi
 ggplot(gg_phen_cca_reduced[gg_phen_cca_reduced$Score == "species", ],  aes(x = CCA1, y = CCA2))  +
    geom_point(shape = 21, fill = "yellow", aes(size = points$CCA_quart)) + scale_size_manual(values = c(5, 1)) + 
   geom_segment(data = gg_phen_cca_reduced[gg_phen_cca_reduced$Score == "biplot" & gg_phen_cca_reduced$Label %in% signif_term,  ], aes(x = 0, y = 0, xend = CCA1, yend = CCA2), arrow = arrow(type = "closed", length = unit(0.02, "native")), size = 0.5, color = "blue") +
-  geom_text_repel(data = gg_phen_cca_reduced[gg_phen_cca_reduced$Score == "biplot" & gg_phen_cca_reduced$Label %in% signif_term,  ], aes(x =  CCA1, y = CCA2, label = Label), size = 4, point.padding = 0.2) +
+  geom_text_repel(data = gg_phen_cca_reduced[gg_phen_cca_reduced$Score == "biplot" & gg_phen_cca_reduced$Label %in% signif_term,  ], aes(x =  CCA1, y = CCA2, label = Label), size = 4, point.padding = 0.5) +
   geom_text_repel (aes(label = points$CCA_quart_lab), size = 3, min.segment.length = 1, point.padding = 0.5) +
      labs(x = paste ("CCA1 (",  round(CCA1_importance*100, 1), "% of total inertia)")   , y = paste ("CCA2 (",  round(CCA2_importance*100, 1), "% of total inertia)")) + guides(size = "none")
 
@@ -709,10 +724,21 @@ ggplot(Abundance_phen, aes(x = Begin, y = Log_N)) + geom_point()  + labs(x = "Ju
 ```
 
 
+
+
+
 Fig. 5. The relationship between the abundance of the species (Log(N+1)) in a given year and the beginning-of-season. Each point corresponds to one year of observations. The number on each graph indicates the correlation between dynamics of abundance and the start of season (see Material and Methods for details about correlaton assessment).
 
 
+Вместо рисунка можно привести такую таблицу
 
+```{r}
+perms_qual_print <- perms_qual_print[, 1:2]
+perms_qual_print$Correlation <- round(perms_qual_print$Correlation, 2)
+
+
+kable(perms_qual_print)
+```
 
 
 

@@ -1,0 +1,1136 @@
+---
+title: "Analyses of distribution and long-term dynamics of sympatric mussels *Mytilus edulis* and *M.trossulus* in the White Sea using the semi-diagnostic conchological marker"
+author: "V. Khaitov, M. Katolikova, A. Zaichikova, P. Safonov, T. Korotkova, Y.Marchenko, P.Strelkov"
+date: ' '
+output:
+  beamer_presentation:
+    colortheme: "beaver"
+    highlight: tango
+    includes:
+      in_header: ./includes/header.tex
+    latex_engine: xelatex
+    slide_level: 2
+    theme: "Singapore"
+    toc: no
+
+---
+
+
+```{r setup, include = FALSE, purl = FALSE}
+# output options
+options(width = 70, scipen = 6, digits = 3)
+library(knitr)
+# chunk default options
+# opts_chunk$set(fig.align='center', tidy = FALSE, fig.width = 7, fig.height = 3, warning = FALSE)
+opts_chunk$set(fig.show='hold', size='footnotesize', comment="#", warning=FALSE, message=FALSE, dev='cairo_pdf', cache = TRUE, echo = FALSE)
+library("extrafont")
+```
+
+# Prehistory
+
+## Where we are?
+
+
+\begin{figure}
+  \centering
+      \includegraphics[width=\textwidth,height=0.95\textheight,keepaspectratio]{./figure/North_Europa.jpg}
+
+\end{figure}
+
+
+## Where we are?
+
+
+\begin{figure}
+  \centering
+      \includegraphics[width=\textwidth,height=0.95\textheight,keepaspectratio]{./figure/White_Sea.jpg}
+
+\end{figure}
+
+
+## Where we are?
+
+\begin{figure}
+  \centering
+      \includegraphics[width=\textwidth,height=0.95\textheight,keepaspectratio]{./figure/Kandalaksha_bay.jpg}
+
+\end{figure}
+
+
+## Kandalaksha Bay
+
+\columnsbegin
+\column{0.6\textwidth}
+
+```{r}
+
+library(lattice)
+library(sp)
+library(ggmap)
+library(mapproj)
+library(maps)
+
+library(rgeos) #этот пакет содержит какую-то хрень, которая позволяет обойти проблему пр чтении фалов средсвами maptools.
+#Att! Этот пакет должен быть загружен до maptools
+
+library(mapdata)
+library(maptools) # Rgshhs
+library(PBSmapping)
+library(gridExtra)
+library(grid)
+library(gamm4)
+
+library(akima)
+library(car)
+library(fetchR)
+library(MuMIn)
+
+
+default_theme <- theme_bw() + theme(axis.text = element_text(size = 15), axis.title = element_text(size = 20) )
+
+theme_set(default_theme)
+
+# Задаем пределы координат для карт
+
+Kand_upper_x <- c(32.2, 36.6)
+Kand_upper_y <- c(65.7, 67.3)
+
+
+ggKand_upper <- read.csv("data/ggKand_upper.csv")
+
+
+
+Plot_Kand_upper <-  ggplot(ggKand_upper, aes(x=long, y=lat, group=group)) + geom_polygon(fill = "gray70", colour = "black") + coord_map(xlim = Kand_upper_x, ylim = Kand_upper_y) + theme(panel.background = element_rect(fill = "cyan"), panel.grid = element_blank(), axis.title = element_blank(), axis.text = element_blank())
+
+Plot_Kand_upper
+```
+
+\column{0.4\textwidth}
+
+* Numerous dense mussel populations are presented practically everywhere 
+* High diversity of hydrological conditions
+  + Distinct gradients of salinity due to fresh water discharge from several big rivers
+  + The coastline is well indented with numerous islands, sheltered bays and exposed shores
+* Large working and abandoned sea ports are presented in the area   
+
+
+\columnsend
+
+## Two mussel species in the North Europe (Vainola, Strelkov, 2011)
+
+\columnsbegin
+\column{0.5\textwidth}
+\begin{figure}
+  \centering
+      \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./figure/Vainola_Strelkov.jpg}
+
+\end{figure}
+
+
+\column{0.48\textwidth}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./figure/Map_VS.jpg}
+
+\end{figure}
+
+\columnsend
+
+\small
+* *M.trossulus* is broadly distributed across the North Europe coastline  
+* **The main hypothesis**: *M.trossulus* was introduced from the North America by trans-Atlantic sea-trafic during World War II
+
+## Two mussel species in the White Sea (Katolikova et al., 2016)
+
+\columnsbegin
+\column{0.48\textwidth}
+\begin{figure}
+  \centering
+      \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./figure/Katolikova.jpg}
+
+\end{figure}
+
+
+\column{0.48\textwidth}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./figure/Map_Katolikova.jpg}
+
+\end{figure}
+
+\columnsend
+
+\small
+
+* Each of 1049 mussel (from 26 populations) was genotyped by 4 nearly diagnostic allozyme loci: *Est-D*, *Gpi*, *Pgm*, *Odh*
+* Mixed populations of *M.edulis* and *M.trossulus* are presented in the Kandalaksha Bay
+*  Proportion of *M.trossulus* in populations varies  broadly throughout the area.
+
+
+## Two mussel's morphotypes in the White Sea
+
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{./figure/Morphotypes1.jpg}
+
+\end{figure}
+
+## Two mussel's morphotypes in the White Sea
+
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{./figure/Morphotypes2.jpg}
+
+\end{figure}
+
+
+## Two mussel's morphotypes in the White Sea (Katolikova et al., 2016)
+
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{./figure/Morphotypes3.jpg}
+
+\end{figure}
+
+
+<!-- ## Two mussel's morphotypes in the White Sea -->
+
+
+<!-- \begin{figure} -->
+<!--   \centering -->
+<!--   \includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{./figure/Morphotypes4.jpg} -->
+
+<!-- \end{figure} -->
+
+
+
+## Genotypes and morphotypes
+
+\centering
+```{r, fig.height=5}
+
+library(reshape2)
+library(ggplot2)
+library(gridExtra)
+library(dplyr)
+library(lme4)
+library(ggrepel)
+
+
+default_theme <- theme_bw() + theme(axis.text = element_text(size = 15), axis.title = element_text(size = 20) )
+
+theme_set(default_theme)
+
+gds <- read.table("data/myt_all.csv", sep = ";", header = T)
+
+gds <- gds[complete.cases(gds), ]
+
+gds$species2 <- ifelse(gds$structure >= 0.5, "M.trossulus", "M.edulis")
+  
+  
+gds$Morph [gds$Z == 0] <- "T-morphotype"
+gds$Morph [gds$Z != 0] <- "E-morphotype"
+
+morph_distribution <- as.data.frame(table(gds$species2, gds$Morph))
+
+
+blank_theme <- theme_minimal()+
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.border = element_blank(),
+    panel.grid=element_blank(),
+    axis.ticks = element_blank(),
+    axis.text.x=element_blank(),
+     axis.text.y=element_blank(),
+    plot.title=element_text(size=14, face="bold")
+  )
+
+
+
+Pay_chart_morphotype <- ggplot(morph_distribution, aes(x="", y = Freq, fill = Var1)) + geom_bar(width = 1, stat = "identity",  position = position_fill(), color = "black")+ facet_wrap(~ Var2) + coord_polar("y", start=0) + scale_fill_manual(values = c("blue",  "red"))  + blank_theme +  theme(legend.position = "bottom") + labs(fill = NULL) + ggtitle("Distribution of mussel genotypes \nbetween morphotypes") + theme(plot.title = element_text(hjust = 0.5), legend.text = element_text(size = 15), strip.text = element_text(size = 15) )
+
+
+
+Pay_chart_species <- ggplot(morph_distribution, aes(x="", y = Freq, fill = Var2)) + geom_bar(width = 1, stat = "identity",  position = position_fill(), color = "black")+ facet_wrap(~ Var1) + coord_polar("y", start=0) + scale_fill_manual(values = c("black", "yellow"))  + blank_theme +  theme(legend.position = "bottom") + labs(fill = NULL) + ggtitle("Distribution of mussel morphotype \nbetween species") + theme(plot.title = element_text(hjust = 0.5), legend.text = element_text(size = 15), strip.text = element_text(size = 15) )
+
+Pay_chart_morphotype
+
+```
+
+
+
+
+<!-- ## Genotypes and morphotypes -->
+
+<!-- ```{r} -->
+<!-- Pay_chart_species -->
+<!-- ``` -->
+
+
+<!-- \centering {from Katolikova et al., 2016} -->
+
+
+
+
+#  **The story 1**: Morphological marker as a tool for species identification
+
+
+## Genotypes and morphotypes
+
+```{r, fig.height=5}
+
+Pay_chart_morphotype
+
+```
+
+
+\pause
+
+* The conchological trait should be considered as *semi*-diagnostic marker.
+
+
+## Genotypes and morphotypes
+
+Accordingly to Bayes theorem the value of the semi-diagnostic marker for species identification should be associated with the species prevalence in a mixed population.
+
+$$
+P(Mt|T) \propto P(T|Mt)P_{Mt}
+$$ 
+
+
+$$
+P(Me|E)  \propto P(E|Me)P_{Me}
+$$ 
+
+
+
+<!-- ## Regression model describing the dependency between $P(tross|T)$ and $P(edul|E)$ and species prevalence   -->
+
+<!-- $$ -->
+<!-- logit(P_{congruency}) = b_0 + b_1Morph + b_2P_{trossulus} + Interaction + \varepsilon -->
+<!-- $$ -->
+
+<!-- - $P_{congruency}$ - Probability of correct identification of T-morphotype as *M.trossulus* and E-morphotype as *M.edulis* -->
+<!-- - $Morph$ - Mussel morphotype -->
+<!-- - $P_{trossulus}$ - proportion of *M.trossulus* in population -->
+
+## Logistic regression model describing the dependency between $P(Mt|T)$ and $P(Me|E)$ with species prevalence 
+
+
+<!-- \columnsbegin -->
+<!-- \column{0.6\textwidth} -->
+
+```{r, fig.height=5}
+
+myt <- gds
+
+
+
+
+myt$Sp [myt$structure > 0.5] <- "M.trossulus" 
+myt$Sp [myt$structure <= 0.5] <- "M.edulis"
+
+myt$morph <- ifelse(myt$Z == 0, "T_m", "E_m")
+
+# Оставляем только мидий, у которых есть оценка морфотипа
+myt2 <- myt[!is.na(myt$Z), ]
+
+# 
+# # Вводим обозначения для морфотипов
+# myt2$morph <- ifelse(myt2$ind == 1, "T_m", "E_m")
+# myt2$morph <- factor(myt2$morph)
+
+myt2$congr <- ifelse((myt2$morph == "T_m" & myt2$Sp == "M.trossulus") | (myt2$morph == "E_m" & myt2$Sp == "M.edulis"), 1, 0   )
+
+
+# Частота M.trossulus в популяции, вычисленная как срденее значение structure
+freq_MT <- myt2 %>% group_by(population) %>% summarise(freq_MT = mean(structure))
+
+myt2 <- merge(myt2, freq_MT)
+
+myt2$Sp2 <- ifelse(myt2$Sp == "M.trossulus", 1, 0)
+
+
+Mod_fT_congr <- glmer(congr ~ Morph * freq_MT + (1 | population), data = myt2, family = binomial(link = "logit"), control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+Mod_fT_congr_fin <- Mod_fT_congr
+
+# library(sjstats)
+# overdisp(Mod_fT_congr)
+
+newdata <- myt2 %>% group_by(Morph) %>% do(data.frame(freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 100)))
+
+# Предсказанные значеня в шкале вероятностей
+newdata$fit <- predict(Mod_fT_congr_fin, newdata = newdata, type = "response", re.form = NA) 
+
+# Предсказанные значеня в шкале логитов
+newdata$fit_eta <- predict(Mod_fT_congr_fin, newdata = newdata, re.form = NA) 
+
+# Вычисление доверительного инеравала
+
+# formula((Mod_fT_congr_fin)) 
+
+X <- model.matrix(  ~ Morph + freq_MT + Morph:freq_MT, data = newdata) #Модельная матрица для визуализации
+
+
+# Ошибки в шкале логитов
+newdata$se_eta <- sqrt(diag(X %*% vcov(Mod_fT_congr_fin) %*% t(X)))
+
+logit_back <- function(x) exp(x)/(1 + exp(x)) # обратная логит-трансформация
+
+# Границы доверительных интервалов в масштабах вероятностей
+newdata$lwr <- logit_back(newdata$fit_eta - 2 * newdata$se_eta)
+newdata$upr <- logit_back(newdata$fit_eta + 2 * newdata$se_eta)
+
+# newdata$lwr <- probit_back(newdata$fit_eta - 2 * newdata$se_eta)
+# newdata$upr <- probit_back(newdata$fit_eta + 2 * newdata$se_eta)
+
+
+Pl_fit <- ggplot(newdata, aes(x = freq_MT, y = fit)) + geom_ribbon(aes(ymin = lwr, ymax = upr, group = Morph), alpha = 0.2)  + geom_line(aes(color = Morph), size=1) + scale_color_manual(values = c("blue", "red")) + theme_bw() + xlim(0,1)  + labs(y = "Probability of correct \nspecies identification", x = "Proportion of \nM.trossulus in population", color = "Morphotype") + theme(legend.position = "right", axis.title = element_text(size = 18), legend.text = element_text(size = 18))
+
+prop_correct <- myt2 %>% group_by(population, Morph) %>% summarise(Prop_correct = mean(congr), freq_MT = mean(freq_MT))
+
+
+
+#Bayesian curve 
+
+MT <- myt2[myt2$Sp == "M.trossulus", ]
+P_T_MT <- mean(MT$Morph == "T-morphotype")
+P_E_MT <- mean(MT$Morph == "E-morphotype")
+
+
+ME <- myt2[myt2$Sp == "M.edulis", ]
+P_T_ME <- mean(ME$Morph == "T-morphotype")
+P_E_ME <- mean(ME$Morph == "E-morphotype")
+
+
+
+bayes <- data.frame(P_MT = seq(0, 1, length.out = 100))
+bayes$P_MT_T <- with(bayes, (P_T_MT*P_MT)/(P_T_MT*P_MT + P_T_ME*(1-P_MT)) )
+bayes$P_ME_E <- with(bayes, (P_E_ME*(1-P_MT))/(P_E_ME*(1-P_MT) + P_E_MT*P_MT) )
+
+
+
+Pl_fit + geom_point(data = prop_correct, aes(x = freq_MT, y = Prop_correct, color=Morph)) 
+# + geom_line(data = bayes, aes(x = P_MT, y = P_MT_T), color = "red", linetype = 2, size = 1.5) + geom_line(data = bayes, aes(x = P_MT, y = P_ME_E), color = "blue", linetype = 2, size = 1.5) 
+
+```
+<!-- \column{0.4\textwidth} -->
+
+
+## If we know the mussel morphotype we can assess the probability of correct species identification 
+
+\columnsbegin
+\column{0.48\textwidth}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth,height=0.6\textheight,keepaspectratio]{./figure/Morphotypes5.jpg}
+\end{figure}
+
+* for T-morphotype: $P_{trossulus} = \frac{e^{0.4 + 3.1P_{Mt}}}{1+e^{0.4 + 3.1P_{Mt}}}$   
+
+\column{0.48\textwidth}
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth,height=0.6\textheight,keepaspectratio]{./figure/Morphotypes6.jpg}
+\end{figure}
+
+* for E-morphotype: $P_{edulis} = \frac{e^{4.1 - 5.8P_{Mt}}}{1+e^{4.1 - 5.8P_{Mt}}}$    
+
+\columnsend
+
+Using these results we can identify  (with certain probability)  the species of a mussel with known morphotype 
+
+\pause
+\centering
+However, to use morphotype as identification tool we have to assess the prevalence of *M.trossulus* (or *M.edulis*) in the population of interest.
+
+<!-- \columnsend -->
+
+
+## The proportion of *M. trossulus* is highly correlated with proportion of mussel of T-morphotype 
+
+<!-- \columnsbegin -->
+<!-- \column{0.6\textwidth} -->
+
+```{r, fig.align='center', fig.height=4}
+
+library(betareg)
+
+prop_T_MT <- myt2 %>% group_by(population)  %>% summarise(Prop_T = mean(Morph == "T-morphotype"),Prop_MT = mean(Sp == "M.trossulus"))
+
+prop_T_MT$Prop_MT_adj <- ifelse(prop_T_MT$Prop_MT == 0, 0.00000001, prop_T_MT$Prop_MT)
+
+Model_T_MT <- betareg(Prop_MT_adj ~ Prop_T, data = prop_T_MT)  
+
+# summary(Model_T_MT)
+
+new_data <- prop_T_MT %>% do(data.frame(Prop_T = seq(min(.$Prop_T), max(.$Prop_T), length.out = 100)))
+
+new_data$fit <- predict(Model_T_MT, newdata = new_data,  type="response")
+
+Pl_beta_regr <- ggplot(prop_T_MT, aes(x = Prop_T, y = Prop_MT)) + geom_point()+ theme_bw() + labs(x = "Proportion of T-morphotype in population", y = "Proportion of M.trossulus") + geom_abline(color = "blue") + theme(axis.title = element_text(size = 15))
+
+Pl_beta_regr
+
+```
+
+<!-- \centering {по данным из Katolikova et al., 2016} -->
+
+
+
+## The proportion of *M. trossulus* is highly correlated with proportion of mussel of T-morphotype 
+
+
+```{r, fig.align='center', fig.height=4}
+
+Pl_beta_regr + geom_line(data = new_data, aes(x = Prop_T, y = fit), size = 1, color = "red") 
+
+```
+
+
+
+
+<!-- \column{0.4\textwidth} -->
+
+\columnsbegin
+
+\column{0.6\textwidth}
+
+\small
+* In mixed populations of *M.edulis* and  *M.trossulus* the proportion of *M.trossulus* can be calculated on the basis of proportion of T-morphotype 
+
+\column{0.4\textwidth}
+
+$$
+P_{Mt} = \frac{e^{-3.0 + 6.2P_T}}{1+e^{-3.0 + 6.2P_T}}
+$$
+\columnsend
+
+<!-- \columnsend -->
+
+
+## What we can do now
+
+- We can calculate the probability of being *M.trossulus* (or *M.edulis*) for each mussel if we know its morphotype and if we know the proportion of morphotypes in particular population. 
+
+\pause
+
+- We can approximately assess the genetic structure of mixed population without expensive genotyping procedure(e.g. we can use dry shells from old even prehistoric samples).
+
+\pause
+
+- We can care out ecological studies of mixed populations of *M.edulis* and *M.trossulus* which  require large amounts of mussels. 
+
+
+# **The story 2**: The history of *M.trossulus* appearance in the White Sea
+
+## Old collections from the White Sea 
+
+* We found some collections of dated dry shells sampled in the Kandalaksha Bay in the 70-th --- 90-th 
+* The collections were not available for genotyping, but mussel's morphotype could be easily assessed
+* Since the position of the population was known we re-sampled mussels from the population in 2010-th 
+
+
+## Old dry shells and new samplings from the same populations 
+
+\columnsbegin
+
+\column{0.7\textwidth}
+
+\centering
+
+```{r, fig.height=10}
+histor <- read.table("data/Mytilus old and new samples.csv", header = T, sep = ",")
+
+histor$Z <- histor$a/histor$l
+
+histor$Morph [histor$Z == 0] <- "T-morphotype" 
+histor$Morph [histor$Z != 0] <- "E-morphotype" 
+
+
+
+
+
+histor_Z0 <- histor %>% group_by(Period, Position, Site, Morph) %>% summarise(Year = mean(Year), Abund = n(), N = mean(N), E = mean(E))
+
+
+histor_Z0_1 <- histor %>% group_by(Period, Position, Site) %>% summarise(Year = mean(Year), N_T = n(), N_E = n(),  N = mean(N), E = mean(E))
+
+
+histor_Z0$Year <- round(histor_Z0$Year)
+
+
+histor_Z0_1 <- histor %>% group_by(Period, Position, Site) %>% summarise(Year = mean(Year), N_T = sum(Z == 0), N_E = sum(Z > 0),  N = mean(N), E = mean(E))
+
+histor_Z0_1$PropT <- with(histor_Z0_1, N_T/(N_T + N_E))
+
+
+histor_Z0_2 <- merge(histor_Z0_1[histor_Z0_1$Period == "new",], histor_Z0_1[histor_Z0_1$Period == "old",], by = c("Site", "Position"))
+
+histor_Z0_2$Year.y <- round(histor_Z0_2$Year.y)
+
+# histor_Z0_3 <- data.frame(Site = histor_Z0_2$Site, Position = histor_Z0_2$Position, Year_old = histor_Z0_2$Year.y, Year_new = histor_Z0_2$Year.x, NT_old = histor_Z0_2$N_T.y, NE_old = histor_Z0_2$N_E.y,NT_new = histor_Z0_2$N_T.x, NE_new = histor_Z0_2$N_E.x, PropT_old = histor_Z0_2$PropT.y, PropT_new = histor_Z0_2$PropT.x)
+
+
+
+
+Plot_histor <- ggplot(histor_Z0 [histor_Z0$Period == "old", ], aes(x = "", y = Abund, fill = Morph)) + geom_bar(width = 1, stat = "identity",  position = position_fill(), color = "black")+ facet_wrap(~Site, ncol = 1) + coord_polar("y", start=0) + scale_fill_manual(values = c("blue",  "red"))  + blank_theme  + theme(strip.text = element_blank()) + labs(fill = "none") + guides(fill = "none") + ggtitle("Old samples \n(before 1999)")
+
+Plot_new <- ggplot(histor_Z0 [histor_Z0$Period == "new", ], aes(x = "", y = Abund, fill = Morph)) + geom_bar(width = 1, stat = "identity",  position = position_fill(), color = "black")+ facet_wrap(~Site, ncol = 1) + coord_polar("y", start=0) + scale_fill_manual(values = c("blue",  "red"))  + blank_theme  + theme(strip.text = element_blank()) + labs(fill = "none")+ guides(fill = "none") + ggtitle("New samples \n(after 2013)")
+
+Plot_new_old <- ggplot(histor_Z0_2, aes(x = PropT.y, y = PropT.x)) + geom_point(size = 3)+ geom_abline(slope = 1, size = 1) + xlim(0, 0.4) + ylim(0, 0.4) + geom_text_repel(aes(label = Year.y), nudge_y = 0.01) + xlab("T-morph proportion in \nhistorical samples") + ylab("T-morph proportion in new samples") + theme_light() + theme(panel.grid	= element_blank())
+
+
+# grid.arrange(Plot_histor, Plot_new_old, Plot_new, ncol = 3)
+
+
+library(ggpubr)
+figure <- ggarrange(Plot_histor,Plot_new, ncol = 2,  align = "h",  widths = c(1, 1))
+
+# grid.arrange(Pl_phen, Pl_abund, ncol = 2)
+
+figure
+
+
+# grid.arrange(Plot_histor, Plot_new, ncol = 2)
+
+
+# +  theme(legend.position = "bottom") + labs(fill = NULL) + ggtitle("Соотношение численностей видов \nсреди мидий разных морфотипов")
+
+
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# Plot_Kand_upper + theme(panel.background = element_rect(fill = "cyan"), axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), panel.grid = element_blank()) 
+
+
+```
+
+\column{0.3\textwidth}
+
+In most cases the proportion of T-morphotype was significantly higher in new samples.
+
+\columnsend
+
+## Monitoring of population structure in the upper part of the Kandalaksha Bay
+
+```{r, fig.height=5}
+
+Kand_upper_x <- c(32.3, 32.7)
+Kand_upper_y <- c(67.0, 67.16)
+
+pol<-data.frame(long = Kand_upper_x, lat = Kand_upper_y, group = 0.1)
+
+Plot_Kand_upper + geom_rect(data = pol, aes(xmin = long[1], xmax = long[2], ymin = lat[1], ymax = lat[2]), color = "red", fill = NA, size = 1)
+
+```
+
+
+## Monitoring of population structure in the upper part of the Kandalaksha Bay
+
+
+```{r, fig.height=4.5}
+monitor <- read.table("data/nt_ne_monitoring_2002_2018.csv", sep = ",", header = T) 
+
+# levels(monitor$Site) = c("Лупчостров", "Малый", "Овечий", "Ряжков")
+
+monitor$PropT <- with(monitor, Nt/(Nt+Ne))
+
+library(mgcv)
+Mod_monitor_1 <- gam(PropT ~ s(Year, by = Site, bs = "cr") + Site, family = binomial(link = "logit"), data = monitor, weights = (Nt+Ne))
+
+MyData2 <- unique(monitor[,1:2]) 
+  # expand.grid(Year = seq(2002, 2016, 1), Site = levels(monitor$Site))
+
+MyData2$Predict <- round(predict(Mod_monitor_1, newdata = MyData2, type = "response", se = T)$fit, 1)
+
+MyData2$SE <- predict(Mod_monitor_1, newdata = MyData2, type = "response", se = T)$se.fit
+
+# MyData2[MyData2$Site == "Malij",]
+# MyData2[MyData2$Site == "Ovech",]
+# MyData2[MyData2$Site == "Ryashkov",]
+
+fmt_dcimals <- function(decimals=0){
+   # return a function responpsible for formatting the 
+   # axis labels with a given number of decimals 
+   function(x) as.character(round(x,decimals))
+}
+
+Pl_monitor <- ggplot(MyData2, aes(x = Year, y = Predict)) + 
+  facet_wrap(~ Site, ncol = 1) + 
+  geom_point(data = monitor, aes(x = Year, y = PropT )) + 
+  geom_path(color = "blue") + 
+  geom_path(aes(y = Predict - 1.96*SE), linetype = 2) + 
+  geom_path(aes(y = Predict + 1.96*SE), linetype = 2) + 
+  theme_bw() + xlab("Years") + 
+  ylab("Proportion of T-morphotype") + 
+  xlim(2001, 2018) + 
+  theme(strip.background = element_rect (fill = "white"), panel.grid = element_blank(), strip.text.x = element_blank()) +
+  scale_y_continuous(labels = fmt_dcimals(1))
+                                                                                          # , axis.line = element_line(size = 1), axis.ticks.length = unit(-0.25, "cm"), axis.text.x = element_text(margin=unit(c(0.5,0.5,0.5,0.5), "cm")), axis.text.y = element_text(margin=unit(c(0.5,0.5,0.5,0.5), "cm")))
+
+
+Points <- data.frame(Site = c("Lupch", "Malyj", "Ovech", "Ryazhkov"), N = c(67.147790, 67.117923,67.094935,67.020064 ) , E =c(32.355051, 32.406971, 32.452459, 32.570831))
+
+load("data/Kand_upper_map.RData")
+
+library(ggmap)
+
+
+
+bar_long = 32.61
+bar_lat = 67.027434
+Long_67parallel = 43.621
+
+
+
+Pl_map_monitor <- ggmap(Kand_map, fullpage = F, darken=0) + theme(axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), panel.grid = element_blank()) + geom_point(data = Points, aes(x = E, y = N), color = "yellow", size = 4) + geom_text(aes(y = 67.133351, x = 32.451294 , label = "Niva River \nmouth"), color = "yellow") + ggtitle("Monitoring sites") +
+  geom_segment(x = bar_long, y = bar_lat, yend = bar_lat, xend = (bar_long + 1/Long_67parallel*5 ), size = 2, color = "white") + annotate(geom = "text", x = (bar_long + (bar_long + 1/Long_67parallel*5 ))/2, y = bar_lat + 0.008, label = "5 km", color = "white")
+
+grid.arrange(Pl_map_monitor, Pl_monitor, ncol = 2)
+```
+
+
+\small
+- Direct monitoring revealed significant increasing of T-morphotype proportion in 21 century.
+- The only exception was observed in the case of the most freshened site near the mouth of Niva river  where proportion of T-morphotypes was unchangeable high.
+
+
+
+# **The story 3**: The modern distribution of *M.edulis* and *M.trossulus* in the Kandalaksha Bay
+
+## The species distribution map
+
+```{r, fig.height=5}
+# Читаем данные
+
+myt <- read.table("data/Distred_samples_fetch_corrected_2018.csv", header = T, sep = ",")
+
+sal <- read.table("data/Distred_samples_salinity_2018.csv", header = T, sep = ",")
+
+myt <- merge(myt, sal, all = T)
+
+myt_Z0 <-   myt %>% group_by(Site) %>% summarise(Lat = mean(Lat), Lon = mean(Lon), N_T = sum(N_T), N_E = sum(N_E), PropT = N_T/(N_T + N_E), Salinity = mean(Salinity), Shore = unique(Shore))
+
+
+river <- read.table("data/Rivers.csv", sep = ";", header = T)
+
+ports <- data.frame(Shore = c("Kand", "Karel", "Kand", "Karel", "Karel"), Port = c("Кандалакша", "Витино", "Умба", "Чупа", "Средний"), Lat = c(67.137283, 67.076570,  66.677970, 66.269964, 66.294178), Lon = c(32.407995, 32.333630, 34.357655, 33.069534, 33.640656))
+
+
+sites_fetch_df <- read.table("data/Distred_samples_fetch_values_2018.csv", sep = ",", header = T)
+
+
+
+
+## Вычисляем вероятность втстретить M.trosslus 
+
+myt_Z0$P_MT <- (with(myt_Z0, exp(-3.0 + 6.2*PropT)/(1+exp(-3.0 + 6.2*PropT))))
+
+
+# $P_{M.trossulus} = \frac{e^{0.4 + 3.1P_T}}{1+e^{0.4 + 3.1P_T}}$ 
+# - for E-morphotype: $P_{M.edulis} = \frac{e^{4.1 - 5.8P_T}}{1+e^{4.1 - 5.8P_T}}$ 
+
+
+
+```
+
+
+
+```{r, fig.height=5}
+Plot_Kand_upper + geom_point(data = myt_Z0, aes(x = Lon, y = Lat, group = 1), size = 2, fill = "yellow", shape = 21)
+```
+
+At `r nrow(myt_Z0)` sites we described the abundance of mussels of T- and E-morphotypes and calculated the probability of *M.trossulus* presence in each site. 
+
+
+
+## The species distribution map
+
+```{r, fig.height=5}
+
+myt_Z0$P_correct_T <- with(myt_Z0, exp(0.4 + 3.1*P_MT)/ (1 + exp(0.4 + 3.1*P_MT)))  
+
+myt_Z0$P_correct_E <- with(myt_Z0, exp(4.1 - 5.8*P_MT)/ (1 + exp(4.1 - 5.8*P_MT)))  
+
+myt_Z0$Quasi_str <- with(myt_Z0, (N_T*P_correct_T + N_E *(1 - P_correct_E))/(N_T + N_E))
+
+myt_Z0$logit_Qstr <- with(myt_Z0, log(Quasi_str/(1-Quasi_str ) ))
+
+Mod_spatial <- gam(logit_Qstr ~ s(Lat, Lon), data = myt_Z0)
+
+ggKand_upper$Lat <- ggKand_upper$lat 
+ggKand_upper$Lon <- ggKand_upper$long 
+
+ggKand_upper$Fit_spatial <- predict(Mod_spatial, newdata = ggKand_upper)
+
+ggKand_upper$P_Fit_spatial <- logit_back(ggKand_upper$Fit_spatial)
+
+Kand_upper_x <- c(32.2, 36.6)
+Kand_upper_y <- c(65.7, 67.3)
+
+
+Quasi_str_plot <- ggplot(ggKand_upper, aes(x=long, y=lat, group=group)) + geom_polygon(fill = "gray70", colour = "black", size = 0.01) + coord_map(xlim = Kand_upper_x, ylim = Kand_upper_y) + theme(panel.background = element_rect(fill = "cyan"), panel.grid = element_blank(), axis.title = element_blank(), axis.text = element_blank())+ geom_point(aes(color = P_Fit_spatial, size = P_Fit_spatial)) + scale_color_gradient(high = "red", low = "yellow" ) + 
+  scale_size_continuous(range = c(0.1, 1.5)) + 
+  guides(size = "none", colour = "colorbar") +
+  labs(color = "Probability of M.trossulus presence") + 
+  theme(legend.position = "bottom") +
+  theme(title = element_text(size = 18) )
+
+Quasi_str_plot
+
+```
+
+The highest probability of *M.trossulus* presence is associated with upper part of the Kandalaksha Bay. However some other "nests" of  *M.trossulus* are presented in other parts of the bay.
+
+\pause
+
+What is the reason of such distribution pattern?
+
+
+## Lower salinity?
+
+
+```{r, fig.height=5}
+
+# Функция для вычисления от заданной точки до ближайшего объекта
+
+
+nearest_dist <- function(XY, objects = river, x.name = "Lon", y.name = "Lat"){
+
+  XY1 <-as.numeric(XY[,1])
+  XY2 <- as.numeric(XY[,2])
+  dist <- (acos(sin(XY1*pi/180)*sin(objects[ ,y.name]*pi/180) + cos(XY1*pi/180)*cos(objects[ ,y.name]*pi/180)*cos(XY2*pi/180 - objects[ ,x.name]*pi/180)) * 6371)
+
+  MD <- data.frame(Min_dist = min(dist))
+  cbind(objects[which(dist == min(dist)), ], MD)
+
+}
+
+
+df_river <- nearest_dist(XY = myt_Z0[1, c("Lat", "Lon")], objects = river)
+
+df_river[1,] <- NA
+
+for(i in 1:nrow(myt_Z0)) {
+  df_river[i,] <- nearest_dist(XY = myt_Z0[i, c("Lat", "Lon")], objects = river)
+  df_river$Site[i] <- as.character(myt_Z0$Site)[i]
+}
+
+names(df_river) <- c( "Shore_river", "River", "Discharge", "Drainage_Are", "Lat_river", "Lon_river", "Min_dist_river", "Site" )
+
+
+# Находим расстояния для ближайшего порта.
+
+df_port <- nearest_dist(XY = myt_Z0[1, c("Lat", "Lon")], objects = ports)
+
+df_port[1,] <- NA
+
+for(i in 1:nrow(myt_Z0)) {
+  df_port[i,] <- nearest_dist(XY = myt_Z0[i, c("Lat", "Lon")], objects = ports)
+  df_port$Site[i] <- as.character(myt_Z0$Site)[i]
+}
+
+names(df_port) <- c("Shore_port",  "Port", "Lat_port", "Lon_port", "Min_dist_port", "Site")
+
+
+
+
+
+
+# Сводим все датафреймы в один
+
+d <- merge(myt_Z0, df_river, by = "Site")
+
+dd <- merge(d, df_port, by = "Site")
+
+ddd <- merge(dd, sites_fetch_df, by = "Site")
+
+myt_Z0_dist <- ddd
+
+myt_Z0_dist$FiT <- 2*asin(sqrt(myt_Z0_dist$PropT))*180/pi
+
+
+# Условная граница кута Кандалакшского залива
+Shore_boundary = c(67.162360, 32.332371)
+
+# Переводим в радианы
+Shore_boundary <- Shore_boundary*pi/180
+myt_Z0_dist$Dist_cut <- with(myt_Z0_dist, acos(sin(Shore_boundary[1])*sin(Lat*pi/180) + cos(Shore_boundary[1])*cos(Lat*pi/180)*cos(Shore_boundary[2] - Lon*pi/180))) * 6371
+
+
+
+
+# Удаляем сайты  Ryazh5, так как у него совпадают координаты с Ryazh2
+
+myt_Z0_dist2 <-  myt_Z0_dist[!(myt_Z0_dist$Site %in% c("Ryazh2")), ]
+
+
+# Удаляем сайты с отсутсвующей соленостью
+myt_Z0_dist2 <- myt_Z0_dist2[!(is.na(myt_Z0_dist2$Salinity)), ]
+
+
+# ggplot(myt_Z0_dwist2, aes(x = Min_dist_river, y = Salinity)) + geom_point(size = 2) + geom_smooth(method = "lm") + labs(x = "Расстояние до ближайшей реки (км)", y = "Соленость при взяти проб") + theme_bw()
+
+```
+
+
+
+
+
+```{r, fig.height=5}
+river$Discharge <- 0.011 * river$Drainage_Are
+Quasi_str_plot + geom_point(data = river, aes(x = Lon, y = Lat, group = 1, size = Discharge), shape = 24, fill = "blue") + scale_size_continuous(range = c(1,6)) + ggtitle("Position of river mouths") +theme(plot.title = element_text(hjust = 0.5)) + theme(title = element_text(size = 18) )
+```
+
+
+## Difference in waves impact? 
+
+
+```{r, fig.height=5}
+Quasi_str_plot + geom_point(data = myt_Z0_dist2, aes(x = Lon, y = Lat, group = 1, size = Average), shape = 8) + scale_size_continuous(range = c(0.1,6)) + ggtitle("Wind impact power") +theme(plot.title = element_text(hjust = 0.5)) + theme(title = element_text(size = 18) )
+
+```
+
+
+
+## The closeness to the sea ports?
+
+
+```{r, dev = "cairo_pdf", fig.height=5}
+library(extrafont)
+library(ggrepel)
+loadfonts()
+
+Quasi_str_plot + geom_point(data = ports, aes(x = Lon, y = Lat, group = 1, label ='Port'), size= 4, color = "blue") + geom_text_repel(data = ports, aes(x = Lon, y = Lat, group = 1, label ='Port'), size= 4, color = "blue") + ggtitle("Position of sea ports") + theme(plot.title = element_text(hjust = 0.5)) + theme(title = element_text(size = 18) )
+
+
+ # \u{2693}
+
+```
+
+
+
+
+## The quantitative assessment of predictors for the regression analysis 
+
+
+```{r, fig.width=4, fig.height=3}
+
+# Функция для вычисления от заданной точки до ближайшего объекта
+
+
+nearest_dist <- function(XY, objects = river, x.name = "Lon", y.name = "Lat"){
+
+  XY1 <-as.numeric(XY[,1])
+  XY2 <- as.numeric(XY[,2])
+  dist <- (acos(sin(XY1*pi/180)*sin(objects[ ,y.name]*pi/180) + cos(XY1*pi/180)*cos(objects[ ,y.name]*pi/180)*cos(XY2*pi/180 - objects[ ,x.name]*pi/180)) * 6371)
+
+  MD <- data.frame(Min_dist = min(dist))
+  cbind(objects[which(dist == min(dist)), ], MD)
+
+}
+
+
+df_river <- nearest_dist(XY = myt_Z0[1, c("Lat", "Lon")], objects = river)
+
+df_river[1,] <- NA
+
+for(i in 1:nrow(myt_Z0)) {
+  df_river[i,] <- nearest_dist(XY = myt_Z0[i, c("Lat", "Lon")], objects = river)
+  df_river$Site[i] <- as.character(myt_Z0$Site)[i]
+}
+
+names(df_river) <- c( "Shore_river", "River", "Discharge", "Drainage_Are", "Lat_river", "Lon_river", "Min_dist_river", "Site" )
+
+
+# Находим расстояния для ближайшего порта.
+
+df_port <- nearest_dist(XY = myt_Z0[1, c("Lat", "Lon")], objects = ports)
+
+df_port[1,] <- NA
+
+for(i in 1:nrow(myt_Z0)) {
+  df_port[i,] <- nearest_dist(XY = myt_Z0[i, c("Lat", "Lon")], objects = ports)
+  df_port$Site[i] <- as.character(myt_Z0$Site)[i]
+}
+
+names(df_port) <- c("Shore_port",  "Port", "Lat_port", "Lon_port", "Min_dist_port", "Site")
+
+
+
+
+
+
+# Сводим все датафреймы в один
+
+d <- merge(myt_Z0, df_river, by = "Site")
+
+dd <- merge(d, df_port, by = "Site")
+
+ddd <- merge(dd, sites_fetch_df, by = "Site")
+
+myt_Z0_dist <- ddd
+
+myt_Z0_dist$FiT <- 2*asin(sqrt(myt_Z0_dist$PropT))*180/pi
+
+
+# Условная граница кута Кандалакшского залива
+Shore_boundary = c(67.162360, 32.332371)
+
+# Переводим в радианы
+Shore_boundary <- Shore_boundary*pi/180
+myt_Z0_dist$Dist_cut <- with(myt_Z0_dist, acos(sin(Shore_boundary[1])*sin(Lat*pi/180) + cos(Shore_boundary[1])*cos(Lat*pi/180)*cos(Shore_boundary[2] - Lon*pi/180))) * 6371
+
+
+
+
+# Удаляем сайты  Ryazh5, так как у него совпадают координаты с Ryazh2
+
+myt_Z0_dist2 <-  myt_Z0_dist[!(myt_Z0_dist$Site %in% c("Ryazh2")), ]
+
+
+# Удаляем сайты с отсутсвующей соленостью
+myt_Z0_dist2 <- myt_Z0_dist2[!(is.na(myt_Z0_dist2$Salinity)), ]
+
+
+# ggplot(myt_Z0_dist2, aes(x = Min_dist_river, y = Salinity)) + geom_point(size = 2) + geom_smooth(method = "lm") + labs(x = "Расстояние до ближайшей реки (км)", y = "Соленость при взяти проб") + theme_bw()
+
+```
+
+
+
+
+```{r}
+
+# form3 <- formula(logit_Qstr ~ scale(Average) +  scale(Min_dist_port) + scale(Min_dist_river) + scale(Salinity))
+
+
+
+form3 <- formula(logit_Qstr ~ Average +  Min_dist_port + Min_dist_river + Salinity)
+
+# form3 <- formula(logit_Qstr ~ Average +  Min_dist_port + Min_dist_river)
+
+
+M1 <- gls(form3,  data = myt_Z0_dist2)
+
+# Vario.gls <- Variogram(M1, form = ~Lon + Lat, robust = TRUE, maxDist = 2000, resType = "pearson")
+#plot(Vario.gls, smooth = T)
+# ggplot(Vario.gls, aes(x = dist, y = variog)) + geom_point() + geom_smooth(se = F) + labs(x = "Класс расстоянй между точками", y = "Semivariogram")
+
+
+M1_1 <- gls(form3, correlation = corSpher(form = ~ Dist_cut , nugget = T), data = myt_Z0_dist2)
+
+
+M1_2 <- gls(form3, correlation = corLin(form = ~ Dist_cut, nugget = T), data = myt_Z0_dist2)
+
+M1_3 <- gls(form3, correlation = corRatio(form = ~ Dist_cut, nugget = T), data = myt_Z0_dist2)
+
+
+
+M1_4 <- gls(form3, correlation = corGaus(form = ~ Dist_cut, nugget = T), data = myt_Z0_dist2)
+
+
+M1_5 <- gls(form3, correlation = corExp(form = ~ Dist_cut, nugget = T), data = myt_Z0_dist2)
+
+
+M1_6 <- gls(form3, correlation = corSpher(form = ~ Lat+Lon, nugget = T), data = myt_Z0_dist2)
+
+
+M1_7 <- gls(form3, correlation = corLin(form = ~ Lat+Lon, nugget = T), data = myt_Z0_dist2)
+
+M1_8 <- gls(form3, correlation = corRatio(form = ~ Lat+Lon, nugget = T), data = myt_Z0_dist2)
+
+
+M1_9 <- gls(form3, correlation = corGaus(form = ~ Lat+Lon, nugget = T), data = myt_Z0_dist2)
+
+
+M1_10 <- gls(form3, correlation = corExp(form = ~ Lat+Lon, nugget = T), data = myt_Z0_dist2)
+
+
+
+
+# AIC(M1, M1_1, M1_2, M1_3, M1_4, M1_5, M1_6, M1_7, M1_8, M1_9, M1_10)
+
+
+Vario.gls2 <- Variogram(M1_1, form = ~Lon + Lat, robust = TRUE, maxDist = 2000, resType = "normalized")
+
+# plot(Vario.gls2, smooth = T, xlab = "Класс расстояний между точками")
+
+
+# summary(M1_1)
+
+# summary(M2)
+
+
+# plot(M1_1)
+
+
+
+# qplot(fitted(M1_1), resid(M1_1, type = "normalized")) + geom_smooth(method = "lm")
+
+
+
+```
+
+
+
+$$
+logit(P_{trossulus}) = b_0 + b_1Wind + b_2{Dist_{Port}} + b_3Salinity + b_4 {Dist_{River}}+ SpatCor +  \varepsilon
+$$
+
+
+- **Salinity**: The salinity in the site during the low tide (in the time of sampling)
+- **Salinity**: The distance to the mouth of the nearest river
+- **Wave impact**: The degree of shore openness (the wind fetch)
+- **Association with port's harbor**: The distance to the nearest sea port
+ 
+
+## The regression model results
+
+
+$$
+logit(P_{trossulus}) = b_0 + b_1Wind + b_2{Dist_{Port}} + b_3Salinity + b_4 {Dist_{River}}+ SpatCor +  \varepsilon
+$$
+
+
+
+| Model part     	|  Coef  	|   SE  	| t-value 	|    p-value 	|
+|----------------	|:------:	|:-----:	|:-------:	|:-----------	|
+| (Intercept)    	|  2.108 	| 1.140 	|   1.85  	|     0.0678 	|
+| Wind fetch           	|  0.023 	| 0.028 	|   0.85  	|     0.3967 	|
+| Distance to the nearest port  	| **-0.072** 	| 0.022 	|  -3.24  	| 0.0017 *** 	|
+| Distance to the nearest river 	| **-0.079** 	| 0.032 	|  -2.43  	|  0.0170 ** 	|
+| Salinity       	| -0.033 	| 0.022 	|  -1.49  	|     0.1388 	|
+
+
+## What does it mean 
+
+We found:
+
+1. The probability to find *M.trossulus* increases near harbors and  mouths of rivers.
+2. The proportion of *M.trossulus* started to increase only several decades ago.
+
+\pause
+
+These findings are in a good agreement with the hypothesis that *M.trossulus* is alien species which was recently introduced into the White Sea by ships travelling between North America and Barents Sea (Vainola, Strelkov, 2013).    
+
+Probably *M.trossulus* use harbours and river's mouths as an initial refugiums. 
+
+Now we observe the population bloom of *M.trossulus* in the upper part of the Kandalaksha Bay and we can directly trace this process using cheap morphological marker.  
+
+
+# Thanks for attention! 
+
