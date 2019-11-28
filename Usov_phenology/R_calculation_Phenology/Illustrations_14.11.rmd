@@ -205,11 +205,7 @@ Pl_daes_of_key_event2 <- Pl_daes_of_key_event + theme(legend.position = "bottom"
 
 Env_plot2
 
-# ggsave("Fig3A.ps")
-
 Pl_daes_of_key_event2
-
-# ggsave("Fig3B.ps")
 
 
 
@@ -386,9 +382,6 @@ Pl_abund2 <- Pl_abund + geom_text(data = slopes_Abund3, aes(label = label, x = 1
 
 library(ggpubr)
 ggarrange(Pl_phen1,Pl_phen2, Pl_abund2, ncol = 3,  align = "h",  widths = c(0.9, 0.9, 1), labels = c("A", "B", "C"))
-
-
-# ggsave("Fig4.ps")
 # annotate_figure(figure, top = text_grob(label = c("The date of begin and end of presence in samples"), hjust = c(0, 0)))
 
 # grid.arrange(Pl_phen, Pl_abund, ncol = 2)
@@ -512,7 +505,6 @@ Pl_factors2 <- Pl_factors +  geom_text(data = slopes_Env, aes(label = label, x =
  
  Pl_factors3 
 
- # ggsave("Fig5.ps")
 ```
 
 
@@ -691,7 +683,7 @@ ggplot(gg_phen_cca_reduced[gg_phen_cca_reduced$Score == "species", ],  aes(x = C
   geom_text_repel (aes(label = points$CCA_quart_lab), size = 3, min.segment.length = 1, point.padding = 0.5) +
      labs(x = paste ("CCA1 (",  round(CCA1_importance*100, 1), "% of total inertia)")   , y = paste ("CCA2 (",  round(CCA2_importance*100, 1), "% of total inertia)")) + guides(size = "none")
 
-# ggsave("Fig6.ps")
+
 
 ```
 

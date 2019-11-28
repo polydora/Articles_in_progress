@@ -1,11 +1,11 @@
 ---
-title: "Распределение и историческая динамика смешанных поселений M.edulis и M.trossulus  Кандалакшском заливе Белого моря "
+title: "4.1 Распределение и историческая динамика смешанных поселений *M.edulis* и *M.trossulus*  Кандалакшском заливе Белого моря "
 date: ""
 output:
   word_document:
     reference_docx: article_template.docx
-    fig_width: 5
-    fig_height: 5
+    fig_width: 8
+    fig_height: 8
 
 ---
 
@@ -44,6 +44,8 @@ library(PBSmapping)
 library(gridExtra)
 library(grid)
 library(gamm4)
+library(mgcv)
+
 
 library(akima)
 library(car)
@@ -129,7 +131,7 @@ sites_fetch_df <- read.table("data/Distred_samples_fetch_values_2018.csv", sep =
 
 ## Вычисляем вероятность втстретить M.trosslus 
 
-myt_Z0$P_MT <- (with(myt_Z0, exp(-2.9 + 6.1*PropT)/(1+exp(-2.9 + 6.1*PropT))))
+myt_Z0$P_MT <- (with(myt_Z0, exp(b0 + b1*PropT)/(1+exp(b0 + b1*PropT))))
 
 
 # $P_{M.trossulus} = \frac{e^{0.4 + 3.1P_T}}{1+e^{0.4 + 3.1P_T}}$ 
@@ -180,16 +182,24 @@ Kand_upper_y <- c(65.7, 67.3)
 Quasi_str_plot <- ggplot(ggKand_upper, aes(x=long, y=lat, group=group)) + geom_polygon(fill = "gray70", colour = "black", size = 0.01) + coord_map(xlim = Kand_upper_x, ylim = Kand_upper_y) + theme(panel.background = element_rect(fill = "cyan"), panel.grid = element_blank(), axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank())+ geom_point(aes(color = P_Fit_spatial, size = P_Fit_spatial)) + scale_color_gradient(high = "red", low = "yellow" ) + 
   scale_size_continuous(range = c(0.1, 1.5)) + 
   guides(size = "none", colour = "colorbar") +
-  labs(color = "Вероятность присутсвия M.trossulus") + 
-  theme(legend.position = "bottom", legend.title = element_text(size = 10))
+  labs(color = "Вероятность присутствия \nM.trossulus") + 
+  theme(legend.position = c(0.5, 0.78), legend.title = element_text(size = 10), legend.background = element_blank())
+
+library(png)
+
+ancor <- readPNG("figures/anchor.png")
+
+Quasi_str_plot <- Quasi_str_plot + geom_point(data = ports, aes(x = Lon, y = Lat, group = 1), shape = 21,  size =4, color = "blue") + ggtitle("B")
 
 
+Plot_samples <- Plot_Kand_upper + geom_point(data = myt_Z0, aes(x = Lon, y = Lat, group = 1, fill = PropT), size = 2,  shape = 21) + scale_fill_gradient(high = "red", low = "yellow" ) + theme(legend.position = c(0.5, 0.78), legend.title = element_text(size = 10), legend.background = element_blank()) + labs(fill = "Доля Т-морфотипа\n") + ggtitle("A")
 
 
+library(cowplot)
 
-Plot_samples <- Plot_Kand_upper + geom_point(data = myt_Z0, aes(x = Lon, y = Lat, group = 1, fill = PropT), size = 2,  shape = 21) + scale_fill_gradient(high = "red", low = "yellow" ) + theme(legend.position = "bottom") + labs(fill = "Доля Т-морфотипа")
+ 
 
-grid.arrange(Plot_samples, Quasi_str_plot, ncol = 2)
+plot_grid(Plot_samples, Quasi_str_plot, ncol = 2)
 
 
 ```
@@ -351,7 +361,9 @@ kable(Anova_res, col.names = c("Предиктор", "df", "Хи-квадрат"
 
 
 
-Для оценки истории формирования гибридной  зоны  в Кандалакшском заливемы изучили коллекции сухих створок, собранные в ++ годы. Мы пересобрали мидий из тех же точек и оценили частоту мидий Т-морфотипа, как в исторических, так и в современных сборах. 
+Для оценки истории формирования гибридной  зоны  в Кандалакшском заливе мы изучили коллекции сухих створок, собранные в ++ годы. В 2014 и 2019 гг мы пересобрали мидий из тех же точек и оценили частоту мидий Т-морфотипа, как в исторических, так и в современных сборах. В большинстве случаев мы отмечали более высокое относительное обилие мидий T-морфотипа в соврменных сборах, нежели в исторических коллекциях.  
+
+Более детально история гибридной зоны была прослежена на четырех островах, расположенных в вершине Кадалакшского залива (рис. ++). На этих точках, начиная с 2012 года проводятся ежегодные сборы мидий и отслеживается соотношение численностей двух морфотипов. Выбор этих точек был обусловлен наличием исторических коллекций сухих раковин, собранных в 2002, 2003, 2005, 2006, 2008, 2010 И 2011 гг. Сопоставление данных мониторинга и исторических сборов из этих точек указывает на практически полное отсутствие мидий Т-морфотипа   
 
 
 
@@ -360,21 +372,112 @@ kable(Anova_res, col.names = c("Предиктор", "df", "Хи-квадрат"
 # 
 # histor$Z <- histor$a/histor$l
 # 
-# histor$Morph [histor$Z == 0] <- "T-morphotype" 
-# histor$Morph [histor$Z != 0] <- "E-morphotype" 
+# histor$Morph [histor$Z == 0] <- "T-morphotype"
+# histor$Morph [histor$Z != 0] <- "E-morphotype"
 # 
-# histor_short <- histor %>% group_by(Year, Period, Position, Site) %>% summarize(N_T = sum(Z == 0), N_E = sum(Z !=0))
+# histor_short <- histor %>% group_by(Year, Period, Position, Site) %>% summarize(N_T = sum(Z == 0), N_E = sum(Z !=0), Lat = mean(N), Lon = mean(E))
 # 
 # write.table(histor_short, "clipboard", sep = "\t")
 
 
 histor <- read.table("data/Mytilus old and new samples morphotype count.csv", header = T, sep = ",")
 
-histor$PropT <- with(histor, N_T/(N_T+N_E))
+histor_sums <- histor %>% group_by(Year, Site) %>% summarize(N_T = sum(N_T), N_E = sum(N_E), Site_number = mean(Site_number), Lat = mean(Lat), Lon = mean(Lon))
 
-ggplot(histor, aes(x = Year, y = PropT, size = N_T+N_E)) + geom_point() + geom_smooth()
+
+
+histor_sums$PropT <- with(histor_sums, N_T/(N_T+N_E))
+
+Pl_old_new <- ggplot(histor_sums, aes(x = Year, y = PropT)) +
+  geom_text(aes(label = Site_number)) + 
+  ggtitle("B") + 
+  labs(x="Годы", y = "Доля Т-морфотипа")
+  theme (title = element_text(size =10))
+```
+
+
+
+```{r}
+monitor <- read.table("data/nt_ne_monitoring_2002_2018.csv", sep = ",", header = T) 
+
+levels(monitor$Site) = c("Лупчостров", "Малый", "Овечий", "Ряжков")
+
+Points <- data.frame(Site = c("Лупчостров", "Малый", "Овечий", "Ряжков"), Lat = c(67.147790, 67.117923,67.094935,67.020064 ) , Lon =c(32.355051, 32.406971, 32.452459, 32.570831))
+
+
+
+monitor$PropT <- with(monitor, Nt/(Nt+Ne))
+
+
+
+
+library(mgcv)
+Mod_monitor_1 <- gam(PropT ~ s(Year, by = Site, bs = "cr") + Site, family = binomial(link = "logit"), data = monitor, weights = (Nt+Ne))
+
+MyData2 <- unique(monitor[,1:2]) 
+  # expand.grid(Year = seq(2002, 2016, 1), Site = levels(monitor$Site))
+
+MyData2$Predict <- round(predict(Mod_monitor_1, newdata = MyData2, type = "response", se = T)$fit, 1)
+
+MyData2$SE <- predict(Mod_monitor_1, newdata = MyData2, type = "response", se = T)$se.fit
+
+# MyData2[MyData2$Site == "Malij",]
+# MyData2[MyData2$Site == "Ovech",]
+# MyData2[MyData2$Site == "Ryashkov",]
+
+fmt_dcimals <- function(decimals=0){
+   # return a function responpsible for formatting the 
+   # axis labels with a given number of decimals 
+   function(x) as.character(round(x,decimals))
+}
+
+Pl_monitor <-  ggplot(MyData2, aes(x = Year, y = Predict)) + 
+  facet_grid(Site ~ .) + 
+  geom_point(data = monitor, aes(x = Year, y = PropT )) + 
+  geom_path(color = "blue") + 
+  geom_path(aes(y = Predict - 1.96*SE), linetype = 2) + 
+  geom_path(aes(y = Predict + 1.96*SE), linetype = 2) + 
+  theme_bw()  + 
+  labs(y= "Доля Т-морфотипа", x = "Годы") + 
+  xlim(2001, 2019) + 
+  theme(title = element_text(size =10)) +
+  scale_y_continuous(labels = fmt_dcimals(1)) +
+  ggtitle("Г")
+
+
+Kand_upper_y2 <- c(66.2, 67.3 )
+Kand_upper_x2 <- c(32.2, 34.4)
+
+
+histor_labels <- histor_sums %>% group_by(Site) %>% summarise(Lat = mean(Lat), Lon = mean(Lon), Site_number = mean(Site_number))
+
+Pl_historical <- Plot_Kand_upper  + coord_map(xlim = Kand_upper_x2, ylim = Kand_upper_y2) +  geom_point(data = histor_labels, aes(x = Lon, y = Lat, group = 1), shape = 22, size = 3, fill = "yellow") + ggtitle("A") + geom_text_repel(data = histor_labels, aes(x = Lon, y = Lat, label = Site_number, group = 1),  point.padding = 0.5) 
+      
+
+Pl_monitor_map <- Plot_Kand_upper  + coord_map(xlim = Kand_upper_x2, ylim = Kand_upper_y2) + geom_text(data = Points, aes(x = 33.05, y = Lat, group = 1, label = Site), size = 3, hjust = "left") +
+geom_segment(data = Points, aes(x = Lon, xend = 33, y = Lat, yend = Lat, group = 1)) + 
+  geom_point(data = Points, aes(x = Lon, y = Lat, group = 1), fill = "yellow", shape = 21, size = 4) + 
+  ggtitle("Б")
+
+
 
 ```
 
+
+
+```{r}
+grid.arrange(Pl_historical, Pl_monitor_map, ncol = 2)
+
+```
+
+
+```{r}
+
+grid.arrange(Pl_old_new, Pl_monitor, ncol = 2)
+
+```
+
+
+Рисунок ++. Исторические изменения структуры смешанных поселений M.edulis и M.trossulus. (A) Точки, сбора исторических коллекций. (Б) Точки мониторинга. Сборы проводятся на литорали четырех островов, расположенных на в порядке удаления от кута Кандалакшского залива; (В) Доля мидий Т-орфотипа в поселениях, для которых найдены исторические коллекции.Цифрами обозначены номера поселений, приведенные на панели (А). Переописания поселений произведены в 2014 и 2019 гг. (Г) Многолетняя динамика доли мидий Т-морфотипа на литорали четырех островов, где проводится мониторинг.
 
 

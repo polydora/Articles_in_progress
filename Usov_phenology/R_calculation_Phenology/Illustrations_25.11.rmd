@@ -203,11 +203,11 @@ Pl_daes_of_key_event2 <- Pl_daes_of_key_event + theme(legend.position = "bottom"
 
 
 
-Env_plot2
+Env_plot2 <- Env_plot2 + theme(axis.title.x = element_blank(), axis.text.x = element_blank()) + guides(fill = "none") + ylim(0, 360)
 
-# ggsave("Fig3A.ps")
+# ggsave("Fig3A.svg", Env_plot2)
 
-Pl_daes_of_key_event2
+Pl_daes_of_key_event2 <- Pl_daes_of_key_event2 + theme(axis.title.x = element_blank(), axis.text.x = element_blank())+ guides(fill = "none") + ylim(0, 360)
 
 # ggsave("Fig3B.ps")
 
@@ -215,7 +215,7 @@ Pl_daes_of_key_event2
 
 # ggsave(Pll, filename = "Fig3.png")
 
-
+grid.arrange(Env_plot2, Pl_daes_of_key_event2, nrow = 1)
 ```
 
 
@@ -334,10 +334,15 @@ slopes_event$label <- with(slopes_event, ifelse(Mantel_P_value_adj >= 0.01, past
 
 Y_Begin <-  phen_all[,c("Species","Begin")] %>% group_by(Species) %>% summarise(max = max(Begin, na.rm = TRUE))
 
+Y_Begin$max <- Y_Begin$max + Y_Begin$max*0.05
+
+
 Y_Begin$Event <- "Begin"
 
 
 Y_End <-  phen_all[,c("Species","End")] %>% group_by(Species) %>% summarise(max = max(End, na.rm = TRUE))
+
+Y_End$max <- Y_End$max + Y_End$max*0.05
 
 Y_End$Event <- "End"
 
@@ -345,6 +350,7 @@ Y_End$Event <- "End"
 Y_event_max <- rbind(Y_Begin, Y_End) 
 
 slopes_event <- merge(slopes_event, Y_event_max)
+
 
 
 p_values_Abund <- Abundance_melt[,c("Species","N")] %>% group_by(Species) %>% do(data.frame (Mantel_P_value = formatC(round(mantel(dist(x =.), trend_dist,  permutations = 9999, na.rm = TRUE)$signif, 3), digits=3, format = "f")))
@@ -359,6 +365,8 @@ slopes_Abund2$label <- with(slopes_Abund2, ifelse(Mantel_P_value_adj >=0.01, pas
 
 
 Y <- Abundance_melt %>% group_by(Species) %>% summarise(max = max(N, na.rm = TRUE))
+
+Y$max <- Y$max + Y$max*0.05
 
 slopes_Abund3 <- merge(slopes_Abund2, Y, by = "Species") 
 
@@ -684,12 +692,14 @@ points$CCA_quart_lab <- ifelse(points$CCA1 <= q_cca1[1]|points$CCA1 >= q_cca1[2]
 signif_term <-  anova_phen_cca_reduced_margin$term [anova_phen_cca_reduced_margin$p.value <= 0.05]
 
 
-ggplot(gg_phen_cca_reduced[gg_phen_cca_reduced$Score == "species", ],  aes(x = CCA1, y = CCA2))  +
+Pl_CCA <- ggplot(gg_phen_cca_reduced[gg_phen_cca_reduced$Score == "species", ],  aes(x = CCA1, y = CCA2))  +
    geom_point(shape = 21, fill = "yellow", aes(size = points$CCA_quart)) + scale_size_manual(values = c(5, 1)) + 
   geom_segment(data = gg_phen_cca_reduced[gg_phen_cca_reduced$Score == "biplot" & gg_phen_cca_reduced$Label %in% signif_term,  ], aes(x = 0, y = 0, xend = CCA1, yend = CCA2), arrow = arrow(type = "closed", length = unit(0.02, "native")), size = 0.5, color = "blue") +
   geom_text_repel(data = gg_phen_cca_reduced[gg_phen_cca_reduced$Score == "biplot" & gg_phen_cca_reduced$Label %in% signif_term,  ], aes(x =  CCA1, y = CCA2, label = Label), size = 4, point.padding = 0.5) +
   geom_text_repel (aes(label = points$CCA_quart_lab), size = 3, min.segment.length = 1, point.padding = 0.5) +
      labs(x = paste ("CCA1 (",  round(CCA1_importance*100, 1), "% of total inertia)")   , y = paste ("CCA2 (",  round(CCA2_importance*100, 1), "% of total inertia)")) + guides(size = "none")
+
+Pl_CCA 
 
 # ggsave("Fig6.ps")
 

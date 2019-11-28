@@ -1,49 +1,49 @@
-Year,Period,Position,Site,N_T,N_E
-1972,old,subtidal,ZRS_subtidal,1,2
-1973,old,subtidal,ZRS_subtidal,0,1
-1974,old,subtidal,Voronya,1,19
-1974,old,subtidal,ZRS_subtidal,0,1
-1975,old,subtidal,Youzhnaya,0,164
-1977,old,subtidal,Luvenga,1,15
-1978,old,subtidal,ZRS_subtidal,0,13
-1995,old,intertidal,Sukhaya,0,178
-1998,old,intertidal,ZRS,2,98
-2014,new,intertidal,Sukhaya,18,103
-2014,new,intertidal,ZRS,145,456
-2014,new,subtidal,Luvenga,22,95
-2014,new,subtidal,Voronya,97,177
-2014,new,subtidal,Youzhnaya,84,390
-2014,new,subtidal,ZRS_subtidal,0,22
-2019,new,intertidal,Matrenin 5_3,30,60
-2019,new,intertidal,Matrenin 12_1,9,74
-2019,new,intertidal,Matrenin 18_1,5,69
-2019,new,intertidal,Matrenin 18_2,4,49
-2019,new,intertidal,Matrenin 12_2,16,81
-2019,new,intertidal,Matrenin 5_2,34,104
-2019,new,intertidal,Matrenin 12_3,22,56
-2019,new,intertidal,Matrenin 28_1,36,40
-2019,new,intertidal,Matrenin 50_1,3,70
-2019,new,intertidal,Matrenin 50_3,2,77
-2019,new,intertidal,Matrenin 50_2,3,67
-2019,new,intertidal,Matrenin 50_3,13,50
-2019,new,intertidal,Matrenin 5_1,13,45
-2019,new,intertidal,Matrenin 28_3,8,78
-2019,new,intertidal,Matrenin 28_2,5,35
-1989,old,subtidal,Matrenin_kach,0,14
-1991,old,intertidal,Matrenin_5,0,25
-1991,old,intertidal,Matrenin_12,0,25
-1991,old,intertidal,Matrenin_18,0,25
-1991,old,intertidal,Matrenin_28,0,25
-1993,old,intertidal,Matrenin_5,0,37
-1993,old,intertidal,Matrenin_12,1,59
-1993,old,intertidal,Matrenin_28,0,60
-1993,old,intertidal,Matrenin_18,0,76
-1997,old,intertidal,Matrenin_12,0,95
-1997,old,intertidal,Matrenin_18,0,79
-1997,old,intertidal,Matrenin_5,0,54
-1997,old,intertidal,Matrenin_28,1,71
-2002,old,intertidal,Matrenin_kach,0,109
-1995,old,intertidal,Matrenin_5,11,297
-1995,old,intertidal,Matrenin_12,0,339
-1995,old,intertidal,Matrenin_28,0,305
-1995,old,intertidal,Matrenin_12,5,273
+Year,Period,Position,Site,Site_number,Sample,N_T,N_E,Lat,Lon,Period_label
+1977,old,subtidal,Luvenga,1,Luvenga,1,15,67.101766,32.673241,Исторические коллекции раковин
+2014,new,subtidal,Luvenga,1,Luvenga,22,95,67.101766,32.673241,Переописание поселений
+2019,new,intertidal,Matrenin,2,Matrenin 5_3,30,60,66.309527,33.629944,Переописание поселений
+2019,new,intertidal,Matrenin,2,Matrenin 12_1,9,74,66.309527,33.629944,Переописание поселений
+2019,new,intertidal,Matrenin,2,Matrenin 18_1,5,69,66.309527,33.629944,Переописание поселений
+2019,new,intertidal,Matrenin,2,Matrenin 18_2,4,49,66.309527,33.629944,Переописание поселений
+2019,new,intertidal,Matrenin,2,Matrenin 12_2,16,81,66.309527,33.629944,Переописание поселений
+2019,new,intertidal,Matrenin,2,Matrenin 5_2,34,104,66.309527,33.629944,Переописание поселений
+2019,new,intertidal,Matrenin,2,Matrenin 12_3,22,56,66.309527,33.629944,Переописание поселений
+2019,new,intertidal,Matrenin,2,Matrenin 28_1,36,40,66.309527,33.629944,Переописание поселений
+2019,new,intertidal,Matrenin,2,Matrenin 50_1,3,70,66.309527,33.629944,Переописание поселений
+2019,new,intertidal,Matrenin,2,Matrenin 50_3,2,77,66.309527,33.629944,Переописание поселений
+2019,new,intertidal,Matrenin,2,Matrenin 50_2,3,67,66.309527,33.629944,Переописание поселений
+2019,new,intertidal,Matrenin,2,Matrenin 50_3,13,50,66.309527,33.629944,Переописание поселений
+2019,new,intertidal,Matrenin,2,Matrenin 5_1,13,45,66.309527,33.629944,Переописание поселений
+2019,new,intertidal,Matrenin,2,Matrenin 28_3,8,78,66.309527,33.629944,Переописание поселений
+2019,new,intertidal,Matrenin,2,Matrenin 28_2,5,35,66.309527,33.629944,Переописание поселений
+1989,old,subtidal,Matrenin,2,Matrenin_kach,0,14,66.309527,33.629944,Исторические коллекции раковин
+1991,old,intertidal,Matrenin,2,Matrenin_5,0,25,66.309527,33.629944,Исторические коллекции раковин
+1991,old,intertidal,Matrenin,2,Matrenin_12,0,25,66.309527,33.629944,Исторические коллекции раковин
+1991,old,intertidal,Matrenin,2,Matrenin_18,0,25,66.309527,33.629944,Исторические коллекции раковин
+1991,old,intertidal,Matrenin,2,Matrenin_28,0,25,66.309527,33.629944,Исторические коллекции раковин
+1993,old,intertidal,Matrenin,2,Matrenin_5,0,37,66.309527,33.629944,Исторические коллекции раковин
+1993,old,intertidal,Matrenin,2,Matrenin_12,1,59,66.309527,33.629944,Исторические коллекции раковин
+1993,old,intertidal,Matrenin,2,Matrenin_28,0,60,66.309527,33.629944,Исторические коллекции раковин
+1993,old,intertidal,Matrenin,2,Matrenin_18,0,76,66.309527,33.629944,Исторические коллекции раковин
+1997,old,intertidal,Matrenin,2,Matrenin_12,0,95,66.309527,33.629944,Исторические коллекции раковин
+1997,old,intertidal,Matrenin,2,Matrenin_18,0,79,66.309527,33.629944,Исторические коллекции раковин
+1997,old,intertidal,Matrenin,2,Matrenin_5,0,54,66.309527,33.629944,Исторические коллекции раковин
+1997,old,intertidal,Matrenin,2,Matrenin_28,1,71,66.309527,33.629944,Исторические коллекции раковин
+2002,old,intertidal,Matrenin,2,Matrenin_kach,0,109,66.309527,33.629944,Исторические коллекции раковин
+1995,old,intertidal,Matrenin,2,Matrenin_5,11,297,66.309527,33.629944,Исторические коллекции раковин
+1995,old,intertidal,Matrenin,2,Matrenin_12,0,339,66.309527,33.629944,Исторические коллекции раковин
+1995,old,intertidal,Matrenin,2,Matrenin_28,0,305,66.309527,33.629944,Исторические коллекции раковин
+1995,old,intertidal,Matrenin,2,Matrenin_12,5,273,66.309527,33.629944,Исторические коллекции раковин
+1995,old,intertidal,Sukhaya,3,Sukhaya,0,178,66.314541,33.663061,Исторические коллекции раковин
+2014,new,intertidal,Sukhaya,3,Sukhaya,18,103,66.314541,33.663061,Переописание поселений
+1974,old,subtidal,Voronya,4,Voronya,1,19,66.932636,32.510255,Исторические коллекции раковин
+2014,new,subtidal,Voronya,4,Voronya,97,177,66.932636,32.510255,Переописание поселений
+1975,old,subtidal,Youzhnaya,5,Youzhnaya,0,164,67.006452,32.575797,Исторические коллекции раковин
+2014,new,subtidal,Youzhnaya,5,Youzhnaya,84,390,67.006452,32.575797,Переописание поселений
+1998,old,intertidal,ZRS,6,ZRS,2,98,67.013857,32.517975,Исторические коллекции раковин
+2014,new,intertidal,ZRS,6,ZRS,145,456,67.013857,32.517975,Переописание поселений
+NA,old,subtidal,ZRS_subtidal,7,ZRS_subtidal,1,2,66.973122,32.573408,Исторические коллекции раковин
+NA,old,subtidal,ZRS_subtidal,7,ZRS_subtidal,0,1,66.973122,32.573408,Исторические коллекции раковин
+NA,old,subtidal,ZRS_subtidal,7,ZRS_subtidal,0,1,66.973122,32.573408,Исторические коллекции раковин
+1978,old,subtidal,ZRS_subtidal,7,ZRS_subtidal,0,13,66.973122,32.573408,Исторические коллекции раковин
+2014,new,subtidal,ZRS_subtidal,7,ZRS_subtidal,0,22,66.973122,32.573408,Переописание поселений

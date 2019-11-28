@@ -1,0 +1,514 @@
+---
+title: "4.1 Распределение и историческая динамика смешанных поселений *M.edulis* и *M.trossulus*  Кандалакшском заливе Белого моря "
+date: ""
+output:
+  word_document:
+    reference_docx: article_template.docx
+    fig_width: 8
+    fig_height: 8
+
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, cache = FALSE, message = FALSE, warning = FALSE, fig.align ="center")
+
+# set pander table-layout options
+library(pander)
+panderOptions('table.alignment.default', function(df)
+    ifelse(sapply(df, is.numeric), 'right', 'left'))
+panderOptions('table.split.table', Inf)
+panderOptions('big.mark', ",")
+panderOptions('keep.trailing.zeros', TRUE)
+
+```
+
+
+
+```{r Initial sets}
+library(ggplot2)
+library(ggrepel)
+
+library(lattice)
+library(sp)
+library(ggmap)
+library(mapproj)
+library(maps)
+
+library(rgeos) #этот пакет содержит какую-то хрень, которая позволяет обойти проблему пр чтении фалов средсвами maptools.
+#Att! Этот пакет должен быть загружен до maptools
+
+library(mapdata)
+library(maptools) # Rgshhs
+library(PBSmapping)
+library(gridExtra)
+library(grid)
+library(gamm4)
+library(mgcv)
+
+
+library(akima)
+library(car)
+library(fetchR)
+library(MuMIn)
+
+
+
+library(reshape2)
+library(dplyr)
+library(broom)
+
+
+default_theme <- theme_bw() + theme(axis.text = element_text(size = 10), axis.title = element_text(size = 10) )
+
+theme_set(default_theme)
+
+
+
+```
+
+
+```{r Basic maps }
+
+# Задаем пределы координат для карт
+
+Kand_upper_x <- c(32.2, 36.6)
+Kand_upper_y <- c(65.7, 67.3)
+
+
+ggKand_upper <- read.csv("data/ggKand_upper.csv")
+
+
+
+Plot_Kand_upper <-  ggplot(ggKand_upper, aes(x=long, y=lat, group=group)) + geom_polygon(fill = "gray70", colour = "black") + coord_map(xlim = Kand_upper_x, ylim = Kand_upper_y) + theme(panel.background = element_rect(fill = "cyan"), panel.grid = element_blank(), axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank())
+
+
+```
+
+
+
+
+```{r}
+# Параметры модели для пересчета P_T в Ptros.   
+# Числа взяты из Model_5 которая будет приведена в статье Marchenko et al.all.equal
+
+# Для Белого моря
+b0 <- -2.9
+b1 <- 6.1
+
+```
+
+
+
+
+```{r Modern distribution of mussels}
+# Читаем данные
+
+myt <- read.table("data/Distred_samples_fetch_corrected_2018.csv", header = T, sep = ",")
+
+sal <- read.table("data/Distred_samples_salinity_2018.csv", header = T, sep = ",")
+
+myt <- merge(myt, sal, all = T)
+
+myt_Z0 <-   myt %>% group_by(Site) %>% summarise(Lat = mean(Lat), Lon = mean(Lon), N_T = sum(N_T), N_E = sum(N_E), PropT = N_T/(N_T + N_E), Salinity = mean(Salinity), Shore = unique(Shore))
+
+
+river <- read.table("data/Rivers.csv", sep = ";", header = T)
+
+ports <- data.frame(Shore = c("Kand", "Karel", "Kand", "Karel", "Karel"), Port = c("Кандалакша", "Витино", "Умба", "Чупа", "Средний"), Lat = c(67.137283, 67.076570,  66.677970, 66.269964, 66.294178), Lon = c(32.407995, 32.333630, 34.357655, 33.069534, 33.640656))
+
+
+sites_fetch_df <- read.table("data/Distred_samples_fetch_values_2018.csv", sep = ",", header = T)
+
+
+
+
+## Вычисляем вероятность втстретить M.trosslus 
+
+myt_Z0$P_MT <- (with(myt_Z0, exp(b0 + b1*PropT)/(1+exp(b0 + b1*PropT))))
+
+
+# $P_{M.trossulus} = \frac{e^{0.4 + 3.1P_T}}{1+e^{0.4 + 3.1P_T}}$ 
+# - for E-morphotype: $P_{M.edulis} = \frac{e^{4.1 - 5.8P_T}}{1+e^{4.1 - 5.8P_T}}$ 
+
+```
+
+
+
+
+<!-- ```{r} -->
+<!-- ggplot(myt_Z0, aes(x = P_MT)) + geom_histogram(aes(y = ..density..), binwidth = 0.1) + geom_density(adjust = 0.5, fill = "blue", alpha = 0.2) + labs(x = "Доля M.trossulus в смешанном поселении", y = "Частота (ядерная плотность)") -->
+<!-- ``` -->
+
+
+
+
+
+```{r}
+
+logit_back <- function(x) exp(x)/(1 + exp(x)) # обратная логит-трансформация
+
+
+myt_Z0$Quasi_str <- myt_Z0$P_MT
+
+myt_Z0$logit_Qstr <- with(myt_Z0, log(Quasi_str/(1-Quasi_str ) ))
+
+
+
+
+Mod_spatial <- gam(logit_Qstr ~ s(Lat, Lon), data = myt_Z0)
+
+ggKand_upper$Lat <- ggKand_upper$lat 
+ggKand_upper$Lon <- ggKand_upper$long 
+
+ggKand_upper$Fit_spatial <- predict(Mod_spatial, newdata = ggKand_upper)
+
+ggKand_upper$P_Fit_spatial <- logit_back(ggKand_upper$Fit_spatial)
+
+Kand_upper_x <- c(32.2, 36.6)
+Kand_upper_y <- c(65.7, 67.3)
+
+
+Quasi_str_plot <- ggplot(ggKand_upper, aes(x=long, y=lat, group=group)) + geom_polygon(fill = "gray70", colour = "black", size = 0.01) + coord_map(xlim = Kand_upper_x, ylim = Kand_upper_y) + theme(panel.background = element_rect(fill = "cyan"), panel.grid = element_blank(), axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank())+ geom_point(aes(color = P_Fit_spatial, size = P_Fit_spatial)) + scale_color_gradient(high = "red", low = "yellow" ) + 
+  scale_size_continuous(range = c(0.1, 1.5)) + 
+  guides(size = "none", colour = "colorbar") +
+  labs(color = "Частота M.trossulus") + 
+  theme(legend.position = c(0.5, 0.78), legend.title = element_text(size = 10), legend.background = element_blank()) + theme(plot.margin = unit(c(0,0,0,0), "cm"))
+
+library(png)
+
+ancor <- readPNG("figures/anchor.png")
+
+Quasi_str_plot <- Quasi_str_plot + geom_point(data = ports, aes(x = Lon, y = Lat, group = 1), shape = 21,  size =4, color = "blue") + ggtitle("B")
+
+
+Plot_samples <- Plot_Kand_upper + geom_point(data = myt_Z0, aes(x = Lon, y = Lat, group = 1, fill = PropT), size = 2,  shape = 21) + scale_fill_gradient(high = "red", low = "yellow" ) + theme(legend.position = c(0.5, 0.78), legend.title = element_text(size = 10), legend.background = element_blank()) + labs(fill = "Доля Т-морфотипа") + ggtitle("A") + theme(plot.margin = unit(c(0,0,0,0), "cm"))
+
+
+library(cowplot)
+
+
+
+```
+
+
+
+```{r}
+
+# Функция для вычисления от заданной точки до ближайшего объекта
+
+
+nearest_dist <- function(XY, objects = river, x.name = "Lon", y.name = "Lat"){
+
+  XY1 <-as.numeric(XY[,1])
+  XY2 <- as.numeric(XY[,2])
+  dist <- (acos(sin(XY1*pi/180)*sin(objects[ ,y.name]*pi/180) + cos(XY1*pi/180)*cos(objects[ ,y.name]*pi/180)*cos(XY2*pi/180 - objects[ ,x.name]*pi/180)) * 6371)
+
+  MD <- data.frame(Min_dist = min(dist))
+  cbind(objects[which(dist == min(dist)), ], MD)
+
+}
+
+
+df_river <- nearest_dist(XY = myt_Z0[1, c("Lat", "Lon")], objects = river)
+
+df_river[1,] <- NA
+
+for(i in 1:nrow(myt_Z0)) {
+  df_river[i,] <- nearest_dist(XY = myt_Z0[i, c("Lat", "Lon")], objects = river)
+  df_river$Site[i] <- as.character(myt_Z0$Site)[i]
+}
+
+names(df_river) <- c( "Shore_river", "River", "Discharge", "Drainage_Are", "Lat_river", "Lon_river", "Min_dist_river", "Site" )
+
+
+# Находим расстояния для ближайшего порта.
+
+df_port <- nearest_dist(XY = myt_Z0[1, c("Lat", "Lon")], objects = ports)
+
+df_port[1,] <- NA
+
+for(i in 1:nrow(myt_Z0)) {
+  df_port[i,] <- nearest_dist(XY = myt_Z0[i, c("Lat", "Lon")], objects = ports)
+  df_port$Site[i] <- as.character(myt_Z0$Site)[i]
+}
+
+names(df_port) <- c("Shore_port",  "Port", "Lat_port", "Lon_port", "Min_dist_port", "Site")
+
+
+
+
+
+
+# Сводим все датафреймы в один
+
+d <- merge(myt_Z0, df_river, by = "Site")
+
+dd <- merge(d, df_port, by = "Site")
+
+ddd <- merge(dd, sites_fetch_df, by = "Site")
+
+myt_Z0_dist <- ddd
+
+myt_Z0_dist$FiT <- 2*asin(sqrt(myt_Z0_dist$PropT))*180/pi
+
+
+# Условная граница кута Кандалакшского залива
+Shore_boundary = c(67.162360, 32.332371)
+
+# Переводим в радианы
+Shore_boundary <- Shore_boundary*pi/180
+myt_Z0_dist$Dist_cut <- with(myt_Z0_dist, acos(sin(Shore_boundary[1])*sin(Lat*pi/180) + cos(Shore_boundary[1])*cos(Lat*pi/180)*cos(Shore_boundary[2] - Lon*pi/180))) * 6371
+
+
+
+
+# Удаляем сайты  Ryazh5, так как у него совпадают координаты с Ryazh2
+
+myt_Z0_dist2 <-  myt_Z0_dist[!(myt_Z0_dist$Site %in% c("Ryazh2")), ]
+
+
+# Удаляем сайты с отсутсвующей соленостью
+myt_Z0_dist2 <- myt_Z0_dist2[!(is.na(myt_Z0_dist2$Salinity)), ]
+
+
+
+
+```
+
+
+
+
+```{r Regression of Ptros on Salinity dist to Port and Wind fetch}
+
+
+form3 <- formula(logit_Qstr ~ Average +  Min_dist_port + Min_dist_river + Salinity)
+
+# form3 <- formula(logit_Qstr ~ Average +  Min_dist_port + Min_dist_river)
+
+
+M1 <- gls(form3,  data = myt_Z0_dist2)
+
+# Vario.gls <- Variogram(M1, form = ~Lon + Lat, robust = TRUE, maxDist = 2000, resType = "pearson")
+#plot(Vario.gls, smooth = T)
+# ggplot(Vario.gls, aes(x = dist, y = variog)) + geom_point() + geom_smooth(se = F) + labs(x = "Класс расстоянй между точками", y = "Semivariogram")
+
+
+M1_1 <- gls(form3, correlation = corSpher(form = ~ Dist_cut , nugget = T), data = myt_Z0_dist2)
+
+
+M1_2 <- gls(form3, correlation = corLin(form = ~ Dist_cut, nugget = T), data = myt_Z0_dist2)
+
+M1_3 <- gls(form3, correlation = corRatio(form = ~ Dist_cut, nugget = T), data = myt_Z0_dist2)
+
+
+
+M1_4 <- gls(form3, correlation = corGaus(form = ~ Dist_cut, nugget = T), data = myt_Z0_dist2)
+
+
+M1_5 <- gls(form3, correlation = corExp(form = ~ Dist_cut, nugget = T), data = myt_Z0_dist2)
+
+
+M1_6 <- gls(form3, correlation = corSpher(form = ~ Lat+Lon, nugget = T), data = myt_Z0_dist2)
+
+
+M1_7 <- gls(form3, correlation = corLin(form = ~ Lat+Lon, nugget = T), data = myt_Z0_dist2)
+
+M1_8 <- gls(form3, correlation = corRatio(form = ~ Lat+Lon, nugget = T), data = myt_Z0_dist2)
+
+
+M1_9 <- gls(form3, correlation = corGaus(form = ~ Lat+Lon, nugget = T), data = myt_Z0_dist2)
+
+
+M1_10 <- gls(form3, correlation = corExp(form = ~ Lat+Lon, nugget = T), data = myt_Z0_dist2)
+
+
+
+
+# AIC(M1, M1_1, M1_2, M1_3, M1_4, M1_5, M1_6, M1_7, M1_8, M1_9, M1_10)
+
+
+Vario.gls2 <- Variogram(M1_5, form = ~Lon + Lat, robust = TRUE, maxDist = 2000, resType = "normalized")
+
+# plot(Vario.gls2, smooth = T, xlab = "Класс расстояний между точками")
+
+
+# summary(M1_5)
+
+# summary(M2)
+
+# plot(M1_10)
+
+
+Anova_res <- tidy(Anova(M1_5))
+
+Anova_res$statistic <- round(Anova_res$statistic, 1) 
+Anova_res$p.value <- round(Anova_res$p.value, 3) 
+
+
+Anova_res$term <- c("Открытость акватории", "Расстояние до ближайшего порта", "Расстояние до ближайшей реки", "Соленость в точке взятия проб")
+
+```
+
+
+
+
+
+
+
+```{r}
+# histor <- read.table("data/Mytilus old and new samples.csv", header = T, sep = ",")
+# 
+# histor$Z <- histor$a/histor$l
+# 
+# histor$Morph [histor$Z == 0] <- "T-morphotype"
+# histor$Morph [histor$Z != 0] <- "E-morphotype"
+# 
+# histor_short <- histor %>% group_by(Year, Period, Position, Site) %>% summarize(N_T = sum(Z == 0), N_E = sum(Z !=0), Lat = mean(N), Lon = mean(E))
+# 
+# write.table(histor_short, "clipboard", sep = "\t")
+
+
+histor <- read.table("data/Mytilus old and new samples morphotype count.csv", header = T, sep = ",")
+
+histor_sums <- histor %>% group_by(Year, Site) %>% summarize(N_T = sum(N_T), N_E = sum(N_E), Site_number = mean(Site_number), Lat = mean(Lat), Lon = mean(Lon))
+
+histor_sums$PropT <- with(histor_sums, N_T/(N_T+N_E))
+
+
+histor_labels <- histor %>% group_by(Year, Site, Period_label) %>% summarize(N_T = sum(N_T), N_E = sum(N_E), Site_number = mean(Site_number), Lat = mean(Lat), Lon = mean(Lon)) %>% mutate (PropT = N_T/(N_T+N_E))
+
+
+Pl_old_new <- ggplot(data = histor_labels, aes(x = Year, y = PropT)) +
+  geom_point(aes(color = Period_label), size = 3) +
+  scale_color_manual(values = c("black", "blue"))+
+  geom_text_repel(aes(label = Site_number)) + 
+  ggtitle("B") + 
+  labs(x="Годы", y = "Доля Т-морфотипа", color = "Источник данных") +
+  theme_bw() +
+  theme (title = element_text(size =10), legend.position = c(0.42, 0.85), legend.background = element_rect(color ="gray")) 
+  
+```
+
+
+
+```{r}
+monitor <- read.table("data/nt_ne_monitoring_2002_2018.csv", sep = ",", header = T) 
+
+levels(monitor$Site) = c("Лупчостров", "Малый", "Овечий", "Ряжков")
+
+Points <- data.frame(Site = c("Лупчостров", "Малый", "Овечий", "Ряжков"), Lat = c(67.147790, 67.117923,67.094935,67.020064 ) , Lon =c(32.355051, 32.406971, 32.452459, 32.570831))
+
+
+
+monitor$PropT <- with(monitor, Nt/(Nt+Ne))
+
+
+
+
+library(mgcv)
+Mod_monitor_1 <- gam(PropT ~ s(Year, by = Site, bs = "cr") + Site, family = binomial(link = "logit"), data = monitor, weights = (Nt+Ne))
+
+MyData2 <- unique(monitor[,1:2]) 
+  # expand.grid(Year = seq(2002, 2016, 1), Site = levels(monitor$Site))
+
+MyData2$Predict <- round(predict(Mod_monitor_1, newdata = MyData2, type = "response", se = T)$fit, 1)
+
+MyData2$SE <- predict(Mod_monitor_1, newdata = MyData2, type = "response", se = T)$se.fit
+
+# MyData2[MyData2$Site == "Malij",]
+# MyData2[MyData2$Site == "Ovech",]
+# MyData2[MyData2$Site == "Ryashkov",]
+
+fmt_dcimals <- function(decimals=0){
+   # return a function responpsible for formatting the 
+   # axis labels with a given number of decimals 
+   function(x) as.character(round(x,decimals))
+}
+
+Pl_monitor <-  ggplot(MyData2, aes(x = Year, y = Predict)) + 
+  facet_grid(Site ~ .) + 
+  geom_point(data = monitor, aes(x = Year, y = PropT )) + 
+  geom_path(color = "blue") + 
+  geom_path(aes(y = Predict - 1.96*SE), linetype = 2) + 
+  geom_path(aes(y = Predict + 1.96*SE), linetype = 2) + 
+  theme_bw()  + 
+  labs(y= "Доля Т-морфотипа", x = "Годы") + 
+  xlim(2001, 2019) + 
+  theme(title = element_text(size =10)) +
+  scale_y_continuous(labels = fmt_dcimals(1)) +
+  ggtitle("Г") 
+
+
+Kand_upper_y2 <- c(66.2, 67.3 )
+Kand_upper_x2 <- c(32.2, 34.4)
+
+
+histor_labels <- histor_sums %>% group_by(Site) %>% summarise(Lat = mean(Lat), Lon = mean(Lon), Site_number = mean(Site_number))
+
+Pl_historical <- Plot_Kand_upper  + coord_map(xlim = Kand_upper_x2, ylim = Kand_upper_y2) +  geom_point(data = histor_labels, aes(x = Lon, y = Lat, group = 1), shape = 22, size = 3, fill = "yellow") + ggtitle("A") + geom_text_repel(data = histor_labels, aes(x = Lon, y = Lat, label = Site_number, group = 1),  point.padding = 0.5) + theme(plot.margin = unit(c(0,0,0,0), "cm"))
+      
+
+Pl_monitor_map <- Plot_Kand_upper  + coord_map(xlim = Kand_upper_x2, ylim = Kand_upper_y2) + geom_text(data = Points, aes(x = 33.05, y = Lat, group = 1, label = Site), size = 3, hjust = "left") +
+geom_segment(data = Points, aes(x = Lon, xend = 33, y = Lat, yend = Lat, group = 1)) + 
+  geom_point(data = Points, aes(x = Lon, y = Lat, group = 1), fill = "yellow", shape = 21, size = 4) + 
+  ggtitle("Б") + theme(plot.margin = unit(c(0,0,0,0), "cm"))
+
+
+
+```
+
+
+<!-- После того, как нашей научной группой было открыто, что на мелководьях Кандалакшского залива Белого моря представлено два вида мидий, остро встало два вопроса. 1.Как распределены смешанные поселения *M.edulis* и *M.trossulus* в изучаемом регионе? 2. Какова динамика этой гибридной зоны? Поиск ответов на эти вопросы существенно облегчился тем, что в условиях Белого моря мидии имеют два четко различимых морфотипа (Т- и Е-морфотипы, см. +++), которые позволяют достаточно надежно идентифицировать виды мидий (см. ++). Нами была построена следующая логистическая регрессионная модель $P_{tros} = \frac{e^{-2.9 + 6.1P_{T}}}{1+e^{-2.9 + 6.1P_{T}}}$ (подробное описание приведено в +.+), которая позволяет по частоте Т-морфотипа ($P_T$) вычислить частоту  *M.trossulus* ($P_{tros}$). Эту модель мы использовали при  составлении карты, описывающей пространственное распределение *M.trossulus*.  -->
+
+
+Дополнены и обобщены данные, характеризующие современное распределение двух видов мидий в Кандалакшском заливе Белого моря и историческую динамику этой гибридной зоны.  
+
+Для картирования современного распределения *M.trossulus* было обследовано `r nrow(myt_Z0)` участков Кандалакшского залива (рис. ++). На каждом из них по стандартной методике были отобраны пробы мидий, у которых был определен морфотип (всего обработано `r sum(myt_Z0$N_T + myt_Z0$N_T)` моллюсков). По доли Т-морфотипа (рис. ++) на каждой из точек мы оценили частоту *M.trossulus* (были использованы регрессионные модели, описанные в 4.2) и с помощью двумерной аддитивной модели (GAM) мы аппроксимировали распределение  на всю акваторию Кандалакшского залива (рис. ++). Этот анализ показал, что чистые поселения *M.edulis*, практически лишенные примеси *M.trossulus*, наблюдаются на северо-восточном побережье залива от устья р. Варзуга до мыса Турий. Максимальная концентрация *M.trossulus* отмечена в самом куту Кандалакшского залива, а также отдельные "пятна" с высокой частотой этого вида отмечаются и в других частях акватории (район губы Княжая, кут губы Колвица).  
+
+Места концентрации *M.trossulsus* характеризуются, пониженной соленостью (в кут залива впадает несколько крупных рек) и значитльной закрытостью от  штормового воздействия. Кроме того, именно здесь присутствуют крупные действующие морские порты, в которые *M.trossulsus* могли быть занесены каботажными судами (Väinölä, Strelkov, 2011). Мы провели регрессионный анализ, в котором зависимой переменной была частота  *M.trossulus*, а предикторами выступали  соленость, измеренная в точке взятия проб, расстояние до устья ближайшей реки, расстояние до ближайшего порта и степень открытости акватории для волнового воздействия. Анализ выявил статистически значимую связь частоты *M.trossulus*  только расстоянием до ближайшего порта и расстоянием до устья ближайшей реки (Табл. ++). Оба коэффициента регрессии при данных предикторах были отрицательными, то есть  по мере удаления от устья рек или от акваторий портов доля *M.trossulus*  сокращается.
+
+Для изучения истории формирования гибридной  зоны  в Кандалакшском заливе мы изучили коллекции сухих створок, собранные в  `r min(histor_sums$Year, na.rm = T)` - `r max(histor_sums$Year[! histor_sums$Year %in% c(2014, 2019)], na.rm = T)` годы. В 2014 и 2019 гг мы пересобрали мидий из тех же точек и оценили частоту мидий Т-морфотипа. В большинстве случаев мы отмечали более высокое относительное обилие мидий T-морфотипа в современных сборах, нежели в исторических коллекциях (рис. ++). Более детально история гибридной зоны была прослежена на четырех островах, расположенных в вершине Кандалакшского залива (рис. ++). Выбор этих точек был обусловлен наличием исторических коллекций сухих раковин, собранных в 2002-2011 гг. С 2012  года в этих точках мы проводим ежегодные сборы мидий и оцениваем в них долю Т-морфотипа. Мы обнаружили, что в начале 2000-х на большинстве островов частота мидий Т-морфотипа была низка. Однако в последние годы она резко взросла. Исключение составляет точка на о. Лупчостров, где частота Т-морфотипа всегда была высокой. Последняя точка находится в непосредственной близости от пресновдного стока губы Канда и реки Нива и двух крупных портов. 
+
+Проведенный нами анализ распределения мидий и изучение динамики смешанных поселений дают нам веские доводы в пользу ранее высказанной гипотезы о том, что  *M.trossulus* - это вид вселенец, который был совсем недавно занесен в акваторию Белого моря морским транспортом. Вероятно устья рек, как места свободные от конкурирующего нативного вида (*M.edulis*), служат рефугиумами для вида-вселенца. 
+
+
+
+
+```{r}
+
+plot_grid(Plot_samples, Quasi_str_plot, ncol = 2, scale = c(1, 1))
+
+```
+
+Рисунок +. Карата современного распределения *M.trossulus* в вершине Кандалакшского залива Белого моря. (А) Расположение точек, в которых производилась оценка соотношения численностей морфотипов мидий. (Б) Пространственное распределение частоты *M.trossulus* в смешанных поселениях (аппроксимация с помощью двумерной аддитивной модели). Синими кругами отмечены области, где располагаются ныне действующие или заброшенные порты.      
+
+
+
+
+```{r}
+
+kable(Anova_res, col.names = c("**Предиктор**", "**df**", "**Хи-квадрат**", "**Уровень значимости**"), caption = "Таблица +. Анализ девиансы регрессионной модели, описывающей связь частоты *M.trossulus* c предикторами.")
+```
+
+
+
+```{r}
+
+grid.arrange(Pl_historical, Pl_monitor_map, ncol = 2)
+
+```
+
+
+```{r}
+
+
+grid.arrange(Pl_old_new, Pl_monitor, ncol = 2 )
+
+
+```
+
+
+Рисунок ++. Исторические изменения структуры смешанных поселений *M.edulis* и *M.trossulus*. (A) Точки, сбора исторических коллекций. (Б) Точки мониторинга. Мониторинг проводится на литорали четырех островов, расположенных на в порядке удаления от кута Кандалакшского залива; (В) Доля мидий Т-морфотипа в поселениях, для которых найдены исторические коллекции раковин.Цифрами обозначены номера поселений, приведенные на панели "А".(Г) Многолетняя динамика доли мидий Т-морфотипа на литорали четырех островов, где проводится мониторинг. Точки -- частота мидий Т-морфотипа в отдельных пробах. Синяя линия -- регрессионная модель (GAM), описывающая многолетний тренд в изменении частоты мидий Т-морфотипа. Пунктирные линии ограничивают 95% доверительный интервал линии регрессии.  
+
+
