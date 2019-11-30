@@ -393,7 +393,7 @@ Pl_old_new <- ggplot(data = histor_labels, aes(x = Year, y = PropT)) +
 
 
 ```{r}
-monitor <- read.table("data/nt_ne_monitoring_2002_2018.csv", sep = ",", header = T) 
+monitor <- read.table("data/nt_ne_monitoring_2002_2019.csv", sep = ",", header = T) 
 
 levels(monitor$Site) = c("Лупчостров", "Малый", "Овечий", "Ряжков")
 
@@ -407,7 +407,7 @@ monitor$PropT <- with(monitor, Nt/(Nt+Ne))
 
 
 library(mgcv)
-Mod_monitor_1 <- gam(PropT ~ s(Year, by = Site, bs = "cr") + Site, family = binomial(link = "logit"), data = monitor, weights = (Nt+Ne))
+Mod_monitor_1 <- gam(PropT ~ s(Year, by = Site) + Site, family = binomial(link = "logit"), data = monitor, weights = (Nt+Ne))
 
 MyData2 <- unique(monitor[,1:2]) 
   # expand.grid(Year = seq(2002, 2016, 1), Site = levels(monitor$Site))
