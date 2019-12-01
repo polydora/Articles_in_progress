@@ -386,7 +386,8 @@ Pl_old_new <- ggplot(data = histor_labels, aes(x = Year, y = PropT)) +
   ggtitle("B") + 
   labs(x="Годы", y = "Доля Т-морфотипа", color = "Источник данных") +
   theme_bw() +
-  theme (title = element_text(size =10), legend.position = c(0.42, 0.85), legend.background = element_rect(color ="gray")) 
+  theme (title = element_text(size =10), legend.position = c(0.42, 0.85), legend.background = element_rect(color ="gray")) + 
+  theme(axis.text.x = element_text(angle = 90))
   
 ```
 
@@ -437,7 +438,8 @@ Pl_monitor <-  ggplot(MyData2, aes(x = Year, y = Predict)) +
   xlim(2001, 2019) + 
   theme(title = element_text(size =10)) +
   scale_y_continuous(labels = fmt_dcimals(1)) +
-  ggtitle("Г") 
+  ggtitle("Г") + scale_x_continuous(breaks = seq(2001, 2019, 2))+ 
+  theme(axis.text.x = element_text(angle = 90))
 
 
 Kand_upper_y2 <- c(66.2, 67.3 )
