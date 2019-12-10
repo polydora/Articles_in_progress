@@ -849,7 +849,6 @@ Pl_mod5_with_initial_data <- Pl_mod5_with_initial_data + geom_point(data = test_
 
 ggarrange(Pl_mod1_with_initial_data + theme_bw() + guides(size = "none"), 
              Pl_mod2_with_initial_data + theme_bw() + theme(strip.text = element_blank()) + guides(size = "none"), 
-             Pl_mod3_with_initial_data + theme_bw() + theme(strip.text = element_blank())+ guides(size = "none"), 
              Pl_mod4_with_initial_data + theme_bw() + theme(strip.text = element_blank())+ guides(size = "none", fill = "none", color = "none"),
              nrow = 4)
 
