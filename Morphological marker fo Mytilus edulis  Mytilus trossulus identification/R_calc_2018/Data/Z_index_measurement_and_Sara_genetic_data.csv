@@ -1,0 +1,428 @@
+sample_ID,pop_ID,species,location,edulis,trossulus,L,l,a,MorphotypE
+GR210,CBSC,edulis,Cobscook Bay Smalls Cove,0.999985,0.000015,61.5,31.5,31.5,E
+GR211,CBSC,trossulus,Cobscook Bay Smalls Cove,3.90E-05,0.999961,62.6,32.3,25.9,E
+GR213,CBSC,edulis,Cobscook Bay Smalls Cove,0.999985,0.000015,60.3,29.8,0,T
+GR215,CBSC,edulis,Cobscook Bay Smalls Cove,0.999986,0.000014,54.3,25.2,20.2,E
+GR216,CBSC,edulis,Cobscook Bay Smalls Cove,0.999985,0.000015,51.6,25.4,22.7,E
+GR217,CBSC,edulis,Cobscook Bay Smalls Cove,0.999981,0.000019,57.2,26.9,26.9,E
+GR218,CBSC,trossulus,Cobscook Bay Smalls Cove,4.80E-05,0.999952,51.9,27.6,24.6,E
+GR219,CBSC,edulis,Cobscook Bay Smalls Cove,0.99996,0.00004,57.4,29.7,27.4,E
+GR220,CBSC,edulis,Cobscook Bay Smalls Cove,0.999984,0.000016,58.2,29.6,26.1,E
+GR221,CBSC,edulis,Cobscook Bay Smalls Cove,0.999984,0.000016,56,28.4,28.4,E
+GR222,CBSC,edulis,Cobscook Bay Smalls Cove,0.99998,0.00002,55.5,28.5,28.5,E
+GR223,CBSC,edulis,Cobscook Bay Smalls Cove,0.999977,0.000023,62.2,31.4,31.4,E
+GR224,CBSC,edulis,Cobscook Bay Smalls Cove,0.999974,0.000026,51.3,25.9,23.7,E
+GR226,CBSC,trossulus,Cobscook Bay Smalls Cove,0.133858,0.866142,58.9,28.3,23.4,E
+GR227,CBSC,edulis,Cobscook Bay Smalls Cove,0.999949,0.000051,26.6,26.9,26.9,E
+GR230,CBSC,edulis,Cobscook Bay Smalls Cove,0.999979,0.000021,45.9,23.9,23.9,E
+GR231,CBSC,edulis,Cobscook Bay Smalls Cove,0.999983,0.000017,58,31.2,31.2,E
+GR232,CBSC,trossulus,Cobscook Bay Smalls Cove,9.70E-05,0.999903,56.9,28.1,24.2,E
+GR248,CBCP,trossulus,Cobscook Bay Comstock Point,1.90E-05,0.999981,50.7,27.1,19.9,E
+GR249,CBCP,edulis,Cobscook Bay Comstock Point,0.999959,0.000041,46.7,23.5,23.5,E
+GR250,CBCP,trossulus,Cobscook Bay Comstock Point,2.30E-05,0.999977,44.6,28,24.7,E
+GR251,CBCP,edulis,Cobscook Bay Comstock Point,0.999965,0.000035,46.1,27.5,26.7,E
+GR252,CBCP,edulis,Cobscook Bay Comstock Point,0.999929,0.000071,50.1,28.5,28.5,E
+GR253,CBCP,trossulus,Cobscook Bay Comstock Point,2.10E-05,0.999979,40.9,24.9,21.2,E
+GR254,CBCP,edulis,Cobscook Bay Comstock Point,0.999963,0.000037,42.9,21.9,16.1,E
+GR255,CBCP,trossulus,Cobscook Bay Comstock Point,1.80E-05,0.999982,48.6,25.6,18.1,E
+GR256,CBCP,trossulus,Cobscook Bay Comstock Point,1.80E-05,0.999982,47.5,26.5,24,E
+GR257,CBCP,edulis,Cobscook Bay Comstock Point,0.999964,0.000036,26.7,28.9,16.3,E
+GR258,CBCP,trossulus,Cobscook Bay Comstock Point,1.80E-05,0.999982,46.8,29.3,23.2,E
+GR259,CBCP,trossulus,Cobscook Bay Comstock Point,2.40E-05,0.999976,44.8,27.5,21.4,E
+GR260,CBCP,edulis,Cobscook Bay Comstock Point,0.999948,0.000052,42.1,23.7,23.7,E
+GR261,CBCP,trossulus,Cobscook Bay Comstock Point,2.00E-05,0.99998,49.8,27.1,27.1,E
+GR262,CBCP,trossulus,Cobscook Bay Comstock Point,1.80E-05,0.999982,42.3,23.4,16.1,E
+GR263,CBCP,edulis,Cobscook Bay Comstock Point,0.999962,0.000038,52.5,29.4,26.3,E
+GR265,CBCP,edulis,Cobscook Bay Comstock Point,0.999936,0.000064,44.4,25.9,25.9,E
+GR266,CBCP,trossulus,Cobscook Bay Comstock Point,1.80E-05,0.999982,46.1,24.4,20.8,E
+GR267,CBCP,edulis,Cobscook Bay Comstock Point,0.999908,0.000092,54.9,33.7,31,E
+GR268,CBCP,trossulus,Cobscook Bay Comstock Point,2.40E-05,0.999976,50.9,29.7,19.2,E
+GR271,CBCP,trossulus,Cobscook Bay Comstock Point,0.271863,0.728137,45.3,25,20.9,E
+GR272,CBCP,trossulus,Cobscook Bay Comstock Point,1.90E-05,0.999981,54.9,29.9,16.4,E
+GR273,CBCP,trossulus,Cobscook Bay Comstock Point,4.00E-05,0.99996,47,25.3,20.1,E
+GR274,CBCP,trossulus,Cobscook Bay Comstock Point,1.80E-05,0.999982,52.9,29.7,29.7,E
+GR275,CBCP,trossulus,Cobscook Bay Comstock Point,2.80E-05,0.999972,48.8,25.6,15.2,E
+GR277,CBCP,trossulus,Cobscook Bay Comstock Point,1.90E-05,0.999981,55,31.1,24.4,E
+GR278,CBCP,edulis,Cobscook Bay Comstock Point,0.999961,0.000039,53.4,27.1,27.1,E
+GR280,CBCP,trossulus,Cobscook Bay Comstock Point,2.00E-05,0.99998,55.6,31.9,23.4,E
+GR281,CBCP,trossulus,Cobscook Bay Comstock Point,8.60E-05,0.999914,45.7,24.2,17.5,E
+GR282,CBCP,trossulus,Cobscook Bay Comstock Point,2.00E-05,0.99998,46.8,24.1,21.4,E
+GR283,CBCP,trossulus,Cobscook Bay Comstock Point,2.50E-05,0.999975,45.9,24.4,14.4,E
+GR284,CBCP,trossulus,Cobscook Bay Comstock Point,7.50E-05,0.999925,52.9,26.9,24.3,E
+GR285,CBCP,trossulus,Cobscook Bay Comstock Point,3.30E-05,0.999967,55.3,33.3,26.1,E
+GR286,CBCP,trossulus,Cobscook Bay Comstock Point,3.30E-05,0.999967,43.3,24.6,23.8,E
+GR287,CBCP,trossulus,Cobscook Bay Comstock Point,2.20E-05,0.999978,46.8,24.3,17,E
+GR288,CBCP,trossulus,Cobscook Bay Comstock Point,2.20E-05,0.999978,52.7,29.3,23.7,E
+GR289,CBCP,edulis,Cobscook Bay Comstock Point,0.99996,0.00004,46.9,26.6,26.6,E
+GR290,CBCP,edulis,Cobscook Bay Comstock Point,0.999778,0.000222,41.1,21.2,21.2,E
+GR291,CBCP,trossulus,Cobscook Bay Comstock Point,2.20E-05,0.999978,45.6,24.7,20.2,E
+GR292,CBCP,edulis,Cobscook Bay Comstock Point,0.999838,0.000162,51.3,25.9,25.9,E
+GR293,CBCP,trossulus,Cobscook Bay Comstock Point,2.70E-05,0.999973,41.5,22.4,20.1,E
+GROR313,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999983,0.000017,57.4,38.9,37.9,E
+GROR314,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999985,0.000015,74.9,44.5,44.5,E
+GROR315,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999985,0.000015,77.2,47.2,42.2,E
+GROR316,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999983,0.000017,68.9,43.6,37.6,E
+GROR317,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999985,0.000015,62.8,33,27.3,E
+GROR318,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999984,0.000016,64.9,36.6,27.4,E
+GROR319,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999984,0.000016,75.9,41.2,36.6,E
+GROR320,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999975,0.000025,76.6,46.1,42.4,E
+GROR321,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999985,0.000015,68.4,50.3,43.1,E
+GROR322,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999985,0.000015,65.9,39.5,32.1,E
+GROR323,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999985,0.000015,69.4,41.5,33.5,E
+GROR324,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999978,0.000022,NA,NA,NA,E
+GROR325,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.99998,0.00002,NA,NA,NA,E
+GROR326,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999985,0.000015,74.2,44.3,37.9,E
+GROR327,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999984,0.000016,70,39,39,E
+GROR329,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.99998,0.00002,69.2,46.2,40.6,E
+GROR330,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999979,0.000021,74.8,41.9,41.9,E
+GROR331,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999982,0.000018,67.5,40.6,38.1,E
+GROR333,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999984,0.000016,49.8,30.9,21.7,E
+GROR334,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999984,0.000016,61.6,35.5,35.5,E
+GROR335,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999986,0.000014,77.6,43.4,34.8,E
+GROR336,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999984,0.000016,66.2,39.5,37.3,E
+GROR337,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999979,0.000021,NA,NA,NA,E
+GROR338,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999986,0.000014,NA,NA,NA,E
+GROR339,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.99996,0.00004,43.5,20.9,0,T
+GROR342,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999986,0.000014,71.4,40.2,36.3,E
+GROR343,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999986,0.000014,70.9,43.9,43.9,E
+GROR344,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999981,0.000019,73,42.9,42.9,E
+GROR345,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999985,0.000015,71.9,45.7,41.8,E
+GROR346,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999985,0.000015,71.4,39.7,33,E
+GROR347,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999985,0.000015,80.9,50.3,50.3,E
+GROR348,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999988,0.000012,66.5,40.1,38.4,E
+GROR349,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999975,0.000025,80.1,53.5,43.9,E
+GROR350,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999986,0.000014,75.8,45.9,45.9,E
+GROR351,MDICOA,edulis,Mount Desert Island College of the Atlantic,0.999985,0.000015,NA,NA,NA,E
+GRYE331,JPC,edulis,Jonesport Central,0.999985,0.000015,54.8,29.4,29.4,E
+GRYE336,JPC,edulis,Jonesport Central,0.999985,0.000015,53.8,27.8,27.8,E
+GRYE338,JPC,edulis,Jonesport Central,0.999981,0.000019,NA,NA,NA,E
+GRYE339,JPC,edulis,Jonesport Central,0.999987,0.000013,57.7,30.5,30.5,E
+GRYE340,JPC,edulis,Jonesport Central,0.999985,0.000015,47.2,23.6,23.6,E
+GRYE341,JPC,edulis,Jonesport Central,0.999983,0.000017,NA,NA,NA,E
+GRYE342,JPC,edulis,Jonesport Central,0.999985,0.000015,50.2,26.9,26.9,E
+GRYE343,JPC,edulis,Jonesport Central,0.999985,0.000015,55.8,29.6,29.6,E
+GRYE344,JPC,edulis,Jonesport Central,0.999984,0.000016,53.6,30,26.6,E
+GRYE345,JPC,edulis,Jonesport Central,0.999983,0.000017,NA,NA,NA,E
+GRYE346,JPC,edulis,Jonesport Central,0.999988,0.000012,58.3,28.7,29.8,E
+GRYE347,JPC,edulis,Jonesport Central,0.999984,0.000016,52.2,29.7,29.7,E
+GRYE348,JPC,edulis,Jonesport Central,0.999986,0.000014,51.3,28.7,25.7,E
+GRYE350,JPC,edulis,Jonesport Central,0.999986,0.000014,NA,NA,NA,E
+GRYE354,JPC,edulis,Jonesport Central,0.999985,0.000015,NA,NA,NA,E
+GRYE355,JPC,edulis,Jonesport Central,0.999984,0.000016,NA,NA,NA,E
+GRYE356,JPC,edulis,Jonesport Central,0.999984,0.000016,NA,NA,NA,E
+GRYE357,JPC,edulis,Jonesport Central,0.999986,0.000014,53.4,28.5,28.5,E
+GRYE357,JPC,edulis,Jonesport Central,0.999986,0.000014,53.2,28,28,E
+GRYE358,JPC,edulis,Jonesport Central,0.999977,0.000023,49.4,28.5,24,E
+GRYE359,JPC,edulis,Jonesport Central,0.999986,0.000014,NA,NA,NA,E
+GRYE360,JPC,edulis,Jonesport Central,0.999984,0.000016,55.6,28.8,28.8,E
+GRYE361,JPC,edulis,Jonesport Central,0.999985,0.000015,NA,NA,NA,E
+GRYE362,JPC,edulis,Jonesport Central,0.999966,0.000034,NA,NA,NA,E
+GRYE364,JPC,edulis,Jonesport Central,0.999984,0.000016,NA,NA,NA,E
+GRYE365,JPC,edulis,Jonesport Central,0.999976,0.000024,54.6,30.2,23.8,E
+GRYE365,JPC,edulis,Jonesport Central,0.999976,0.000024,NA,NA,NA,E
+GRYE367,JPC,edulis,Jonesport Central,0.999984,0.000016,NA,NA,NA,E
+GRYE368,JPC,edulis,Jonesport Central,0.999985,0.000015,NA,NA,NA,E
+GRYE369,JPC,edulis,Jonesport Central,0.999986,0.000014,NA,NA,NA,E
+GRYE370,JPC,edulis,Jonesport Central,0.999985,0.000015,53.7,31.4,27,E
+GRYE371,JPC,edulis,Jonesport Central,0.999984,0.000016,NA,NA,NA,E
+GRYE372,JPC,edulis,Jonesport Central,0.999983,0.000017,NA,NA,NA,E
+GRYE373,JPC,edulis,Jonesport Central,0.999984,0.000016,NA,NA,NA,E
+GRYE374,JPC,edulis,Jonesport Central,0.999987,0.000013,52,25.6,25.6,E
+GRYE375,JPC,edulis,Jonesport Central,0.999984,0.000016,51,26.2,26.2,E
+GRYE376,JPC,edulis,Jonesport Central,0.999986,0.000014,NA,NA,NA,E
+GRYE377,JPC,edulis,Jonesport Central,0.999979,0.000021,NA,NA,NA,E
+GRYE378,JPC,edulis,Jonesport Central,0.999984,0.000016,52.1,24.8,24.8,E
+GRYE379,JPC,edulis,Jonesport Central,0.999983,0.000017,53.3,28.2,0,T
+GRYE380,JPC,edulis,Jonesport Central,0.999981,0.000019,54.1,28.4,28.4,E
+GRYE381,JPC,edulis,Jonesport Central,0.999984,0.000016,NA,NA,NA,E
+GRYE382,JPC,edulis,Jonesport Central,0.999989,0.000011,62.7,30.8,30.8,E
+GRYE384,JPC,edulis,Jonesport Central,0.999982,0.000018,58.9,28.9,28.9,E
+GRYE385,JPC,edulis,Jonesport Central,0.999985,0.000015,53.3,26.1,26.1,E
+GRYE386,JPC,edulis,Jonesport Central,0.99998,0.00002,47.3,25.4,25.4,E
+GRYE387,JPC,edulis,Jonesport Central,0.999981,0.000019,52.9,26.4,26.4,E
+GRYE388,JPC,edulis,Jonesport Central,0.999978,0.000022,52.1,25.9,25.9,E
+GRYE389,JPC,edulis,Jonesport Central,0.999986,0.000014,49.9,26,20.7,E
+GRYE390,JPC,edulis,Jonesport Central,0.999985,0.000015,38.3,19.9,19.9,E
+GYO338,KIM,edulis,Kent Island Mooring,0.999984,0.000016,87.8,45.4,36.2,E
+GYO340,KIM,edulis,Kent Island Mooring,0.999979,0.000021,76.6,39.5,31.3,E
+GYO341,KIM,edulis,Kent Island Mooring,0.999986,0.000014,62.9,31.4,25.6,E
+GYO368,KIM,edulis,Kent Island Mooring,0.999986,0.000014,81,35.9,29.6,E
+GYO369,KIM,edulis,Kent Island Mooring,0.999987,0.000013,76.4,33.2,28.9,E
+GYO370,KIM,edulis,Kent Island Mooring,0.999987,0.000013,78.6,42.9,33.7,E
+GYO371,KIM,edulis,Kent Island Mooring,0.999984,0.000016,78.5,43.4,41.6,E
+GYO372,KIM,edulis,Kent Island Mooring,0.999981,0.000019,77.5,41.1,28,E
+GYO373,KIM,hybrid,Kent Island Mooring,0.787873,0.212127,78.2,41.4,35.3,E
+GYO374,KIM,edulis,Kent Island Mooring,0.99998,0.00002,43.1,26,26,E
+GYO375,KIM,edulis,Kent Island Mooring,0.999983,0.000017,71.7,38.2,0,T
+GYO376,KIM,edulis,Kent Island Mooring,0.999978,0.000022,71.4,36.8,24.4,E
+GYO377,KIM,trossulus,Kent Island Mooring,4.40E-05,0.999956,72.7,39.3,0,T
+GYO378,KIM,edulis,Kent Island Mooring,0.999985,0.000015,69.4,35.2,24.6,E
+GYO379,KIM,edulis,Kent Island Mooring,0.999985,0.000015,60.3,32.7,32.7,E
+GYO380,KIM,edulis,Kent Island Mooring,0.999986,0.000014,44.4,22.4,14,E
+GYO381,KIM,edulis,Kent Island Mooring,0.999985,0.000015,81.4,43.9,36.5,E
+GYO382,KIM,edulis,Kent Island Mooring,0.999988,0.000012,71.6,35.4,27.6,E
+GYO383,KIM,edulis,Kent Island Mooring,0.999981,0.000019,71.4,36.9,31.4,E
+GYO385,KIM,edulis,Kent Island Mooring,0.999985,0.000015,79,41.1,32.9,E
+GYO387,KIM,edulis,Kent Island Mooring,0.999984,0.000016,71.2,39.5,24.7,E
+GYO388,KIM,edulis,Kent Island Mooring,0.999983,0.000017,81.8,41.5,32.6,E
+GYO389,KIM,edulis,Kent Island Mooring,0.999984,0.000016,68.7,39,29.9,E
+GYO390,KIM,edulis,Kent Island Mooring,0.999985,0.000015,71,40,24.9,E
+GYO391,KIM,edulis,Kent Island Mooring,0.999988,0.000012,64.1,33.7,21.5,E
+GYO392,KIM,hybrid,Kent Island Mooring,0.849272,0.150728,71,42.5,31.8,E
+GYO393,KIM,edulis,Kent Island Mooring,0.999985,0.000015,79.3,44.7,33.5,E
+GYO394,KIM,edulis,Kent Island Mooring,0.999984,0.000016,75.3,39.1,21.8,E
+GYO395,KIM,edulis,Kent Island Mooring,0.999979,0.000021,66.2,36.3,28.1,E
+GYO396,KIM,edulis,Kent Island Mooring,0.999983,0.000017,78,40.1,31.2,E
+GYO397,KIM,edulis,Kent Island Mooring,0.999986,0.000014,77.8,39.8,34.9,E
+GYO398,KIM,edulis,Kent Island Mooring,0.999986,0.000014,62.3,43.6,35.8,E
+MDRW002,MDRW,hybrid,Mount Desert Rock West,0.759609,0.240391,16,8.2,7.8,E
+MDRW005,MDRW,trossulus,Mount Desert Rock West,5.60E-05,0.999944,18.6,10.4,5.5,E
+MDRW006,MDRW,edulis,Mount Desert Rock West,0.999725,0.000275,19.9,9.7,7,E
+MDRW008,MDRW,edulis,Mount Desert Rock West,0.999877,0.000123,16.5,9,6.1,E
+MDRW009,MDRW,edulis,Mount Desert Rock West,0.999975,0.000025,17.3,9.1,6.2,E
+MDRW010,MDRW,trossulus,Mount Desert Rock West,0.000215,0.999785,16.1,11,7.3,E
+MDRW011,MDRW,trossulus,Mount Desert Rock West,7.80E-05,0.999922,17.8,10.8,5.5,E
+MDRW012,MDRW,edulis,Mount Desert Rock West,0.999915,0.000085,18.2,11.3,7.5,E
+MDRW013,MDRW,trossulus,Mount Desert Rock West,5.60E-05,0.999944,20.9,11.5,0,T
+OR060,BI,edulis,Bailey Island,0.999988,0.000012,40.2,19.4,15.9,E
+OR061,BI,edulis,Bailey Island,0.999982,0.000018,36.3,19.3,14.5,E
+OR062,BI,edulis,Bailey Island,0.999988,0.000012,38.1,20.7,10.3,E
+OR063,BI,edulis,Bailey Island,0.999984,0.000016,44.9,24,14.2,E
+OR064,BI,edulis,Bailey Island,0.999937,0.000063,36.4,18.6,16.9,E
+OR065,BI,edulis,Bailey Island,0.999855,0.000145,36.8,19.9,12.5,E
+OR066,BI,edulis,Bailey Island,0.999983,0.000017,40,21.9,21.9,E
+OR068,BI,edulis,Bailey Island,0.999963,0.000037,36.5,19.3,19.3,E
+OR069,BI,edulis,Bailey Island,0.999985,0.000015,38.6,21.2,21.2,E
+OR070,BI,edulis,Bailey Island,0.999987,0.000013,35.7,16.9,12.5,E
+OR072,BI,edulis,Bailey Island,0.999985,0.000015,39.3,21,12.7,E
+OR073,BI,edulis,Bailey Island,0.999984,0.000016,39,20.9,14.6,E
+OR077,BI,edulis,Bailey Island,0.99998,0.00002,39.2,21.1,6.8,E
+OR078,BI,edulis,Bailey Island,0.999984,0.000016,36.8,20.6,14.5,E
+OR079,BI,trossulus,Bailey Island,5.60E-05,0.999944,36.7,19.6,0,T
+OR080,BI,edulis,Bailey Island,0.999985,0.000015,48.4,21.4,16.3,E
+OR081,BI,edulis,Bailey Island,0.999988,0.000012,36.8,19.1,15.8,E
+OR082,BI,edulis,Bailey Island,0.999988,0.000012,41.4,21.6,17.1,E
+OR083,BI,edulis,Bailey Island,0.999988,0.000012,38.8,19.9,19.4,E
+OR084,BI,edulis,Bailey Island,0.999982,0.000018,33.5,17.9,14.7,E
+OR085,BI,edulis,Bailey Island,0.999989,0.000011,39.1,21.3,15.9,E
+OR087,BI,edulis,Bailey Island,0.999987,0.000013,40.5,21.5,17.4,E
+OR089,BI,edulis,Bailey Island,0.999988,0.000012,36.9,19.7,16,E
+OR244,MDRE,trossulus,Mount Desert Rock East,4.40E-05,0.999956,37.9,18.8,0,T
+OR253,MDRE,edulis,Mount Desert Rock East,0.999973,0.000027,40.9,26.7,14.2,E
+OR254,MDRE,edulis,Mount Desert Rock East,0.999979,0.000021,34.9,21.2,19.9,E
+OR255,MDRE,edulis,Mount Desert Rock East,0.999953,0.000047,29.6,15.6,10.5,E
+OR256,MDRE,edulis,Mount Desert Rock East,0.99998,0.00002,37.9,19.6,19.6,E
+OR257,MDRE,edulis,Mount Desert Rock East,0.999979,0.000021,33.3,16,14.5,E
+OR258,MDRE,edulis,Mount Desert Rock East,0.999958,0.000042,29.6,15.6,6.9,E
+OR260,MDRE,hybrid,Mount Desert Rock East,0.513607,0.486393,41.6,21.9,0,T
+OR261,MDRE,edulis,Mount Desert Rock East,0.999971,0.000029,35.6,20.3,13.6,E
+OR263,MDRE,edulis,Mount Desert Rock East,0.999978,0.000022,37.1,21,13.5,E
+OR264,MDRE,edulis,Mount Desert Rock East,0.999975,0.000025,34.9,19.3,17.5,E
+OR265,MDRE,trossulus,Mount Desert Rock East,0.030255,0.969745,31.8,18.7,0,T
+OR269,MDRE,edulis,Mount Desert Rock East,0.999965,0.000035,31.9,19.3,8.9,E
+OR271,MDRE,edulis,Mount Desert Rock East,0.99998,0.00002,36.3,20.3,17.5,E
+OR272,MDRE,edulis,Mount Desert Rock East,0.99998,0.00002,32.4,16.3,10.9,E
+OR273,MDRE,edulis,Mount Desert Rock East,0.999972,0.000028,35.9,19.4,16,E
+OR274,MDRE,trossulus,Mount Desert Rock East,4.40E-05,0.999956,37.1,22.8,0,T
+OR275,MDRE,edulis,Mount Desert Rock East,0.999979,0.000021,27.5,17.9,12.3,E
+OR277,MDRE,edulis,Mount Desert Rock East,0.999981,0.000019,37.4,22.4,16.2,E
+OR278,MDRE,edulis,Mount Desert Rock East,0.99993,0.00007,42.6,21.2,19.2,E
+OR280,MDRE,edulis,Mount Desert Rock East,0.999936,0.000064,30,19.7,14.2,E
+OR281,MDRE,trossulus,Mount Desert Rock East,7.40E-05,0.999926,43.7,28.1,0,T
+OR282,MDRE,trossulus,Mount Desert Rock East,5.60E-05,0.999944,29.4,18.5,0,T
+OR283,MDRE,edulis,Mount Desert Rock East,0.999866,0.000134,44.8,25.7,13.5,E
+RE016,PH,edulis,Phippsburg The Basin,0.999988,0.000012,34.1,17.3,16.2,E
+RE061,PH,edulis,Phippsburg The Basin,0.999983,0.000017,50.4,22.7,22.7,E
+RE062,PH,edulis,Phippsburg The Basin,0.999987,0.000013,51.2,25.1,16.6,E
+RE062,PH,edulis,Phippsburg The Basin,0.999987,0.000013,43.2,22.2,18.8,E
+RE063,PH,edulis,Phippsburg The Basin,0.999987,0.000013,46.5,22.7,15.5,E
+RE064,PH,edulis,Phippsburg The Basin,0.999987,0.000013,44.5,22.1,0,T
+RE065,PH,edulis,Phippsburg The Basin,0.999971,0.000029,48.7,25.1,10.6,E
+RE067,PH,edulis,Phippsburg The Basin,0.999978,0.000022,37,18.7,0,T
+RE070,PH,edulis,Phippsburg The Basin,0.999986,0.000014,55.9,25.4,25.4,E
+RE071,PH,edulis,Phippsburg The Basin,0.999986,0.000014,32.9,15.4,15.4,E
+RE072,PH,edulis,Phippsburg The Basin,0.999986,0.000014,45.9,24.1,15.7,E
+RE073,PH,edulis,Phippsburg The Basin,0.999986,0.000014,34.7,19.3,13.9,E
+RE074,PH,edulis,Phippsburg The Basin,0.999984,0.000016,43,21.6,20.1,E
+RE075,PH,edulis,Phippsburg The Basin,0.999987,0.000013,42.2,21.4,18.3,E
+RE076,PH,edulis,Phippsburg The Basin,0.999987,0.000013,44.4,23.8,0,T
+RE077,PH,edulis,Phippsburg The Basin,0.999957,0.000043,52.1,25.2,21.2,E
+RE078,PH,edulis,Phippsburg The Basin,0.999958,0.000042,47.5,21.2,0,T
+RE079,PH,edulis,Phippsburg The Basin,0.999979,0.000021,38.9,19.9,19.9,E
+RE080,PH,edulis,Phippsburg The Basin,0.999979,0.000021,42.3,21.4,21.4,E
+RE081,PH,edulis,Phippsburg The Basin,0.999987,0.000013,42.2,22.7,19.9,E
+RE082,PH,edulis,Phippsburg The Basin,0.999984,0.000016,42.3,23.2,8.5,E
+RE083,PH,edulis,Phippsburg The Basin,0.999973,0.000027,47.6,25.6,15.4,E
+RE084,PH,edulis,Phippsburg The Basin,0.999981,0.000019,52.4,23.9,20.7,E
+RE085,PH,edulis,Phippsburg The Basin,0.999982,0.000018,40.3,22.7,11.6,E
+RE086,PH,edulis,Phippsburg The Basin,0.99998,0.00002,50.6,29.3,26.2,E
+RE087,PH,edulis,Phippsburg The Basin,0.999987,0.000013,50.2,28.5,23.4,E
+RE088,PH,edulis,Phippsburg The Basin,0.999986,0.000014,48.1,27.7,16.9,E
+RE089,PH,edulis,Phippsburg The Basin,0.999986,0.000014,41.5,20.1,20.1,E
+RE090,PH,edulis,Phippsburg The Basin,0.999969,0.000031,49.7,28.7,19.6,E
+REBL214,CBE,trossulus,Cobscook Bay Eastport,3.20E-05,0.999968,47.1,23.6,0,T
+REBL215,CBE,edulis,Cobscook Bay Eastport,0.997703,0.002297,51.9,27.3,0,T
+REBL216,CBE,trossulus,Cobscook Bay Eastport,1.90E-05,0.999981,43.2,20.1,14,E
+REBL217,CBE,trossulus,Cobscook Bay Eastport,1.70E-05,0.999983,42.4,20.8,13.8,E
+REBL218,CBE,trossulus,Cobscook Bay Eastport,2.50E-05,0.999975,45,22.3,0,T
+REBL219,CBE,trossulus,Cobscook Bay Eastport,2.10E-05,0.999979,54.3,27.2,0,T
+REBL221,CBE,trossulus,Cobscook Bay Eastport,2.00E-05,0.99998,48.5,26.5,19,E
+REBL222,CBE,trossulus,Cobscook Bay Eastport,1.90E-05,0.999981,53.8,25.4,0,T
+REBL223,CBE,trossulus,Cobscook Bay Eastport,2.70E-05,0.999973,44.6,22.2,0,T
+REBL224,CBE,trossulus,Cobscook Bay Eastport,1.60E-05,0.999984,44.2,22.8,0,T
+REBL225,CBE,trossulus,Cobscook Bay Eastport,2.10E-05,0.999979,62.1,28.6,0,T
+REBL226,CBE,trossulus,Cobscook Bay Eastport,8.50E-05,0.999915,47.6,21.4,0,T
+REBL227,CBE,trossulus,Cobscook Bay Eastport,2.10E-05,0.999979,53.7,29.1,29.1,E
+REBL229,CBE,trossulus,Cobscook Bay Eastport,1.60E-05,0.999984,42.3,20.4,0,T
+REBL230,CBE,trossulus,Cobscook Bay Eastport,2.30E-05,0.999977,35.5,16.3,10.3,E
+REBL231,CBE,trossulus,Cobscook Bay Eastport,5.00E-05,0.99995,51.2,24.9,0,T
+REBL232,CBE,trossulus,Cobscook Bay Eastport,1.70E-05,0.999983,58.4,30.4,0,T
+REBL233,CBE,trossulus,Cobscook Bay Eastport,1.70E-05,0.999983,46.3,24.7,20.2,E
+REBL234,CBE,trossulus,Cobscook Bay Eastport,1.70E-05,0.999983,39.6,19.4,0,T
+REBL235,CBE,trossulus,Cobscook Bay Eastport,1.80E-05,0.999982,43.9,22.7,0,T
+REBL237,CBE,trossulus,Cobscook Bay Eastport,1.80E-05,0.999982,45.4,22.6,14.5,E
+REBL239,CBE,trossulus,Cobscook Bay Eastport,1.70E-05,0.999983,54.4,24.7,0,T
+REBL240,CBE,trossulus,Cobscook Bay Eastport,1.70E-05,0.999983,54.8,26.4,0,T
+REBL241,CBE,trossulus,Cobscook Bay Eastport,2.70E-05,0.999973,53.3,23.7,0,T
+REBL242,CBE,trossulus,Cobscook Bay Eastport,2.70E-05,0.999973,52.5,24.4,0,T
+REBL243,CBE,trossulus,Cobscook Bay Eastport,1.90E-05,0.999981,48.2,25.2,0,T
+REBL244,CBE,trossulus,Cobscook Bay Eastport,1.90E-05,0.999981,45.9,22.3,0.96,E
+REBL245,CBE,trossulus,Cobscook Bay Eastport,2.80E-05,0.999972,63,28.9,28.9,E
+REBL246,CBE,trossulus,Cobscook Bay Eastport,1.70E-05,0.999983,54,25.3,0,T
+REBL247,CBE,trossulus,Cobscook Bay Eastport,6.70E-05,0.999933,42.5,20.4,0,T
+REBL248,CBE,trossulus,Cobscook Bay Eastport,3.20E-05,0.999968,47.3,22.2,0,T
+REBL249,CBE,trossulus,Cobscook Bay Eastport,2.80E-05,0.999972,51.5,24.8,0,T
+REBL250,CBE,trossulus,Cobscook Bay Eastport,5.60E-05,0.999944,40.4,20.2,0.68,E
+REBL251,CBE,trossulus,Cobscook Bay Eastport,2.70E-05,0.999973,49.1,23.8,0,T
+REBL253,CBE,trossulus,Cobscook Bay Eastport,2.10E-05,0.999979,48,22.8,0,T
+REBL255,CBE,trossulus,Cobscook Bay Eastport,3.00E-05,0.99997,48.5,22.6,0,T
+REOR313,CBSL,trossulus,Cobscook Bay South Lubec,0.000203,0.999797,47.7,24.7,0,T
+REOR319,CBSL,trossulus,Cobscook Bay South Lubec,5.00E-05,0.99995,52.5,26.3,0,T
+REOR320,CBSL,trossulus,Cobscook Bay South Lubec,3.60E-05,0.999964,50.3,26.4,19.4,E
+REOR322,CBSL,hybrid,Cobscook Bay South Lubec,0.579635,0.420365,58.1,30,0,T
+REOR323,CBSL,edulis,Cobscook Bay South Lubec,0.999954,0.000046,59.2,32.3,24.6,E
+REOR324,CBSL,edulis,Cobscook Bay South Lubec,0.999969,0.000031,63.3,36.2,36.2,E
+REOR326,CBSL,edulis,Cobscook Bay South Lubec,0.999969,0.000031,56.2,29,20.8,E
+REOR327,CBSL,trossulus,Cobscook Bay South Lubec,5.70E-05,0.999943,45.9,26.9,0,T
+REOR328,CBSL,trossulus,Cobscook Bay South Lubec,4.20E-05,0.999958,36.8,30.9,20.6,E
+REOR329,CBSL,trossulus,Cobscook Bay South Lubec,4.40E-05,0.999956,46.4,22.9,17.1,E
+REOR330,CBSL,trossulus,Cobscook Bay South Lubec,4.70E-05,0.999953,49.6,26.3,0,T
+REOR333,CBSL,edulis,Cobscook Bay South Lubec,0.999971,0.000029,51.9,27.7,27.7,E
+REOR334,CBSL,trossulus,Cobscook Bay South Lubec,4.90E-05,0.999951,54.6,28.4,0,T
+REOR336,CBSL,trossulus,Cobscook Bay South Lubec,5.70E-05,0.999943,57.1,27.4,0,T
+REOR337,CBSL,edulis,Cobscook Bay South Lubec,0.999921,0.000079,56.1,28.9,28.9,E
+REOR338,CBSL,edulis,Cobscook Bay South Lubec,0.999963,0.000037,55.2,27.6,17.8,E
+REOR339,CBSL,trossulus,Cobscook Bay South Lubec,0.000103,0.999897,51.8,27.5,0,T
+REOR340,CBSL,trossulus,Cobscook Bay South Lubec,3.90E-05,0.999961,60.7,26.9,0,T
+REOR341,CBSL,trossulus,Cobscook Bay South Lubec,3.40E-05,0.999966,54.5,28.7,22.9,E
+REOR342,CBSL,trossulus,Cobscook Bay South Lubec,3.40E-05,0.999966,66.9,36.2,27.3,E
+REOR342,CBSL,trossulus,Cobscook Bay South Lubec,3.40E-05,0.999966,44.8,24.4,0,T
+REOR344,CBSL,trossulus,Cobscook Bay South Lubec,5.80E-05,0.999942,45.4,23.9,0,T
+REOR345,CBSL,edulis,Cobscook Bay South Lubec,0.999965,0.000035,59.9,28.8,20.4,E
+REOR346,CBSL,edulis,Cobscook Bay South Lubec,0.999973,0.000027,53.9,26.2,23.6,E
+REOR347,CBSL,trossulus,Cobscook Bay South Lubec,3.40E-05,0.999966,41.6,23.4,13,E
+REOR348,CBSL,trossulus,Cobscook Bay South Lubec,4.30E-05,0.999957,45.9,23.5,0,T
+REOR350,CBSL,trossulus,Cobscook Bay South Lubec,0.000107,0.999893,50.3,23.1,0,T
+REOR352,CBSL,trossulus,Cobscook Bay South Lubec,9.10E-05,0.999909,46.9,24.1,13.5,E
+REOR355,CBSL,edulis,Cobscook Bay South Lubec,0.999968,0.000032,43.7,20.1,20.1,E
+REOR356,CBSL,edulis,Cobscook Bay South Lubec,0.999969,0.000031,64.4,32.9,32.9,E
+REOR357,CBSL,edulis,Cobscook Bay South Lubec,0.999966,0.000034,55.9,29.5,23.7,E
+REOR358,CBSL,trossulus,Cobscook Bay South Lubec,4.00E-05,0.99996,55.6,29.4,0,T
+REOR360,CBSL,edulis,Cobscook Bay South Lubec,0.999971,0.000029,45.1,23.6,17.9,E
+WH202,VH,edulis,Vinalhaven,0.999982,0.000018,NA,NA,NA,E
+WH203,VH,edulis,Vinalhaven,0.999951,0.000049,56,32.2,32.2,E
+WH204,VH,edulis,Vinalhaven,0.999979,0.000021,48.4,32.8,32.8,E
+WH209,VH,edulis,Vinalhaven,0.999983,0.000017,NA,NA,NA,E
+WH209,VH,edulis,Vinalhaven,0.999983,0.000017,63.3,38,36.1,E
+WH210,VH,edulis,Vinalhaven,0.999982,0.000018,55.2,29.1,29.1,E
+WH211,VH,edulis,Vinalhaven,0.999978,0.000022,51,25.2,25.2,E
+WH213,VH,edulis,Vinalhaven,0.999965,0.000035,53.2,29.7,29.7,E
+WH214,VH,edulis,Vinalhaven,0.999973,0.000027,66.2,35.6,31.4,E
+WH215,VH,edulis,Vinalhaven,0.999951,0.000049,58.1,32,32.5,E
+WH216,VH,edulis,Vinalhaven,0.99998,0.00002,50.4,26.7,24,E
+WH218,VH,edulis,Vinalhaven,0.99998,0.00002,61.6,36.6,18.3,E
+WH219,VH,edulis,Vinalhaven,0.999979,0.000021,56.9,29.2,29.2,E
+WH220,VH,edulis,Vinalhaven,0.999981,0.000019,61.3,34.8,28.6,E
+WH221,VH,edulis,Vinalhaven,0.999979,0.000021,62.8,34.1,34.1,E
+WH231,VH,edulis,Vinalhaven,0.999982,0.000018,54.9,30.8,30.8,E
+WH233,VH,edulis,Vinalhaven,0.999978,0.000022,NA,NA,NA,E
+WH234,VH,edulis,Vinalhaven,0.999984,0.000016,36.2,32.8,32.8,E
+WH234,VH,edulis,Vinalhaven,0.999984,0.000016,63.3,32.4,26.9,E
+WH240,VH,edulis,Vinalhaven,0.999982,0.000018,NA,NA,NA,E
+WH240,VH,edulis,Vinalhaven,0.999982,0.000018,NA,NA,NA,E
+WH243,VH,edulis,Vinalhaven,0.999984,0.000016,57.9,33.1,31.4,E
+WH244,VH,edulis,Vinalhaven,0.999981,0.000019,58.7,32.8,32.8,E
+WH245,VH,edulis,Vinalhaven,0.999961,0.000039,52.7,27.2,27.2,E
+WH246,VH,edulis,Vinalhaven,0.999974,0.000026,NA,NA,NA,E
+WH247,VH,edulis,Vinalhaven,0.999982,0.000018,62,33.1,33.1,E
+WH248,VH,edulis,Vinalhaven,0.99998,0.00002,53.4,32,32,E
+WH249,VH,edulis,Vinalhaven,0.999984,0.000016,NA,NA,NA,E
+WH250,VH,edulis,Vinalhaven,0.999978,0.000022,NA,NA,NA,E
+WH251,VH,edulis,Vinalhaven,0.999978,0.000022,52.1,24.5,22.5,E
+WH252,VH,edulis,Vinalhaven,0.999983,0.000017,67.7,35.4,35.4,E
+WH253,VH,edulis,Vinalhaven,0.99995,0.00005,54.9,30.7,30.7,E
+WH255,VH,edulis,Vinalhaven,0.999825,0.000175,57.1,27.8,27.8,E
+WH256,VH,edulis,Vinalhaven,0.999967,0.000033,64.7,35.5,34.1,E
+WH257,VH,edulis,Vinalhaven,0.999977,0.000023,57.1,33.1,33.1,E
+WH259,VH,edulis,Vinalhaven,0.999977,0.000023,58.7,32.3,26.8,E
+WH261,VH,edulis,Vinalhaven,0.999973,0.000027,58.8,29.4,24.7,E
+WH262,VH,edulis,Vinalhaven,0.999983,0.000017,NA,NA,NA,E
+WH263,VH,edulis,Vinalhaven,0.99997,0.00003,NA,NA,NA,E
+WH264,VH,edulis,Vinalhaven,0.99998,0.00002,51.5,33.7,33.7,E
+WH265,VH,edulis,Vinalhaven,0.999974,0.000026,62.4,33.7,33.7,E
+WH267,VH,edulis,Vinalhaven,0.999979,0.000021,59.7,32.6,32.6,E
+WH268,VH,edulis,Vinalhaven,0.999942,0.000058,56,27.9,27.9,E
+WH281,VH,edulis,Vinalhaven,0.999955,0.000045,NA,NA,NA,E
+WH283,VH,edulis,Vinalhaven,0.999882,0.000118,56.7,32.4,32.4,E
+WH284,VH,edulis,Vinalhaven,0.999978,0.000022,54.9,29.8,29.8,E
+WH285,VH,edulis,Vinalhaven,0.99997,0.00003,53.9,29.3,29.3,E
+WH286,VH,edulis,Vinalhaven,0.999983,0.000017,64.2,35,29.4,E
+WH287,VH,edulis,Vinalhaven,0.999982,0.000018,61.6,65.3,33.2,E
+WH287,VH,edulis,Vinalhaven,0.999982,0.000018,22.5,12.5,9.2,E
+WH289,VH,edulis,Vinalhaven,0.999981,0.000019,56.9,30,30,E
+WH290,VH,edulis,Vinalhaven,0.999979,0.000021,67.8,38.7,36.5,E
+WH293,VH,edulis,Vinalhaven,0.999981,0.000019,61.3,30.9,30.9,E
+WH294,VH,edulis,Vinalhaven,0.999944,0.000056,53.5,27.5,27.4,E
+WH295,VH,edulis,Vinalhaven,0.999976,0.000024,58.4,31.2,27.9,E
+WH296,VH,edulis,Vinalhaven,0.999945,0.000055,65.2,37.2,29.6,E
+WH297,VH,edulis,Vinalhaven,0.999977,0.000023,55.4,34.5,34.5,E
+WH298,VH,edulis,Vinalhaven,0.999965,0.000035,55,27.4,27.4,E
+WHOR265,MDRW,edulis,Mount Desert Rock West,0.999972,0.000028,40.4,22,16.2,E
+WHOR266,MDRW,edulis,Mount Desert Rock West,0.999977,0.000023,42.9,25.3,21,E
+WHOR267,MDRW,edulis,Mount Desert Rock West,0.999971,0.000029,36.5,20.6,15.5,E
+WHOR272,MDRW,edulis,Mount Desert Rock West,0.999937,0.000063,32.1,17.5,17.5,E
+WHOR273,MDRW,edulis,Mount Desert Rock West,0.999952,0.000048,36.4,19.5,16.5,E
+WHOR274,MDRW,edulis,Mount Desert Rock West,0.999954,0.000046,37.1,22.4,21,E
+WHOR275,MDRW,edulis,Mount Desert Rock West,0.999977,0.000023,36.1,21.4,18.8,E
+WHOR276,MDRW,edulis,Mount Desert Rock West,0.999977,0.000023,37.9,22.9,17.5,E
+WHOR277,MDRW,edulis,Mount Desert Rock West,0.999978,0.000022,35.9,22.9,22.9,E
+WHOR278,MDRW,edulis,Mount Desert Rock West,0.999971,0.000029,33.2,19.3,15.8,E
+WHOR279,MDRW,trossulus,Mount Desert Rock West,5.40E-05,0.999946,29.6,17,0,T
+WHOR281,MDRW,trossulus,Mount Desert Rock West,5.40E-05,0.999946,26.3,17.9,11.5,E
+WHOR282,MDRW,edulis,Mount Desert Rock West,0.999977,0.000023,24.1,14.2,14.2,E
+WHOR283,MDRW,edulis,Mount Desert Rock West,0.999977,0.000023,22.5,13.8,0,T
+WHOR284,MDRW,edulis,Mount Desert Rock West,0.999913,0.000087,21.9,11.5,8.1,E
+WHOR285,MDRW,edulis,Mount Desert Rock West,0.999976,0.000024,21.1,12.7,11.8,E
+WHOR286,MDRW,trossulus,Mount Desert Rock West,5.80E-05,0.999942,20,11.1,0,T
+WHOR288,MDRW,edulis,Mount Desert Rock West,0.999852,0.000148,21.8,11.9,10.7,E
+WHOR289,MDRW,edulis,Mount Desert Rock West,0.999815,0.000185,18.3,11.1,7.5,E
+WHOR291,MDRW,edulis,Mount Desert Rock West,0.999908,0.000092,23.2,13.1,10,E
+WHOR292,MDRW,trossulus,Mount Desert Rock West,7.70E-05,0.999923,19.9,12,0,T
+WHOR295,MDRW,edulis,Mount Desert Rock West,0.99997,0.00003,24.7,12.5,10.1,E
+YE201,VH,edulis,Vinalhaven,0.999962,0.000038,NA,NA,NA,E
+YE202,VH,edulis,Vinalhaven,0.999976,0.000024,NA,NA,NA,E
+YE203,VH,edulis,Vinalhaven,0.999977,0.000023,NA,NA,NA,E
+YE204,VH,edulis,Vinalhaven,0.999969,0.000031,NA,NA,NA,E
+YE205,VH,edulis,Vinalhaven,0.999981,0.000019,NA,NA,NA,E
+YE206,VH,edulis,Vinalhaven,0.999982,0.000018,NA,NA,NA,E
+YE207,VH,edulis,Vinalhaven,0.999948,0.000052,NA,NA,NA,E
+YE208,VH,edulis,Vinalhaven,0.999881,0.000119,NA,NA,NA,E
+YE209,VH,edulis,Vinalhaven,0.999956,0.000044,NA,NA,NA,E
+YE211,VH,edulis,Vinalhaven,0.999977,0.000023,NA,NA,NA,E
+YE212,VH,edulis,Vinalhaven,0.999894,0.000106,NA,NA,NA,E
+YE213,VH,edulis,Vinalhaven,0.999972,0.000028,NA,NA,NA,E
+YE214,VH,edulis,Vinalhaven,0.999916,0.000084,NA,NA,NA,E
+YE216,VH,edulis,Vinalhaven,0.999978,0.000022,NA,NA,NA,E
+YE217,VH,edulis,Vinalhaven,0.999939,0.000061,NA,NA,NA,E
+YE218,VH,edulis,Vinalhaven,0.999882,0.000118,NA,NA,NA,E
+YE219,VH,edulis,Vinalhaven,0.999946,0.000054,NA,NA,NA,E
