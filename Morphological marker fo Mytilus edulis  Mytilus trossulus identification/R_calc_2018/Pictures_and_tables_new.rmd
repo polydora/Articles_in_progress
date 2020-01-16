@@ -50,7 +50,7 @@ library(gridExtra)
 
 #### Data reading and initial preparation #####
 
-myt <- read.table("data_salinity3.csv", header = T, sep = ";")
+myt <- read.table("data_salinity3.csv", header = T, sep = ",")
 
 
 myt_overseas <- myt[myt$dataset == "overseas", ]
@@ -531,7 +531,14 @@ Model_4_final_R2_c <- r.squaredGLMM(Model_4_final)[1, 2]
 #Модель 5
 #####################################
 
-Model_5_full <- glm(Sp2 ~  Prop_T * Subset, data = myt2, family = binomial(link = "logit"))
+
+ptop_T_MT <- myt2 %>% group_by(Subset, pop) %>% summarize(Prop_T = mean(Prop_T), MT = sum(Sp2), N = n())
+
+
+Model_5_full <- glm(cbind(MT, (N-MT)) ~  Prop_T * Subset, data = ptop_T_MT, family = binomial(link = "logit"))
+
+
+# Model_5_full <- glm(Sp2 ~  Prop_T * Subset, data = myt2, family = binomial(link = "logit"))
 # overdisp_fun(Model_5_full)
 
 # drop1(Model_5_full, test = "Chi")
