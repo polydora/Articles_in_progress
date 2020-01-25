@@ -28,22 +28,30 @@ myt <- read.table("data_salinity3.csv", header = T, sep = ",")
 myt2 <- myt[!is.na(myt$ind), ]
 
 
+
 # Подразделяем данные на сабсеты
 
-myt2$Subset[myt2$sea == "barents" & myt2$sal_place == "fresh"] <- "BL" 
+myt2$Subset[myt2$sea == "barents" & myt2$sal_place == "fresh"] <- "WBL" 
 myt2$Subset[myt2$sea == "barents" & myt2$sal_place == "normal"] <- "BH" 
-myt2$Subset[myt2$sea == "white" & myt2$sal_place == "normal"] <- "W" 
-myt2$Subset[myt2$sea == "white" & myt2$sal_place == "fresh"] <- "W" 
+myt2$Subset[myt2$sea == "white" & myt2$sal_place == "normal"] <- "WBL" 
+myt2$Subset[myt2$sea == "white" & myt2$sal_place == "fresh"] <- "WBL" 
 
 myt2$Subset[myt2$sea == "Baltic"] <- "BALT" 
 myt2$Subset[myt2$sea == "GOM"] <- "GOM" 
 myt2$Subset[myt2$sea == "Norway"] <- "NORW" 
 myt2$Subset[myt2$sea == "Scotland"] <- "SCOT" 
 
+unique(myt2$Subset)
 
-myt2$Subset <- factor(myt2$Subset, levels = c("W", "BL", "BH", "NORW", "BALT", "SCOT", "GOM" ))
+myt2$Subset <- factor(myt2$Subset, levels = c("WBL", "BH", "NORW", "BALT", "SCOT", "GOM" ))
+
+unique(myt2$Subset)
+
 
 levels(myt2$Subset)
+
+
+unique(myt2[myt2$Subset == "GOM", ]$pop)
 
 
 
@@ -102,14 +110,16 @@ myt3 <- myt2[myt2$dataset == "testing" | myt2$pop %in% c("kovda", "rya", "chupa"
 #modelling data set
 myt2 <- myt2[! myt2$pop %in% unique(myt3$pop), ]
 
-levels(myt2$Subset)
+unique(myt2$Subset)
 
 
 # Модели для сравнения geographical datasets 
 
-myt2_reduced <- myt2[myt2$Subset %in% c("W", "BL", "BH", "GOM", "BALT"), ]
+myt2_reduced <- myt2[myt2$Subset %in% c("WBL", "BH", "GOM", "BALT"), ]
 
-myt2_reduced$Subset <- factor(myt2_reduced$Subset)
+unique(myt2_reduced$Subset)
+
+myt2_reduced$Subset <- factor(myt2_reduced$Subset, levels = c("WBL",  "BH",   "GOM",  "BALT"))
 levels(myt2_reduced$Subset)
 
 
@@ -128,12 +138,12 @@ r.squaredGLMM(Model_4_final)
 
 drop1(Model_4_full_geogr)
 
-Model_4_full_geogr2 <- update(Model_4_full_geogr, . ~ . - morph:freq_MT:Subset)
+# Model_4_full_geogr2 <- update(Model_4_full_geogr, . ~ . - morph:freq_MT:Subset)
 
 drop1(Model_4_full_geogr2)
 
 
-Model_4_final <- Model_4_full_geogr2 
+Model_4_final <- Model_4_full_geogr 
 
 
 
@@ -152,7 +162,7 @@ new_data4$fit_eta <- predict(Model_4_final, newdata = new_data4, re.form = NA)
 # Вычисление доверительного инеравала
 formula(Model_4_final)
 
-X <- model.matrix(  ~ morph + freq_MT + Subset + morph:freq_MT + morph:Subset + freq_MT:Subset, data = new_data4) #Модельная матрица для визуализации
+X <- model.matrix(  ~ morph * freq_MT * Subset, data = new_data4) #Модельная матрица для визуализации
 
 
 # Ошибки в шкале логитов
@@ -202,6 +212,7 @@ Model_4_final_diag <- fortify(Model_4_final)
 
 ggplot(Model_4_final_diag, aes(x = .fitted, y = .scresid)) + geom_point() + geom_smooth()
 
+ggplot(Model_4_final_diag, aes(x = myt2_reduced$size, y = .scresid)) + geom_point() + geom_smooth() + facet_wrap(~Subset)
 
 
 #######################
@@ -258,3 +269,78 @@ qplot(y =ptop_T_MT$pop, x = Model_5_final_diag$.cooksd)
 
 ggplot(Model_5_final_diag, aes(x = .fitted, y = .stdresid)) + geom_point() + geom_smooth()
 
+
+###################################################
+# Associations among morphotypes and predictive values with prevalence and individual q-values.
+
+myt2_WBL <- myt2[myt2$Subset == "WBL", ]
+
+Mod_GAM_1 <- gam(ind ~ s(freq_MT, str), data = myt2_WBL, family = "binomial")
+
+
+new_gam_data <- expand.grid(freq_MT = seq(0, 1, 0.01), str = seq(0, 1, 0.01))
+
+new_gam_data$Predict_gam <- predict(Mod_GAM_1, newdata = new_gam_data, type = "response")
+
+
+ggplot(myt2_WBL, aes(x = freq_MT, y = str)) + 
+  geom_tile(data = new_gam_data, aes(fill = Predict_gam)) +  
+  geom_point(aes(shape = morph, color = morph), size = 1, position = position_jitter(width = 0.01, height = 0.01)) +
+  scale_fill_gradient(high = "red", low = "white")+ 
+  scale_color_manual(values = c("blue", "black"))+
+  scale_shape_manual(values = c(16, 11))+
+  theme(legend.position = "bottom") +
+  theme_bw()+
+  labs(x = "Frequency of M. trossulus", y = "Individual q-value"  ) + 
+  geom_density2d(color = "black")
+
+
+
+
+
+
+Mod_GAM_2 <- gam(congr ~ s(freq_MT, str), data = myt2_WBL, family = "binomial")
+
+
+new_gam_data2 <- expand.grid(freq_MT = seq(0, 1, 0.01), str = seq(0, 1, 0.01))
+
+new_gam_data2$Predict_gam2 <- predict(Mod_GAM_2, newdata = new_gam_data2, type = "response")
+
+
+ggplot(myt2_WBL, aes(x = freq_MT, y = str)) + 
+  geom_tile(data = new_gam_data2, aes(fill = Predict_gam2)) +  
+  geom_point(aes(color = factor(congr) ), size = 1, position = position_jitter(width = 0.01, height = 0.01)) +
+  scale_fill_gradient(high = "blue", low = "white") +
+  scale_color_manual(values = c("black", "white"))+
+  theme(legend.position = "bottom") +
+  theme_bw()+
+  labs(x = "Frequency of M. trossulus", y = "Individual q-value"  ) + 
+  geom_density2d(data = myt2_WBL[myt2_WBL$congr == 1,], color = "black")
+
+
+
+
+
+##### Связь с размером #####
+
+myt_X <- myt2[myt2$Subset %in% c("WBL", "BH"), ]
+
+unique(myt_X$pop)
+
+
+Mod_X <- glmer(ind ~ size*Subset + (1|pop), data = myt_X, family = "binomial")
+
+Mod_X_rs <- glmer(ind ~ size*Subset + (1 + size|pop), data = myt_X, family = "binomial")
+
+AIC(Mod_X, Mod_X_rs)
+
+summary(Mod_X_rs)
+
+r.squaredGLMM(Mod_X_rs)
+
+
+new_data_size <- myt_X[!is.na(myt_X$size), ] %>% group_by(Subset, pop) %>% do(data.frame(size = seq(min(.$size), max(.$size), length.out = 100)))
+
+new_data_size$Predict <- predict(Mod_X_rs, newdata = new_data_size, type = "response")
+
+ggplot(new_data_size, aes(x = size, y = Predict, group = pop)) + geom_line() + facet_wrap(~Subset)
