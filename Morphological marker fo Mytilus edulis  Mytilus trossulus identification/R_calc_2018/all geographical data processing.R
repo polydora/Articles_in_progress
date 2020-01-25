@@ -309,9 +309,9 @@ new_gam_data2$Predict_gam2 <- predict(Mod_GAM_2, newdata = new_gam_data2, type =
 
 ggplot(myt2_WBL, aes(x = freq_MT, y = str)) + 
   geom_tile(data = new_gam_data2, aes(fill = Predict_gam2)) +  
-  geom_point(aes(color = factor(congr) ), size = 1, position = position_jitter(width = 0.01, height = 0.01)) +
+  geom_point(aes(color = factor(congr) ), size = 1.5, position = position_jitter(width = 0.01, height = 0.01)) +
   scale_fill_gradient(high = "blue", low = "white") +
-  scale_color_manual(values = c("black", "white"))+
+  scale_color_manual(values = c( "yellow", "black"))+
   theme(legend.position = "bottom") +
   theme_bw()+
   labs(x = "Frequency of M. trossulus", y = "Individual q-value"  ) + 
