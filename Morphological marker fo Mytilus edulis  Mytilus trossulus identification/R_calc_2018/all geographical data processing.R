@@ -127,63 +127,66 @@ levels(myt2_reduced$Subset)
 library("optimx")
 
 
-Model_4_full_geogr <- glmer(congr ~ morph * freq_MT * Subset + (1 | pop), data = myt2_reduced, family = binomial(link = "logit"), control=glmerControl(optimizer = "optimx", calc.derivs = FALSE, optCtrl = list(method = "nlminb", starttests = FALSE, kkt = FALSE)))
+Model_6_full_geogr <- glmer(congr ~ morph * freq_MT * Subset + (1 | pop), data = myt2_reduced, family = binomial(link = "logit"), control=glmerControl(optimizer = "optimx", calc.derivs = FALSE, optCtrl = list(method = "nlminb", starttests = FALSE, kkt = FALSE)))
 
 
 
-overdisp_fun(Model_4_full_geogr)
-summary(Model_4_full_geogr)
+overdisp_fun(Model_6_full_geogr)
 
-r.squaredGLMM(Model_4_final)
+summary(Model_6_full_geogr)
 
-drop1(Model_4_full_geogr)
+r.squaredGLMM(Model_6_final)
 
-# Model_4_full_geogr2 <- update(Model_4_full_geogr, . ~ . - morph:freq_MT:Subset)
+drop1(Model_6_full_geogr)
 
-drop1(Model_4_full_geogr2)
+# Model_6_full_geogr2 <- update(Model_6_full_geogr, . ~ . - morph:freq_MT:Subset)
 
-
-Model_4_final <- Model_4_full_geogr 
+# drop1(Model_6_full_geogr2)
 
 
+Model_6_final <- Model_6_full_geogr 
 
 
 
-new_data4 <- myt2_reduced %>% group_by(Subset, morph) %>% do(data.frame(freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 100)))
+
+
+new_data6 <- myt2_reduced %>% group_by(Subset, morph) %>% do(data.frame(freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 100)))
 
 
 
 # Предсказанные значеня в шкале вероятностей
-new_data4$fit <- predict(Model_4_final, newdata = new_data4, type = "response", re.form = NA)
+new_data6$fit <- predict(Model_6_final, newdata = new_data6, type = "response", re.form = NA)
 
 # Предсказанные значеня в шкале логитов
-new_data4$fit_eta <- predict(Model_4_final, newdata = new_data4, re.form = NA)
+new_data6$fit_eta <- predict(Model_6_final, newdata = new_data6, re.form = NA)
 
 # Вычисление доверительного инеравала
-formula(Model_4_final)
+# formula(Model_6_final)
 
-X <- model.matrix(  ~ morph * freq_MT * Subset, data = new_data4) #Модельная матрица для визуализации
+X <- model.matrix(  ~ morph * freq_MT * Subset, data = new_data6) #Модельная матрица для визуализации
 
 
 # Ошибки в шкале логитов
-new_data4$se_eta <- sqrt(diag(X %*% vcov(Model_4_final) %*% t(X)))
+new_data6$se_eta <- sqrt(diag(X %*% vcov(Model_6_final) %*% t(X)))
 
-new_data4$lwr <- logit_back(new_data4$fit_eta - 1.96 * new_data4$se_eta)
+new_data6$lwr <- logit_back(new_data6$fit_eta - 1.96 * new_data6$se_eta)
 
-new_data4$upr <- logit_back(new_data4$fit_eta + 1.96 * new_data4$se_eta)
-
-
+new_data6$upr <- logit_back(new_data6$fit_eta + 1.96 * new_data6$se_eta)
 
 
 
-Pl_mod4 <- ggplot(new_data4, aes(x = freq_MT)) +
+
+
+Pl_mod6 <- ggplot(new_data6, aes(x = freq_MT)) +
   geom_ribbon(aes(ymin = lwr, ymax = upr, group = morph), alpha = 0.1)  +
   geom_line(aes(y = fit, color = morph), size=1, linetype = 2) +
   geom_rug(data = myt2_reduced, inherit.aes = FALSE,  aes(x = freq_MT), size = 0.1) +
   scale_color_manual(values = c("blue", "red")) +
   scale_fill_manual(values = c("blue", "red"))  +
   xlim(0,1)  +
-  facet_wrap( ~ Subset)
+  facet_wrap( ~ Subset) +
+  guides(color = "none")
+
 
 
 
@@ -196,23 +199,26 @@ pr_value_M$PME_E <- with(pr_value_M, N_E_ME / N_E)
 pr_value_M$PME_T <- with(pr_value_M, N_T_ME / N_E)
 
 
-Pl_mod4_with_initial_data <- Pl_mod4 + geom_segment(data = pr_value_M, aes(x = freq_MT, y = PME_E, xend = freq_MT, yend = PMT_T), color="darkgrey") +
+Pl_mod6_with_initial_data <- Pl_mod6 + geom_segment(data = pr_value_M, aes(x = freq_MT, y = PME_E, xend = freq_MT, yend = PMT_T), color="darkgrey") +
   geom_hline(data = pr_value_M, aes(yintercept=0.5), color="black") +
   geom_point(data = pr_value_M, aes(y = PME_E), fill = "white", shape = 21) +
   geom_point(data = pr_value_M, aes(y = PMT_T), fill = "black", shape = 21) +
   labs(y =  "Proportions of correct species \n identification by morphotypes", x = "Proportion of M. trossulus", fill = "")+
   ylim(0,1) +
   xlim(0,1) + 
-  theme_bw()
+  theme_bw() 
 
 
 
-Model_4_final_diag <- fortify(Model_4_final)
 
 
-ggplot(Model_4_final_diag, aes(x = .fitted, y = .scresid)) + geom_point() + geom_smooth()
 
-ggplot(Model_4_final_diag, aes(x = myt2_reduced$size, y = .scresid)) + geom_point() + geom_smooth() + facet_wrap(~Subset)
+Model_6_final_diag <- fortify(Model_6_final)
+
+
+ggplot(Model_6_final_diag, aes(x = .fitted, y = .scresid)) + geom_point() + geom_smooth()
+
+ggplot(Model_6_final_diag, aes(x = myt2_reduced$size, y = .scresid)) + geom_point() + geom_smooth() + facet_wrap(~Subset)
 
 
 #######################
@@ -222,24 +228,24 @@ ptop_T_MT <- myt2_reduced %>% group_by(Subset, pop) %>% summarize(Prop_T = mean(
 # ptop_T_MT <- ptop_T_MT[! ptop_T_MT$pop %in% c("Limh88", "CBCP"), ]
 
 
-Model_5_full <- glm(cbind(MT, (N-MT)) ~  Prop_T * Subset, data = ptop_T_MT, family = binomial(link = "logit"))
+Model_7_full <- glm(cbind(MT, (N-MT)) ~  Prop_T * Subset, data = ptop_T_MT, family = binomial(link = "logit"))
 
 # 
-# Model_5_full <- glm(Sp2 ~  Prop_T * Subset, data = myt2_reduced, family = binomial(link = "logit"))
-#  overdisp_fun(Model_5_full)
+# Model_7_full <- glm(Sp2 ~  Prop_T * Subset, data = myt2_reduced, family = binomial(link = "logit"))
+#  overdisp_fun(Model_7_full)
 
-# drop1(Model_5_full, test = "Chi")
+# drop1(Model_7_full, test = "Chi")
 
-# Model_5_1 <- update(Model_5_full, . ~ . - Prop_T:Subset)
+# Model_7_1 <- update(Model_7_full, . ~ . - Prop_T:Subset)
 
-# drop1(Model_5_1, test = "Chi")
+# drop1(Model_7_1, test = "Chi")
 
-Model_5_final <- Model_5_full 
+Model_7_final <- Model_7_full 
 
 
 new_data5 <- myt2_reduced %>% group_by(Subset, pop) %>% summarise(Prop_T = mean(Prop_T) ) %>% group_by(Subset) %>%  do(data.frame(Prop_T = seq(min(.$Prop_T), max(.$Prop_T), length.out = 10)))
 
-predicted5 <- predict(Model_5_final, newdata = new_data5,  type="response", se.fit = T)
+predicted5 <- predict(Model_7_final, newdata = new_data5,  type="response", se.fit = T)
 
 new_data5$fit <- predicted5$fit
 
@@ -248,26 +254,26 @@ new_data5$SE <- predicted5$se.fit
 
 
 
-Pl_mod5 <- ggplot(new_data5, aes(x = Prop_T, y = fit)) + geom_line(linetype = 2, color = "red", size = 1) + facet_wrap(~Subset) + geom_ribbon(aes(ymin = fit - 1.96*SE, ymax = fit + 1.96*SE), alpha = 0.1) + xlim(0, 1) + ylim(0, 1) +  geom_rug(data = myt2, inherit.aes = FALSE,  aes(x = Prop_T), size = 0.1) + geom_abline()
+Pl_mod7 <- ggplot(new_data5, aes(x = Prop_T, y = fit)) + geom_line(linetype = 2, color = "red", size = 1) + facet_wrap(~Subset) + geom_ribbon(aes(ymin = fit - 1.96*SE, ymax = fit + 1.96*SE), alpha = 0.1) + xlim(0, 1) + ylim(0, 1) +  geom_rug(data = myt2, inherit.aes = FALSE,  aes(x = Prop_T), size = 0.1) + geom_abline()
 
-init_data_Model_5 <- myt2 %>% group_by(Subset, pop) %>% summarise(Prop_T = mean(morph == "T_m"),  freq_MT = mean(Sp == "M.trossulus"), N = n())
+init_data_Model_7 <- myt2 %>% group_by(Subset, pop) %>% summarise(Prop_T = mean(morph == "T_m"),  freq_MT = mean(Sp == "M.trossulus"), N = n())
 
-# init_data_Model_5 <- init_data_Model_5[init_data_Model_5$pop %in% c("Limh88", "CBCP"),  ]
+# init_data_Model_7 <- init_data_Model_7[init_data_Model_7$pop %in% c("Limh88", "CBCP"),  ]
 
-Pl_mod5_with_initial_data <- Pl_mod5 + geom_point(data = init_data_Model_5, aes( y = freq_MT), shape = 21 ) + scale_fill_continuous(low = "white", high = "black") + labs(x = "Proportion of mussels with T-morphotype", y = "Proportion of M.trossulus \n") + theme_bw()
-
-
-Model_5_final_diag <- fortify(Model_5_final)
-
-Model_5_final_diag$pop <- ptop_T_MT$pop 
-
-Model_5_final_diag[order(Model_5_final_diag$.cooksd, decreasing = T), c("pop", ".cooksd")]
+Pl_mod7_with_initial_data <- Pl_mod7 + geom_point(data = init_data_Model_7, aes( y = freq_MT), shape = 21, size = 2 ) + scale_fill_continuous(low = "white", high = "black") + labs(x = "Proportion of mussels with T-morphotype", y = "Proportion of M.trossulus \n") + theme_bw()
 
 
-qplot(y =ptop_T_MT$pop, x = Model_5_final_diag$.cooksd)
+Model_7_final_diag <- fortify(Model_7_final)
+
+Model_7_final_diag$pop <- ptop_T_MT$pop 
+
+Model_7_final_diag[order(Model_7_final_diag$.cooksd, decreasing = T), c("pop", ".cooksd")]
 
 
-ggplot(Model_5_final_diag, aes(x = .fitted, y = .stdresid)) + geom_point() + geom_smooth()
+qplot(y =ptop_T_MT$pop, x = Model_7_final_diag$.cooksd)
+
+
+ggplot(Model_7_final_diag, aes(x = .fitted, y = .stdresid)) + geom_point() + geom_smooth()
 
 
 ###################################################
@@ -277,6 +283,7 @@ myt2_WBL <- myt2[myt2$Subset == "WBL", ]
 
 Mod_GAM_1 <- gam(ind ~ s(freq_MT, str), data = myt2_WBL, family = "binomial")
 
+summary(Mod_GAM_1)
 
 new_gam_data <- expand.grid(freq_MT = seq(0, 1, 0.01), str = seq(0, 1, 0.01))
 
@@ -292,7 +299,8 @@ ggplot(myt2_WBL, aes(x = freq_MT, y = str)) +
   theme(legend.position = "bottom") +
   theme_bw()+
   labs(x = "Frequency of M. trossulus", y = "Individual q-value"  ) + 
-  geom_density2d(color = "black")
+  geom_density2d(color = "black") + 
+  geom_hline(yintercept = 0.5, linetype = 2)
 
 
 
@@ -301,6 +309,7 @@ ggplot(myt2_WBL, aes(x = freq_MT, y = str)) +
 
 Mod_GAM_2 <- gam(congr ~ s(freq_MT, str), data = myt2_WBL, family = "binomial")
 
+summary(Mod_GAM_2)
 
 new_gam_data2 <- expand.grid(freq_MT = seq(0, 1, 0.01), str = seq(0, 1, 0.01))
 
@@ -310,12 +319,13 @@ new_gam_data2$Predict_gam2 <- predict(Mod_GAM_2, newdata = new_gam_data2, type =
 ggplot(myt2_WBL, aes(x = freq_MT, y = str)) + 
   geom_tile(data = new_gam_data2, aes(fill = Predict_gam2)) +  
   geom_point(aes(color = factor(congr) ), size = 1.5, position = position_jitter(width = 0.01, height = 0.01)) +
-  scale_fill_gradient(high = "blue", low = "white") +
+  scale_fill_gradient(high = "blue", low = "yellow") +
   scale_color_manual(values = c( "yellow", "black"))+
   theme(legend.position = "bottom") +
   theme_bw()+
   labs(x = "Frequency of M. trossulus", y = "Individual q-value"  ) + 
-  geom_density2d(data = myt2_WBL[myt2_WBL$congr == 1,], color = "black")
+  geom_density2d(data = myt2_WBL[myt2_WBL$congr == 1,], color = "black") + 
+  geom_hline(yintercept = 0.5, linetype = 2)
 
 
 

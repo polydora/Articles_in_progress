@@ -203,7 +203,7 @@ calc2 <- function(P_T_MT, P_T_ME){
 
 
 
-perms2 <- function(df = myt2[myt2$Subset == "W", ], ...) {
+perms2 <- function(df = myt2[myt2$Subset == "W", ], regr_model = Model_5_final,...) {
   require(dplyr)
   df$pop <- as.character(df$pop)
   perm_pairs <- expand.grid(First = unique(df$pop), Second = unique(df$pop))
@@ -227,7 +227,7 @@ perms2 <- function(df = myt2[myt2$Subset == "W", ], ...) {
     
     Model_prediction <- expand.grid(Subset = unique(df_selected$Subset), Prop_T = seq(0, 1, 0.01))
     
-    Model_prediction$Predict <- predict(Model_5_final, newdata = Model_prediction, type = "response")
+    Model_prediction$Predict <- predict(regr_model, newdata = Model_prediction, type = "response")
     
     all_prediction <- merge(calc1_predict_W, Model_prediction, by = c("Prop_T"))
     
@@ -242,7 +242,7 @@ perms2 <- function(df = myt2[myt2$Subset == "W", ], ...) {
 
 
 # Фунция для определения похожести между эмпирическими и теоретическими моделями для МОДЕЛИ 4 (Congr vs Ptros; Morph)
-perms4 <- function(df = myt2[myt2$Subset == "W", ], ...) {
+perms4 <- function(df = myt2[myt2$Subset == "W"], regr_model =  Model_4_final, ...) {
   require(dplyr)
   df$pop <- as.character(df$pop)
   perm_pairs <- expand.grid(First = unique(df$pop), Second = unique(df$pop))
@@ -268,7 +268,7 @@ perms4 <- function(df = myt2[myt2$Subset == "W", ], ...) {
     
     Model_prediction <- expand.grid(Subset = unique(df_selected$Subset),  morph = levels(df_selected$morph), freq_MT = seq(0, 1, 0.01))
     
-    Model_prediction$Predict <- predict(Model_4_final, newdata = Model_prediction, type = "response",  re.form = NA )
+    Model_prediction$Predict <- predict(regr_model, newdata = Model_prediction, type = "response",  re.form = NA )
     
     all_prediction <- merge(calc2_predict_W, Model_prediction, by = c("freq_MT", "morph"))
     
@@ -1012,95 +1012,330 @@ kable(AIC_print)
 
 
 
-## Regression models for joined data
+
+```{r}
+#### Data reading and initial preparation #####
+
+myt <- read.table("data_salinity3.csv", header = T, sep = ",")
+
+# Оставляем только мидий, у которых есть оценка морфотипа
+myt2 <- myt[!is.na(myt$ind), ]
+
+
+
+# Подразделяем данные на сабсеты
+
+myt2$Subset[myt2$sea == "barents" & myt2$sal_place == "fresh"] <- "WBL" 
+myt2$Subset[myt2$sea == "barents" & myt2$sal_place == "normal"] <- "BH" 
+myt2$Subset[myt2$sea == "white" & myt2$sal_place == "normal"] <- "WBL" 
+myt2$Subset[myt2$sea == "white" & myt2$sal_place == "fresh"] <- "WBL" 
+
+myt2$Subset[myt2$sea == "Baltic"] <- "BALT" 
+myt2$Subset[myt2$sea == "GOM"] <- "GOM" 
+myt2$Subset[myt2$sea == "Norway"] <- "NORW" 
+myt2$Subset[myt2$sea == "Scotland"] <- "SCOT" 
+
+
+myt2$Subset <- factor(myt2$Subset, levels = c("WBL", "BH", "NORW", "BALT", "SCOT", "GOM" ))
+
+
+
+# Вводим обозначения 
+
+myt2$Sp [myt2$str > 0.5] <- "M.trossulus" #Лучше обозначать так!
+myt2$Sp [myt2$str <= 0.5] <- "M.edulis"
+myt2$Sp <- factor(myt2$Sp)
+
+
+
+# Вводим обозначения для морфотипов
+myt2$morph <- ifelse(myt2$ind == 1, "T_m", "E_m")
+myt2$morph <- factor(myt2$morph)
+
+
+
+# Бинарное обозначение видов
+myt2$Sp2 <- ifelse(myt2$Sp == "M.trossulus", 1, 0)
+
+
+#Correct identification
+myt2$congr <- ifelse((myt2$ind == 1 & myt2$Sp == "M.trossulus") | (myt2$ind == 0 & myt2$Sp == "M.edulis"), 1, 0   )
+
+
+# Частота M.trossulus в популяции
+
+freq_MT <- myt2 %>% group_by(pop) %>% summarise(freq_MT = mean(Sp2))
+
+myt2 <- merge(myt2, freq_MT)
+
+
+# Частота T-морфотипа в популяции
+
+Prop_T <- myt2 %>% group_by(pop) %>% summarise(Prop_T = mean(ind))
+
+myt2 <- merge(myt2, Prop_T)
+
+
+# Разделяем на тестовые и моделинговые датасеты
+
+
+# 
+# # Извлекаем из беломорского материала тестовую выборку 
+# #В формальную тестовую выборку  попадают точки наиболее близкие к 20%, 40%, 60% и 80% freq_MT
+# 
+# selected_pop <- myt2[myt2$Subset == "W", ] %>% group_by(Subset, pop) %>% summarise(freq_MT = mean(freq_MT)) %>% group_by(Subset) %>% arrange(freq_MT, .by_group = TRUE) %>% mutate(dif_20 = (freq_MT - 0.2)^2, dif_40 = (freq_MT - 0.4)^2, dif_60 = (freq_MT - 0.6)^2, dif_80 = (freq_MT - 0.8)^2)  %>% group_by(Subset)  %>% summarize (n_pop =n(), q_20_pop = nth(pop, which.min(dif_20)), q_40_pop = nth(pop, which.min(dif_40)), q_60_pop = nth(pop, which.min(dif_60)), q_80_pop = nth(pop, which.min(dif_80))) 
+# 
+# selected_pop <- melt(selected_pop, id.vars = c("Subset", "n_pop"))$value
+# 
+
+
+# testing data set
+myt3 <- myt2[myt2$dataset == "testing" | myt2$pop %in% c("kovda", "rya", "chupa", "umba_pil"),  ]
+
+#modelling data set
+myt2 <- myt2[! myt2$pop %in% unique(myt3$pop), ]
+
+
+
+# Модели для сравнения geographical datasets 
+
+myt2_reduced <- myt2[myt2$Subset %in% c("WBL", "BH", "GOM", "BALT"), ]
+
+# unique(myt2_reduced$Subset)
+
+myt2_reduced$Subset <- factor(myt2_reduced$Subset, levels = c("WBL",  "BH",   "GOM",  "BALT"))
+
+# levels(myt2_reduced$Subset)
+
+
+
+
+Model_6_full_geogr <- glmer(congr ~ morph * freq_MT * Subset + (1 | pop), data = myt2_reduced, family = binomial(link = "logit"), control=glmerControl(optimizer = "optimx", calc.derivs = FALSE, optCtrl = list(method = "nlminb", starttests = FALSE, kkt = FALSE)))
+
+
+
+# overdisp_fun(Model_6_full_geogr)
+
+# summary(Model_6_full_geogr)
+# 
+# r.squaredGLMM(Model_6_final)
+# 
+# drop1(Model_6_full_geogr)
+
+# Model_6_full_geogr2 <- update(Model_6_full_geogr, . ~ . - morph:freq_MT:Subset)
+
+# drop1(Model_6_full_geogr2)
+
+
+Model_6_final <- Model_6_full_geogr 
+
+
+
+
+
+new_data6 <- myt2_reduced %>% group_by(Subset, morph) %>% do(data.frame(freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 100)))
+
+
+
+# Предсказанные значеня в шкале вероятностей
+new_data6$fit <- predict(Model_6_final, newdata = new_data6, type = "response", re.form = NA)
+
+# Предсказанные значеня в шкале логитов
+new_data6$fit_eta <- predict(Model_6_final, newdata = new_data6, re.form = NA)
+
+# Вычисление доверительного инеравала
+# formula(Model_6_final)
+
+X <- model.matrix(  ~ morph * freq_MT * Subset, data = new_data6) #Модельная матрица для визуализации
+
+
+# Ошибки в шкале логитов
+new_data6$se_eta <- sqrt(diag(X %*% vcov(Model_6_final) %*% t(X)))
+
+new_data6$lwr <- logit_back(new_data6$fit_eta - 1.96 * new_data6$se_eta)
+
+new_data6$upr <- logit_back(new_data6$fit_eta + 1.96 * new_data6$se_eta)
+
+
+
+
+
+Pl_mod6 <- ggplot(new_data6, aes(x = freq_MT)) +
+  geom_ribbon(aes(ymin = lwr, ymax = upr, group = morph), alpha = 0.1)  +
+  geom_line(aes(y = fit, color = morph), size=1, linetype = 2) +
+  geom_rug(data = myt2_reduced, inherit.aes = FALSE,  aes(x = freq_MT), size = 0.1) +
+  scale_color_manual(values = c("blue", "red")) +
+  scale_fill_manual(values = c("blue", "red"))  +
+  xlim(0,1)  +
+  facet_wrap( ~ Subset) +
+  guides(color = "none")
+
+
+pr_value_M <- myt2 %>% group_by(Subset, pop) %>% summarise(freq_MT = mean(freq_MT), N_T = sum(ind == 1),  N_T_MT = sum(Sp2 == 1 & ind == 1), N_E_MT = sum(Sp2 == 1 & ind == 0), N_E = sum(ind == 0), N_E_ME = sum(Sp2 == 0 & ind == 0), N_T_ME = sum(Sp2 == 0 & ind == 1))
+
+pr_value_M$PMT_T <- with(pr_value_M, N_T_MT / N_T)
+pr_value_M$PMT_E <- with(pr_value_M, N_E_MT / N_T)
+pr_value_M$PME_E <- with(pr_value_M, N_E_ME / N_E)
+pr_value_M$PME_T <- with(pr_value_M, N_T_ME / N_E)
+
+
+Pl_mod6_with_initial_data <- Pl_mod6 + geom_segment(data = pr_value_M, aes(x = freq_MT, y = PME_E, xend = freq_MT, yend = PMT_T), color="darkgrey") +
+  geom_hline(data = pr_value_M, aes(yintercept=0.5), color="black") +
+  geom_point(data = pr_value_M, aes(y = PME_E), fill = "white", shape = 21) +
+  geom_point(data = pr_value_M, aes(y = PMT_T), fill = "black", shape = 21) +
+  labs(y =  "Proportions of correct species \n identification by morphotypes", x = "Proportion of M. trossulus", fill = "")+
+  ylim(0,1) +
+  xlim(0,1) + 
+  theme_bw() 
+
+
+
+
+
+ptop_T_MT <- myt2_reduced %>% group_by(Subset, pop) %>% summarize(Prop_T = mean(Prop_T), MT = sum(Sp2), N = n())
+
+# ptop_T_MT <- ptop_T_MT[! ptop_T_MT$pop %in% c("Limh88", "CBCP"), ]
+
+
+Model_7_full <- glm(cbind(MT, (N-MT)) ~  Prop_T * Subset, data = ptop_T_MT, family = binomial(link = "logit"))
+
+# 
+# Model_7_full <- glm(Sp2 ~  Prop_T * Subset, data = myt2_reduced, family = binomial(link = "logit"))
+#  overdisp_fun(Model_7_full)
+
+# drop1(Model_7_full, test = "Chi")
+
+# Model_7_1 <- update(Model_7_full, . ~ . - Prop_T:Subset)
+
+# drop1(Model_7_1, test = "Chi")
+
+Model_7_final <- Model_7_full 
+
+
+new_data5 <- myt2_reduced %>% group_by(Subset, pop) %>% summarise(Prop_T = mean(Prop_T) ) %>% group_by(Subset) %>%  do(data.frame(Prop_T = seq(min(.$Prop_T), max(.$Prop_T), length.out = 10)))
+
+predicted5 <- predict(Model_7_final, newdata = new_data5,  type="response", se.fit = T)
+
+new_data5$fit <- predicted5$fit
+
+new_data5$SE <- predicted5$se.fit 
+
+
+
+
+Pl_mod7 <- ggplot(new_data5, aes(x = Prop_T, y = fit)) + geom_line(linetype = 2, color = "red", size = 1) + facet_wrap(~Subset) + geom_ribbon(aes(ymin = fit - 1.96*SE, ymax = fit + 1.96*SE), alpha = 0.1) + xlim(0, 1) + ylim(0, 1) +  geom_rug(data = myt2, inherit.aes = FALSE,  aes(x = Prop_T), size = 0.1) + geom_abline()
+
+init_data_Model_7 <- myt2 %>% group_by(Subset, pop) %>% summarise(Prop_T = mean(morph == "T_m"),  freq_MT = mean(Sp == "M.trossulus"), N = n())
+
+# init_data_Model_7 <- init_data_Model_7[init_data_Model_7$pop %in% c("Limh88", "CBCP"),  ]
+
+Pl_mod7_with_initial_data <- Pl_mod7 + geom_point(data = init_data_Model_7, aes( y = freq_MT), shape = 21, size = 2 ) + scale_fill_continuous(low = "white", high = "black") + labs(x = "Proportion of mussels with T-morphotype", y = "Proportion of M.trossulus \n") + theme_bw()
+
+
+
+
+
+```
+
+
+
 
 ```{r}
 ## Визуализация новой модели с объединенными датасетами
 
-mixed_data <- myt2[myt2$Subset %in% c("W", "BL"), ]
+mixed_data <- myt2[myt2$Subset %in% c("WBL"), ]
+#
+#
+# #########################
+#
 
-Model_6 <- glm(Sp2 ~  Prop_T , data = mixed_data, family = binomial(link = "logit"))
-
-# overdisp_fun(Model6)
-
-Model_6_final <- Model_6 
-
-Model_6_final_summary <- tidy(Model_6_final)
-
-Model_6_R2 <- r.squaredGLMM(Model_6_final)[1,1]
-
-
-new_data6 <- mixed_data %>% group_by(pop) %>% summarise(Prop_T = mean(Prop_T) ) %>%  do(data.frame(Prop_T = seq(min(.$Prop_T), max(.$Prop_T), length.out = 100)))
-
-
-
-predicted6 <- predict(Model_6_final, newdata = new_data6,  type="response", se.fit = T)
-
-new_data6$fit <- predicted6$fit
-
-new_data6$SE <- predicted6$se.fit 
-
-
-
-
-Pl_mod6 <- ggplot(new_data6, aes(x = Prop_T, y = fit)) + geom_line(linetype = 2, color = "red", size = 1) +  geom_ribbon(aes(ymin = fit - 1.96*SE, ymax = fit + 1.96*SE), alpha = 0.1) + xlim(0, 1) + ylim(0, 1) +  geom_rug(data = candidat_data_2, inherit.aes = FALSE,  aes(x = Prop_T), size = 0.1) + geom_abline()
-
-
-
-#########################
-
-
-Model_7_full <- glmer(congr ~ morph * freq_MT + (1 | pop), data = mixed_data, family = binomial(link = "logit"), control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
-# overdisp_fun(Model_7_full)
+Model_WBL_full <- glmer(congr ~ morph * freq_MT + (1 | pop), data = mixed_data, family = binomial(link = "logit"), control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# overdisp_fun(Model_6_full)
 
 
 # drop1(Model_7_full, test = "Chi")
 
-Model_7_final <- Model_7_full
+Model_6_final <- Model_6_full
 
 
-Model_7_final_summary <- tidy(Model_7_final)
+Model_6_final_summary <- tidy(Model_6_final)
 
 
-Model_7_final_summary <- Model_7_final_summary[,!(names(Model_7_final_summary) %in% c("group"))]
+Model_6_final_summary <- Model_6_final_summary[,!(names(Model_6_final_summary) %in% c("group"))]
 
-Model_7_final_R2_m <- r.squaredGLMM(Model_7_final)[1,1]
+Model_6_final_R2_m <- r.squaredGLMM(Model_6_final)[1,1]
 
-Model_7_final_R2_c <- r.squaredGLMM(Model_7_final)[1, 2]
-
-
+Model_6_final_R2_c <- r.squaredGLMM(Model_6_final)[1, 2]
 
 
-new_data7 <-mixed_data %>% group_by(morph) %>% do(data.frame(freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 100)))
+
+
+new_data6 <-mixed_data %>% group_by(morph) %>% do(data.frame(freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 100)))
 
 # Предсказанные значеня в шкале вероятностей
-new_data7$fit <- predict(Model_7_final, newdata = new_data7, type = "response", re.form = NA)
+new_data6$fit <- predict(Model_6_final, newdata = new_data6, type = "response", re.form = NA)
 
 # Предсказанные значеня в шкале логитов
-new_data7$fit_eta <- predict(Model_7_final, newdata = new_data7, re.form = NA)
+new_data6$fit_eta <- predict(Model_6_final, newdata = new_data6, re.form = NA)
 
 # Вычисление доверительного инеравала
 
-X <- model.matrix(  ~ morph * freq_MT, data = new_data7) #Модельная матрица для визуализации
+X <- model.matrix(  ~ morph * freq_MT, data = new_data6) #Модельная матрица для визуализации
 
 
 # Ошибки в шкале логитов
-new_data7$se_eta <- sqrt(diag(X %*% vcov(Model_7_final) %*% t(X)))
+new_data6$se_eta <- sqrt(diag(X %*% vcov(Model_6_final) %*% t(X)))
 
-new_data7$lwr <- logit_back(new_data7$fit_eta - 1.96 * new_data7$se_eta)
+new_data6$lwr <- logit_back(new_data6$fit_eta - 1.96 * new_data6$se_eta)
 
-new_data7$upr <- logit_back(new_data7$fit_eta + 1.96 * new_data7$se_eta)
+new_data6$upr <- logit_back(new_data6$fit_eta + 1.96 * new_data6$se_eta)
 
 
 
-Pl_mod7 <- ggplot(new_data7, aes(x = freq_MT)) +
+Pl_mod6 <- ggplot(new_data6, aes(x = freq_MT)) +
   geom_ribbon(aes(ymin = lwr, ymax = upr, group = morph), alpha = 0.1)  +
   geom_line(aes(y = fit, color = morph), size=1, linetype = 2) +
   geom_rug(data = candidat_data_2, inherit.aes = FALSE,  aes(x = freq_MT), size = 0.1) +
   scale_color_manual(values = c("blue", "red")) +
   scale_fill_manual(values = c("blue", "red"))  +
   xlim(0,1)
-  
+
+
+
+
+
+
+Model_7 <- glm(Sp2 ~  Prop_T , data = mixed_data, family = binomial(link = "logit"))
+
+# overdisp_fun(Model_7)
+
+Model_7_final <- Model_7
+
+Model_7_final_summary <- tidy(Model_7_final)
+
+Model_7_R2 <- r.squaredGLMM(Model_7_final)[1,1]
+
+
+new_data7 <- mixed_data %>% group_by(pop) %>% summarise(Prop_T = mean(Prop_T) ) %>%  do(data.frame(Prop_T = seq(min(.$Prop_T), max(.$Prop_T), length.out = 100)))
+
+
+
+predicted7 <- predict(Model_7_final, newdata = new_data7,  type="response", se.fit = T)
+
+new_data7$fit <- predicted7$fit
+
+new_data7$SE <- predicted7$se.fit
+
+
+
+
+Pl_mod7 <- ggplot(new_data7, aes(x = Prop_T, y = fit)) + geom_line(linetype = 2, color = "red", size = 1) +  geom_ribbon(aes(ymin = fit - 1.96*SE, ymax = fit + 1.96*SE), alpha = 0.1) + xlim(0, 1) + ylim(0, 1) +  geom_rug(data = candidat_data_2, inherit.aes = FALSE,  aes(x = Prop_T), size = 0.1) + geom_abline()
+
+
+
+
+
+
 ```
 
 
@@ -1110,53 +1345,53 @@ Pl_mod7 <- ggplot(new_data7, aes(x = freq_MT)) +
 
 
 ```{r}
-model_joined_print <- rbind(empty_row, Model_6_final_summary, empty_row, Model_7_final_summary)
-
-
-model_joined_print$estimate <- round(model_joined_print$estimate, 1)
-
-model_joined_print$std.error <- round(model_joined_print$std.error, 2)
-
-model_joined_print$statistic <- round(model_joined_print$statistic, 2)
-
-model_joined_print$p.value <- round(model_joined_print$p.value, 3)
-
-model_joined_print$p.value_print <- ifelse(model_joined_print$p.value < 0.001, "< 0.001", model_joined_print$p.value)
-
-model_joined_print$term_print <- gsub("freq_MT", "Ptros", as.character(model_joined_print$term))
-model_joined_print$term_print <- gsub("SubsetBL", "Subset(BL)", as.character(model_joined_print$term_print))
-model_joined_print$term_print <- gsub("SubsetBH", "Subset(BH)", as.character(model_joined_print$term_print))
-model_joined_print$term_print <- gsub("morphT_m", "Morph(T)", as.character(model_joined_print$term_print))
-model_joined_print$term_print <- gsub("sd_(Intercept).pop", "SD(Intercept)", as.character(model_joined_print$term_print))
-model_joined_print$term_print <- gsub("SpM.trossulus", "Species(*M.trossulus*)", as.character(model_joined_print$term_print))
-model_joined_print$term_print <- gsub("Prop_T", "PT", as.character(model_joined_print$term_print))
-
-
-
-model_joined_print_print <- model_joined_print[, c("term_print", "estimate", "std.error", "statistic", "p.value_print" )] 
-
-model_joined_print_print$term_print [is.na(model_joined_print_print$term_print)] <- c("**Model 6**", "**Model 7**")
-
-
-# Вставляем данные pseudo Rsq
-model_joined_print_print$estimate [is.na(model_joined_print_print$estimate)] <- c(
-  paste("$pseudo R^2$ = ", round(Model_6_R2, 2)),
-  paste("$pseudo R^2_{m}$ = ", round(Model_7_final_R2_m, 2))
-)
-
-
-model_joined_print_print$std.error [is.na(model_joined_print_print$std.error)] <- c(
-  NA,
-  paste("$pseudo R^2_{c}$ = ", round(Model_7_final_R2_c, 2)),
-  NA
-  )
-
-options(knitr.kable.NA = '')
-
-# options(knitr.kable.NA = ' ')
-kable(model_joined_print_print, col.names = c("Terms", "Estimate", "SE", "z-statistic", "p-value"))
-
-
+# model_joined_print <- rbind(empty_row, Model_6_final_summary, empty_row, Model_7_final_summary)
+# 
+# 
+# model_joined_print$estimate <- round(model_joined_print$estimate, 1)
+# 
+# model_joined_print$std.error <- round(model_joined_print$std.error, 2)
+# 
+# model_joined_print$statistic <- round(model_joined_print$statistic, 2)
+# 
+# model_joined_print$p.value <- round(model_joined_print$p.value, 3)
+# 
+# model_joined_print$p.value_print <- ifelse(model_joined_print$p.value < 0.001, "< 0.001", model_joined_print$p.value)
+# 
+# model_joined_print$term_print <- gsub("freq_MT", "Ptros", as.character(model_joined_print$term))
+# model_joined_print$term_print <- gsub("SubsetBL", "Subset(BL)", as.character(model_joined_print$term_print))
+# model_joined_print$term_print <- gsub("SubsetBH", "Subset(BH)", as.character(model_joined_print$term_print))
+# model_joined_print$term_print <- gsub("morphT_m", "Morph(T)", as.character(model_joined_print$term_print))
+# model_joined_print$term_print <- gsub("sd_(Intercept).pop", "SD(Intercept)", as.character(model_joined_print$term_print))
+# model_joined_print$term_print <- gsub("SpM.trossulus", "Species(*M.trossulus*)", as.character(model_joined_print$term_print))
+# model_joined_print$term_print <- gsub("Prop_T", "PT", as.character(model_joined_print$term_print))
+# 
+# 
+# 
+# model_joined_print_print <- model_joined_print[, c("term_print", "estimate", "std.error", "statistic", "p.value_print" )] 
+# 
+# model_joined_print_print$term_print [is.na(model_joined_print_print$term_print)] <- c("**Model 6**", "**Model 7**")
+# 
+# 
+# # Вставляем данные pseudo Rsq
+# model_joined_print_print$estimate [is.na(model_joined_print_print$estimate)] <- c(
+#   paste("$pseudo R^2$ = ", round(Model_6_R2, 2)),
+#   paste("$pseudo R^2_{m}$ = ", round(Model_7_final_R2_m, 2))
+# )
+# 
+# 
+# model_joined_print_print$std.error [is.na(model_joined_print_print$std.error)] <- c(
+#   NA,
+#   paste("$pseudo R^2_{c}$ = ", round(Model_7_final_R2_c, 2)),
+#   NA
+#   )
+# 
+# options(knitr.kable.NA = '')
+# 
+# # options(knitr.kable.NA = ' ')
+# kable(model_joined_print_print, col.names = c("Terms", "Estimate", "SE", "z-statistic", "p-value"))
+# 
+# 
 
 ```
 
@@ -1169,14 +1404,16 @@ kable(model_joined_print_print, col.names = c("Terms", "Estimate", "SE", "z-stat
 
 ```{r}
 
+mixed_data <- myt2[myt2$Subset %in% c("WBL"), ]
 
-Pl_teor_empir_6 <- ggplot(perms2(df = mixed_data), aes(x = Delta, y = Goodness)) + geom_point(size = 0.1) + geom_smooth(se = F) + labs(y = "Goodness \n")
 
-Pl_teor_empir_6 <- Pl_teor_empir_6 + ggtitle("Regression Model 6 \nvs Theoretical model 1")
+Pl_teor_empir_7 <- ggplot(perms2(df = mixed_data, regr_model = Model_7_final), aes(x = Delta, y = Goodness)) + geom_point(size = 0.1) + geom_smooth(se = F) + labs(y = "Goodness \n")
 
-Pl_teor_empir_7 <- ggplot(perms4(df = mixed_data), aes(x = Delta, y = Goodness)) + geom_point(size = 0.1) + geom_smooth(se = F) + labs(y = "Goodness \n")
+Pl_teor_empir_7 <- Pl_teor_empir_7 + ggtitle("Regression Model 8 \nvs Theoretical model Eq 3")
 
-Pl_teor_empir_7 <- Pl_teor_empir_7 + ggtitle("Regression Model 7 \nvs Theoretical model 2")
+Pl_teor_empir_6 <- ggplot(perms4(df = mixed_data, regr_model = Model_6_final), aes(x = Delta, y = Goodness)) + geom_point(size = 0.1) + geom_smooth(se = F) + labs(y = "Goodness \n")
+
+# Pl_teor_empir_6 <- Pl_teor_empir_6 + ggtitle("Regression Model 6 \nvs Theoretical model Eq 1, Eq 2")
 
 
 ```
@@ -1198,13 +1435,13 @@ Figure +. Correspondence between regression and theoretical models. Each point c
 
 
 ```{r}
-# Визуализация модели 5 и ленивого калькулятора 1, основанного на выборках максимально далеких по генетической структуре.
+# Визуализация модели 7 и ленивого калькулятора 1, основанного на выборках максимально далеких по генетической структуре.
 
 # Популяции наиболее различные по генетической структуре
-pops_max_diff <- max_dif(df = mixed_data, Subset = c("W", "BL"))
+pops_max_diff <- max_dif(df = mixed_data, Subset = c("WBL"))
 
 # Популяции наиболее смешанные
-pops_max_mix <- max_mix(df = mixed_data, Subset = c("W", "BL"))
+pops_max_mix <- max_mix(df = mixed_data, Subset = c("WBL"))
 
 
 # Бублики для наиболее различных по стуртуре популяций
@@ -1229,9 +1466,9 @@ calc1_B <- calc1(donat_max_mix[1], donat_max_mix[2]) #Предсказания �
 
 # coef_calc1_W  <- coef(lm(Ptros ~ P_T, data = calc1_W )) #Коэффицинты для теоретичекой модели, описывющей калькулятор 1
 
-myt5 <- myt3[myt3$Subset %in% c("W", "BL"), ]
+myt5 <- myt3[myt3$Subset %in% c("WBL"), ]
 
-Pl_calc1_mod6 <- Pl_mod6 + geom_line(data = calc1_W, aes(x = P_T, y = Ptros), color = "blue", size = 1) + geom_line(data = calc1_B, aes(x = P_T, y = Ptros), color = "gray")  + geom_point(data = myt5, aes(x = Prop_T, y = freq_MT), size = 4, color = "red")  + labs(x = "Proportion of T-morphotype", y = "Proportion of M.trossulus \n")
+Pl_calc1_mod7 <- Pl_mod7 + geom_line(data = calc1_W, aes(x = P_T, y = Ptros), color = "blue", size = 1) + geom_line(data = calc1_B, aes(x = P_T, y = Ptros), color = "gray")  + geom_point(data = myt5, aes(x = Prop_T, y = freq_MT), size = 4, color = "red")  + labs(x = "Proportion of T-morphotype", y = "Proportion of M.trossulus \n")
 
 
 ```
@@ -1253,7 +1490,7 @@ coef_calc2 <- mixed_data[mixed_data$pop %in% calc2_calib_pop_str$pop, ] %>% summ
 testing_congr <- myt5 %>% group_by(pop, morph) %>% summarize(Pcorrect = mean(congr == 1), freq_MT = mean(freq_MT))
 
 
-Pl_calc2_mod7 <- Pl_mod7 + geom_line(data = calc2_W, aes(x = freq_MT, y = P_MT_T), color = "red", size = 2) + geom_line(data = calc2_W, aes(x = freq_MT, y = P_ME_E), color = "blue", size = 2) + geom_line(data = calc2_B, aes(x = freq_MT, y = P_MT_T), color = "gray") + geom_line(data = calc2_B, aes(x = freq_MT, y = P_ME_E), color = "gray") + geom_point(data = testing_congr, aes(x = freq_MT, y = Pcorrect, fill = morph), shape = 24, size = 3, position = position_dodge(width = 0) ) + labs(x = "Proportion of M.trossulus", y = "Probability of \ncorrect identification ")
+Pl_calc2_mod6 <- Pl_mod6 + geom_line(data = calc2_W, aes(x = freq_MT, y = P_MT_T), color = "red", size = 2) + geom_line(data = calc2_W, aes(x = freq_MT, y = P_ME_E), color = "blue", size = 2) + geom_line(data = calc2_B, aes(x = freq_MT, y = P_MT_T), color = "gray") + geom_line(data = calc2_B, aes(x = freq_MT, y = P_ME_E), color = "gray") + geom_point(data = testing_congr, aes(x = freq_MT, y = Pcorrect, fill = morph), shape = 24, size = 3, position = position_dodge(width = 0) ) + labs(x = "Proportion of M.trossulus", y = "Probability of \ncorrect identification ")
 
 
 ```
@@ -1261,7 +1498,7 @@ Pl_calc2_mod7 <- Pl_mod7 + geom_line(data = calc2_W, aes(x = freq_MT, y = P_MT_T
 
 
 ```{r}
-grid.arrange(Pl_teor_empir_6, Pl_teor_empir_7, Pl_calc1_mod6, Pl_calc2_mod7, nrow =2)
+grid.arrange(Pl_teor_empir_7, Pl_teor_empir_6, Pl_calc1_mod7, Pl_calc2_mod6, nrow =2)
 ```
 
 
@@ -1326,3 +1563,47 @@ kable(all_calibr)
 
 
 <!-- ``` -->
+
+
+### Приложение ленивого калькулятора к данным по Атлантике
+
+
+
+
+```{r}
+# Визуализация модели 7 и ленивого калькулятора 1, основанного на выборках максимально далеких по генетической структуре.
+
+# Популяции наиболее различные по генетической структуре
+pops_max_diff <- max_dif(df = myt2, Subset = c("GOM"))
+
+# Популяции наиболее смешанные
+pops_max_mix <- max_mix(df = myt2, Subset = c("GOM"))
+
+
+# Бублики для наиболее различных по стуртуре популяций
+donat_max_dif <- donat(df = myt2[myt2$pop %in% pops_max_diff, ])
+
+# Бублики для наиболее смешанных популяций
+donat_max_mix <- donat(df = myt2[myt2$pop %in% pops_max_mix, ])
+
+
+
+# Описание структуры калибровочных популяций
+calc1_calib_pop_str <- calib_str(df = myt2, pop1 = pops_max_diff [1], pop2 = pops_max_diff [2])
+calc2_calib_pop_str <- calib_str(df = myt2, pop1 = pops_max_mix [1], pop2 = pops_max_mix [2])
+
+
+
+
+calc1_GOM_good <- calc1(donat_max_dif[1], donat_max_dif[2]) #Предсказания калькулятора 1 на основе наиболее различных по генетической структуре популяций
+
+calc1_GOM_bad <- calc1(donat_max_mix[1], donat_max_mix[2]) #Предсказания калькулятора 1 на основе наиболее смешанных популяций
+
+
+ggplot(calc1_GOM_good, aes(x = P_T, y = Ptros)) + geom_line(color = "blue") + geom_line(data = calc1_GOM_bad, color = "gray") + geom_point(data = init_data_Model_7[init_data_Model_7$Subset == "GOM", ], aes(x = Prop_T, y = freq_MT), shape = 21, size = 2 )
+
+# coef_calc1_W  <- coef(lm(Ptros ~ P_T, data = calc1_W )) #Коэффицинты для теоретичекой модели, описывющей калькулятор 1
+
+```
+
+
