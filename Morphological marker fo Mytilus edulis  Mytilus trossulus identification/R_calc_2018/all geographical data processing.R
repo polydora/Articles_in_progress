@@ -335,22 +335,32 @@ ggplot(myt2_WBL, aes(x = freq_MT, y = str)) +
 
 myt_X <- myt2[myt2$Subset %in% c("WBL", "BH"), ]
 
-unique(myt_X$pop)
+myt_X$pop <- factor(myt_X$pop)
+
+table(myt_X$pop, myt_X$Sp)
 
 
-Mod_X <- glmer(ind ~ size*Subset + (1|pop), data = myt_X, family = "binomial")
-
-Mod_X_rs <- glmer(ind ~ size*Subset + (1 + size|pop), data = myt_X, family = "binomial")
-
-AIC(Mod_X, Mod_X_rs)
-
-summary(Mod_X_rs)
-
-r.squaredGLMM(Mod_X_rs)
 
 
-new_data_size <- myt_X[!is.na(myt_X$size), ] %>% group_by(Subset, pop) %>% do(data.frame(size = seq(min(.$size), max(.$size), length.out = 100)))
+size_models <- myt_X %>% group_by(Subset, pop) %>% do(model = glm(ind ~  size, family = "binomial", data = .))
 
-new_data_size$Predict <- predict(Mod_X_rs, newdata = new_data_size, type = "response")
 
-ggplot(new_data_size, aes(x = size, y = Predict, group = pop)) + geom_line() + facet_wrap(~Subset)
+size_models_res <- size_models %>% tidy(model)
+
+size_models_res_slope <- size_models_res[size_models_res$term != "(Intercept)", ]
+
+size_models_res_slope$p_adj <- p.adjust(size_models_res_slope$p.value, method = "hochberg") 
+
+
+
+
+
+myt_X %>% group_by(Subset, pop) %>% summarise(min = min(size), max = max(size))%>% filter(pop == "ustie_sub")
+
+
+size_models_res_slope[size_models_res_slope$p_adj < 0.05, ]
+
+size_models_res_slope[size_models_res_slope$p.value < 0.05, ]
+
+
+
