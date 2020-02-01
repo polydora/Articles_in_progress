@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/W32TeX) (preloaded format=pdflatex 2020.1.30)  1 FEB 2020 12:46
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/W32TeX) (preloaded format=pdflatex 2020.1.30)  1 FEB 2020 14:23
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -28,8 +28,12 @@ File: size10.clo 2019/10/25 v1.4k Standard LaTeX file (size option)
 \ykoord=\count89
 \xscale=\count90
 \yscale=\count91
+
+
+Package a0poster Warning: Unknown Option 20pt on input line 85.
+
 \tausch=\dimen103
- (./a0size.sty
+(./a0size.sty
 File: a0size.sty 1997/05/06 v1.21b a0poster class (GK, MW)
 LaTeX Font Info:    Redeclaring symbol font `largesymbols' on input line 218.
 LaTeX Font Info:    Overwriting symbol font `largesymbols' in version `normal'
@@ -37,8 +41,7 @@ LaTeX Font Info:    Overwriting symbol font `largesymbols' in version `normal'
 LaTeX Font Info:    Overwriting symbol font `largesymbols' in version `bold'
 (Font)                  OMX/cmex/m/n --> OMX/cmex/m/n on input line 218.
 \big@size=\dimen104
-))
-(c:/texlive/2019/texmf-dist/tex/latex/tools/multicol.sty
+)) (c:/texlive/2019/texmf-dist/tex/latex/tools/multicol.sty
 Package: multicol 2019/03/01 v1.8w multicolumn formatting (FMi)
 \c@tracingmulticols=\count92
 \mult@box=\box27
@@ -1677,85 +1680,107 @@ Package: xkeyval 2014/12/03 v2.7a package option processing (HA)
 \XKV@depth=\count137
 File: xkeyval.tex 2014/12/03 v2.7a key=value parser (HA)
 )))
+(c:/texlive/2019/texmf-dist/tex/latex/geometry/geometry.sty
+Package: geometry 2020/01/02 v5.9 Page Geometry
+
+(c:/texlive/2019/texmf-dist/tex/generic/iftex/ifvtex.sty
+Package: ifvtex 2019/10/25 v1.7 ifvtex legacy package. Use iftex instead.
+
+(c:/texlive/2019/texmf-dist/tex/generic/iftex/iftex.sty
+Package: iftex 2019/11/07 v1.0c TeX engine tests
+))
+\Gm@cnth=\count138
+\Gm@cntv=\count139
+\c@Gm@tempcnt=\count140
+\Gm@bindingoffset=\dimen152
+\Gm@wd@mp=\dimen153
+\Gm@odd@mp=\dimen154
+\Gm@even@mp=\dimen155
+\Gm@layoutwidth=\dimen156
+\Gm@layoutheight=\dimen157
+\Gm@layouthoffset=\dimen158
+\Gm@layoutvoffset=\dimen159
+\Gm@dimlist=\toks35
+)
 No file Poster_MBS_2020_var2.aux.
 \openout1 = `Poster_MBS_2020_var2.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 87.
-LaTeX Font Info:    ... okay on input line 87.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 87.
-LaTeX Font Info:    ... okay on input line 87.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 87.
-LaTeX Font Info:    ... okay on input line 87.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 87.
-LaTeX Font Info:    ... okay on input line 87.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 87.
-LaTeX Font Info:    ... okay on input line 87.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 87.
-LaTeX Font Info:    ... okay on input line 87.
-LaTeX Font Info:    Checking defaults for T2A/cmr/m/n on input line 87.
-LaTeX Font Info:    ... okay on input line 87.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 87.
-LaTeX Font Info:    Trying to load font information for TS1+cmr on input line 8
-7.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 92.
+LaTeX Font Info:    ... okay on input line 92.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 92.
+LaTeX Font Info:    ... okay on input line 92.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 92.
+LaTeX Font Info:    ... okay on input line 92.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 92.
+LaTeX Font Info:    ... okay on input line 92.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 92.
+LaTeX Font Info:    ... okay on input line 92.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 92.
+LaTeX Font Info:    ... okay on input line 92.
+LaTeX Font Info:    Checking defaults for T2A/cmr/m/n on input line 92.
+LaTeX Font Info:    ... okay on input line 92.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 92.
+LaTeX Font Info:    Trying to load font information for TS1+cmr on input line 9
+2.
 (c:/texlive/2019/texmf-dist/tex/latex/base/ts1cmr.fd
 File: ts1cmr.fd 2014/09/29 v2.5h Standard LaTeX font definitions
 )
-LaTeX Font Info:    ... okay on input line 87.
-LaTeX Font Info:    Checking defaults for OT2/cmr/m/n on input line 87.
-LaTeX Font Info:    Trying to load font information for OT2+cmr on input line 8
-7.
+LaTeX Font Info:    ... okay on input line 92.
+LaTeX Font Info:    Checking defaults for OT2/cmr/m/n on input line 92.
+LaTeX Font Info:    Trying to load font information for OT2+cmr on input line 9
+2.
 
 (c:/texlive/2019/texmf-dist/tex/latex/cyrillic/ot2cmr.fd
 File: ot2cmr.fd 2001/08/11 v3.2c Computer Modern Cyrillic font definitions
 )
-LaTeX Font Info:    ... okay on input line 87.
-LaTeX Font Info:    Checking defaults for T2C/cmr/m/n on input line 87.
-LaTeX Font Info:    Trying to load font information for T2C+cmr on input line 8
-7.
+LaTeX Font Info:    ... okay on input line 92.
+LaTeX Font Info:    Checking defaults for T2C/cmr/m/n on input line 92.
+LaTeX Font Info:    Trying to load font information for T2C+cmr on input line 9
+2.
 
 (c:/texlive/2019/texmf-dist/tex/latex/cyrillic/t2ccmr.fd
 File: t2ccmr.fd 2001/08/11 v1.0a Computer Modern Cyrillic font definitions
 )
-LaTeX Font Info:    ... okay on input line 87.
-LaTeX Font Info:    Checking defaults for T2B/cmr/m/n on input line 87.
-LaTeX Font Info:    Trying to load font information for T2B+cmr on input line 8
-7.
+LaTeX Font Info:    ... okay on input line 92.
+LaTeX Font Info:    Checking defaults for T2B/cmr/m/n on input line 92.
+LaTeX Font Info:    Trying to load font information for T2B+cmr on input line 9
+2.
 
 (c:/texlive/2019/texmf-dist/tex/latex/cyrillic/t2bcmr.fd
 File: t2bcmr.fd 2001/08/11 v1.0a Computer Modern Cyrillic font definitions
 )
-LaTeX Font Info:    ... okay on input line 87.
-LaTeX Font Info:    Checking defaults for LGR/cmr/m/n on input line 87.
-LaTeX Font Info:    Trying to load font information for LGR+cmr on input line 8
-7.
+LaTeX Font Info:    ... okay on input line 92.
+LaTeX Font Info:    Checking defaults for LGR/cmr/m/n on input line 92.
+LaTeX Font Info:    Trying to load font information for LGR+cmr on input line 9
+2.
 
 (c:/texlive/2019/texmf-dist/tex/latex/cbfonts-fd/lgrcmr.fd
 File: lgrcmr.fd 2017/07/29 v1.2 Greek European Computer Regular
 )
-LaTeX Font Info:    ... okay on input line 87.
+LaTeX Font Info:    ... okay on input line 92.
 LaTeX Font Info:    Trying to load font information for T1+Tempora-TLF on input
- line 87.
+ line 92.
 
 (c:/texlive/2019/texmf-dist/tex/latex/tempora/T1Tempora-TLF.fd
 File: T1Tempora-TLF.fd 2016/02/02 (autoinst) Font definitions for T1/Tempora-TL
 F.
 )
 LaTeX Font Info:    Font shape `T1/Tempora-TLF/m/n' will be
-(Font)              scaled to size 24.88pt on input line 87.
+(Font)              scaled to size 24.88pt on input line 92.
 
 (c:/texlive/2019/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count138
-\scratchdimen=\dimen152
+\scratchcounter=\count141
+\scratchdimen=\dimen160
 \scratchbox=\box60
-\nofMPsegments=\count139
-\nofMParguments=\count140
-\everyMPshowfont=\toks35
-\MPscratchCnt=\count141
-\MPscratchDim=\dimen153
-\MPnumerator=\count142
-\makeMPintoPDFobject=\count143
-\everyMPtoPDFconversion=\toks36
+\nofMPsegments=\count142
+\nofMParguments=\count143
+\everyMPshowfont=\toks36
+\MPscratchCnt=\count144
+\MPscratchDim=\dimen161
+\MPnumerator=\count145
+\makeMPintoPDFobject=\count146
+\everyMPtoPDFconversion=\toks37
 ) (c:/texlive/2019/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
 Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
 Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
@@ -1771,223 +1796,274 @@ Package caption Info: floatrow package is loaded.
 Package caption Info: wrapfig package is loaded.
 Package caption Info: End \AtBeginDocument code.
 LaTeX Font Info:    Trying to load font information for T2A+Tempora-TLF on inpu
-t line 87.
+t line 92.
 
 (c:/texlive/2019/texmf-dist/tex/latex/tempora/t2atempora-tlf.fd
 File: t2atempora-tlf.fd 2015/09/13 Font definitions for T2A/Tempora-TLF.
 )
 LaTeX Font Info:    Font shape `T2A/Tempora-TLF/m/n' will be
-(Font)              scaled to size 24.88pt on input line 87.
-\c@mv@tabular=\count144
-\c@mv@boldtabular=\count145
+(Font)              scaled to size 24.88pt on input line 92.
+\c@mv@tabular=\count147
+\c@mv@boldtabular=\count148
+
+*geometry* driver: auto-detecting
+*geometry* detected driver: pdftex
+*geometry* verbose mode - [ preamble ] result:
+* driver: pdftex
+* paper: <default>
+* layout: <same size as paper>
+* layoutoffset:(h,v)=(0.0pt,0.0pt)
+* modes: 
+* h-part:(L,W,R)=(113.81102pt, 2246.6298pt, 28.45274pt)
+* v-part:(T,H,B)=(113.81102pt, 3210.04013pt, 56.9055pt)
+* \paperwidth=2388.89357pt
+* \paperheight=3380.75665pt
+* \textwidth=2246.6298pt
+* \textheight=3210.04013pt
+* \oddsidemargin=41.54103pt
+* \evensidemargin=41.54103pt
+* \topmargin=41.54103pt
+* \headheight=0.0pt
+* \headsep=0.0pt
+* \topskip=0.0pt
+* \footskip=30.0pt
+* \marginparwidth=65.0pt
+* \marginparsep=11.0pt
+* \columnsep=100.0pt
+* \skip\footins=9.0pt plus 4.0pt minus 2.0pt
+* \hoffset=-72.26999pt
+* \voffset=-72.26999pt
+* \mag=1000
+* \@twocolumnfalse
+* \@twosidefalse
+* \@mparswitchfalse
+* \@reversemarginfalse
+* (1in=72.27pt=25.4mm, 1cm=28.453pt)
 
 (./Poster_MBS_2020_var2-concordance.tex)
 LaTeX Font Info:    Font shape `T2A/Tempora-TLF/m/n' will be
-(Font)              scaled to size 74.3pt on input line 106.
+(Font)              scaled to size 74.3pt on input line 111.
 LaTeX Font Info:    Font shape `T2A/Tempora-TLF/bx/n' in size <74.3> not availa
 ble
 (Font)              Font shape `T2A/Tempora-TLF/b/n' tried instead on input lin
-e 106.
+e 111.
 LaTeX Font Info:    Font shape `T2A/Tempora-TLF/b/n' will be
-(Font)              scaled to size 74.3pt on input line 106.
+(Font)              scaled to size 74.3pt on input line 111.
 LaTeX Font Info:    Font shape `T2A/Tempora-TLF/m/n' will be
-(Font)              scaled to size 61.92pt on input line 107.
+(Font)              scaled to size 61.92pt on input line 112.
 LaTeX Font Info:    Font shape `T2A/Tempora-TLF/bx/n' in size <61.92> not avail
 able
 (Font)              Font shape `T2A/Tempora-TLF/b/n' tried instead on input lin
-e 107.
+e 112.
 LaTeX Font Info:    Font shape `T2A/Tempora-TLF/b/n' will be
-(Font)              scaled to size 61.92pt on input line 107.
+(Font)              scaled to size 61.92pt on input line 112.
 LaTeX Font Info:    Font shape `T2A/Tempora-TLF/bx/it' in size <61.92> not avai
 lable
 (Font)              Font shape `T2A/Tempora-TLF/b/it' tried instead on input li
-ne 107.
+ne 112.
 LaTeX Font Info:    Font shape `T2A/Tempora-TLF/b/it' will be
-(Font)              scaled to size 61.92pt on input line 107.
+(Font)              scaled to size 61.92pt on input line 112.
 LaTeX Font Info:    Font shape `T2A/Tempora-TLF/m/n' will be
-(Font)              scaled to size 35.83pt on input line 113.
+(Font)              scaled to size 35.83pt on input line 118.
 LaTeX Font Info:    Font shape `T2A/Tempora-TLF/bx/n' in size <35.83> not avail
 able
 (Font)              Font shape `T2A/Tempora-TLF/b/n' tried instead on input lin
-e 113.
+e 118.
 LaTeX Font Info:    Font shape `T2A/Tempora-TLF/b/n' will be
-(Font)              scaled to size 35.83pt on input line 113.
+(Font)              scaled to size 35.83pt on input line 118.
 LaTeX Font Info:    Font shape `T2A/Tempora-TLF/m/n' will be
-(Font)              scaled to size 29.86pt on input line 114.
+(Font)              scaled to size 29.86pt on input line 119.
 LaTeX Font Info:    Trying to load font information for T2A+pcr on input line 1
-17.
-LaTeX Font Info:    No file T2Apcr.fd. on input line 117.
+22.
+LaTeX Font Info:    No file T2Apcr.fd. on input line 122.
 
 
 LaTeX Font Warning: Font shape `T2A/pcr/m/n' undefined
-(Font)              using `T2A/cmr/m/n' instead on input line 117.
+(Font)              using `T2A/cmr/m/n' instead on input line 122.
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 113--118
+Underfull \hbox (badness 10000) in paragraph at lines 118--123
 
  []
 
 <figures/logos.jpg, id=2, 794.2473pt x 427.1157pt>
 File: figures/logos.jpg Graphic file (type jpg)
 <use figures/logos.jpg>
-Package pdftex.def Info: figures/logos.jpg  used on input line 121.
+Package pdftex.def Info: figures/logos.jpg  used on input line 126.
 (pdftex.def)             Requested size: 426.79134pt x 229.51807pt.
 
-Underfull \hbox (badness 10000) in paragraph at lines 121--122
+Underfull \hbox (badness 10000) in paragraph at lines 126--127
 
  []
 
 
-Overfull \hbox (18.73198pt too wide) in paragraph at lines 112--123
+Overfull \hbox (18.73198pt too wide) in paragraph at lines 117--128
 [][] [] 
  []
 
 LaTeX Font Info:    Font shape `T2A/Tempora-TLF/m/it' will be
-(Font)              scaled to size 24.88pt on input line 165.
+(Font)              scaled to size 24.88pt on input line 170.
 LaTeX Font Info:    Font shape `T2A/Tempora-TLF/bx/n' in size <24.88> not avail
 able
 (Font)              Font shape `T2A/Tempora-TLF/b/n' tried instead on input lin
-e 165.
+e 170.
 LaTeX Font Info:    Font shape `T2A/Tempora-TLF/b/n' will be
-(Font)              scaled to size 24.88pt on input line 165.
+(Font)              scaled to size 24.88pt on input line 170.
 
-Package natbib Warning: Citation `vainola_mytilus_2011' on page 1 undefined on 
-input line 165.
-
-
-LaTeX Warning: Reference `Fig_distred' on page 1 undefined on input line 165.
+LaTeX Warning: Reference `Fig_distred' on page 1 undefined on input line 170.
 
 <figures/Mytred_distr.png, id=3, 333.245pt x 309.65688pt>
 File: figures/Mytred_distr.png Graphic file (type png)
 <use figures/Mytred_distr.png>
-Package pdftex.def Info: figures/Mytred_distr.png  used on input line 171.
-(pdftex.def)             Requested size: 473.47913pt x 439.9946pt.
+Package pdftex.def Info: figures/Mytred_distr.png  used on input line 176.
+(pdftex.def)             Requested size: 393.1585pt x 365.35414pt.
 LaTeX Font Info:    Font shape `T2A/Tempora-TLF/m/n' will be
-(Font)              scaled to size 20.74pt on input line 172.
+(Font)              scaled to size 20.74pt on input line 177.
 LaTeX Font Info:    Font shape `T2A/Tempora-TLF/bx/n' in size <20.74> not avail
 able
 (Font)              Font shape `T2A/Tempora-TLF/b/n' tried instead on input lin
-e 172.
+e 177.
 LaTeX Font Info:    Font shape `T2A/Tempora-TLF/b/n' will be
-(Font)              scaled to size 20.74pt on input line 172.
+(Font)              scaled to size 20.74pt on input line 177.
 LaTeX Font Info:    Font shape `T2A/Tempora-TLF/bx/n' in size <29.86> not avail
 able
 (Font)              Font shape `T2A/Tempora-TLF/b/n' tried instead on input lin
-e 185.
+e 190.
 LaTeX Font Info:    Font shape `T2A/Tempora-TLF/b/n' will be
-(Font)              scaled to size 29.86pt on input line 185.
+(Font)              scaled to size 29.86pt on input line 190.
 
-LaTeX Warning: Reference `Figmorph' on page 1 undefined on input line 191.
+LaTeX Warning: Reference `Figmorph' on page 1 undefined on input line 196.
 
 
 Package natbib Warning: Citation `katolikova2016genetic' on page 1 undefined on
- input line 191.
+ input line 196.
 
 LaTeX Font Info:    Trying to load font information for TS1+Tempora-TLF on inpu
-t line 194.
+t line 199.
 (c:/texlive/2019/texmf-dist/tex/latex/tempora/TS1Tempora-TLF.fd
 File: TS1Tempora-TLF.fd 2016/02/02 (autoinst) Font definitions for TS1/Tempora-
 TLF.
 )
 LaTeX Font Info:    Font shape `TS1/Tempora-TLF/m/n' will be
-(Font)              scaled to size 24.88pt on input line 194.
+(Font)              scaled to size 24.88pt on input line 199.
+
+Underfull \hbox (badness 5050) in paragraph at lines 199--200
+[]\T2A/Tempora-TLF/m/n/24.88 E-морфотип ми-дии мор-фо-ло-ги-че-ски
+ []
+
+
+Underfull \hbox (badness 5832) in paragraph at lines 200--201
+[]\T2A/Tempora-TLF/m/n/24.88 T-морфотип ми-дии мор-фо-ло-ги-че-ски
+ []
+
 <figures/Morphotypes1.jpg, id=5, 777.90625pt x 503.8825pt>
 File: figures/Morphotypes1.jpg Graphic file (type jpg)
 <use figures/Morphotypes1.jpg>
-Package pdftex.def Info: figures/Morphotypes1.jpg  used on input line 203.
-(pdftex.def)             Requested size: 315.6581pt x 204.4711pt.
+Package pdftex.def Info: figures/Morphotypes1.jpg  used on input line 208.
+(pdftex.def)             Requested size: 336.99788pt x 218.29524pt.
+
+LaTeX Warning: Reference `Fig_Sample' on page 1 undefined on input line 226.
 
 
-LaTeX Warning: Reference `Fig_Sample' on page 1 undefined on input line 221.
+LaTeX Warning: Reference `Fig_Sample' on page 1 undefined on input line 226.
 
 
-LaTeX Warning: Reference `Fig_Sample' on page 1 undefined on input line 221.
-
-
-LaTeX Warning: Reference `Fig_Sample' on page 1 undefined on input line 221.
+LaTeX Warning: Reference `Fig_Sample' on page 1 undefined on input line 226.
 
 <figures/Samples.jpg, id=6, 934.49126pt x 442.15187pt>
 File: figures/Samples.jpg Graphic file (type jpg)
 <use figures/Samples.jpg>
-Package pdftex.def Info: figures/Samples.jpg  used on input line 226.
-(pdftex.def)             Requested size: 420.87479pt x 199.13516pt.
-
-Underfull \hbox (badness 1024) in paragraph at lines 238--239
-\T2A/Tempora-TLF/m/n/24.88 где по ре-зуль-та-там мно-го-лет-них на-
- []
-
+Package pdftex.def Info: figures/Samples.jpg  used on input line 231.
+(pdftex.def)             Requested size: 449.32765pt x 212.60155pt.
 <figures/Samples_oystercatchers.jpg, id=7, 952.55875pt x 407.02063pt>
 File: figures/Samples_oystercatchers.jpg Graphic file (type jpg)
 <use figures/Samples_oystercatchers.jpg>
 Package pdftex.def Info: figures/Samples_oystercatchers.jpg  used on input line
- 243.
-(pdftex.def)             Requested size: 420.87479pt x 179.84111pt.
+ 248.
+(pdftex.def)             Requested size: 449.32765pt x 191.9953pt.
 
-Overfull \hbox (18.73198pt too wide) in paragraph at lines 139--257
+Overfull \hbox (18.73198pt too wide) in paragraph at lines 144--262
 [][] [] 
  []
 
+LaTeX Font Info:    Font shape `T2A/Tempora-TLF/bx/n' in size <51.6> not availa
+ble
+(Font)              Font shape `T2A/Tempora-TLF/b/n' tried instead on input lin
+e 282.
+LaTeX Font Info:    Font shape `T2A/Tempora-TLF/b/n' will be
+(Font)              scaled to size 51.6pt on input line 282.
 <Size_dist_ast.png, id=8, 505.89pt x 505.89pt>
 File: Size_dist_ast.png Graphic file (type png)
 <use Size_dist_ast.png>
-Package pdftex.def Info: Size_dist_ast.png  used on input line 303.
-(pdftex.def)             Requested size: 414.90698pt x 414.91739pt.
-<Baster_N_dead.png, id=9, 505.89pt x 505.89pt>
-File: Baster_N_dead.png Graphic file (type png)
-<use Baster_N_dead.png>
-Package pdftex.def Info: Baster_N_dead.png  used on input line 311.
-(pdftex.def)             Requested size: 414.90698pt x 414.91739pt.
+Package pdftex.def Info: Size_dist_ast.png  used on input line 292.
+(pdftex.def)             Requested size: 427.85774pt x 427.86256pt.
+<figures/Baster_N_dead.jpg, id=9, 505.89pt x 505.89pt>
+File: figures/Baster_N_dead.jpg Graphic file (type jpg)
+<use figures/Baster_N_dead.jpg>
+Package pdftex.def Info: figures/Baster_N_dead.jpg  used on input line 300.
+(pdftex.def)             Requested size: 427.85774pt x 427.86256pt.
 <figures/Pay_charts_aster.png, id=10, 505.89pt x 505.89pt>
 File: figures/Pay_charts_aster.png Graphic file (type png)
 <use figures/Pay_charts_aster.png>
-Package pdftex.def Info: figures/Pay_charts_aster.png  used on input line 321.
-(pdftex.def)             Requested size: 414.90698pt x 414.91739pt.
+Package pdftex.def Info: figures/Pay_charts_aster.png  used on input line 310.
+(pdftex.def)             Requested size: 427.85774pt x 427.86256pt.
 <figures/Prop_dead_Prop_T.png, id=11, 505.89pt x 505.89pt>
 File: figures/Prop_dead_Prop_T.png Graphic file (type png)
 <use figures/Prop_dead_Prop_T.png>
-Package pdftex.def Info: figures/Prop_dead_Prop_T.png  used on input line 329.
-(pdftex.def)             Requested size: 414.90698pt x 414.91739pt.
+Package pdftex.def Info: figures/Prop_dead_Prop_T.png  used on input line 318.
+(pdftex.def)             Requested size: 427.85774pt x 427.86256pt.
 
-LaTeX Warning: Reference `Fig_siz_ast' on page 1 undefined on input line 338.
+LaTeX Warning: Reference `Fig_siz_ast' on page 1 undefined on input line 327.
 
 
-LaTeX Warning: Reference `Baster_Ndead' on page 1 undefined on input line 340.
+LaTeX Warning: Reference `Baster_Ndead' on page 1 undefined on input line 329.
 
 
 LaTeX Warning: Reference `Fig_pay_chart_aster' on page 1 undefined on input lin
-e 342.
+e 331.
 
 
 LaTeX Warning: Reference `Prop_dead_Prop_T' on page 1 undefined on input line 3
-44.
+33.
 
 <figures/Size_dist_hem.png, id=12, 505.89pt x 505.89pt>
 File: figures/Size_dist_hem.png Graphic file (type png)
 <use figures/Size_dist_hem.png>
-Package pdftex.def Info: figures/Size_dist_hem.png  used on input line 356.
-(pdftex.def)             Requested size: 414.90698pt x 414.91739pt.
+Package pdftex.def Info: figures/Size_dist_hem.png  used on input line 346.
+(pdftex.def)             Requested size: 427.85774pt x 427.86256pt.
 <figures/N_dead_N_alive_hem.png, id=13, 505.89pt x 505.89pt>
 File: figures/N_dead_N_alive_hem.png Graphic file (type png)
 <use figures/N_dead_N_alive_hem.png>
-Package pdftex.def Info: figures/N_dead_N_alive_hem.png  used on input line 364
+Package pdftex.def Info: figures/N_dead_N_alive_hem.png  used on input line 354
 .
-(pdftex.def)             Requested size: 414.90698pt x 414.91739pt.
+(pdftex.def)             Requested size: 427.85774pt x 427.86256pt.
 <figures/Pay_charts_hem.png, id=14, 505.89pt x 505.89pt>
 File: figures/Pay_charts_hem.png Graphic file (type png)
 <use figures/Pay_charts_hem.png>
-Package pdftex.def Info: figures/Pay_charts_hem.png  used on input line 373.
-(pdftex.def)             Requested size: 414.90698pt x 414.91739pt.
+Package pdftex.def Info: figures/Pay_charts_hem.png  used on input line 363.
+(pdftex.def)             Requested size: 427.85774pt x 427.86256pt.
 <figures/N_dead_Prop_T_hem.png, id=15, 505.89pt x 505.89pt>
 File: figures/N_dead_Prop_T_hem.png Graphic file (type png)
 <use figures/N_dead_Prop_T_hem.png>
-Package pdftex.def Info: figures/N_dead_Prop_T_hem.png  used on input line 381.
+Package pdftex.def Info: figures/N_dead_Prop_T_hem.png  used on input line 371.
 
-(pdftex.def)             Requested size: 414.90698pt x 414.91739pt.
+(pdftex.def)             Requested size: 427.85774pt x 427.86256pt.
 
-LaTeX Warning: Reference `Fig_siz_hem' on page 1 undefined on input line 389.
+LaTeX Warning: Reference `Fig_siz_hem' on page 1 undefined on input line 379.
 
 
-LaTeX Warning: Reference `Baster_Ndead' on page 1 undefined on input line 390.
+LaTeX Warning: Reference `Baster_Ndead' on page 1 undefined on input line 381.
+
+
+LaTeX Warning: Reference `Pay_charts_hem' on page 1 undefined on input line 383
+.
+
+
+LaTeX Warning: Reference `N_dead_Prop_T_hem' on page 1 undefined on input line 
+384.
+
+
+Package natbib Warning: There were undefined citations.
 
 [1
 
@@ -1996,22 +2072,11 @@ Non-PDF special ignored!
 <special> papersize=83.96cm,118.82cm
 {c:/texlive/2019/texmf-var/fonts/map/pdftex/updmap/pdftex.map} <./figures/logos
 .JPG> <./figures/Mytred_distr.png> <./figures/Morphotypes1.jpg> <./figures/Samp
-les.jpg> <./figures/Samples_oystercatchers.jpg> <./Size_dist_ast.png> <./Baster
-_N_dead.png> <./figures/Pay_charts_aster.png> <./figures/Prop_dead_Prop_T.png (
-PNG copy)> <./figures/Size_dist_hem.png> <./figures/N_dead_N_alive_hem.png> <./
-figures/Pay_charts_hem.png> <./figures/N_dead_Prop_T_hem.png>]
-
-LaTeX Warning: Reference `Pay_charts_hem' on page 2 undefined on input line 392
-.
-
-
-LaTeX Warning: Reference `N_dead_Prop_T_hem' on page 2 undefined on input line 
-393.
-
-
-Package natbib Warning: There were undefined citations.
-
-[2] (./Poster_MBS_2020_var2.aux)
+les.jpg> <./figures/Samples_oystercatchers.jpg> <./Size_dist_ast.png> <./figure
+s/Baster_N_dead.jpg> <./figures/Pay_charts_aster.png> <./figures/Prop_dead_Prop
+_T.png (PNG copy)> <./figures/Size_dist_hem.png> <./figures/N_dead_N_alive_hem.
+png> <./figures/Pay_charts_hem.png> <./figures/N_dead_Prop_T_hem.png>]
+(./Poster_MBS_2020_var2.aux)
 
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
@@ -2023,13 +2088,13 @@ LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
 
  ) 
 Here is how much of TeX's memory you used:
- 10041 strings out of 492162
- 145001 string characters out of 6129062
- 226316 words of memory out of 5000000
- 14211 multiletter control sequences out of 15000+600000
- 40481 words of font info for 35 fonts, out of 8000000 for 9000
+ 10567 strings out of 492162
+ 152489 string characters out of 6129062
+ 237683 words of memory out of 5000000
+ 14725 multiletter control sequences out of 15000+600000
+ 42525 words of font info for 36 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 41i,8n,77p,1147b,463s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 41i,8n,77p,1118b,459s stack positions out of 5000i,500n,10000p,200000b,80000s
 {c:/texlive/2019/texmf-dist/fonts/enc/dvips/tempora/tmp_ac5xuc.enc}{c:/texliv
 e/2019/texmf-dist/fonts/enc/dvips/tempora/t2a-tempora.enc}{c:/texlive/2019/texm
 f-dist/fonts/enc/dvips/cm-super/cm-super-t2a.enc}<c:/texlive/2019/texmf-dist/fo
@@ -2038,10 +2103,10 @@ e1/public/tempora/Tempora-BoldItalic.pfb><c:/texlive/2019/texmf-dist/fonts/type
 1/public/tempora/Tempora-Italic.pfb><c:/texlive/2019/texmf-dist/fonts/type1/pub
 lic/tempora/Tempora-Regular.pfb><c:/texlive/2019/texmf-dist/fonts/type1/public/
 cm-super/sfrm2986.pfb>
-Output written on Poster_MBS_2020_var2.pdf (2 pages, 2065301 bytes).
+Output written on Poster_MBS_2020_var2.pdf (1 page, 2192012 bytes).
 PDF statistics:
- 59 PDF objects out of 1000 (max. 8388607)
- 27 compressed objects within 1 object stream
+ 55 PDF objects out of 1000 (max. 8388607)
+ 25 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  70 words of extra memory for PDF output out of 10000 (max. 10000000)
 
