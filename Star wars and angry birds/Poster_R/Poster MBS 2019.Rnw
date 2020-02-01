@@ -1,0 +1,468 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% a0poster Portrait Poster
+% LaTeX Template
+% Version 1.0 (22/06/13)
+%
+% The a0poster class was created by:
+% Gerlinde Kettl and Matthias Weiser (tex@kettl.de)
+% 
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass[a1,portrait]{a0poster}
+
+\usepackage{multicol} % This is so we can have multiple columns of text side-by-side
+\columnsep=100pt % This is the amount of white space between the columns in the poster
+\columnseprule=3pt % This is the thickness of the black line between the columns in the poster
+\usepackage[svgnames]{xcolor} % Specify colors by their 'svgnames', for a full list of all colors available see here: http://www.latextemplates.com/svgnames-colors
+
+% \usepackage{times} % Use the times font
+% \usepackage{palatino} % Uncomment to use the Palatino font
+
+
+\usepackage{graphicx} % Required for including images
+\graphicspath{{figures/}} % Location of the graphics files
+\usepackage{booktabs} % Top and bottom rules for table
+\usepackage[font=small,labelfont=bf]{caption} % Required for specifying captions to tables and figures
+\usepackage{amsfonts, amsmath, amsthm, amssymb} % For math fonts, symbols and environments
+\usepackage{wrapfig} % Allows wrapping text around tables and figures
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+
+%Настройка русского языка
+\usepackage[utf8]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage[english, russian]{babel}
+\selectlanguage{russian}
+
+%\usepackage{anyfontsize}
+
+%\usepackage{cite} % Работа с библиографией
+%\usepackage[superscript]{cite} % Ссылки в верхних индексах
+%\usepackage[nocompress]{cite} % 
+%\usepackage{csquotes} % Еще инструменты для ссылок
+
+
+\usepackage{caption}
+\usepackage{subcaption}
+
+\usepackage{palatino} 
+
+\usepackage{floatrow} %for floating subscribes
+
+\usepackage{anyfontsize} %Пакет для сзданя шрифтк крупного размера
+\usepackage[noae]{Sweave}
+
+
+\definecolor{coolblack}{rgb}{0.0, 0.18, 0.39}
+\definecolor{darkblue}{rgb}{0.0, 0.0, 0.55}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% Меняем парамтеры плавающих объектов
+\usepackage{float}
+\floatstyle{plaintop}
+\restylefloat{table}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage{fancyref}
+
+\usepackage{natbib} %Пакет для более человеческой библиографии
+\usepackage{tempora}% for text если компиляция идет PDFLatex, то этот пакет активирует Times подобный шрифт.
+
+
+% \usepackage{eso-pic,graphicx}
+% \usepackage[top=0cm, bottom=2cm, outer=0cm, inner=cm]{geometry}
+
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+	
+	%----------------------------------------------------------------------------------------
+	%	POSTER HEADER 
+	%----------------------------------------------------------------------------------------
+	
+	% The header is divided into two boxes:
+	% The first is 75% wide and houses the title, subtitle, names, university/organization and contact information
+	% The second is 25% wide and houses a logo for your university/organization or a photo of you
+	% The widths of these boxes can be easily edited to accommodate your content as you see fit
+	
+	% \AddToShipoutPictureBG*{\includegraphics[width=\paperwidth,height=\paperheight]{background}};
+% \clearpage
+	
+	
+	\begin{minipage}[b]{0.95\linewidth}
+	\center
+	
+		\veryHuge \color{NavyBlue} \textbf{Биссусные прикрепления \emph{Mytilus edulis} и \emph{M.trossulus}: механизм подавления конкурента? } \color{NavyBlue}\\ % Title
+%		\veryHuge \textit{}\\[1cm] % Subtitle
+	\end{minipage}
+
+\vspace{2cm}
+	\begin{minipage}[b]{0.75\linewidth}
+		\huge \textbf{Вадим Хайтов,  Мария Шалагаева}\\[0.5cm] % Author(s)
+		\Large Лаборатория экологии морского бентоса (гидробиологи)\\[0.4cm] % University/organization
+		\Large Кандалакшский государственный заповедник\\[0.4cm] % University/organization
+		\Large Санкт-Петербургский государственный университет\\[0.4cm] % University/organization
+		\Large \texttt{polydora@rambler.ru}\\
+	\end{minipage}
+	%
+	\begin{minipage}[b]{0.25\linewidth}
+		\includegraphics[width=20cm]{logos.jpg}\\
+	\end{minipage}
+	
+	\vspace{2cm} % A bit of extra whitespace between the header and poster content
+	
+	%----------------------------------------------------------------------------------------
+	
+	\begin{multicols}{2} % This is how many columns your poster will be broken into, a portrait poster is generally split into 2 columns
+		
+		%----------------------------------------------------------------------------------------
+		%	ABSTRACT
+		%----------------------------------------------------------------------------------------
+		
+		\color{Navy} % Navy color for the abstract
+		
+		\begin{abstract}
+			
+			Ожидается, что два близких вида мидий: коренной для Белого моря \emph{M.edulis} и вид-вселенец \emph{M.trossulus}, формируя смешанные поселения в Белом море, должны вступать в жесткие конкурентные взаимоотношения. Мы показали, что  \textit{M.edulis} потенциально может использовать биссусное прикрепление, как механизм атаки против \textit{M.trossulus}.  
+			
+		\end{abstract}
+		
+		%----------------------------------------------------------------------------------------
+		%	INTRODUCTION
+		%----------------------------------------------------------------------------------------
+		
+		\color{Black} % SaddleBrown color for the introduction
+		
+		\section*{Введение}
+		
+В Белом море коренной вид мидий \emph{M.edulis} и вселенец \emph{M.trossulus} сосуществуют в смешанных поселениях. Очевидно, что между столь близкими формами неизбежны конкурентные отношения, механизм которых до сих пор не изучен. 
+		
+Известно, что мидии используют выделения биссусной железы как инструмент подавления хищных улиток  \citep{petraitis1987immobilization, farrell2007use, davenport1996observations}. Можно предположить, что этот механизм проявляется и при интерференции конкурирующих видов. Из этой гипотезы можно вывести проверяемое следствие. Если такой механизм, действительно работает, то мидии одного вида должны прикреплять к раковинам чужого вида биссуса больше, чем к раковинам конспецификов. 
+		
+		%----------------------------------------------------------------------------------------
+		%	OBJECTIVES
+		%----------------------------------------------------------------------------------------
+		
+		\color{DarkSlateGray} % DarkSlateGray color for the rest of the content
+		
+		\section*{Идентификация мидий}
+\begin{minipage}[t]{0.5\linewidth}
+	\begin{center} \vspace{0.1cm}
+			\includegraphics[width=0.7\linewidth]{Morphotypes1.jpg}
+			\captionof{figure}{\color{Green} Два морфотипа мидий, различающиеся по паттерну закладки перламутрового слоя.}
+			\label{Fig_morph}
+		\end{center}\vspace{1cm}
+\end{minipage}\hspace{1cm}
+%
+\begin{minipage}[t]{0.46\linewidth}
+
+Идентификация криптических видов мидий возможна только по генетическим маркерам.   
+Однако паттерн закладки перламутрового слоя в районе лигамента (морфотип, рис. \ref{Fig_morph}) может являться надежным маркером видов \citep{katolikova2016genetic}.   
+
+\begin{itemize}
+  \item E-морфотип мидии морфологически близкие к \emph{M.edulis} 
+  \item  T-морфотип мидии морфологически близкие к \emph{M.trossulus}
+\end{itemize}
+
+\end{minipage}
+
+
+Особи T-морфотипа были преимущественно собраны из поселений, где доминируют \emph{M.trossulus}, а особи E-морфотипа из поселений с преобладанием \emph{M.edulis}.
+
+
+		%----------------------------------------------------------------------------------------
+		%	MATERIALS AND METHODS
+		%----------------------------------------------------------------------------------------
+		
+		\section*{Материал и методика}
+\begin{minipage}[t]{0.5\linewidth}		
+	\begin{center}\vspace{0.1cm}
+			\includegraphics[width=0.8\linewidth]{Donor.png}
+			\captionof{figure}{\color{Green} Внешний вид керамической пластинки с закрепленными на ней мидиями донорами и реципиентами.}
+			\label{Fig_setup}
+		\end{center}\vspace{1cm}
+\end{minipage}\hspace{1cm}
+%
+\begin{minipage}[t]{0.46\linewidth}
+Мидии были закреплены на керамических пластинках цианакрилатным клеем в двух положениях (рис. \ref{Fig_setup}): доноры (располагались сверху) и реципиенты (располагались снизу).   
+
+Донор выделял биссусные нити, которые прикреплялись либо к основанию (керамической пластинке), либо  к раковине реципиента.
+
+Пластинки, были закреплены внутри 5 садков (по 4 пластины на садок), которые были выставлены на литорали в течение четырех приливных циклов. 
+
+\end{minipage}
+		%------------------------------------------------
+
+
+Было проведено два однотипных эксперимента.
+
+После снятия садков для каждой пары доноров и реципиентов были определены следующие показатели: 
+
+\begin{itemize}
+  \item длина раковины донора ($DL$) и реципиента ($RL$)
+  \item морфотипы донора и реципиента ($Dmorph$ и $Rmorph$, соответственно)
+  \item количество биссусных нитей, идущих от донора к раковине реципиента ($BtoR$) и от донора к керамической плитке ($BtoB$)
+\end{itemize}
+
+
+
+
+		
+		\subsection*{Регрессионные модели}
+		
+\large{Зависимые переменные}
+
+\normalsize
+Модель №1: абсолютное количество нитей биссуса, прикрепленных к раковине реципиента (модель основана на отрицательном биномиальном распределении).
+
+Модель №2: Доля количества нитей биссуса, прикрепленных к раковине реципиента, в общем количестве выделенных нитей: $\frac{BtoR}{BtoB + BtoR}$ 
+
+Модель основана на нормальном распределении $\varphi$-преобразованного значения доли.
+
+
+\large{Предикторы}
+
+\normalsize
+Набор предикторов в обеих моделях был одинаковым: Морфотип донора; Морфотип реципиента; Длина раковины донора; Длина раковины реципиента; Все взаимодействия первого порядка.
+После построения моделей производилось их упрощение в соответствии с протоколом обратного отбора (backward selection). 
+
+\vspace{1cm}
+
+\footnotesize{NB. Обе модели были изначально построены с использованием случайных эффектов (“Эксперимент”/“Садок”), однако анализ внутриклассовых корреляций выявил очень низкий уровень влияния группирующих факторов. Дальнейший анализ проходил без учета группирующих факторов.}
+
+\normalsize
+
+\subsubsection*{Ожидаемые результаты регрессионного анализа}
+
+Если гипотеза верна, то в финальных моделях должно присутствовать значимое взаимодействие факторов ${Dmorph:Rmorph}$. Абсолютное и относительное количество нитей, выделенных донором одного морфотипа должно быть значимо больше если реципиентом является особь другого морфотипа.
+
+
+		%----------------------------------------------------------------------------------------
+		%	RESULTS 
+		%----------------------------------------------------------------------------------------
+		
+\section*{Результаты}
+		
+
+<<echo=FALSE>>=
+
+library(lme4)
+library(MASS)
+library(xtable)
+library(ggplot2)
+library("texreg")
+library(memisc)
+library(dplyr)
+
+
+
+choic <- read.csv("data/Choice_Tred.csv", header = TRUE)
+
+choic$Btotal <- with(choic, BtoR + BtoB)
+
+
+choic$PropR <- with(choic, 2*asin(sqrt(BtoR/Btotal)))
+
+Mod_final <- lm(PropR ~ Dmorph * Rmorph, data = choic)
+# xtable(coef(summary(Mod_final)))
+
+@
+
+
+<<echo=FALSE>>=
+
+ModN_glm5 <- glm.nb(BtoR ~ Dmorph + Rmorph + RL + DL + Dmorph:Rmorph + RL:DL, data = choic)
+
+@
+
+
+
+\begin{minipage}[t]{0.5\linewidth}
+
+\captionof{table}{\color{Green} Анализ девиансы финальной модели, описывающей зависимость абсолютного количества прикреплений к раковине реципиента от его морфотипа, морфотипа донора и размеров моллюсков }
+
+\label{Anova_1}
+
+\centering
+
+\begin{tabular}{lrrr}
+
+  \hline
+ & LR $\chi^2$& Df & Pr($>\chi^2$) \\ 
+  
+  \hline
+Dmorph & 4.42 & 1 & \textbf{0.0356} \\ 
+  Rmorph & 0.00 & 1 & 0.9622 \\ 
+  RL & 0.01 & 1 & 0.9046 \\ 
+  DL & 4.23 & 1 & \textbf{0.0398} \\ 
+  Dmorph:Rmorph & 4.12 & 1 & \textbf{0.0424} \\ 
+  RL:DL & 5.26 & 1 & \textbf{0.0218} \\ 
+   \hline
+\end{tabular}
+
+\vspace{0.5cm}
+
+\captionof{table}{\color{Green} Анализ девиансы финальной модели, описывающей зависимость доли прикреплений к раковине реципиента от его морфотипа и морфотипа донора }
+\label{Anova_2}
+
+\centering
+\begin{tabular}{lrrr}
+  \hline
+ & $\chi^2$ & Df & Pr($>\chi^2$) \\ 
+  \hline
+Dmorph & 2.33 & 1 & 0.1272 \\ 
+  Rmorph & 4.86 & 1 & \textbf{0.0274} \\ 
+  Dmorph:Rmorph & 4.25 & 1 & \textbf{0.0392} \\ 
+   \hline
+\end{tabular}
+
+\end{minipage}\hspace{1cm}\hspace{1cm}
+% 
+\begin{minipage}[t]{0.46\linewidth}
+
+\vspace{0.1cm}
+
+Финальная модель, описывающая зависимость абсолютного количества нитей биссуса,  выделяемых донором , содержала статистически значимое взаимодействие  факторов ${Dmorf:Rmorph}$ (таблица \ref{Anova_1}), что соответствует гипотезе. Однако присутствие в финальной модели других предикторов и взаимодействий  позволяет говорить лишь о некоторой тенденции (рис. \ref{Fig_absolute_number}).
+
+\vspace{3cm}
+
+Финальная модель, описывающая зависимость доли нитей, прикрепленных к реципиенту, содержала статистически значимое взаимодействие  факторов Dmorf:Rmorph (таблица \ref{Anova_2}), что соответствует гипотезе. Мидии E-морфотипа прикрепляли значимо больше нитей к реципиентам T-морфотипа (рис. \ref{Fig_relative_number}).
+
+\end{minipage}
+ 
+
+
+
+	
+<<echo=FALSE>>=
+
+new_data2 <- choic %>% group_by(Dmorph, Rmorph) %>% do(data.frame(DL = mean(choic$DL), RL = mean(choic$RL)))
+  
+
+new_data2$fit_eta <- predict(ModN_glm5, newdata = new_data2)
+
+new_data2$fit <- exp(new_data2$fit_eta)
+
+
+
+X <- model.matrix(~ Dmorph + Rmorph + RL + DL + Dmorph:Rmorph + RL:DL , data = new_data2  )
+
+new_data2$SE <- sqrt(diag(X %*% vcov(ModN_glm5) %*% t(X)))
+
+new_data2$Upr <- exp(new_data2$fit_eta + 1.96*new_data2$SE)
+new_data2$Lwr <- exp(new_data2$fit_eta - 1.96*new_data2$SE)
+
+
+new_data2$signif <- c("a", " ", "a"," ")
+
+levels(new_data2$Dmorph) <-  c("Донор E-морфотип", "Донор T-морфотип")
+
+
+Pl_N <- ggplot(new_data2, aes(x = Rmorph, y = fit)) + geom_col(fill = "green", color = "black") +  geom_errorbar(aes(ymin = Lwr, ymax = Upr), width = 0.2)  + facet_wrap(~Dmorph) + theme_bw()  + geom_text(aes(label = signif, y = Upr+ 1), size = 6)+ labs(x = "Морфотип реципиента", y = "Количество нитей, пикрепленных \nк раковине реципиента " )+ theme(axis.text = element_text(size = 15), axis.title = element_text(size = 20), strip.text = element_text(size = 20))
+ggsave("figures/ModN_visualisation.png", Pl_N)
+
+@
+	
+
+
+<<echo=FALSE, height=6, width=4 >>=
+
+
+new_data <- expand.grid(Dmorph = c("E", "T"), Rmorph = c("E", "T") )
+
+new_data$fit <- predict(Mod_final, newdata = new_data, re.form = NA)
+
+X <- model.matrix(~ Dmorph + Rmorph + Dmorph:Rmorph, data = new_data  )
+
+new_data$SE <- sqrt(diag(X %*% vcov(Mod_final) %*% t(X)))
+
+new_data$Upr <- new_data$fit + 1.96*new_data$SE
+new_data$Lwr <- new_data$fit - 1.96*new_data$SE
+
+new_data$fit_trans <- (sin(new_data$fit/2))^2
+new_data$Upr_trans <- (sin(new_data$Upr/2))^2
+new_data$Lwr_trans <- (sin(new_data$Lwr/2))^2
+
+new_data$signif <- c("a", "b", "a, b"," ")
+levels(new_data$Dmorph) <-  c("Донор E-морфотип", "Донор T-морфотип")
+
+Pl <- ggplot(new_data, aes(x = Rmorph, y = fit_trans)) + geom_col(fill = "blue", color = "black") + facet_wrap(~Dmorph) + geom_errorbar(aes(ymin = Lwr_trans, ymax = Upr_trans), width = 0.2) + theme_bw() + geom_text(aes(label = signif, y = Upr_trans + 0.05), size = 6) + labs(x = "Морфотип реципиента", y = "Доля прикреплений \nк раковине реципиента" ) + theme(axis.text = element_text(size = 15), axis.title = element_text(size = 20), strip.text = element_text(size = 20))
+ggsave("figures/Mod_visualisation.png", Pl)
+
+@
+
+\begin{minipage}[t]{\dimexpr 0.5\linewidth}
+\begin{center}\vspace{2cm}
+\includegraphics[width=0.8\linewidth]{ModN_visualisation.png}
+\captionof{figure}{\color{Green} Абсолютное количество прикреплений биссуса к раковинам реципиентов. Одинаковые буквы маркируют статистически значимые различия, выявленные в пост-хок тестах}
+\label{Fig_absolute_number}
+\end{center}\vspace{1cm}
+\end{minipage} \hspace{1cm}
+%
+\begin{minipage}[t]{\dimexpr 0.5\linewidth}
+
+\begin{center}\vspace{2cm}
+\includegraphics[width=0.8\linewidth]{Mod_visualisation.png}
+\captionof{figure}{\color{Green} Доля прикреплений биссуса к раковинам реципиентов. Одинаковые буквы маркируют статистически значимые различия, выявленные в пост-хок тестах}
+\label{Fig_relative_number}
+\end{center}\vspace{1cm}
+\end{minipage}
+
+		
+		%----------------------------------------------------------------------------------------
+		%	CONCLUSIONS
+		%----------------------------------------------------------------------------------------
+		
+		\color{SaddleBrown} % SaddleBrown color for the conclusions to make them stand out
+		
+		\section*{Заключение}
+		
+		\begin{itemize}
+			\item Использование прикрепления биссуса, как механизма интерференции конкурирующих криптических видов мидий в совместных поселениях, весьма вероятно.
+			\item Мидии одного морфотипа (вида), вероятно, могут распознавать представителей других морфотипов  (видов) и прикреплять к ним больше биссусных нитей, обездвиживая последних.
+			\item Возможно мидии E-морфотипа (\emph{M.edulis}) более активно используют этот механизм, чем мидии T-морфотипа (\emph{M.trossulus}) 
+		\end{itemize}
+		
+		\color{DarkSlateGray} % Set the color back to DarkSlateGray for the rest of the content
+		
+		%----------------------------------------------------------------------------------------
+		%	FORTHCOMING RESEARCH
+		%----------------------------------------------------------------------------------------
+		
+		% \section*{Forthcoming Research}
+		% 
+		% Vivamus molestie, risus tempor vehicula mattis, libero arcu volutpat purus, sed blandit sem nibh eget turpis. Maecenas rutrum dui blandit lorem vulputate gravida. Praesent venenatis mi vel lorem tempor at varius diam sagittis. Nam eu leo id turpis interdum luctus a sed augue. Nam tellus.
+		% 
+		%----------------------------------------------------------------------------------------
+		%	REFERENCES
+		%----------------------------------------------------------------------------------------
+		
+		\nocite{*} % Print all references regardless of whether they were cited in the poster or not
+		\bibliographystyle{abbrvnat} % Plain referencing style
+		\bibliography{My_bibliograhy} % Use the example bibliography file sample.bib
+		
+		%----------------------------------------------------------------------------------------
+		%	ACKNOWLEDGEMENTS
+		%----------------------------------------------------------------------------------------
+		
+		% \section*{Acknowledgements}
+		% 
+		% Etiam fermentum, arcu ut gravida fringilla, dolor arcu laoreet justo, ut imperdiet urna arcu a arcu. Donec nec ante a dui tempus consectetur. Cras nisi turpis, dapibus sit amet mattis sed, laoreet.
+		% 
+		%----------------------------------------------------------------------------------------
+		
+	\end{multicols}
+	
+\end{document}
