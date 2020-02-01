@@ -2,6 +2,10 @@
 % a0poster Portrait Poster
 % LaTeX Template
 % Version 1.0 (22/06/13)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% a0poster Portrait Poster
+% LaTeX Template
+% Version 1.0 (22/06/13)
 %
 % The a0poster class was created by:
 % Gerlinde Kettl and Matthias Weiser (tex@kettl.de)
@@ -18,7 +22,7 @@
 %	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
 %----------------------------------------------------------------------------------------
 
-\documentclass[a0,portrait]{a0poster}
+\documentclass[20pt,a0,portrait]{a0poster}
 
 \usepackage{multicol} % This is so we can have multiple columns of text side-by-side
 \columnsep=100pt % This is the amount of white space between the columns in the poster
@@ -28,7 +32,8 @@
 % \usepackage{times} % Use the times font
 % \usepackage{palatino} % Uncomment to use the Palatino font
 
-\usepackage {graphicx} % Required for including images
+
+\usepackage{graphicx} % Required for including images
 \graphicspath{{figures/}} % Location of the graphics files
 \usepackage{booktabs} % Top and bottom rules for table
 \usepackage[font=small,labelfont=bf]{caption} % Required for specifying captions to tables and figures
@@ -81,12 +86,12 @@
 
 
 % \usepackage{eso-pic,graphicx}
-% \usepackage[top=0cm, bottom=2cm, outer=0cm, inner=cm]{geometry}
+\usepackage[top=4cm, bottom=2cm, outer=1cm, inner=4cm]{geometry}
 
 
 \begin{document}
 \input{Poster_MBS_2020_var2-concordance}
-	
+
 	%----------------------------------------------------------------------------------------
 	%	POSTER HEADER 
 	%----------------------------------------------------------------------------------------
@@ -160,15 +165,15 @@
 %%%%%% Внимание! чтобы минипейджи ставились бок о бок надо между ними поставить знак "%"
 		
 %
-\begin{minipage}[t]{0.4\linewidth}
+\begin{minipage}[t][10cm][t]{0.4\textwidth}
 
-Помимо коренного для Белого моря вида мидий (\emph{M.edulis}) во многих участках  Кандалакшского залива представлен инвазивный вид, \emph{M.trossulus}, который был занесенной в акваторию не более 80 лет назад \citep{vainola_mytilus_2011}. Высокая концентрация \emph{M.trossulus} наблюдается в кутовой части Кандалакшского залива (рис. ~\ref{Fig_distred}). Факторы, сдерживающие распространение  вида-вселенца, изучены слабо, но можно предположить, что некоторую роль в этом играют хищные животные, для которых мидии являются основным видом корма. К числу таких хищников относятся морские звезды (\emph{Asterias rubens}) и кулики-сороки (\emph{Haematopus  ostralegus}). 
+Помимо коренного для Белого моря вида мидий (\emph{M.edulis}) во многих участках  Кандалакшского залива представлен инвазивный вид, \emph{M.trossulus}, который был занесенной в акваторию не более 80 лет назад. Высокая концентрация \emph{M.trossulus} наблюдается в кутовой части Кандалакшского залива (рис. \ref {Fig_distred}). Факторы, сдерживающие распространение  вида-вселенца, изучены слабо, но можно предположить, что некоторую роль в этом играют хищные животные, для которых мидии являются основным видом корма. К числу таких хищников относятся морские звезды (\emph{Asterias rubens}) и кулики-сороки (\emph{Haematopus  ostralegus}). 
 
 \end{minipage}\hspace{1cm}
 %
 \begin{minipage}[t]{0.5\linewidth}
 	\begin{center} \vspace{0.1cm}
-			\includegraphics[width=0.9\linewidth]{Mytred_distr.png}
+			\includegraphics[width=0.7\linewidth]{Mytred_distr.png}
 			\captionof{figure}{\color{Green} Распределение видов мидий по акватори Кандалакшского залива.}
 			\label{Fig_distred}
 		\end{center}\vspace{0.5cm}
@@ -224,7 +229,7 @@
 \begin{minipage}[t]{0.5\linewidth}		
 	\begin{center}\vspace{0.1cm}
 			\includegraphics[width=0.8\linewidth]{Samples.jpg}
-			\captionof{figure}{\color{Green} Схема отбора проб для оценки влияния морских звезд. (a) Пробы на  поселении мидий не тронутых звездами (1), на скоплениях морских звезд (2) и на скоплениях створок мертвых мидий (3). (b) Внешний вид агрегации мидий, подвергшейся атаке морских звезд. Стрелками отмечены съеденные моллюски.}
+			\captionof{figure}{\color{Green} Схема отбора проб для оценки влияния морских звезд. (a) Пробы на  поселении мидий не тронутых звездами (1), на скоплениях морских звезд (2) и на скоплениях створок мертвых мидий (3). (b) Агрегация мидий, подвергшаяся атаке морских звезд. Стрелками отмечены съеденные моллюски.}
 			\label{Fig_Sample}
 		\end{center}
 \end{minipage}\hspace{0.5cm}
@@ -241,7 +246,7 @@
 \begin{minipage}[t]{0.5\linewidth}		
 	\begin{center}\vspace{0.1cm}
 			\includegraphics[width=0.8\linewidth]{Samples_oystercatchers.jpg}
-			\captionof{figure}{\color{Green} Схема отбора проб для оценки влияния кулков-сорок.(a) Учетна площадка на мидиевой банке. Кругами отмечены места случайного расположения прод бля учета живых моллюсков (b) Место кормления кулика-сороки. Стрелками помечены съеденные мидии.}
+			\captionof{figure}{\color{Green} Схема отбора проб для оценки влияния кулков-сорок.(a) Учетна площадка на мидиевой банке. (b) Место кормления кулика-сороки. Стрелками помечены съеденные мидии.}
 			\label{Fig_setup}
 		\end{center}
 \end{minipage}
@@ -265,33 +270,17 @@
 
 
 %%%%%%%%%%%%%%%%%%% Результаты %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section*{\centering {Результаты}}
+% \section*{\centering {Результаты}}
 
-\vspace{0.5cm}
+\vspace{1cm}
 
 
-\begin{multicols}{2}
+% \begin{multicols}{2}
+\begin{minipage}[t]{0.46\linewidth}
 
-\subsection*{Влияние морских звезд}
+
+\subsection*{\centering{\huge{Влияние морских звезд}}}
 		
-
-
-
-
-
-
-		
-		
-		
-
-
-
-
-
-
-
-
-
 
 
 
@@ -308,7 +297,7 @@
 %
 \begin{minipage}[t]{0.46\linewidth}		
 	\begin{center}\vspace{0.1cm}
-			\includegraphics[width=0.9\linewidth]{Baster_N_dead.png}
+			\includegraphics[width=0.9\linewidth]{Baster_N_dead.jpg}
 			\captionof{figure}{\color{Green} Зависимость обилия мертвых моллюсков от обилия морских звезд.}
 			\label{Baster_Ndead}
 		\end{center}\vspace{0.5cm}
@@ -327,7 +316,7 @@
 \begin{minipage}[t]{0.46\linewidth}		
 	\begin{center}\vspace{0.1cm}
 			\includegraphics[width=0.9\linewidth]{Prop_dead_Prop_T.png}
-			\captionof{figure}{\color{Green} Зависимость доли мидий Т-морфотипа среди живых мидий от обилия съеденных моллюсков (степени воздействия хищника) в местах кормления морских звезд. Степень заливк красным пропорциональна биомассе морских звезд}
+			\captionof{figure}{\color{Green} Зависимость доли мидий Т-морфотипа среди живых мидий от обилия съеденных моллюсков. Степень заливк красным пропорциональна биомассе звезд}
 			\label{Prop_dead_Prop_T}
 		\end{center}
 \end{minipage}\vspace{0.5cm}
@@ -343,10 +332,11 @@
 
 В обеих точках сбора материала на фоне увеличени доли съеденных мидий наблюдалось падение относительного обилия мидий Т-морфотипа (рис. \ref{Prop_dead_Prop_T}) . Выедание морскими звездами приводит к существенному сокращению относительного обилия \emph{M.trossulus} в смешанном поселении двух видов мидий.
 
+\end{minipage}\vspace{1cm}
+%
+\begin{minipage}[t]{0.46\linewidth}		
 
-
-
-\subsection*{Влияние куликов-сорок}
+\subsection*{\centering{\huge{Влияние куликов-сорок}}}
 
 
 
@@ -357,7 +347,7 @@
 			\captionof{figure}{\color{Green} Размерная структура живых мидий и мидий, съеденных куликами-сороками.}
 			\label{Fig_siz_hem}
 		\end{center}\vspace{0.5cm}
-\end{minipage}\hspace{1cm}
+\end{minipage}\hspace{2cm}
 %
 \begin{minipage}[t]{0.46\linewidth}		
 	\begin{center}\vspace{0.1cm}
@@ -386,30 +376,35 @@
 
 
 
-Кулики-сороки предпочитают более крупых мидий (рис. \ref{Fig_siz_hem}. 
+Кулики-сороки предпочитают более крупых мидий (рис. \ref{Fig_siz_hem}.
+
 Обилие живых моллюсков (рис. \ref{Baster_Ndead}) падает по мере увеличения обилия створок съеденных мидий.Интенсивное питание куликов может заметно сокращать обилие жертв. По количеству створок погибших моллюсков можно судить о степени воздействия хищника.
 
 Доля Т-морфотипа среди съеденных моллюсков (рис.  \ref{Pay_charts_hem}) выше, чем доля таких мидий среди живых особей. Кулки предпочитают атаковать мидий Т-морфотипа. 
 На фоне увеличения доли съеденных мидий наблюдалось падение относительного обилия мидий Т-морфотипа среди живых особей (рис. \ref{N_dead_Prop_T_hem}).
 
+\end{minipage}
 
 
 
-		%----------------------------------------------------------------------------------------
-		%	CONCLUSIONS
-		%----------------------------------------------------------------------------------------
-		
-		\color{SaddleBrown} % SaddleBrown color for the conclusions to make them stand out
-		
-		\section*{Заключение}
-		
-		\begin{itemize}
-			\item Оба вида хищников могут эффективно сокращать частоту M.trossulus в смешанных поселениях. 
-			\item Концентрация M.trossulus в куту Канадалкшского залива может быть связана с малым обилием хищников в этом районе. 
-		\end{itemize}
-		
-		\color{DarkSlateGray} % Set the color back to DarkSlateGray for the rest of the content
-		
+
+
+%
+% 		%----------------------------------------------------------------------------------------
+% 		%	CONCLUSIONS
+% 		%----------------------------------------------------------------------------------------
+%
+% 		\color{SaddleBrown} % SaddleBrown color for the conclusions to make them stand out
+%
+% 		\section*{Заключение}
+%
+% 		\begin{itemize}
+% 			\item Оба вида хищников могут эффективно сокращать частоту M.trossulus в смешанных поселениях.
+% 			\item Концентрация M.trossulus в куту Канадалкшского залива может быть связана с малым обилием хищников в этом районе.
+% 		\end{itemize}
+%
+% 		\color{DarkSlateGray} % Set the color back to DarkSlateGray for the rest of the content
+
 		%----------------------------------------------------------------------------------------
 		%	FORTHCOMING RESEARCH
 		%----------------------------------------------------------------------------------------
@@ -437,6 +432,6 @@
 		%----------------------------------------------------------------------------------------
 		
 		
-\end{multicols}
+% \end{multicols}
 	
 \end{document}
