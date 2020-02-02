@@ -298,7 +298,7 @@ library(gridExtra)
 
 # Установки паарметров графиков ########################
 
-theme_set(theme_bw() + theme(axis.title = element_text(size = 20), plot.title = element_text(hjust = 0.5, size = 20)))
+theme_set(theme_bw() + theme(axis.title = element_text(size = 20), plot.title = element_text(hjust = 0.5, size = 20), legend.text = element_text(size = 20)))
 
 
 
@@ -398,7 +398,7 @@ new_data$SE <- predicted$se.fit
 
 # Рисунок зависимость обилия доли Т-морфотипа среди живых  от обилия мертвых 
 
-Pl_Prop_dead_Prop_T <- Pl_aster_abund + geom_point(data = all_ast_abund, aes(x = Prop_dead, y= Prop_T_alive)) + facet_wrap(~Site) + geom_ribbon(data = new_data, aes(ymin = Predicted - 1.96*SE, ymax = Predicted + 1.96*SE), alpha = 0.2) +  geom_line(data = new_data, aes(x = Prop_dead, y = Predicted),  color = "blue", size = 1) + guides (fill = "none") + labs(x = "Относительное обилие мертвых моллюсков", y = "Доля M.trossulus среди живых")
+Pl_Prop_dead_Prop_T <- Pl_aster_abund + geom_point(data = all_ast_abund, aes(x = Prop_dead, y= Prop_T_alive)) + facet_wrap(~Site) + geom_ribbon(data = new_data, aes(ymin = Predicted - 1.96*SE, ymax = Predicted + 1.96*SE), alpha = 0.2) +  geom_line(data = new_data, aes(x = Prop_dead, y = Predicted),  color = "blue", size = 1) + guides (fill = "none") + labs(x = "Относительное обилие мертвых моллюсков", y = "Доля T-морфотипа среди живых")
 
 ggsave("figures/Prop_dead_Prop_T.png", Pl_Prop_dead_Prop_T)
 
@@ -546,7 +546,7 @@ hem_abund_bank$Prop_dead <- with(hem_abund_bank, N_dead/N_alive)
 ## Рисунок Зависимость обилия живых от обилия мертвых в местах питания кулиаов ###################
 
 
-Pl_N_dead_N_alive_hem <- ggplot(hem_abund_bank, aes(x = N_dead, y = N_alive)) + geom_point(size = 4) + labs(x = "Мертвые (экз./кв.м)", y = "Живые (экз./кв.м)") + geom_smooth(method = "glm", method.args = list(family = "quasipoisson"), sixe = 1.5) 
+Pl_N_dead_N_alive_hem <- ggplot(hem_abund_bank, aes(x = N_dead, y = N_alive)) + geom_point(size = 4) + labs(x = "Мертвые мидии (экз./кв.м)", y = "Живые мидии (экз./кв.м)") + geom_smooth(method = "glm", method.args = list(family = "quasipoisson"), sixe = 1.5) 
 
 
 ggsave("figures/N_dead_N_alive_hem.png", Pl_N_dead_N_alive_hem)
@@ -623,9 +623,10 @@ ggsave("figures/Pay_charts_hem.png", grid.arrange(Pl_dead, Pl_alive,  ncol = 2))
 \vspace{\belowdisplayskip}
 Кулики-сороки предпочитают более крупых мидий (рис. \ref{Fig_siz_hem}).
 
-Обилие живых моллюсков (рис. \ref{Baster_Ndead}) падает по мере увеличения обилия створок съеденных мидий.Интенсивное питание куликов может заметно сокращать обилие жертв. По количеству створок погибших моллюсков можно судить о степени воздействия хищника.
+Обилие живых моллюсков (рис. \ref{Nalive_Ndead_hem}) падает по мере увеличения обилия створок съеденных мидий. Интенсивное питание куликов может заметно сокращать обилие жертв. По количеству створок погибших моллюсков можно судить о степени воздействия хищника.
 
 Доля Т-морфотипа среди съеденных моллюсков (рис.  \ref{Pay_charts_hem}) выше, чем доля таких мидий среди живых особей. Кулки предпочитают атаковать мидий Т-морфотипа. 
+
 На фоне увеличения доли съеденных мидий наблюдалось падение относительного обилия мидий Т-морфотипа среди живых особей (рис. \ref{N_dead_Prop_T_hem}).
 
 \end{minipage}
