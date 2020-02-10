@@ -1,10 +1,13 @@
 library(reshape2)
 library(dplyr)
+<<<<<<< HEAD
 library(stringr)
 library(ggplot2)
 library(mgcv)
 
 
+=======
+>>>>>>> 4fe276c70bc23d025d817438504a0d7d27d8b117
 
 
 cop_init <- read.table("Data/Oithona_Microsetella.csv", sep = ",", header = T)
@@ -15,6 +18,7 @@ names(cop_init)
 
 cop <- melt(cop_init, id.vars = c("Day","Month","Year","Day.of.year"), variable.name = "Stage", value.name = "N") 
 
+<<<<<<< HEAD
 unique(cop$Stage)
 
 
@@ -125,3 +129,5 @@ days_of_max <- new_data_Mic %>% group_by(Year, Stage3) %>% summarise(Day_of_max 
 
 ggplot(new_data_Mic, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Predicted)) + facet_wrap(~Stage3, nrow = 1) + scale_fill_gradient(low = "white", high = "red") + geom_point(data = cop_Mic, aes(x = Year, y = DOY), size = 0.1) + guides(fill = "none") + theme(axis.text.x = element_text(angle = 90)) + labs(y = "Day of Year") + stat_contour(aes(z = Predicted), bins = 3, color="yellow", size=0.25) 
 
+=======
+>>>>>>> 4fe276c70bc23d025d817438504a0d7d27d8b117
