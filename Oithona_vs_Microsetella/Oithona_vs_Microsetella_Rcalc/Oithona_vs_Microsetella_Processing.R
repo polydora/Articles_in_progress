@@ -99,8 +99,7 @@ new_data_Oit <- expand.grid(Stage3 = unique(cop_Oit$Stage3), DOY = 1:365, Year =
 
 new_data_Oit$Predicted <- predict(Mod_Oit, newdata = new_data_Oit)
 
-ggplot(new_data_Oit, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Predicted)) + facet_wrap(~Stage3, nrow = 1) + scale_fill_gradient(low = "white", high = "red") + geom_point(data = cop_Oit, aes(x = Year, y = DOY), size = 0.1) + guides(fill = "none") + theme(axis.text.x = element_text(angle = 90)) + labs(y = "Day of Year") + stat_contour(aes(z = Predicted), bins = 3, color="yellow", size=0.25) 
-
+ggplot(new_data_Oit, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Predicted)) + facet_wrap(~Stage3, nrow = 1) + scale_fill_gradient(low = "white", high = "red") + geom_point(data = cop_Oit, aes(x = Year, y = DOY), size = 0.1) + guides(fill = "none") + theme(axis.text.x = element_text(angle = 90)) + labs(y = "Day of Year") 
 
 
 
