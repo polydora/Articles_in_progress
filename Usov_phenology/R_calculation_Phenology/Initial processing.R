@@ -3,7 +3,10 @@
 # Packages  ####
 library(reshape2)
 library(ggplot2)
+<<<<<<< Updated upstream
 library(dplyr)
+=======
+>>>>>>> Stashed changes
 
 
 # Подготовка данных ####
@@ -18,6 +21,10 @@ plankt <- merge(d, vars)
 
 
 
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 # Первичный осмотр данных ####
 
 ggplot(plankt[plankt$Species == "Microsetella norvegica", ], aes(x = Abundance, y = 1:nrow(plankt[plankt$Species == "Microsetella norvegica", ]))) + geom_point()
@@ -26,6 +33,7 @@ ggplot(plankt[plankt$Species == "Microsetella norvegica", ], aes(x = Abundance, 
 plankt[plankt$Abundance > 10000 & !is.na(plankt$Abundance) & plankt$Species == "Microsetella norvegica",  ]
 
 
+<<<<<<< Updated upstream
 
 
 
@@ -73,6 +81,30 @@ plankt_total$N_weig_25 <- round((plankt_total$Abundance_0_10 * 10 + plankt_total
 
 
 # names(plankt_mean)
+=======
+## Среденвзвешанные значения, объединение слоев
+
+plankt_1 <- plankt[plankt$Level == "0-10", ]
+nrow(plankt_1)
+
+plankt_2 <- plankt[plankt$Level == "10-25", ]
+nrow(plankt_2)
+
+plankt_3 <- plankt[plankt$Level == "25-bottom", ]
+nrow(plankt_3)
+
+
+names(plankt_1)
+
+plankt_mean <- plankt_1
+
+plankt_mean$Abund_mean <- (plankt_1$Abundance*10 + plankt_2$Abundance*15)/25
+
+qplot(plankt_mean$Abund_mean, plankt_mean$Abundance)
+
+
+names(plankt_mean)
+>>>>>>> Stashed changes
 
 # plankt_mean <- plankt_mean[, -6]
 
@@ -97,6 +129,7 @@ plankt_total$N_weig_25 <- round((plankt_total$Abundance_0_10 * 10 + plankt_total
 Abundance <- read.csv("data/abundance.csv", header = TRUE) # Данные по обилию видов, усреденнные по всему столбу воды за март-сентябрь.
 
 
+<<<<<<< Updated upstream
 # ggplot(plankt_mean[plankt_mean$Stage == "Total" & plankt$Month %in% 6:9, ], aes(x = Year, y = (Abund_mean)))  + stat_summary(fun.data = "mean_cl_boot") + facet_wrap(~Species, scales = "free_y") + geom_smooth() 
 # 
 # colSums(is.na(plankt_mean[plankt_mean$Stage == "Total" & plankt$Month %in% 6:9, ]))
@@ -165,6 +198,33 @@ qplot(x = Abundance_summer_25$`Microsetella norvegica`, y = Abundance_summer$`Mi
 
 # write.table(Abundance_summer, "clipboard", sep = "\t", row.names = F)
 # write.table(Abundance_summer_25, "clipboard", sep = "\t", row.names = F)
+=======
+ggplot(plankt_mean[plankt_mean$Stage == "Total" & plankt$Month %in% 6:9, ], aes(x = Year, y = (Abund_mean)))  + stat_summary(fun.data = "mean_cl_boot") + facet_wrap(~Species, scales = "free_y") + geom_smooth() 
+
+colSums(is.na(plankt_mean[plankt_mean$Stage == "Total" & plankt$Month %in% 6:9, ]))
+
+              
+
+
+# Находим пики в сезоны
+
+names(plankt_mean)
+
+
+
+plankt_mean$Date2 <- strptime(paste(plankt_mean$Day,"/", plankt_mean$Month, "/", plankt_mean$Year, sep = ""), format=("%d/%m/%Y"))
+
+Start_day <- strptime(paste(plankt_mean$Year,"/01/01", sep = ""), format=("%Y/%d/%m"))
+
+
+plankt_mean$Days_from_year_start <-  as.numeric(round(difftime(plankt_mean$Date2, as.Date(Start_day))))
+
+names(plankt_mean)
+
+
+
+
+>>>>>>> Stashed changes
 
 
 ##разделяем датасет на части по видам
@@ -404,6 +464,7 @@ log_param_Triconia <- log_param(df = df_count_Total_tricon, species = "Triconia"
 
 
 
+<<<<<<< Updated upstream
 ## Смотрим есть ли зависимость между асимптотой кумулятивной крвой (максимальное количество особей отмеченных в данном году) и датой начала сезона
 
 
@@ -416,6 +477,8 @@ ggplot(log_param_Pseudocalanus, aes(x = Days_perc_15, y = log(Asym) )) + geom_po
 ggplot(log_param_Acartia, aes(x = Days_perc_15, y = log(Asym) )) + geom_point() + geom_smooth(method = "lm")
 ggplot(log_param_Microsetella, aes(x = Days_perc_15, y = log(Asym) )) + geom_point() + geom_smooth(method = "lm")
 
+=======
+>>>>>>> Stashed changes
 
 
 
@@ -450,6 +513,11 @@ cum_param <- function(df, species = NULL){
 
 cum_param(df = df_count_Total_calanus, species = "Calanus")
 
+<<<<<<< Updated upstream
+=======
+
+
+>>>>>>> Stashed changes
 ##Даты пиков численности видов
 
 peaks <- function(df, species = NULL){
@@ -475,6 +543,7 @@ log_param_Triconia <- merge(log_param_Triconia, peaks(df = tricon), by="Year")
 
 
 
+<<<<<<< Updated upstream
 write.table(log_param_Calanus, "clipboard", sep = "\t", row.names = FALSE)
 
 
@@ -488,6 +557,10 @@ ggplot(log_param_Acartia, aes(x = Peak_Days_from_year_start, y = log(Asym) )) + 
 ggplot(log_param_Microsetella, aes(x = Peak_Days_from_year_start, y = log(Asym) )) + geom_point() + geom_smooth(method = "lm")
 
 
+=======
+
+write.table(log_param_Calanus, "clipboard", sep = "\t", row.names = FALSE)
+>>>>>>> Stashed changes
 
 
 # Функция для рисования кумулят

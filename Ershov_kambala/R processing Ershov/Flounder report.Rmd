@@ -1,0 +1,21 @@
+---
+title: "Связь ориентации камбол с их размером"
+author: "В. Хайтов"
+date: "12 02 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE)
+
+```
+
+## Описание подхода
+
+Вместо анализа и сравннения частотных распрееделений размеров у право-и левосторонних самцов и самок 
+
+
+```{r cars}
+summary(cars)
+```

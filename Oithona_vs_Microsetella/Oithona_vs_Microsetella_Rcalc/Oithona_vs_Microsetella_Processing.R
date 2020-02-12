@@ -5,6 +5,8 @@ library(ggplot2)
 library(mgcv)
 
 
+
+
 cop_init <- read.table("Data/Oithona_Microsetella.csv", sep = ",", header = T)
 
 names(cop_init)
@@ -88,16 +90,30 @@ cop$Log_N <- log(cop$N + 1)
 
 cop_Oit <- cop %>% filter(Depth == "0_10", Sp == "Oithona", Stage3 != "Total")
 
-Mod_Oit <- gam(N ~ s(Year, DOY, by = Stage3), data = cop_Oit, family = "nb")
+
+means_Oit <- cop_Oit %>% group_by(Stage3, Year) %>% summarise(N_mean = log(mean(N)+1))
+
+
+
+Mod_Oit <- gam(Log_N ~ s(Year, DOY, by = Stage3), data = cop_Oit)
+
 
 plot(Mod_Oit, pages = 1)
 
 
+
 new_data_Oit <- expand.grid(Stage3 = unique(cop_Oit$Stage3), DOY = 1:365, Year = seq(min(cop_Oit$Year), max(cop_Oit$Year), 1))
+
+new_data_Oit <- merge(new_data_Oit, means_Oit)
+
 
 new_data_Oit$Predicted <- predict(Mod_Oit, newdata = new_data_Oit)
 
-ggplot(new_data_Oit, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Predicted)) + facet_wrap(~Stage3, nrow = 1) + scale_fill_gradient(low = "white", high = "red") + geom_point(data = cop_Oit, aes(x = Year, y = DOY), size = 0.1) + guides(fill = "none") + theme(axis.text.x = element_text(angle = 90)) + labs(y = "Day of Year") 
+new_data_Oit$Anom <- ifelse(new_data_Oit$N_mean < new_data_Oit$Predicted, -1, 1)
+
+
+
+ggplot(new_data_Oit, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Anom)) + facet_wrap(~Stage3, nrow = 1) + scale_fill_gradient(low = "white", high = "red") + geom_point(data = cop_Oit, aes(x = Year, y = DOY), size = 0.1) + guides(fill = "none") + theme(axis.text.x = element_text(angle = 90)) + labs(y = "Day of Year") 
 
 
 

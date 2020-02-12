@@ -1,5 +1,6 @@
 D%3A%2FTEMP%2FDatascience2019%2Fmy_first_html.Rmd="6F8E13E5"
 D%3A%2FText%2FArticle%2FArticles_in_progress%2FMorphological%20marker%20fo%20Mytilus%20edulis%20%20Mytilus%20trossulus%20identification%2FR_calc_2018%2FCalculator%20in%20action%20test.R="9D274A93"
+<<<<<<< Updated upstream
 D%3A%2FText%2FArticle%2FArticles_in_progress%2FMorphological%20marker%20fo%20Mytilus%20edulis%20%20Mytilus%20trossulus%20identification%2FR_calc_2018%2FCode%20for%20all%20Pictures.R="DBB7463D"
 D%3A%2FText%2FArticle%2FArticles_in_progress%2FMorphological%20marker%20fo%20Mytilus%20edulis%20%20Mytilus%20trossulus%20identification%2FR_calc_2018%2FModel_calculator_correspondence.R="A3CC150"
 D%3A%2FText%2FArticle%2FArticles_in_progress%2FMorphological%20marker%20fo%20Mytilus%20edulis%20%20Mytilus%20trossulus%20identification%2FR_calc_2018%2FPictures%2020.05.2019.rmd="311D28A8"
@@ -17,6 +18,12 @@ D%3A%2FText%2FArticle%2FArticles_in_progress%2FMorphological%20marker%20fo%20Myt
 D%3A%2FText%2FArticle%2FArticles_in_progress%2FMorphological%20marker%20fo%20Mytilus%20edulis%20%20Mytilus%20trossulus%20identification%2FR_calc_2018%2Fplots.R="8B46CB94"
 D%3A%2FText%2FArticle%2FArticles_in_progress%2FUsov_phenology%2FR_calculation_Phenology%2FIllustrations%2020.10.rmd="AD600276"
 D%3A%2FText%2FArticle%2FAstred_English%2FR%20calculations%20for%20Astred%20English%2FKhaitov_et_al.Rmd="BB45FEAF"
+=======
+D%3A%2FText%2FArticle%2FArticles_in_progress%2FMorphological%20marker%20fo%20Mytilus%20edulis%20%20Mytilus%20trossulus%20identification%2FR_calc_2018%2FPictures%2020.05.2019.rmd="311D28A8"
+D%3A%2FText%2FArticle%2FArticles_in_progress%2FMorphological%20marker%20fo%20Mytilus%20edulis%20%20Mytilus%20trossulus%20identification%2FR_calc_2018%2FSimulations.R="9F8AF2B"
+D%3A%2FText%2FArticle%2FArticles_in_progress%2FMorphological%20marker%20fo%20Mytilus%20edulis%20%20Mytilus%20trossulus%20identification%2FR_calc_2018%2Fcompetition_%2Codelling.R="2AECC2EE"
+D%3A%2FText%2FArticle%2FArticles_in_progress%2FMorphological%20marker%20fo%20Mytilus%20edulis%20%20Mytilus%20trossulus%20identification%2FR_calc_2018%2Fplots.R="8B46CB94"
+>>>>>>> Stashed changes
 D%3A%2FText%2FArticle%2FAstred_English%2FR%20calculations%20for%20Astred%20English%2FKhaitov_et_al_Mussel_Sea_stars_NL_edited_17_10_17.Rmd="BBBCF5A2"
 D%3A%2FText%2FArticle%2FAstred_English%2FR%20calculations%20for%20Astred%20English%2FKhaitov_et_al_Mussel_Sea_stars_new_version.Rmd="628B1482"
 D%3A%2FText%2FArticle%2FMBS%202019%2FPoster_R%2FModel_calculation.R="AD8EC4F"
@@ -61,11 +68,14 @@ D%3A%2FText%2FArticle%2FMytilus%20edulis%20vs%20Mytilus%20trossulus%2FBarents%20
 D%3A%2FText%2FArticle%2FMytilus%20edulis%20vs%20Mytilus%20trossulus%2FBarents%20sea%20analysis%2FKola_analysis_2018%2FR_calc_2018%2Freport_VM_6.Rmd="B0C7E1EB"
 D%3A%2FText%2FArticle%2FMytilus%20edulis%20vs%20Mytilus%20trossulus%2FBarents%20sea%20analysis%2FKola_analysis_2018%2FR_calc_2018%2Fsalinity_processing.R="2BB0DE3D"
 D%3A%2FText%2FArticle%2FMytilus%20edulis%20vs%20Mytilus%20trossulus%2FBarents%20sea%20analysis%2FKola_analysis_2018%2FR_calc_2018%2Fsimulator%20of%20samplings.R="8BB03500"
+<<<<<<< Updated upstream
 D%3A%2FText%2FArticle%2FMytred_2018%2FR_calc_for_MYTRED_2018%2FMytred_data_procesing.R="BEBAB9CA"
 D%3A%2FText%2FLectures%2FEcology_University%2FGeneral-ecology%2FModels%2FDynamycs%20of%20filterfeeding%20mussels.R="1E14F3F7"
 D%3A%2FText%2FLectures%2FEcology_University%2FGeneral-ecology%2FModels%2FLogistic%20dynamics.R="B0A51060"
 D%3A%2FText%2FLectures%2FEcology_University%2FGeneral-ecology%2FModels%2FMaltusian%20growth.R="5C3C487E"
 D%3A%2FText%2FLectures%2FEcology_University%2FGeneral-ecology%2FModels%2FPredator_prey.R="6DBD68FE"
+=======
+>>>>>>> Stashed changes
 D%3A%2FText%2FLectures%2FStatistica%2Fcoursera-linmodr%2Fcourse_2%2FC2_M3.Rmd="FB4EE864"
 D%3A%2FText%2FLectures%2FStatistica%2Fcoursera-linmodr%2Fcourse_3%2FC3_M4.Rmd="3577C3A1"
 D%3A%2FText%2FLectures%2FStatistica%2Fcoursera-linmodr%2Fcourse_4%2FC4_M4_binomial.Rmd="43A519B3"
