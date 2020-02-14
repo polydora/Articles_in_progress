@@ -1,0 +1,14 @@
+base
+knitr
+ggplot2
+dplyr
+reshape2
+permute
+lattice
+vegan
+gridExtra
+broom
+magrittr
+ggpubr
+ggvegan
+ggrepel
