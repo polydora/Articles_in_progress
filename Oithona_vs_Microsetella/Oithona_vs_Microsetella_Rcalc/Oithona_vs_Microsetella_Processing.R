@@ -88,7 +88,7 @@ cop$Log_N <- log(cop$N + 1)
 
 cop_Oit <- cop %>% filter(Depth == "0_10", Sp == "Oithona", Stage3 != "Total")
 
-Mod_Oit <- gam(N ~ s(Year, DOY, by = Stage3), data = cop_Oit, family = "nb")
+Mod_Oit <- gam(Log_N ~ s(Year, DOY, by = Stage3) + Stage3, data = cop_Oit)
 
 plot(Mod_Oit, pages = 1)
 
@@ -97,7 +97,24 @@ new_data_Oit <- expand.grid(Stage3 = unique(cop_Oit$Stage3), DOY = 1:365, Year =
 
 new_data_Oit$Predicted <- predict(Mod_Oit, newdata = new_data_Oit)
 
-ggplot(new_data_Oit, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Predicted)) + facet_wrap(~Stage3, nrow = 1) + scale_fill_gradient(low = "white", high = "red") + geom_point(data = cop_Oit, aes(x = Year, y = DOY), size = 0.1) + guides(fill = "none") + theme(axis.text.x = element_text(angle = 90)) + labs(y = "Day of Year") 
+
+mean_predicted <- new_data_Oit %>% group_by(Stage3) %>% summarise(Mean_Predicted = mean(Predicted))
+
+new_data_Oit2 <- merge(new_data_Oit, mean_predicted)
+
+new_data_Oit2$Anom <- ifelse(new_data_Oit2$Predicted >= new_data_Oit2$Mean_Predicted, 1, -1)
+
+ggplot(new_data_Oit2, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Anom)) + facet_wrap(~Stage3, nrow = 1) + scale_fill_gradient(low = "white", high = "red") + geom_point(data = cop_Oit, aes(x = Year, y = DOY), size = 0.1) + guides(fill = "none") + theme(axis.text.x = element_text(angle = 90)) + labs(y = "Day of Year")
+
+
+
+ggplot(new_data_Oit, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Predicted)) + facet_wrap(~Stage3, nrow = 1) + scale_fill_gradient(low = "white", high = "red") + geom_point(data = cop_Oit, aes(x = Year, y = DOY), size = 0.1) + guides(fill = "none") + theme(axis.text.x = element_text(angle = 90)) + labs(y = "Day of Year")
+
+
+
+
+
+
 
 
 
@@ -105,20 +122,23 @@ ggplot(new_data_Oit, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Predicted)) 
 
 cop_Mic <- cop %>% filter( Sp == "Microsetella", Stage3 != "Total")
 
-Mod_Mic <- gam(N ~ s(Year, DOY, by = Stage3), data = cop_Mic, family = "nb")
+Mod_Mic <- gam(Log_N ~ s(Year, DOY, by = Stage3) + Stage3, data = cop_Mic, family = "gaussian")
 
 plot(Mod_Mic, pages = 1)
 
 new_data_Mic <- expand.grid(Stage3 = unique(cop_Mic$Stage3), DOY = 1:365, Year = seq(min(cop_Mic$Year), max(cop_Mic$Year), 1))
 
-new_data_Mic$Predicted <- predict(Mod_Mic, newdata = new_data_Mic)
+new_data_Mic$Predicted <- predict(Mod_Mic, newdata = new_data_Mic, type = "response")
 
 
+mean_predicted_Mic <- new_data_Mic %>% group_by(Stage3) %>% summarise(Mean_Predicted = mean(Predicted))
 
-#The day when the maximum of abundance was observed
+new_data_Mic2 <- merge(new_data_Mic, mean_predicted_Mic)
 
-days_of_max <- new_data_Mic %>% group_by(Year, Stage3) %>% summarise(Day_of_max = DOY[which(Predicted == max(Predicted))]  )
+new_data_Mic2$Anom <- ifelse(new_data_Mic2$Predicted >= new_data_Mic2$Mean_Predicted, 1, -1)
 
 
+ggplot(new_data_Mic2, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Anom)) + facet_wrap(~Stage3, nrow = 1) + scale_fill_gradient(low = "white", high = "red") + geom_point(data = cop_Mic, aes(x = Year, y = DOY), size = 0.1) + guides(fill = "none") + theme(axis.text.x = element_text(angle = 90)) + labs(y = "Day of Year") 
 
-ggplot(new_data_Mic, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Predicted)) + facet_wrap(~Stage3, nrow = 1) + scale_fill_gradient(low = "white", high = "red") + geom_point(data = cop_Mic, aes(x = Year, y = DOY), size = 0.1) + guides(fill = "none") + theme(axis.text.x = element_text(angle = 90)) + labs(y = "Day of Year") + stat_contour(aes(z = Predicted), bins = 3, color="yellow", size=0.25) 
+ggplot(new_data_Mic, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Predicted)) + facet_wrap(~Stage3, nrow = 1) + scale_fill_gradient(low = "white", high = "red") + geom_point(data = cop_Mic, aes(x = Year, y = DOY), size = 0.1) + guides(fill = "none") + theme(axis.text.x = element_text(angle = 90)) + labs(y = "Day of Year") 
+
