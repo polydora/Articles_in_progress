@@ -1,0 +1,12 @@
+name: Identification_by_morphotype_test
+title: Identification_by_morphotype_test
+username:
+account: polydora
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1815883
+bundleId: 2802742
+url: https://polydora.shinyapps.io/Identification_by_morphotype_test/
+when: 1581756698.29284
+asMultiple: FALSE
+asStatic: FALSE

@@ -33,10 +33,10 @@ ui <- fluidPage(
       
       #Задаем параметр P_T
       sliderInput(inputId = "P_T",
-                  label = "Proportion of T-morphotype in population of interest:",
+                  label = "Frequency of T-morphotype in population of interest:",
                   min = 0,
                   max = 1,
-                  step = 0.01,
+                  step = 0.001,
                   value = 0.5) #То с чего начинается
       
       
@@ -72,7 +72,13 @@ server <- function(input, output) {
     P_MT_T_sample <- Ptros_sample*input$P_T_MT/((1-Ptros_sample)*(1 - input$P_E_ME) + Ptros_sample*input$P_T_MT)
     P_ME_E_sample <- (1 - Ptros_sample)*input$P_E_ME/((1-Ptros_sample)*input$P_E_ME + Ptros_sample * (1- input$P_T_MT))
 
-
+    min_P_T_sample <- 1 - input$P_E_ME
+    max_P_T_sample <- input$P_T_MT
+    
+    # min_Ptros_sample <- (min_P_T_sample - (1 - input$P_E_ME)) / (input$P_T_MT - (1-input$P_E_ME))
+    # max_Ptros_sample <- (max_P_T_sample - (1 - input$P_E_ME)) / (input$P_T_MT - (1-input$P_E_ME))
+    
+    
     # Ptros_sample <- (P_T - (1 - P_E_ME)) / (P_T_MT - (1-P_E_ME))
     # P_MT_T_sample <- Ptros_sample*P_T_MT/((1-Ptros_sample)*(1 - P_E_ME) + Ptros_sample*P_T_MT)
     # P_ME_E_sample <- (1 - Ptros_sample)*P_E_ME/((1-Ptros_sample)*P_E_ME + Ptros_sample * (1- P_T_MT)) 
@@ -83,28 +89,48 @@ server <- function(input, output) {
     
     
     
-    df_bayes <- data.frame(Ptros = seq(0, 1, by = 0.01))
+    df_bayes <- data.frame(Ptros = seq(0, 1, by = 0.01), P_T = seq(0, 1, by = 0.01))
     
     df_bayes$P_MT_T <- df_bayes$Ptros * input$P_T_MT /((1-df_bayes$Ptros)*(1 - input$P_E_ME) + df_bayes$Ptros*input$P_T_MT) 
     df_bayes$P_ME_E <- (1 - df_bayes$Ptros)*input$P_E_ME/((1-df_bayes$Ptros)*input$P_E_ME + df_bayes$Ptros * (1- input$P_T_MT)) 
     
     
+    df_bayes$Ptros_predicted <- (df_bayes$P_T - (1 - input$P_E_ME)) / (input$P_T_MT - (1-input$P_E_ME))
     
-    ggplot(df_bayes, aes(x = Ptros)) + 
+    
+Pl_congr <-  ggplot(df_bayes, aes(x = Ptros)) + 
       geom_line(aes(y = P_MT_T), color = "red", size = 1) + 
       geom_line(aes(y = P_ME_E), color = "blue", size = 1)  +
       geom_point(data = df_sample, aes(x = Ptros, y = P, fill = Sp), positon = position_jitter(), shape = 21, size = 4) +
-      geom_text(data = df_sample, aes(x = Ptros, y = P + 0.02, label = round(P, 2)) ) + 
+      geom_text_repel(data = df_sample, aes(x = Ptros, y = P, label = round(P, 2)), direction = "both", point.padding = 1) + 
       scale_fill_manual(values = c("blue", "red")) +
-      labs(fill = "Probability of correct identification") + 
-      theme(legend.position = "bottom")
-    
-    # +
-    #   geom_vline(xintercept = min) + 
-    #   geom_vline(xintercept = --input$P_E_ME)
+      labs(y = "Probability of correct identification", x = "Mytilus trossulus prevalence", fill = "Species") + 
+      theme(legend.position = "bottom") + 
+      xlim(0, 1) +
+      ylim(0, 1) +
+      ggtitle("Individual mussel identification")
+  
+
+   
+Pl_ptros <- ggplot(df_bayes, aes(x = P_T, y = Ptros_predicted)) + 
+  geom_line(size = 1, color = "darkgray") + 
+  xlim(0,1) + 
+  ylim(0, 1) + 
+  geom_point(x = input$P_T, y = Ptros_sample, size = 4) + 
+  geom_text(x = input$P_T+0.1, y = Ptros_sample + 0.02, aes(label = paste("Ptros = ", round(Ptros_sample, 2) ))) + 
+  labs(x = "Frequency of T-morphotype", y ="Predicted frequency of Mytilus trossulus") +
+  geom_abline(linetype = 2, size = 0.5) +
+  geom_point(x = min_P_T_sample, y = 0, shape = 25, size = 5, fill = "yellow") + 
+  geom_text(x = min_P_T_sample + 0.1, y = 0, label = paste("min P_T = ", round(min_P_T_sample, 2) ), hjust = "left" ) +
+  geom_point(x = max_P_T_sample, y = 1, shape = 24, size = 5, fill = "yellow") + 
+  geom_text(x = max_P_T_sample - 0.1, y = 1, label = paste("max P_T = ", round(max_P_T_sample, 2) ), hjust = "right" )+
+  ggtitle("Taxonomical structure of mixed population")
 
 
-    
+
+
+grid.arrange(Pl_ptros, Pl_congr, nrow = 2)
+
     
   })
 }
