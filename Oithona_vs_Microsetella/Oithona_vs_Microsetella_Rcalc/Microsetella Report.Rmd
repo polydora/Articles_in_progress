@@ -1,0 +1,314 @@
+---
+title: "Жизненный цикл Microsetella"
+author: "Вадим Хайтов"
+date: '17 февраля 2020 г '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+## Первичные данные
+
+```{r}
+library(reshape2)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(mgcv)
+library(gridExtra)
+library(broom)
+
+
+
+cop_init <- read.table("Data/Oithona_Microsetella.csv", sep = ",", header = T)
+
+
+cop <- melt(cop_init, id.vars = c("Day","Month","Year","Day.of.year"), variable.name = "Stage", value.name = "N") 
+
+cop$Depth[str_detect(as.character(cop$Stage), "_1")] <- "0_10"  
+cop$Depth[str_detect(as.character(cop$Stage), "_25")] <- "0_25"  
+cop$Depth[str_detect(as.character(cop$Stage), "_3")] <- "25_bottom" 
+cop$Depth[str_detect(as.character(cop$Stage), "_65")] <- "0_bottom" 
+
+cop$Depth[is.na(cop$Depth)] <- "10_25" 
+
+# unique(cop$Depth)
+
+
+
+
+cop$Stage2[str_detect(as.character(cop$Stage), "_F_")] <- "Female"
+cop$Stage2[str_detect(as.character(cop$Stage), "_M_")] <- "Male"
+cop$Stage2[str_detect(as.character(cop$Stage), "_C_")] <- "Cop."
+cop$Stage2[str_detect(as.character(cop$Stage), "_J_")] <- "Juv."
+cop$Stage2[str_detect(as.character(cop$Stage), "_A_")] <- "Adult"
+cop$Stage2[str_detect(as.character(cop$Stage), "_N_")] <- "Nauplii"
+cop$Stage2[is.na(cop$Stage2)] <- "Total"
+
+cop$Sp[str_detect(as.character(cop$Stage), "OITO")] <- "Oithona"
+cop$Sp[str_detect(as.character(cop$Stage), "MIC")] <- "Microsetella"
+
+
+#Remove all cases with NA in Abundance
+cop <- cop[! is.na(cop$N), ]
+
+
+#Construct the variable vith date of sample
+cop$Date_text <- with(cop, paste(Day,Month,Year, sep = "-"))
+
+cop$Date <- as.POSIXct(as.Date(cop$Date_text, format = "%d-%m-%Y"))
+
+
+
+#Combine Males and Females in one category 
+cop$Stage3 <- cop$Stage2
+
+cop$Stage3[cop$Stage3 == "Male" | cop$Stage3 == "Female"] <- "Adult"
+
+# unique(cop$Stage3)
+
+
+
+
+#Ordering stages 
+cop$Stage3 <- factor(cop$Stage3, levels = c("Adult", "Nauplii", "Juv.", "Cop.", "Total") )
+                     
+#Constructing date of sample as Day from yar beginning
+
+cop$DOY <- as.numeric(strftime(cop$Date, format = "%j"))
+
+# Log transformation of abundance
+cop$Log_N <- log(cop$N + 1)
+
+
+
+
+
+
+cop_init_100 <- read.table("Data/Oithona_Microsetella_100_mkm.csv", sep = ",", header = T)
+
+
+cop100 <- melt(cop_init_100, id.vars = c("Day","Month","Year","Date"), variable.name = "Stage", value.name = "N") 
+
+
+cop100$Depth[str_detect(as.character(cop100$Stage), "_1")] <- "0_10"  
+cop100$Depth[str_detect(as.character(cop100$Stage), "_25")] <- "0_25"  
+cop100$Depth[str_detect(as.character(cop100$Stage), "_3")] <- "25_bottom" 
+cop100$Depth[is.na(cop100$Depth)] <- "10_25" 
+
+cop100$Stage2[str_detect(as.character(cop100$Stage), "_F_")] <- "Female"
+cop100$Stage2[str_detect(as.character(cop100$Stage), "_M_")] <- "Male"
+cop100$Stage2[str_detect(as.character(cop100$Stage), "_C_")] <- "Cop."
+cop100$Stage2[str_detect(as.character(cop100$Stage), "_J_")] <- "Juv."
+cop100$Stage2[str_detect(as.character(cop100$Stage), "_A_")] <- "Adult"
+cop100$Stage2[str_detect(as.character(cop100$Stage), "_N_")] <- "Nauplii"
+cop100$Stage2[is.na(cop100$Stage2)] <- "Total"
+
+
+
+
+
+cop100$Sp[str_detect(as.character(cop100$Stage), "OITO")] <- "Oithona"
+cop100$Sp[str_detect(as.character(cop100$Stage), "MIC")] <- "Microsetella"
+
+
+#Remove all cases with NA in Abundance
+cop100 <- cop100[! is.na(cop100$N), ]
+
+
+
+
+#Construct the variable vith date of sample
+cop100$Date_text <- with(cop100, paste(Day,Month,Year, sep = "-"))
+
+cop100$Date <- as.POSIXct(as.Date(cop100$Date_text, format = "%d-%m-%Y"))
+
+
+
+#Combine Males and Females in one category 
+cop100$Stage3 <- cop100$Stage2
+
+cop100$Stage3[cop100$Stage3 == "Male" | cop100$Stage3 == "Female"] <- "Adult"
+
+
+#Ordering stages 
+cop100$Stage3 <- factor(cop100$Stage3, levels = c("Adult", "Nauplii", "Juv.", "Cop.", "Total") )
+
+
+#Constructing date of sample as Day from yar beginning
+
+cop100$DOY <- as.numeric(strftime(cop100$Date, format = "%j"))
+
+
+# Log transformation for abundance
+
+cop100$Log_N <- log(cop100$N + 1)
+
+
+
+```
+
+
+
+В анализе используется два типа данных. 
+
+1. Сборы  с помощью сетки с размером ячеи 200 мкм. Годы сбора: `r range(cop$Year)`
+
+2. Сборы с помощью сетки с размером ячеи 100 мкм. Годы сбора: `r range(cop100$Year)`
+
+
+## Жизненный цикл Microsetella
+
+
+Для начала визуализируем распределение дат, когда наблюдаются максимумы обилия каждой из стадий. Для этого отфильтруем только те данные, где обилие данной стадии больше или равно многолетней средней. Для простоты будем рассматривать только диапазон глубин 0-10 м.
+
+```{r}
+theme_set(theme_bw())
+cop_Mic <- cop %>% filter( Sp == "Microsetella", Depth =='0_10', Stage3 != "Total")
+
+Mic_means <- cop_Mic %>% group_by(Stage3) %>% summarise(Mean_N = mean(N))
+
+cop_Mic <- merge(cop_Mic, Mic_means)
+
+cop_Mic$Anom <- ifelse(cop_Mic$N >= cop_Mic$Mean_N, 1, -1)
+
+Pl_DOY_dist_200 <- cop_Mic %>% filter(Anom ==1) %>% ggplot(., aes(x = Stage3, y = DOY)) + geom_violin(fill = "gray") + labs(x = "Life Stage", y = "Day of year") + ggtitle("200 mkm") + ylim(1, 365)
+
+
+
+
+
+cop_Mic100 <- cop100 %>% filter( Sp == "Microsetella", Depth =='0_10', Stage3 != "Total")
+
+Mic_means100 <- cop_Mic100 %>% group_by(Stage3) %>% summarise(Mean_N = mean(N))
+
+cop_Mic100 <- merge(cop_Mic100, Mic_means100)
+
+cop_Mic100$Anom <- ifelse(cop_Mic100$N >= cop_Mic100$Mean_N, 1, -1)
+
+Pl_DOY_dist_100 <- cop_Mic100 %>% filter(Anom ==1) %>% ggplot(., aes(x = Stage3, y = DOY)) + geom_violin(fill = "gray") + labs(x = "Life Stage", y = "Day of year") + ggtitle("100 mkm") + ylim(1, 365)
+
+grid.arrange(Pl_DOY_dist_200, Pl_DOY_dist_100, nrow = 1)
+
+```
+
+
+Данные с обеих сеток более или менее совпадают. Из этих графиков можно вытянуть сроки появления той или иной стадии. Однако есть проблема с Cop. По идее, эта стадия, которая состоит из двух стадий: 
+
+1. Это те Juv. которые превратились в Cop. после 200-го дня.
+
+2. Это те Cop., которые перезимовали и из них будут получены Adult на следующий год. Поскольку данный анализ не дает этой информации, то предлагаю применить вот такой метод. 
+
+
+### Анализ обилия особей разных стадий 
+
+По сути дела, вид представлен для нас как бы в двух координатах: Фенологические координаты (день года) многолетние тенденции (год). Поэтому можно построить вот такую аддитивную модель (GAM).
+
+$$
+log(N) = s(DOY, Year) + b_0 + \sum b_iStage_i
+$$
+
+где  $s$ - двумерный сплайн, описывающий поведение зависимой переменной ($log(N)$), $Stage_i$ - стадии жизненного цикла.  
+
+Вот параметры полученной модели. 
+
+```{r}
+
+Mod_Mic <- gam(Log_N ~ s(Year, DOY, by = Stage3) + Stage3, data = cop_Mic, family = "gaussian")
+
+new_data_Mic <- expand.grid(Stage3 = unique(cop_Mic$Stage3), DOY = 1:365, Year = seq(min(cop_Mic$Year), max(cop_Mic$Year), 1))
+
+new_data_Mic$Predicted <- predict(Mod_Mic, newdata = new_data_Mic, type = "response")
+
+
+mean_predicted_Mic <- new_data_Mic %>% group_by(Stage3) %>% summarise(Mean_Predicted = mean(Predicted))
+
+new_data_Mic2 <- merge(new_data_Mic, mean_predicted_Mic)
+
+new_data_Mic2$Anom <- ifelse(new_data_Mic2$Predicted >= new_data_Mic2$Mean_Predicted, 1, -1)
+
+
+# ggplot(new_data_Mic2, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Anom)) + facet_wrap(~Stage3, nrow = 1) + scale_fill_gradient(low = "white", high = "red") + geom_point(data = cop_Mic, aes(x = Year, y = DOY), size = 0.1) + guides(fill = "none") + theme(axis.text.x = element_text(angle = 90)) + labs(y = "Day of Year") 
+
+Pl_Mic_GAM <- ggplot(new_data_Mic, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Predicted)) + facet_wrap(~Stage3, nrow = 1) + scale_fill_gradient(low = "white", high = "red") + geom_point(data = cop_Mic, aes(x = Year, y = DOY), size = 0.1) + theme(axis.text.x = element_text(angle = 90)) + labs(y = "Day of Year") + labs(fill = "Log (N)")
+
+
+kable(tidy(Mod_Mic), caption = "Parameters of GAM", digits = 2)
+
+```
+
+
+
+
+Однако на эту таблицу особенно смотреть не надо. Важно посмотреть на визуализацию модели.
+
+```{r}
+Pl_Mic_GAM
+```
+
+Здесь видны следующие закономерности.   
+1. На всех стадиях явно видна многолетняя тенденция к смещению максимума обилия на более ранние сроки. 
+
+2. Обилие Nauplii и Juv.  сильно меньше, чем обилие Cop. Это можно связать с недовыловом крупноячеистой сеткой. 
+
+Поэтому рассмотрим аналогичную картинку для данных по сети 100 мкм.
+
+```{r}
+
+cop_Mic100 <- cop100 %>% filter( Sp == "Microsetella", Depth =="0_10", Stage3 != "Total")
+
+Mod_Mic <- gam(Log_N ~ s(Year, DOY, by = Stage3) + Stage3, data = cop_Mic100, family = "gaussian")
+
+# plot(Mod_Mic, pages = 1)
+
+new_data_Mic <- expand.grid(Stage3 = unique(cop_Mic100$Stage3),  DOY = 1:365, Year = seq(min(cop_Mic100$Year), max(cop_Mic100$Year), 1))
+
+new_data_Mic$Predicted <- predict(Mod_Mic, newdata = new_data_Mic, type = "response")
+
+
+mean_Mic <- cop_Mic100 %>% group_by(Stage3) %>% summarise(Mean = mean(Log_N))
+
+new_data_Mic2 <- merge(new_data_Mic, mean_Mic)
+
+# new_data_Mic2$Anom <- ifelse(new_data_Mic2$Predicted >= new_data_Mic2$Mean, 1, -1)
+# 
+# 
+# ggplot(new_data_Mic2, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Anom)) + facet_grid(Depth ~ Stage3) + scale_fill_gradient(low = "white", high = "red") + geom_point(data = cop_Mic, aes(x = Year, y = DOY), size = 0.1) + guides(fill = "none") + theme(axis.text.x = element_text(angle = 90)) + labs(y = "Day of Year") 
+
+ggplot(new_data_Mic, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Predicted)) + facet_wrap( ~ Stage3, nrow = 1) + scale_fill_gradient(low = "white", high = "red") + geom_point(data = cop_Mic100, aes(x = Year, y = DOY), size = 0.1)  + theme(axis.text.x = element_text(angle = 90)) + labs(y = "Day of Year") + labs(fill = "Log(N)") 
+
+```
+
+
+
+В целом здесь все как и на прошлой картинке, но видно, что в дни предшествующие появлению Adult обилие Cop. заметно меньше, чем обилие взрослых в период их пика. 
+
+
+Для более наглядной визуализации можно привести вот такую картинку.
+
+```{r}
+Mod_Mic_GAM_DOY <- gam(Log_N ~ s(DOY,  bs = "cc", by = Stage3) + Stage3 , data = cop_Mic100, family =  "nb")
+
+# plot(Mod_Mic_GAM_DOY)
+# summary(Mod_Mic_GAM_DOY)
+new_data_Mic <- expand.grid(Stage3 = unique(cop_Mic100$Stage3),   DOY = 1:365, Year = mean(cop_Mic100$Year))
+
+new_data_Mic$Predicted <- predict(Mod_Mic_GAM_DOY, newdata = new_data_Mic, type = "response")
+
+
+ggplot(new_data_Mic, aes(x = DOY, y = Predicted, color = Stage3)) + geom_line(size = 2) + labs(x = "Day of year", y = "Log(N)", color = "Stages")
+
+
+
+
+```
+
+
+
+По идее, до периода пика взрослых, Cop. должно быть приблизительно столько же сколько Adult  (если не в  два раза больше, если учитывать раннюю смерть самцов). На самом деле их заметно меньше (шкала логарифмическая). 
+
+Не может ли быть здесь какой-то миграции? Например, те Cop., которые получились из Juv. на приблизительно 200 день, далее большей частью уходят куда-то (возможно на дно). Далее, где-то на 150-й день они вылезают из рефугиума в планктон, превращаются в Adult, размножаются, дают Nauplii, те превращаются в Juv, а после -- в ранних Cop, которые приблизительно на 300-й день сваливают на дно. На дне, вероятно, у них и происходит секс, после которого утомленные самцы отдают богу душу, а самки выходят в планктон, где и откладывают яйца.
+
