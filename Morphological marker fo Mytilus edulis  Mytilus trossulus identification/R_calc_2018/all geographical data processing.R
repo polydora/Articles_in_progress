@@ -335,6 +335,8 @@ ggplot(myt2_WBL, aes(x = freq_MT, y = str)) +
 
 myt_X <- myt2[myt2$Subset %in% c("WBL", "BH"), ]
 
+myt_X$Subset
+
 myt_X$pop <- factor(myt_X$pop)
 
 table(myt_X$pop, myt_X$Sp)
@@ -342,7 +344,8 @@ table(myt_X$pop, myt_X$Sp)
 
 
 
-size_models <- myt_X %>% group_by(Subset, pop) %>% do(model = glm(ind ~  size, family = "binomial", data = .))
+size_models <- myt_X %>% group_by(pop) %>% do(model = glm(ind ~  size, family = "binomial", data = .))
+
 
 
 size_models_res <- size_models %>% tidy(model)

@@ -558,6 +558,157 @@ Model_5_R2 <- r.squaredGLMM(Model_5_final)[1,1]
 
 
 
+
+```{r}
+
+# Модели для всех географических выделов
+
+#### Data reading and initial preparation #####
+
+myt <- read.table("data_salinity3.csv", header = T, sep = ",")
+
+# Оставляем только мидий, у которых есть оценка морфотипа
+myt2_all <- myt[!is.na(myt$ind), ]
+
+
+
+# Подразделяем данные на сабсеты
+
+myt2_all$Subset[myt2_all$sea == "barents" & myt2_all$sal_place == "fresh"] <- "WBL" 
+myt2_all$Subset[myt2_all$sea == "barents" & myt2_all$sal_place == "normal"] <- "BH" 
+myt2_all$Subset[myt2_all$sea == "white" & myt2_all$sal_place == "normal"] <- "WBL" 
+myt2_all$Subset[myt2_all$sea == "white" & myt2_all$sal_place == "fresh"] <- "WBL" 
+
+myt2_all$Subset[myt2_all$sea == "Baltic"] <- "BALT" 
+myt2_all$Subset[myt2_all$sea == "GOM"] <- "GOM" 
+myt2_all$Subset[myt2_all$sea == "Norway"] <- "NORW" 
+myt2_all$Subset[myt2_all$sea == "Scotland"] <- "SCOT" 
+
+
+myt2_all$Subset <- factor(myt2_all$Subset, levels = c("WBL", "BH", "NORW", "BALT", "SCOT", "GOM" ))
+
+
+
+# Вводим обозначения 
+
+myt2_all$Sp [myt2_all$str > 0.5] <- "M.trossulus" #Лучше обозначать так!
+myt2_all$Sp [myt2_all$str <= 0.5] <- "M.edulis"
+myt2_all$Sp <- factor(myt2_all$Sp)
+
+
+
+# Вводим обозначения для морфотипов
+myt2_all$morph <- ifelse(myt2_all$ind == 1, "T_m", "E_m")
+myt2_all$morph <- factor(myt2_all$morph)
+
+
+
+# Бинарное обозначение видов
+myt2_all$Sp2 <- ifelse(myt2_all$Sp == "M.trossulus", 1, 0)
+
+
+#Correct identification
+myt2_all$congr <- ifelse((myt2_all$ind == 1 & myt2_all$Sp == "M.trossulus") | (myt2_all$ind == 0 & myt2_all$Sp == "M.edulis"), 1, 0   )
+
+
+# Частота M.trossulus в популяции
+
+freq_MT <- myt2_all %>% group_by(pop) %>% summarise(freq_MT = mean(Sp2))
+
+myt2_all <- merge(myt2_all, freq_MT)
+
+
+# Частота T-морфотипа в популяции
+
+Prop_T <- myt2_all %>% group_by(pop) %>% summarise(Prop_T = mean(ind))
+
+myt2_all <- merge(myt2_all, Prop_T)
+
+
+# Разделяем на тестовые и моделинговые датасеты
+
+
+# 
+# # Извлекаем из беломорского материала тестовую выборку 
+# #В формальную тестовую выборку  попадают точки наиболее близкие к 20%, 40%, 60% и 80% freq_MT
+# 
+# selected_pop <- myt2_all[myt2_all$Subset == "W", ] %>% group_by(Subset, pop) %>% summarise(freq_MT = mean(freq_MT)) %>% group_by(Subset) %>% arrange(freq_MT, .by_group = TRUE) %>% mutate(dif_20 = (freq_MT - 0.2)^2, dif_40 = (freq_MT - 0.4)^2, dif_60 = (freq_MT - 0.6)^2, dif_80 = (freq_MT - 0.8)^2)  %>% group_by(Subset)  %>% summarize (n_pop =n(), q_20_pop = nth(pop, which.min(dif_20)), q_40_pop = nth(pop, which.min(dif_40)), q_60_pop = nth(pop, which.min(dif_60)), q_80_pop = nth(pop, which.min(dif_80))) 
+# 
+# selected_pop <- melt(selected_pop, id.vars = c("Subset", "n_pop"))$value
+# 
+
+
+# testing data set
+myt3 <- myt2_all[myt2_all$dataset == "testing" | myt2_all$pop %in% c("kovda", "rya", "chupa", "umba_pil"),  ]
+
+#modelling data set
+myt2_all <- myt2_all[! myt2_all$pop %in% unique(myt3$pop), ]
+
+
+
+# Модели для сравнения geographical datasets 
+
+myt2_reduced <- myt2_all[myt2_all$Subset %in% c("WBL", "BH", "GOM", "BALT"), ]
+
+# unique(myt2_reduced$Subset)
+
+myt2_reduced$Subset <- factor(myt2_reduced$Subset, levels = c("WBL",  "BH",   "GOM",  "BALT"))
+
+# levels(myt2_reduced$Subset)
+
+
+library(optimx)
+
+Model_6_full_geogr <- glmer(congr ~ morph * freq_MT * Subset + (1 | pop), data = myt2_reduced, family = binomial(link = "logit"), control=glmerControl(optimizer = "optimx", calc.derivs = FALSE, optCtrl = list(method = "nlminb", starttests = FALSE, kkt = FALSE)))
+
+
+
+# overdisp_fun(Model_6_full_geogr)
+
+# summary(Model_6_full_geogr)
+# 
+# r.squaredGLMM(Model_6_final)
+# 
+# drop1(Model_6_full_geogr)
+
+# Model_6_full_geogr2 <- update(Model_6_full_geogr, . ~ . - morph:freq_MT:Subset)
+
+# drop1(Model_6_full_geogr2)
+
+
+Model_6_final <- Model_6_full_geogr 
+
+
+
+ptop_T_MT <- myt2_reduced %>% group_by(Subset, pop) %>% summarize(Prop_T = mean(Prop_T), MT = sum(Sp2), N = n())
+
+# ptop_T_MT <- ptop_T_MT[! ptop_T_MT$pop %in% c("Limh88", "CBCP"), ]
+
+
+Model_7_full <- glm(cbind(MT, (N-MT)) ~  Prop_T * Subset, data = ptop_T_MT, family = binomial(link = "logit"))
+
+# 
+# Model_7_full <- glm(Sp2 ~  Prop_T * Subset, data = myt2_reduced, family = binomial(link = "logit"))
+#  overdisp_fun(Model_7_full)
+
+# drop1(Model_7_full, test = "Chi")
+
+# Model_7_1 <- update(Model_7_full, . ~ . - Prop_T:Subset)
+
+# drop1(Model_7_1, test = "Chi")
+
+Model_7_final <- Model_7_full 
+
+
+
+```
+
+
+
+
+
+
+
 ```{r}
 
 # Распечатка результатов всех моделей
@@ -623,16 +774,37 @@ kable(all_models_print, col.names = c("Terms", "Estimate", "SE", "z-statistic", 
 
 
 
+The significant positive association between M.trossulus prevalence (Ptros) and frequency of T-morphotype was revealed in all three subsets around Kola peninsula (Model 1, Table +, Fig. +).  The regression lines constructed from the Model 1 approached closely to  Y=X line indicating the high proportionality between Ptros and PT in the case of W and BL. Importantly, points from testing data-sets for  W and BL were concentrated closely around regression lines, i.e. model predictions was in a good agreement with relationships of genetic and phenotyping structure in populations which were not involved in model construction. Thus the Model 1 reflected realistic relations between genetic and  phenotypic structures of populations in the case W and BL.
 
 
-In all models Ptros - proportion of *M.trossulus* in population; Subset - sampling area  (*W*, *BL*, *BH*); PT - proportion of T-morphotype in population; Species - mussel genotype (*M.edulis* or *M.trossulus*).
-*M.edulis* and *W* where used as basic levels for categorical predictors in all models.
-
-
+In the case of BH  the regression line diverged significantly from the Y=X line taking a relatively higher position in comparison with regression lines constructed for W and BL. It means that populations from BH possessed a higher proportion of T-morphotype  than in the case of W and BL for comparable Ptros range. Additionally it means that in populations dominated by M.edulis (low Ptros) the proportion of T-morphotype among mussels presented in such populations is much higher than in freshened area  of Barents Sea. However, again, in BH  the increase of Ptros was accompanied by a growth of  T-morphotype proportion indicating some association between genetic and phenotyping population structure. Points corresponding to testing data set were concentrated around BH regression line thus showing rather good concordance to model prediction. It means that deviation of BH regression line from regression lines constructed for W and BL was a reflection of some naturally existing property of populations existing in the areas of the Barent Sea with normal oceanic salinity.
 
 
 
-## Regression models visualisation
+Analysis of frequency of T-morphotype among M.edulis (P(T|tros)) and among M.trossulus (P(T|edu))   revealed two patterns (Model 2, Table +, Fig. +). Firstly, a significantly higher proportion of T-morphotype among M.trossulus in comparison with M.edulis was revealed in the case of  W and BL, but no such significant differences (the confidential intervals for both regression lines overlap, Fig. ++) were revealed in the case of BH due to higher T-morphotype frequency among M.edulis. Secondly in all cases some positive correlation of  P(T|tros) and P(T|edu) with Ptros was found. The dependence of P(T|tros) and P(T|edu) on Ptros means that in those populations which dominated by M.trossulus (high Ptros) some part of M.edulis (minor taxa) starting to possess T-morphotype. Opposite pattern is observed in the populations with M.edulis dominance when  M.trossulus being  a minor taxa more frequently possess E-morphotype in compareson with populations where this specie is a major taxa (high Ptros). 
+
+
+
+Analysis of frequency of T-morphotype among M.trossulus (P(T|tros)) and among M.edulis (P(T|edu))   revealed two patterns (Model 2, Table +, Fig. +). Firstly, a significantly higher proportion of T-morphotype among M.trossulus in comparison with M.edulis was revealed in the case of  W and BL, but no such significant differences (the confidential intervals for both regression lines overlap, Fig. ++) were revealed in the case of BH due to higher T-morphotype frequency among M.edulis. Secondly in all cases some positive correlation of  P(T|tros) and P(T|edu) with Ptros was found. The dependence of P(T|tros) and P(T|edu) on Ptros means that in those populations which are dominated by M.trossulus (high Ptros) some part of M.edulis (minor taxa) starting to possess T-morphotype. Opposite pattern is observed in the populations with M.edulis dominance when  M.trossulus being  a minor taxa more frequently possessed E-morphotype in comparison with populations where this species is a major taxa (high Ptros). 
+
+
+
+## The value of morphotype-test for prediction of mussel's taxa around Kola Peninsular
+
+As it was expected, the predictive value of morphotype-test, i.e. probability of correct species identification for a mussel with known morphotype, was in high dependence on M.trossulus prevalence (Model 4, Table +, Fig. +). Taking into account that marginal and conditional pseudoR2  were close to each other for this model (Table ++) the role of random factor (population) as regulator of the model intercept was rather weak i.e. the association of probability of correct identification with mussel species equally reproduced in all populations. 
+
+Probability of correct identification of M.trossulus by T-morphotype (P(tros|T)) increased with increasing of Ptros whereas P(edu|E) demonstrated the opposite pattern in all subsets. Both P(tros|T) and P(edu|E) approached closely to 1 if Ptros was correspondingly maximal or minimal in the case of W and BL. It means that taking randomly chosen mussel of T-morphotype from a population with high M.trossulus prevalence we may be quite sure that the mussel belongs to M.trossulus. Oppositely if we take the mussel with E-morphotype from population dominated by M.edulis we could be sure that this individual could be classified as M.edulis. However in the case of E-morphotype from population dominated by M.trossulus (high Ptros) the probability of a correct identification of this mussel as M.edulis is negligable.  The same is true for mussels with T-morphotype taken from population dominated by M.edulis (low Ptros). In the case of mixed populations (Ptros near to 0.5) we can believe with probability near to 0.7-0.8 that mussels with T-morphotype is M.trossulus and mussels with E-morphotype is M.edulis. 
+
+
+Qualitatively the same pattern was observed in the case of BH.  However both P(tros|T) and P(edu|E) predicted by the model were lesser in BH than in the case of W and BL. It means that morphotype test has less predictive value in the case of areas the Barents Sea with normal oceanic salinity. However it should be noted that if Ptros is low the predictive value P(edu|E) is high enough. The same is true for P(tros|T) if Ptros is high.
+
+
+Finally we tested the association of proportion of T-morphotype in population with proportion of M.trossulus (Model 5,  Table +).  Since the Model 5 is conceptually similar to Model 1 we do not present the visualisation of the model. This model reflects the significant positive association of Ptros with PT in all subsets. However, agein, the results for BH were significantly differ from W and BL. 
+
+
+
+
+
 
 ```{r}
 
@@ -656,7 +828,7 @@ Pl_mod1 <- ggplot(new_data, aes(x = freq_MT, y = fit)) + geom_line(linetype = 2,
 # иллюстрация с точками
 link_over_M <- myt2 %>% group_by(Subset, pop) %>% summarise(freq_MT = mean(Sp2), freq_Tmorph = mean(ind), N_MT = sum(Sp2 == 1),  N_ME = sum(Sp2 == 0))
 
-Pl_mod1_with_initial_data <- Pl_mod1 + 
+Pl_mod1_with_initial_data_no_test <- Pl_mod1 + 
   geom_point(data = link_over_M, aes(y = freq_Tmorph, size = (N_MT+N_ME), fill = (freq_MT)), shape = 21) + 
   scale_fill_continuous(high = "black", low = "white" ) + 
   geom_abline() + 
@@ -666,7 +838,7 @@ Pl_mod1_with_initial_data <- Pl_mod1 +
 test_Model_1 <- myt3 %>% group_by(Subset, pop) %>% summarise(freq_MT = mean(Sp2), freq_Tmorph = mean(ind), N_MT = sum(Sp2 == 1),  N_ME = sum(Sp2 == 0))
   
   
-Pl_mod1_with_initial_data <- Pl_mod1_with_initial_data + geom_point(data = test_Model_1, aes(x = freq_MT, y =freq_Tmorph, size = N_MT+N_ME), fill = "red", shape = 23 )
+Pl_mod1_with_initial_data <- Pl_mod1_with_initial_data_no_test + geom_point(data = test_Model_1, aes(x = freq_MT, y =freq_Tmorph, size = N_MT+N_ME), fill = "red", shape = 23 )
 
 
 
@@ -701,7 +873,7 @@ pops_over_M$P_E_ME <- with(pops_over_M, N_E_ME / N_ME)
 pops_over_M$P_T_ME <- with(pops_over_M, N_T_ME / N_ME)
 
 
-Pl_mod2_with_initial_data <- Pl_mod2 +   geom_segment(data = pops_over_M, aes(x = freq_MT, y = (1-P_E_ME), xend = freq_MT, yend = P_T_MT, group = 1), color = "darkgray")+ 
+Pl_mod2_with_initial_data_no_test <- Pl_mod2 +   geom_segment(data = pops_over_M, aes(x = freq_MT, y = (1-P_E_ME), xend = freq_MT, yend = P_T_MT, group = 1), color = "darkgray")+ 
   geom_hline(aes(yintercept=0.5), color="black") + 
   geom_point(data = pops_over_M, aes(y = (1-P_E_ME), size= N_ME, group =1), fill = "white", shape = 21)+
   geom_point(data = pops_over_M, aes(y = P_T_MT, size=N_MT, group =1), fill = "black", shape = 21)  + xlim(0,1)+ 
@@ -717,7 +889,7 @@ test_Model_2$P_E_ME <- with(test_Model_2, N_E_ME / N_ME)
 test_Model_2$P_T_ME <- with(test_Model_2, N_T_ME / N_ME)
 
 
-Pl_mod2_with_initial_data <- Pl_mod2_with_initial_data +  geom_point(data = test_Model_2, aes(y = (1-P_E_ME), size= N_ME, group =1), fill = "red", shape = 24)+
+Pl_mod2_with_initial_data <- Pl_mod2_with_initial_data_no_test +  geom_point(data = test_Model_2, aes(y = (1-P_E_ME), size= N_ME, group =1), fill = "red", shape = 24)+
   geom_point(data = test_Model_2, aes(y = P_T_MT, size=N_MT, group =1), fill = "blue", shape = 24)  + xlim(0,1)
 
 
@@ -747,12 +919,12 @@ Pl_mod3 <-  ggplot(new_data3, aes(x = freq_MT, y = fit)) + geom_line(linetype = 
 
 accuracy <- myt2 %>% group_by(Subset, pop) %>% summarize(freq_MT = mean(freq_MT), Accur = mean(congr), N = n())
 
-Pl_mod3_with_initial_data <- Pl_mod3 + geom_point(data = accuracy, aes(x = freq_MT, y = Accur, fill = freq_MT, size = N),  shape = 21) + scale_fill_continuous(high = "black", low = "white" ) + labs(x = "Proportion of M.trossulus", y = "Proportion of correct \nidentification")  + theme(axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank()) + geom_hline(yintercept = 0.5)
+Pl_mod3_with_initial_data_no_test <- Pl_mod3 + geom_point(data = accuracy, aes(x = freq_MT, y = Accur, fill = freq_MT, size = N),  shape = 21) + scale_fill_continuous(high = "black", low = "white" ) + labs(x = "Proportion of M.trossulus", y = "Proportion of correct \nidentification")  + theme(axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank()) + geom_hline(yintercept = 0.5)
 
 
 test_Model_3 <- myt3 %>% group_by(Subset, pop) %>% summarize(freq_MT = mean(freq_MT), Accur = mean(congr), N = n())
 
-Pl_mod3_with_initial_data <- Pl_mod3_with_initial_data + geom_point(data = test_Model_3, aes(x = freq_MT, y = Accur, size = N),  shape = 24, fill = "red")
+Pl_mod3_with_initial_data <- Pl_mod3_with_initial_data_no_test + geom_point(data = test_Model_3, aes(x = freq_MT, y = Accur, size = N),  shape = 24, fill = "red")
 
 
 # Model_4 ##############################
@@ -800,7 +972,7 @@ pr_value_M$PME_E <- with(pr_value_M, N_E_ME / N_E)
 pr_value_M$PME_T <- with(pr_value_M, N_T_ME / N_E)
 
 
-Pl_mod4_with_initial_data <- Pl_mod4 + geom_segment(data = pr_value_M, aes(x = freq_MT, y = PME_E, xend = freq_MT, yend = PMT_T), color="darkgrey") +
+Pl_mod4_with_initial_data_no_test <- Pl_mod4 + geom_segment(data = pr_value_M, aes(x = freq_MT, y = PME_E, xend = freq_MT, yend = PMT_T), color="darkgrey") +
   geom_hline(data = pr_value_M, aes(yintercept=0.5), color="black") +
   geom_point(data = pr_value_M, aes(y = PME_E, size= N_E), fill = "white", shape = 21) +
   geom_point(data = pr_value_M, aes(y = PMT_T, size=N_T), fill = "black", shape = 21) +
@@ -819,7 +991,7 @@ test_Model_4$PMT_E <- with(test_Model_4, N_E_MT / N_T)
 test_Model_4$PME_E <- with(test_Model_4, N_E_ME / N_E)
 test_Model_4$PME_T <- with(test_Model_4, N_T_ME / N_E)
 
-Pl_mod4_with_initial_data <- Pl_mod4_with_initial_data + geom_point(data = test_Model_4, aes(y = PME_E, size= N_E), fill = "red", shape = 24) +
+Pl_mod4_with_initial_data <- Pl_mod4_with_initial_data_no_test + geom_point(data = test_Model_4, aes(y = PME_E, size= N_E), fill = "red", shape = 24) +
   geom_point(data = test_Model_4, aes(y = PMT_T, size=N_T), fill = "blue", shape = 24)  
 
 
@@ -843,26 +1015,36 @@ Pl_mod5 <- ggplot(new_data5, aes(x = Prop_T, y = fit)) + geom_line(linetype = 2,
 
 init_data_Model_5 <- myt2 %>% group_by(Subset, pop) %>% summarise(Prop_T = mean(morph == "T_m"),  freq_MT = mean(Sp == "M.trossulus"), N = n())
 
-Pl_mod5_with_initial_data <- Pl_mod5 + geom_point(data = init_data_Model_5, aes( y = freq_MT, size = N, fill = freq_MT), shape = 21 ) + scale_fill_continuous(low = "white", high = "black") + labs(x = "Proportion of mussels with T-morphotype", y = "Proportion of M.trossulus \n")
+Pl_mod5_with_initial_data_no_test <- Pl_mod5 + geom_point(data = init_data_Model_5, aes( y = freq_MT, size = N, fill = freq_MT), shape = 21 ) + scale_fill_continuous(low = "white", high = "black") + labs(x = "Proportion of mussels with T-morphotype", y = "Proportion of M.trossulus \n")
 
  test_Model_5 <- myt3 %>% group_by(Subset, pop) %>% summarise(Prop_T = mean(morph == "T_m"),  freq_MT = mean(Sp == "M.trossulus"), N = n())
 
-Pl_mod5_with_initial_data <- Pl_mod5_with_initial_data + geom_point(data = test_Model_5, aes( y = freq_MT, size = N, fill = freq_MT), shape = 24, fill = "red" )
+Pl_mod5_with_initial_data <- Pl_mod5_with_initial_data_no_test + geom_point(data = test_Model_5, aes( y = freq_MT, size = N, fill = freq_MT), shape = 24, fill = "red" )
  
  
 ```
 
 
 ```{r, fig.height=10}
+# grid.arrange(Pl_mod1_with_initial_data , 
+#              Pl_mod2_with_initial_data + theme(strip.text = element_blank()), 
+#              Pl_mod3_with_initial_data + theme(strip.text = element_blank()), 
+#              Pl_mod4_with_initial_data+ theme(strip.text = element_blank()) ,
+#              ncol = 1)
+
+
 grid.arrange(Pl_mod1_with_initial_data , 
-             Pl_mod2_with_initial_data + theme(strip.text = element_blank()), 
-             Pl_mod3_with_initial_data + theme(strip.text = element_blank()), 
-             Pl_mod4_with_initial_data+ theme(strip.text = element_blank()) ,
+             Pl_mod2_with_initial_data_no_test + theme(strip.text = element_blank()), 
+             Pl_mod4_with_initial_data_no_test + theme(strip.text = element_blank()) ,
              ncol = 1)
+
 
 ```
 
-Figure ++. Visualisation of regression models.  Initial data are presented as proportions of positive outcome in particular populations. Size of points is proportional to number of mussels in the particular sample.  (A) Model1: the fill intensity is proportional to Ptros. (B) Model2: filled points - *M.trossulus* with T-morphotype; emty points - *M.edulis* with T-morphotype. (C) Model3: filled points - *M.trossulus* with T-morphotype; empty points - *M.edulis* with E-morphotype.
+Figure ++. Visualisation of regression models.  Initial data are presented as proportions of positive outcome in particular populations. Size of points is proportional to number of mussels in the particular sample.  (A) Model1: the fill intensity is proportional to Ptros. (B) Model2: filled points - *M.trossulus* with T-morphotype; emty points - *M.edulis* with T-morphotype. (C) Model4: filled points - *M.trossulus* with T-morphotype; empty points - *M.edulis* with E-morphotype.
+
+
+
 
 
 
@@ -876,6 +1058,10 @@ Model_2_final_diagn <- fortify(Model_2_final)
 
 resid_siz <- merge(myt2, Model_2_final_diagn)
 resid_siz <- resid_siz[!is.na(resid_siz$siz), ]
+
+# cor.test(resid_siz$.scresid, resid_siz$size )
+
+# ggplot(resid_siz, aes(x = size, y = .scresid)) + geom_point() + geom_smooth(method= "lm")
 
 # sum(is.na(resid_siz$size))
 
@@ -907,6 +1093,12 @@ resid_siz2 <- resid_siz2[!is.na(resid_siz2$siz), ]
 # sum(is.na(resid_siz2$size))
 
 
+# ggplot(resid_siz2, aes(x = size, y = .scresid)) + geom_point() + geom_smooth()
+
+
+# cor.test(resid_siz2$.scresid, resid_siz2$size )
+
+
 resid_cor2 <- resid_siz2 %>% group_by(Subset, pop) %>% summarise(cor = cor.test(.scresid, size, method = "pearson")$estimate, p = cor.test(.scresid, size, method = "pearson")$p.value)
 
 
@@ -921,26 +1113,52 @@ resid_cor2$p_adj <- p.adjust(resid_cor2$p, method = "hochberg")
 
 
 
+## Анализ связи с размерами в каждой из популяций
 
+
+myt2$pop <- factor(myt2$pop)
+
+myt2$Subset <- factor(myt2$Subset)
+
+size_models <- myt2 %>% group_by(pop) %>% do(model = glm(ind ~  size, family = "binomial", data = .))
+
+
+size_models_res <- size_models %>% tidy(model)
+
+size_models_res_slope <- size_models_res[size_models_res$term != "(Intercept)", ]
+
+size_models_res_slope$p_adj <- p.adjust(size_models_res_slope$p.value, method = "hochberg") 
+
+size_models_res_slope_signif <- size_models_res_slope[size_models_res_slope$p_adj <0.05, ]
+
+size_models_res_slope_signif$pop
+
+signif_slope <- myt2 %>% filter(pop %in% size_models_res_slope_signif$pop) %>% select(size)
+
+# length(signif_slope$size)
+
+not_signif_slope <- myt2 %>% filter(!pop %in% size_models_res_slope_signif$pop) %>%  select(size)
+
+# length(not_signif_slope$size)
+
+# t.test(signif_slope$size, not_signif_slope$size)
 
 ```
 
+************************
+**For Material and Methods about dependence on mussel size**
+
+Since the morphotype test was designed as a diagnostic tool for identification of mussel species  and taxonomic structure of mixed populations we decided  to avoid mussel size as a covariate in predictive models considered. However potentially mussel size could influence the probability of T-morphotype presence (see Katolikova et al., 2016). To check the possible correlation of T-morphotype presence with mussel size we prepared two types  of assessment. Firstly we constructed a set of logistic regression models for each particular population with probability of T-morphotype presence as dependent variable and mussel size as predictor. When all models were fitted we considered those cases where slope-terms  of the models were statistically significant (p < 0.05 after Hochberg’s correction for multiple testing, REF). Secondly  we checked the presence of any patterns in residuals from the Model 5 (the main model which was designed to predict the probability of correct identification of individual mussel by its morphotype) as a function of mussel size.  
+
+************************
 
 
-## Generalization of data
+
+Since the presence of T-morphotype potentially can be dependent on mussel size we assessed the statistical significance of the slope-terms for logistic regressions binding T-morphotype presence and mussel size in  each of ++ populations. We found significant association only in 4 cases: one population from W and three closely situated  populations from one locality in BH. In all these cases slope-terms were negative indicating lesser probability to find T-morphotype for larger mussels. It should be noted that the mean mussels size calculated for these four populations was significantly larger than the mean size for mussels from all other  populations (`r paste(round(mean(signif_slope$size), 1),"±", round(sd(signif_slope$size), 2) )` and `r i` mm (Mean ± SD) respectively, t-test = 7.82, p < 0.001). Additionally we analysed the association of residuals from Model 4 with mussel size. No clear pattern was revealed  in the residual plot (not shown).
 
 
-<!-- Дальнейший анализ должен показать, как ведут себя теоретические калькуляторы, подобранные в соответствии со стратегией, описанной выше. Но есть мнение (**которого я не придерживаюсь!**), что удобнее было бы приводить данные по генерализованной модели. Под "генерализованной" моделью  понимается модель, в которой фактор "Subset" имеет меньшее число градаций (или вовсе исключен из модели).  -->
+To assess the possibility of data-sets pooling we compared the AIC of full Model 4 (AIC = 1624.3)  with AICs of three other models based on differently pooled of  W, BL and BH subsets. The model based on pooled W and BL (hereafter, WBL) and separated BH showed the lowest AIC = 1620.3.  For the next analysis we will consider models based on this pooled data-set.
 
-Для того, чтобы проверить можно ли как-то генерализовать модель,  мы должны проверить на modelling data set, приводит ли объединение данных из разных регионов к существенным изменениям в структуре модели. Единственный (на мой взгляд) путь - это сравнить по информационным критериями несколько моделей-кандидатов:
-
-1. W + BL + BH (все регионы входят в модель)
-2. (WBL) + BH (объединены W BL)
-3. (WBH) + BL (объединены W BH)
-4. W + (BLBH) (объединены  BL BH)
-5. (WBLBH)
-
-Поблема заклчается в том, какую из моделей гонять в этом анализе. Поскольку наиболее адекватно, на мой взгляд, отражает работоспособность "morphotype-test" Model 4, то на ней и будет основан дальнейший анализ.
 
 
 ```{r}
@@ -994,144 +1212,14 @@ AIC_print <- as.data.frame(AIC(Model_4_final_cand_1, Model_4_final_cand_2, Model
 
 
 
-kable(AIC_print)
+# kable(AIC_print)
 ```
 
 
 
-Приведенные данные показывают, что объединене W и BL не приводт к ухудшению регрессионной модели.  
-
-## Theoretical models
-
-Теоретическая модель 1, отражает аналитчески выводимую связь между Ptros и P_T, при заданных значениях P_Tm_T и P_Tm_E.
-
-Теоретическая модель 2, отражает аналитически выводимую связь между вероятностью правильного определния генотипа по морфотипу и Ptros, при заданных P_Tm_T и P_Tm_E.
-
-
-Далее, для выработки стартегии построения теоретических моделей мы будем работать с объединенными данными моделлингового датасета по Белому морю (W) и опресненного Баренува моря (BL). Данные по моделлинговому датасету полносоленого Баренцева моря (BH), где эмпирическая связь между морфотипами и генотипами слабее, в данном анализе не используются.
-
-
-
-
 ```{r}
-#### Data reading and initial preparation #####
 
-myt <- read.table("data_salinity3.csv", header = T, sep = ",")
-
-# Оставляем только мидий, у которых есть оценка морфотипа
-myt2 <- myt[!is.na(myt$ind), ]
-
-
-
-# Подразделяем данные на сабсеты
-
-myt2$Subset[myt2$sea == "barents" & myt2$sal_place == "fresh"] <- "WBL" 
-myt2$Subset[myt2$sea == "barents" & myt2$sal_place == "normal"] <- "BH" 
-myt2$Subset[myt2$sea == "white" & myt2$sal_place == "normal"] <- "WBL" 
-myt2$Subset[myt2$sea == "white" & myt2$sal_place == "fresh"] <- "WBL" 
-
-myt2$Subset[myt2$sea == "Baltic"] <- "BALT" 
-myt2$Subset[myt2$sea == "GOM"] <- "GOM" 
-myt2$Subset[myt2$sea == "Norway"] <- "NORW" 
-myt2$Subset[myt2$sea == "Scotland"] <- "SCOT" 
-
-
-myt2$Subset <- factor(myt2$Subset, levels = c("WBL", "BH", "NORW", "BALT", "SCOT", "GOM" ))
-
-
-
-# Вводим обозначения 
-
-myt2$Sp [myt2$str > 0.5] <- "M.trossulus" #Лучше обозначать так!
-myt2$Sp [myt2$str <= 0.5] <- "M.edulis"
-myt2$Sp <- factor(myt2$Sp)
-
-
-
-# Вводим обозначения для морфотипов
-myt2$morph <- ifelse(myt2$ind == 1, "T_m", "E_m")
-myt2$morph <- factor(myt2$morph)
-
-
-
-# Бинарное обозначение видов
-myt2$Sp2 <- ifelse(myt2$Sp == "M.trossulus", 1, 0)
-
-
-#Correct identification
-myt2$congr <- ifelse((myt2$ind == 1 & myt2$Sp == "M.trossulus") | (myt2$ind == 0 & myt2$Sp == "M.edulis"), 1, 0   )
-
-
-# Частота M.trossulus в популяции
-
-freq_MT <- myt2 %>% group_by(pop) %>% summarise(freq_MT = mean(Sp2))
-
-myt2 <- merge(myt2, freq_MT)
-
-
-# Частота T-морфотипа в популяции
-
-Prop_T <- myt2 %>% group_by(pop) %>% summarise(Prop_T = mean(ind))
-
-myt2 <- merge(myt2, Prop_T)
-
-
-# Разделяем на тестовые и моделинговые датасеты
-
-
-# 
-# # Извлекаем из беломорского материала тестовую выборку 
-# #В формальную тестовую выборку  попадают точки наиболее близкие к 20%, 40%, 60% и 80% freq_MT
-# 
-# selected_pop <- myt2[myt2$Subset == "W", ] %>% group_by(Subset, pop) %>% summarise(freq_MT = mean(freq_MT)) %>% group_by(Subset) %>% arrange(freq_MT, .by_group = TRUE) %>% mutate(dif_20 = (freq_MT - 0.2)^2, dif_40 = (freq_MT - 0.4)^2, dif_60 = (freq_MT - 0.6)^2, dif_80 = (freq_MT - 0.8)^2)  %>% group_by(Subset)  %>% summarize (n_pop =n(), q_20_pop = nth(pop, which.min(dif_20)), q_40_pop = nth(pop, which.min(dif_40)), q_60_pop = nth(pop, which.min(dif_60)), q_80_pop = nth(pop, which.min(dif_80))) 
-# 
-# selected_pop <- melt(selected_pop, id.vars = c("Subset", "n_pop"))$value
-# 
-
-
-# testing data set
-myt3 <- myt2[myt2$dataset == "testing" | myt2$pop %in% c("kovda", "rya", "chupa", "umba_pil"),  ]
-
-#modelling data set
-myt2 <- myt2[! myt2$pop %in% unique(myt3$pop), ]
-
-
-
-# Модели для сравнения geographical datasets 
-
-myt2_reduced <- myt2[myt2$Subset %in% c("WBL", "BH", "GOM", "BALT"), ]
-
-# unique(myt2_reduced$Subset)
-
-myt2_reduced$Subset <- factor(myt2_reduced$Subset, levels = c("WBL",  "BH",   "GOM",  "BALT"))
-
-# levels(myt2_reduced$Subset)
-
-
-library(optimx)
-
-Model_6_full_geogr <- glmer(congr ~ morph * freq_MT * Subset + (1 | pop), data = myt2_reduced, family = binomial(link = "logit"), control=glmerControl(optimizer = "optimx", calc.derivs = FALSE, optCtrl = list(method = "nlminb", starttests = FALSE, kkt = FALSE)))
-
-
-
-# overdisp_fun(Model_6_full_geogr)
-
-# summary(Model_6_full_geogr)
-# 
-# r.squaredGLMM(Model_6_final)
-# 
-# drop1(Model_6_full_geogr)
-
-# Model_6_full_geogr2 <- update(Model_6_full_geogr, . ~ . - morph:freq_MT:Subset)
-
-# drop1(Model_6_full_geogr2)
-
-
-Model_6_final <- Model_6_full_geogr 
-
-
-
-
+# Model 6#########################
 
 new_data6 <- myt2_reduced %>% group_by(Subset, morph) %>% do(data.frame(freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 100)))
 
@@ -1171,7 +1259,7 @@ Pl_mod6 <- ggplot(new_data6, aes(x = freq_MT)) +
   guides(color = "none")
 
 
-pr_value_M <- myt2 %>% group_by(Subset, pop) %>% summarise(freq_MT = mean(freq_MT), N_T = sum(ind == 1),  N_T_MT = sum(Sp2 == 1 & ind == 1), N_E_MT = sum(Sp2 == 1 & ind == 0), N_E = sum(ind == 0), N_E_ME = sum(Sp2 == 0 & ind == 0), N_T_ME = sum(Sp2 == 0 & ind == 1))
+pr_value_M <- myt2_reduced %>% group_by(Subset, pop) %>% summarise(freq_MT = mean(freq_MT), N_T = sum(ind == 1),  N_T_MT = sum(Sp2 == 1 & ind == 1), N_E_MT = sum(Sp2 == 1 & ind == 0), N_E = sum(ind == 0), N_E_ME = sum(Sp2 == 0 & ind == 0), N_T_ME = sum(Sp2 == 0 & ind == 1))
 
 pr_value_M$PMT_T <- with(pr_value_M, N_T_MT / N_T)
 pr_value_M$PMT_E <- with(pr_value_M, N_E_MT / N_T)
@@ -1189,27 +1277,6 @@ Pl_mod6_with_initial_data <- Pl_mod6 + geom_segment(data = pr_value_M, aes(x = f
   theme_bw() 
 
 
-
-
-
-ptop_T_MT <- myt2_reduced %>% group_by(Subset, pop) %>% summarize(Prop_T = mean(Prop_T), MT = sum(Sp2), N = n())
-
-# ptop_T_MT <- ptop_T_MT[! ptop_T_MT$pop %in% c("Limh88", "CBCP"), ]
-
-
-Model_7_full <- glm(cbind(MT, (N-MT)) ~  Prop_T * Subset, data = ptop_T_MT, family = binomial(link = "logit"))
-
-# 
-# Model_7_full <- glm(Sp2 ~  Prop_T * Subset, data = myt2_reduced, family = binomial(link = "logit"))
-#  overdisp_fun(Model_7_full)
-
-# drop1(Model_7_full, test = "Chi")
-
-# Model_7_1 <- update(Model_7_full, . ~ . - Prop_T:Subset)
-
-# drop1(Model_7_1, test = "Chi")
-
-Model_7_final <- Model_7_full 
 
 
 new_data5 <- myt2_reduced %>% group_by(Subset, pop) %>% summarise(Prop_T = mean(Prop_T) ) %>% group_by(Subset) %>%  do(data.frame(Prop_T = seq(min(.$Prop_T), max(.$Prop_T), length.out = 10)))
@@ -1236,6 +1303,8 @@ Pl_mod7_with_initial_data <- Pl_mod7 + geom_point(data = init_data_Model_7, aes(
 
 
 ```
+
+
 
 
 
