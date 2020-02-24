@@ -809,7 +809,7 @@ all_models_print$std.error [is.na(all_models_print$std.error)] <- c(
 options(knitr.kable.NA = '')
 
 # options(knitr.kable.NA = ' ')
-kable(all_models_print, col.names = c("Terms", "Estimate", "SE", "z-statistic", "p-value"))
+kable(all_models_print, col.names = c("Terms", "Estimate", "SE", "z-statistic", "p-value"), caption = "Table ++. Parameters of regression models fitted")
 
 
 ```
@@ -1196,7 +1196,7 @@ Since the morphotype test was designed as a diagnostic tool for identification o
 
 
 
-Since the presence of T-morphotype potentially can be dependent on mussel size we assessed the statistical significance of the slope-terms for logistic regressions binding T-morphotype presence and mussel size in  each of `r length(unique(myt2$pop))` populations. We found significant association only in 4 cases: one population was from W and three populations were closely situated in one common locality in BH. In all these cases slope-terms were negative indicating lesser probability to find T-morphotype for larger mussels. It should be noted that the mean mussels size calculated for these four populations was significantly larger than the mean size for mussels from all other  populations (`r paste(round(mean(signif_slope$size), 1),"±", round(sd(signif_slope$size), 2) )` and `r paste(round(mean(not_signif_slope$size), 1),"±", round(sd(not_signif_slope$size), 2) )` mm (Mean ± SD) respectively, t-test = 7.82, p < 0.001). Additionally we analysed the association of residuals from Model 4 with mussel size. No clear pattern was revealed  in the residual plot (not shown).
+Since the presence of T-morphotype potentially can be dependent on mussel size we assessed the statistical significance of the slope-terms for logistic regressions binding T-morphotype presence and mussel size in  each of `r length(unique(myt2$pop))` populations. We found significant association only in 4 cases: one population was from W and three populations were closely situated in one common locality in BH. In all these cases slope-terms were negative indicating lesser probability to find T-morphotype for larger mussels. It should be noted that the mean mussels size calculated for these four populations was significantly larger than the mean size for mussels from all other  populations (`r paste(round(mean(signif_slope$size), 1),"±", round(sd(signif_slope$size), 2) )` and `r paste(round(mean(not_signif_slope$size, na.rm = T), 1),"±", round(sd(not_signif_slope$size, na.rm = T), 2) )` mm (Mean ± SD) respectively, t-test = 7.82, p < 0.001). Additionally we analysed the association of residuals from Model 4 with mussel size. No clear pattern was revealed  in the residual plot (not shown).
 
 
 
@@ -1306,7 +1306,7 @@ predict_Ptros_05_print <- rbind(rep(NA, 7), predict_Ptros_05_print)
 
 predict_Ptros_05_print[1,] <- c(NA, "Predicted", "Low", "Up", "Predicted", "Low", "Up")
 
-kable(predict_Ptros_05_print, col.names = c("Subset", "P(edu|E)", "", "", "P(tros|T)", "", "" ), align = "rcccccc", caption = "Table ++. Predicted values of probability of correct species identification by mussel morphotype in mixed populations (Ptros = 0.5) in different geographical regions")
+kable(predict_Ptros_05_print, col.names = c("Subset", "P(edu|E)", "", "", "P(tros|T)", "", "" ), align = "rcccccc", caption = "Table ++. Predicted values of probability of correct species identification by mussel morphotype in mixed populations (Ptros = 0.5) in different geographical regions. Low and upper boundaries of 95% conficencal intervals are given for predicted values.")
 
 
 ```
