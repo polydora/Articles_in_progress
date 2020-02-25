@@ -340,6 +340,11 @@ st_scores$Station <- il_matr$Station
 st_scores <- merge(st_scores, st_Depth, by = "Station")
 
 
+
+inertia_CA1 <- round(summary(il_ca)$cont$importance[2,1] * 100)
+inertia_CA2 <- round(summary(il_ca)$cont$importance[2,2] * 100)
+
+
 sp_scores <- scores(il_ca, choices = c(1,2), display = "species", scaling = "symmetric")
 sp_scores <- data.frame(sp_scores)
 sp_scores$Sp <- row.names(sp_scores)
@@ -356,7 +361,7 @@ sp_scores$Sp <- row.names(sp_scores)
 \columnsbegin
 \column{0.5\textwidth}
 ```{r}
-Pl_CA_sp <- ggplot(sp_scores, aes(CA1, CA2)) + geom_point(shape = 21, size = 4) + geom_vline(xintercept = 0, linetype = 3) + geom_hline(yintercept = 0, linetype = 3) + ggtitle("Most abundant species")
+Pl_CA_sp <- ggplot(sp_scores, aes(CA1, CA2)) + geom_point(shape = 21, size = 4) + geom_vline(xintercept = 0, linetype = 3) + geom_hline(yintercept = 0, linetype = 3) + ggtitle("Most abundant species") + labs(x = paste("CA1 (", inertia_CA1, "% tot. Inertia)" ), y = paste("CA2 (", inertia_CA2, "% tot. Inertia)"))
 Pl_CA_sp
 ```
 
@@ -617,7 +622,7 @@ ggplot(il_long_B2_Shall_4, aes(x = Year, y = log(Value + 1))) + geom_point(size 
 
 * Cycles of periodic overgrowing of mussel beds by filamentous algae were observed in other sites of long-term observation 
 
-* However, why such long process?...
+* However, why so long process?...
 
 
 \columnsend
@@ -626,13 +631,11 @@ ggplot(il_long_B2_Shall_4, aes(x = Year, y = log(Value + 1))) + geom_point(size 
 
 * Subtidal soft-bottom communities of Ilistaya inlet are not stable: the most powerfull changes were revealed in shallow water part of the inlet
 
-* Mass bloom of filamentous algae was observed in the inlet after 2000-th 
+* Mass bloom of filamentous algae was observed 
 
 * Community of burrowing mollusks and polychaetes was rpelaced by community associated with dense assemblages of mussels and next by community associated with carpet of filamentous algae
 
-* Crucial changes in shallow water part of the inlet influented on deep water part aswell: some species associated with filamentous algae community expanded to deep water part of the inlet
-
-* The mechanisms of the changes observed are unknown but my be associated both with  external influences (climate changes, anthropogenic influence) and internal interactions e.g. with natural dynamics of dense assemblages of mussels.
+* The mechanisms of the changes observed are unknown but my be associated both with  external influences (climate changes, anthropogenic influence) and with internal interactions e.g. with natural dynamics of dense assemblages of mussels
 
 
 
