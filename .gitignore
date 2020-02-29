@@ -2,7 +2,11 @@
 .Rhistory
 .RData
 .Ruserdata
-<<<<<<< Updated upstream
 .log
-=======
->>>>>>> Stashed changes
+*_cache
+*_files
+.RData
+.Rhistory
+.Rdata
+video
+.Rproj.user
