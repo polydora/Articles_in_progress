@@ -14,7 +14,7 @@ csl: marine-biology.csl
 
 ```{r setup, include=FALSE, echo=FALSE}
 library(knitr)
-library(flextable)
+# library(flextable)
 
 opts_chunk$set(echo = FALSE, cache = FALSE, fig.align ="center", warning = FALSE, message = FALSE)
 
@@ -1639,6 +1639,51 @@ Figure +. Correspondence between regression and theoretical models. Each point c
 Using the strategy described above we selected two maximally mixed populations in each region (except SCOT and NORW where we joined all samples and used all of them as calibrating sample)  and  calculated predictions by Eq1 and Eq2 for each geographical subsets (Fig. ++).  In the case of WBL, BH and BALT predictions made  by both equations were rather close to regression lines. It indicates high performance of these equations for prediction of P(tros|T) and P(edu|E) in these areas. In the case of GOM predictions of Eq1 was also in a good agreement with corresponding regression line. However the line predicted by Eq2 diverged from the regression line. Probability P(edu|E) predicted by Eq2 in the later case was slightly lesser than values predicted by regression analysis.  
 
 When the theoretical lines parameters of which were calculated from Eq. 3 were constructed  we found rather good correspondence of these lines to regression line calculated from Model 7 (Fig. ++) in the case of WBL and GOM. In the case of BALT the line constructed by Eq3 diverged from the regression line but the slopes of both models were close to each other.  Line constructed by Eq3 in the case of SCOT approached closely to the Y=X line and corresponded well to observed data. However in the case of BH and NORW poor correspondence of observed data and line predicted by Eq3 was found. 
+
+
+
+```{r}
+# Accuracy assessment
+
+test_myt_3_Atlantic <- myt3_and_Atlantic %>% group_by(Subset, pop) %>% summarise(Prop_T = mean(ind == 1)) %>% filter(! Subset %in% c("NORW", "SCOT")) 
+
+
+
+test_myt_3_Atlantic$freq_MT_predicted <-  predict(Model_7_final, newdata = test_myt_3_Atlantic, type = "response")
+
+
+test_myt_3_Atlantic_2  <- myt3_and_Atlantic %>% select(Subset, pop, Sp, morph)%>% filter(! Subset %in% c("NORW", "SCOT")) 
+
+test_myt_3_Atlantic_3 <- merge(test_myt_3_Atlantic_2, test_myt_3_Atlantic)
+
+test_myt_3_Atlantic_3$freq_MT <- test_myt_3_Atlantic_3$freq_MT_predicted
+
+test_myt_3_Atlantic_3$Predicted_P_correct <- predict(Model_6_final, newdata = test_myt_3_Atlantic_3, type = "response" , re.form = NA)
+
+level_prob <- 0.75
+
+test_myt_3_Atlantic_3$Congr_predicted <- ifelse(test_myt_3_Atlantic_3$Predicted_P_correct >= level_prob, 1, 0)
+
+test_result <- test_myt_3_Atlantic_3 %>% group_by(Subset, morph) %>% summarise(Accuracy_T = round(mean( (morph == "T_m" & Sp == "M.trossulus" & Congr_predicted ==1) | (morph == "E_m" & Sp == "M.edulis" & Congr_predicted ==1) ), 2))
+
+test_result <- dcast(test_result, Subset ~ morph, value.var = "Accuracy_T" )
+
+
+```
+
+
+
+## Assessment of morphotype test accuracy
+
+To assess the accuracy of morphotype test we applied the Model 7 to calculate the expected M.trossulus prevalence in populations from different subsets using the information on proportion of mussel of T-morphotype. Then the assessed Ptros was used to calculate the  probability of correct species identification for each mussel (according to Model 6). Taking the value equal or more than `r level_prob` as acceptable level of correct identification probability we calculated the proportion of correctly identified mussels in testing data-set from WBL and BH and in all populations from GOM and BALT. Then we calculated the proportion of correctly identified mussels in the total amount of mussels sampled in each region (Table ++). The accuracy level for both morphotypes was rather high in the case of GOM and testing data-set from WBL. However in the case of testing data set from BH the high accuracy was found only if mussel of E-morphotype was identified as M.edulis. Similarly, in the case of BALT the high accuracy was found only if mussel of T-morphotype was identified as M.trossulus.  
+
+
+
+```{r}
+kable(test_result, col.names = c("Region", "E-morphotype as M.edulis", "T-morphotype as M.trossulus"), caption = "Table +. Proportion of mussels correctly identified by morphotype test in different regions")
+
+```
+
 
 
 ```{r}
