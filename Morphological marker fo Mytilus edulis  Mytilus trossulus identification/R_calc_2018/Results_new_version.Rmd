@@ -138,9 +138,9 @@ myt2 <- myt2[!(myt2$pop %in% selected_pop), ] #новый modelling dataset
 ```{r}
 myt3_print <- myt3 %>% group_by(Subset, pop) %>% summarise(N_Tm_T = sum(morph == "T_m" & Sp == "M.trossulus"), N_Em_T = sum(morph == "E_m" & Sp == "M.trossulus"), N_Tm_E = sum(morph == "T_m" & Sp == "M.edulis"), N_Em_E = sum(morph == "E_m" & Sp == "M.edulis"), Ptros = round(mean(Sp == "M.trossulus"), 2 ))
 
-myt3_print_out <- flextable(
-  myt3_print, 
-  col_keys = c("Subset",	"Population",	"N_Tm_T",	"N_Em_T",	"N_Tm_E",	"N_Em_E",	"Ptros"))
+# myt3_print_out <- flextable(
+#   myt3_print, 
+#   col_keys = c("Subset",	"Population",	"N_Tm_T",	"N_Em_T",	"N_Tm_E",	"N_Em_E",	"Ptros"))
 
 
 
@@ -1068,19 +1068,19 @@ Pl_mod5_with_initial_data <- Pl_mod5_with_initial_data_no_test + geom_point(data
 
 
 ```{r, fig.height=10}
-grid.arrange(Pl_mod1_with_initial_data ,
-             Pl_mod2_with_initial_data + theme(strip.text = element_blank()),
-             Pl_mod4_with_initial_data+ theme(strip.text = element_blank()) ,
-             ncol = 1)
+# grid.arrange(Pl_mod1_with_initial_data ,
+#              Pl_mod2_with_initial_data + theme(strip.text = element_blank()),
+#              Pl_mod4_with_initial_data+ theme(strip.text = element_blank()) ,
+#              ncol = 1)
 
 # Pl_mod3_with_initial_data + theme(strip.text = element_blank()),
 
 
 
-# grid.arrange(Pl_mod1_with_initial_data , 
-#              Pl_mod2_with_initial_data_no_test + theme(strip.text = element_blank()), 
-#              Pl_mod4_with_initial_data_no_test + theme(strip.text = element_blank()) ,
-#              ncol = 1)
+grid.arrange(Pl_mod1_with_initial_data_no_test ,
+             Pl_mod2_with_initial_data_no_test + theme(strip.text = element_blank()),
+             Pl_mod4_with_initial_data_no_test + theme(strip.text = element_blank()) ,
+             ncol = 1)
 
 
 ```
@@ -1376,10 +1376,35 @@ pr_value_M$PME_E <- with(pr_value_M, N_E_ME / N_E)
 pr_value_M$PME_T <- with(pr_value_M, N_T_ME / N_E)
 
 
-Pl_mod6_with_initial_data <- Pl_mod6 + geom_segment(data = pr_value_M, aes(x = freq_MT, y = PME_E, xend = freq_MT, yend = PMT_T), color="darkgrey") +
-  geom_hline(data = pr_value_M, aes(yintercept=0.5), color="black") +
-  geom_point(data = pr_value_M, aes(y = PME_E), fill = "white", shape = 21) +
-  geom_point(data = pr_value_M, aes(y = PMT_T), fill = "black", shape = 21) +
+myt3_and_Atlantic <- rbind(myt3, myt2_all[myt2_all$Subset %in% c("GOM", "BALT", "SCOT", "NORW"), ]) 
+
+
+myt3_and_Atlantic$Subset[myt3_and_Atlantic$sea == "barents" & myt3_and_Atlantic$sal_place == "fresh"] <- "WBL" 
+myt3_and_Atlantic$Subset[myt3_and_Atlantic$sea == "barents" & myt3_and_Atlantic$sal_place == "normal"] <- "BH" 
+myt3_and_Atlantic$Subset[myt3_and_Atlantic$sea == "white" & myt3_and_Atlantic$sal_place == "normal"] <- "WBL" 
+myt3_and_Atlantic$Subset[myt3_and_Atlantic$sea == "white" & myt3_and_Atlantic$sal_place == "fresh"] <- "WBL" 
+
+myt3_and_Atlantic$Subset <- factor(myt3_and_Atlantic$Subset, levels = c("WBL", "BH", "NORW", "BALT", "SCOT", "GOM" ))
+
+
+pr_value_myt3_and_Atlantic <- myt3_and_Atlantic %>% group_by(Subset, pop) %>% summarise(freq_MT = mean(freq_MT), N_T = sum(ind == 1),  N_T_MT = sum(Sp2 == 1 & ind == 1), N_E_MT = sum(Sp2 == 1 & ind == 0), N_E = sum(ind == 0), N_E_ME = sum(Sp2 == 0 & ind == 0), N_T_ME = sum(Sp2 == 0 & ind == 1))
+
+pr_value_myt3_and_Atlantic$PMT_T <- with(pr_value_myt3_and_Atlantic, N_T_MT / N_T)
+pr_value_myt3_and_Atlantic$PMT_E <- with(pr_value_myt3_and_Atlantic, N_E_MT / N_T)
+pr_value_myt3_and_Atlantic$PME_E <- with(pr_value_myt3_and_Atlantic, N_E_ME / N_E)
+pr_value_myt3_and_Atlantic$PME_T <- with(pr_value_myt3_and_Atlantic, N_T_ME / N_E)
+
+
+
+
+
+
+
+
+Pl_mod6_with_initial_data <- Pl_mod6 + geom_segment(data = pr_value_myt3_and_Atlantic, aes(x = freq_MT, y = PME_E, xend = freq_MT, yend = PMT_T), color="darkgrey") +
+  geom_hline(aes(yintercept=0.5), color="black") +
+  geom_point(data = pr_value_myt3_and_Atlantic, aes(y = PME_E), fill = "white", shape = 22) +
+  geom_point(data = pr_value_myt3_and_Atlantic, aes(y = PMT_T), fill = "black", shape = 22) +
   labs(y =  "Probability of correct species \n identification by morphotypes", x = "Proportion of M. trossulus", fill = "")+
   ylim(0,1) +
   xlim(0,1) + 
@@ -1413,11 +1438,11 @@ Pl_mod7 <- ggplot(new_data7, aes(x = Prop_T, y = fit)) +
 # unique(new_data7$Subset)
 
 
-init_data_Model_7 <- myt2_all %>% group_by(Subset, pop) %>% summarise(Prop_T = mean(morph == "T_m"),  freq_MT = mean(Sp == "M.trossulus"), N = n())
+init_data_Model_7 <- myt3_and_Atlantic %>% group_by(Subset, pop) %>% summarise(Prop_T = mean(morph == "T_m"),  freq_MT = mean(Sp == "M.trossulus"), N = n())
 
 # init_data_Model_7 <- init_data_Model_7[init_data_Model_7$pop %in% c("Limh88", "CBCP"),  ]
 
-Pl_mod7_with_initial_data <- Pl_mod7 + geom_point(data = init_data_Model_7, aes( y = freq_MT), shape = 21, size = 2 ) + scale_fill_continuous(low = "white", high = "black") + labs(x = "Proportion of mussels with T-morphotype", y = "Proportion of M.trossulus \n") + theme_bw()
+Pl_mod7_with_initial_data <- Pl_mod7 + geom_point(data = init_data_Model_7, aes( y = freq_MT), shape = 22, size = 2 ) + scale_fill_continuous(low = "white", high = "black") + labs(x = "Proportion of mussels with T-morphotype", y = "Proportion of M.trossulus \n") + theme_bw()
 
 
 
@@ -1614,5 +1639,75 @@ Figure +. Correspondence between regression and theoretical models. Each point c
 Using the strategy described above we selected two maximally mixed populations in each region (except SCOT and NORW where we joined all samples and used all of them as calibrating sample)  and  calculated predictions by Eq1 and Eq2 for each geographical subsets (Fig. ++).  In the case of WBL, BH and BALT predictions made  by both equations were rather close to regression lines. It indicates high performance of these equations for prediction of P(tros|T) and P(edu|E) in these areas. In the case of GOM predictions of Eq1 was also in a good agreement with corresponding regression line. However the line predicted by Eq2 diverged from the regression line. Probability P(edu|E) predicted by Eq2 in the later case was slightly lesser than values predicted by regression analysis.  
 
 When the theoretical lines parameters of which were calculated from Eq. 3 were constructed  we found rather good correspondence of these lines to regression line calculated from Model 7 (Fig. ++) in the case of WBL and GOM. In the case of BALT the line constructed by Eq3 diverged from the regression line but the slopes of both models were close to each other.  Line constructed by Eq3 in the case of SCOT approached closely to the Y=X line and corresponded well to observed data. However in the case of BH and NORW poor correspondence of observed data and line predicted by Eq3 was found. 
+
+
+```{r}
+# Universal prediction picture ######
+
+
+
+calc1_predictor <- function(P_T, donat){
+  P_T_MT <- donat[1]
+  P_T_ME <- donat[2]
+  result <- data.frame(P_T = P_T, ftrq_MT = (P_T - P_T_ME)/(P_T_MT - P_T_ME))
+  result
+  }
+
+
+
+# Функция для вычисления баесовских вероятностей по данным из бублика
+
+calc2_predictor <- function(freq_MT, donat){
+  result <- data.frame(freq_MT = freq_MT)
+  P_T_MT <- donat[1]
+  P_T_ME <- donat[2]
+  result$P_MT_T <- (P_T_MT * result$freq_MT)/(P_T_MT * result$freq_MT + P_T_ME*(1-result$freq_MT))
+  result$P_ME_E <- ((1 - P_T_ME) * (1 - result$freq_MT))/(1 - P_T_ME + result$freq_MT * (P_T_ME - P_T_MT))
+  result
+}
+
+
+
+WBL_calc1_predictins <- myt3_and_Atlantic  %>% group_by(Subset, pop) %>% filter(Subset == "WBL")   %>% summarise(P_T = mean(ind == 1)) %>% pull(P_T) %>%  calc1_predictor(donat = donat_max_dif_WBL) %>% mutate(Subset = "WBL") 
+
+BH_calc1_predictins <- myt3_and_Atlantic  %>% group_by(Subset, pop) %>% filter(Subset == "BH")   %>% summarise(P_T = mean(ind == 1)) %>% pull(P_T) %>%  calc1_predictor(donat = c(1, 0)) %>% mutate(Subset = "BH") 
+
+GOM_calc1_predictins <- myt3_and_Atlantic  %>% group_by(Subset, pop) %>% filter(Subset == "GOM")   %>% summarise(P_T = mean(ind == 1)) %>% pull(P_T) %>%  calc1_predictor(donat = donat_max_dif_GOM) %>% mutate(Subset = "GOM") 
+
+BALT_calc1_predictins <- myt3_and_Atlantic  %>% group_by(Subset, pop) %>% filter(Subset == "BALT")   %>% summarise(P_T = mean(ind == 1)) %>% pull(P_T) %>%  calc1_predictor(donat = donat_max_dif_BALT) %>% mutate(Subset = "BALT") 
+
+SCOT_calc1_predictins <- myt3_and_Atlantic  %>% group_by(Subset, pop) %>% filter(Subset == "SCOT")   %>% summarise(P_T = mean(ind == 1)) %>% pull(P_T) %>%  calc1_predictor(donat = donat_max_dif_SCOT) %>% mutate(Subset = "SCOT") 
+
+
+NORW_calc1_predictins <- myt3_and_Atlantic  %>% group_by(Subset, pop) %>% filter(Subset == "NORW")   %>% summarise(P_T = mean(ind == 1)) %>% pull(P_T) %>%  calc1_predictor(donat = donat_max_dif_NORW) %>% mutate(Subset = "NORW") 
+
+
+
+
+
+
+# # Бублики для наиболее различных по стуртуре популяций
+# donat_max_dif_WBL 
+# donat_max_dif_BH 
+# donat_max_dif_GOM 
+# donat_max_dif_BALT 
+# donat_max_dif_SCOT 
+# donat_max_dif_NORW 
+# 
+# 
+# # Бублики для наиболее смешанных популяций
+# donat_max_mix_WBL 
+# donat_max_mix_BH 
+# donat_max_mix_GOM 
+# donat_max_mix_BALT
+# donat_max_mix_SCOT 
+# donat_max_mix_NORW 
+
+
+
+
+
+```
+
 
 
