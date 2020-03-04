@@ -1,0 +1,344 @@
+---
+title: "Жизненный цикл Oithona"
+author: "Вадим Хайтов"
+date: '4  марта 2020'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+## Первичные данные
+
+```{r}
+library(reshape2)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(mgcv)
+library(gridExtra)
+library(broom)
+library(tidyr)
+
+
+
+
+cop_init <- read.table("Data/Oithona_Microsetella.csv", sep = ";", header = T)
+
+
+cop <- melt(cop_init, id.vars = c("Day","Month","Year","Day.of.year"), variable.name = "Stage", value.name = "N") 
+
+cop$Depth[str_detect(as.character(cop$Stage), "_1")] <- "0_10"  
+cop$Depth[str_detect(as.character(cop$Stage), "_25")] <- "0_25"  
+cop$Depth[str_detect(as.character(cop$Stage), "_3")] <- "25_bottom" 
+cop$Depth[str_detect(as.character(cop$Stage), "_65")] <- "0_bottom" 
+
+cop$Depth[is.na(cop$Depth)] <- "10_25" 
+
+# unique(cop$Depth)
+
+
+
+
+cop$Stage2[str_detect(as.character(cop$Stage), "_F_")] <- "Female"
+cop$Stage2[str_detect(as.character(cop$Stage), "_M_")] <- "Male"
+cop$Stage2[str_detect(as.character(cop$Stage), "_C_")] <- "Cop."
+cop$Stage2[str_detect(as.character(cop$Stage), "_J_")] <- "Juv."
+cop$Stage2[str_detect(as.character(cop$Stage), "_A_")] <- "Adult"
+cop$Stage2[str_detect(as.character(cop$Stage), "_N_")] <- "Nauplii"
+cop$Stage2[is.na(cop$Stage2)] <- "Total"
+
+cop$Sp[str_detect(as.character(cop$Stage), "OITO")] <- "Oithona"
+cop$Sp[str_detect(as.character(cop$Stage), "MIC")] <- "Microsetella"
+
+
+#Remove all cases with NA in Abundance
+cop <- cop[! is.na(cop$N), ]
+
+
+#Construct the variable vith date of sample
+cop$Date_text <- with(cop, paste(Day,Month,Year, sep = "-"))
+
+cop$Date <- as.POSIXct(as.Date(cop$Date_text, format = "%d-%m-%Y"))
+
+
+
+#Combine Males and Females in one category 
+cop$Stage3 <- cop$Stage2
+
+cop$Stage3[cop$Stage3 == "Male" | cop$Stage3 == "Female"] <- "Adult"
+
+# unique(cop$Stage3)
+
+
+
+
+#Ordering stages 
+cop$Stage3 <- factor(cop$Stage3, levels = c("Adult", "Nauplii", "Juv.", "Cop.", "Total") )
+                     
+#Constructing date of sample as Day from yar beginning
+
+cop$DOY <- as.numeric(strftime(cop$Date, format = "%j"))
+
+# Log transformation of abundance
+cop$Log_N <- log(cop$N + 1)
+
+
+
+
+
+
+cop_init_100 <- read.table("Data/Oithona_Microsetella_100_mkm.csv", sep = ",", header = T)
+
+
+cop100 <- melt(cop_init_100, id.vars = c("Day","Month","Year","Date"), variable.name = "Stage", value.name = "N") 
+
+
+cop100$Depth[str_detect(as.character(cop100$Stage), "_1")] <- "0_10"  
+cop100$Depth[str_detect(as.character(cop100$Stage), "_25")] <- "0_25"  
+cop100$Depth[str_detect(as.character(cop100$Stage), "_3")] <- "25_bottom" 
+cop100$Depth[is.na(cop100$Depth)] <- "10_25" 
+
+cop100$Stage2[str_detect(as.character(cop100$Stage), "_F_")] <- "Female"
+cop100$Stage2[str_detect(as.character(cop100$Stage), "_M_")] <- "Male"
+cop100$Stage2[str_detect(as.character(cop100$Stage), "_C_")] <- "Cop."
+cop100$Stage2[str_detect(as.character(cop100$Stage), "_J_")] <- "Juv."
+cop100$Stage2[str_detect(as.character(cop100$Stage), "_A_")] <- "Adult"
+cop100$Stage2[str_detect(as.character(cop100$Stage), "_N_")] <- "Nauplii"
+cop100$Stage2[is.na(cop100$Stage2)] <- "Total"
+
+
+
+
+
+cop100$Sp[str_detect(as.character(cop100$Stage), "OITO")] <- "Oithona"
+cop100$Sp[str_detect(as.character(cop100$Stage), "MIC")] <- "Microsetella"
+
+
+#Remove all cases with NA in Abundance
+cop100 <- cop100[! is.na(cop100$N), ]
+
+
+
+
+#Construct the variable vith date of sample
+cop100$Date_text <- with(cop100, paste(Day,Month,Year, sep = "-"))
+
+cop100$Date <- as.POSIXct(as.Date(cop100$Date_text, format = "%d-%m-%Y"))
+
+
+
+#Combine Males and Females in one category 
+cop100$Stage3 <- cop100$Stage2
+
+cop100$Stage3[cop100$Stage3 == "Male" | cop100$Stage3 == "Female"] <- "Adult"
+
+
+#Ordering stages 
+cop100$Stage3 <- factor(cop100$Stage3, levels = c("Adult", "Nauplii", "Juv.", "Cop.", "Total") )
+
+
+#Constructing date of sample as Day from yar beginning
+
+cop100$DOY <- as.numeric(strftime(cop100$Date, format = "%j"))
+
+
+# Log transformation for abundance
+
+cop100$Log_N <- log(cop100$N + 1)
+
+
+
+```
+
+
+
+В анализе используется два типа данных. 
+
+1. Сборы  с помощью сетки с размером ячеи 200 мкм. Годы сбора: `r range(cop$Year)`
+
+2. Сборы с помощью сетки с размером ячеи 100 мкм. Годы сбора: `r range(cop100$Year)`
+
+
+## Жизненный цикл Oithona
+
+
+Для начала визуализируем распределение дат, когда наблюдаются максимумы обилия каждой из стадий. Для этого отфильтруем только те данные, где обилие данной стадии больше или равно многолетней средней. Для простоты будем рассматривать только диапазон глубин 0-10 м.
+
+```{r}
+theme_set(theme_bw())
+cop_Oit <- cop %>% filter( Sp == "Oithona", Depth =='0_10', Stage3 != "Total")
+
+cop_Oit$Stage2 <- factor(cop_Oit$Stage2, levels = c("Male", "Female", "Nauplii", "Juv.", "Cop.", "Total") )
+
+Oit_means <- cop_Oit %>% group_by(Stage2) %>% summarise(Mean_N = mean(N))
+
+cop_Oit <- merge(cop_Oit, Oit_means)
+
+cop_Oit$Anom <- ifelse(cop_Oit$N >= cop_Oit$Mean_N, 1, -1)
+
+Oit_median_DOY <- cop_Oit %>% filter(Anom ==1) %>% group_by(Stage2) %>% summarize(Median_DOY = median(DOY))
+
+
+Pl_DOY_dist_200 <- cop_Oit %>% filter(Anom ==1) %>% ggplot(., aes(x = Stage2, y = DOY)) + geom_violin(fill = "gray") + labs(x = "Life Stage", y = "Day of year") + ggtitle("200 mkm") + ylim(1, 365)
+
+Pl_DOY_dist_200 <- Pl_DOY_dist_200 +  geom_point(data = Oit_median_DOY, aes(y = Median_DOY), color = "red", size = 4 )
+
+
+
+cop_Oit100 <- cop100 %>% filter( Sp == "Oithona", Depth =='0_10', Stage3 != "Total")
+
+cop_Oit100$Stage2 <- factor(cop_Oit100$Stage2, levels = c("Male", "Female", "Nauplii", "Juv.", "Cop.", "Total") )
+
+Oit_means100 <- cop_Oit100 %>% group_by(Stage2) %>% summarise(Mean_N = mean(N))
+
+cop_Oit100 <- merge(cop_Oit100, Oit_means100)
+
+cop_Oit100$Anom <- ifelse(cop_Oit100$N >= cop_Oit100$Mean_N, 1, -1)
+
+
+
+Pl_DOY_dist_100 <- cop_Oit100 %>% filter(Anom ==1) %>% ggplot(., aes(x = Stage2, y = DOY)) + geom_violin(fill = "gray") + labs(x = "Life Stage", y = "Day of year") + ggtitle("100 mkm") + ylim(1, 365) 
+
+Oit_100_median_DOY <- cop_Oit100 %>% filter(Anom ==1) %>% group_by(Stage2) %>% summarize(Median_DOY = median(DOY))
+
+Pl_DOY_dist_100 <- Pl_DOY_dist_100 + geom_point(data = Oit_100_median_DOY, aes(y = Median_DOY), color = "red", size = 4 )
+
+grid.arrange(Pl_DOY_dist_200, Pl_DOY_dist_100, nrow = 1)
+
+```
+
+Данные с обеих сеток более или менее совпадают. Красная точка отражает медианы. Для сравнения я вывел таблицу с данными по медианам. Наверное, по разности значений медиан можно грубо оценить сроки развития. 
+
+
+```{r}
+Oit_all_Depth <- cop %>% filter( Sp == "Oithona", Stage2 != "Total", Depth %in% c("0_10", "10_25", "25_bottom"))
+Oit_means <- Oit_all_Depth %>% group_by(Stage2, Depth) %>% summarise(mean_N = mean(N))
+Oit_all_Depth <- merge(Oit_all_Depth, Oit_means)  
+Oit_all_Depth$Anom <- ifelse(Oit_all_Depth$N >= Oit_all_Depth$mean_N, 1, 0)
+
+Oit_all_Depth %>% filter(Anom == 1) %>% group_by(Stage2, Depth) %>% summarise (median_DOY = round(median(DOY)) )  %>% spread(key = Depth, value = median_DOY ) %>% kable(caption = "Medians of Julian days when abundance of stages was higher than mean abundance calculated for all observation period (data from net 200 mkm")
+
+```
+
+
+
+
+```{r}
+Oit_all_Depth100 <- cop100 %>% filter( Sp == "Oithona", Stage2 != "Total", Depth %in% c("0_10", "10_25", "25_bottom"))
+Oit_means100 <- Oit_all_Depth100 %>% group_by(Stage2, Depth) %>% summarise(mean_N = mean(N))
+Oit_all_Depth100 <- merge(Oit_all_Depth100, Oit_means100)  
+Oit_all_Depth100$Anom <- ifelse(Oit_all_Depth100$N >= Oit_all_Depth100$mean_N, 1, 0)
+
+Oit_all_Depth100 %>% filter(Anom == 1) %>% group_by(Stage2, Depth) %>% summarise (median_DOY = round(median(DOY)) )  %>% spread(key = Depth, value = median_DOY ) %>% kable(caption = "Medians of Julian days when abundance of stages was higher than mean abundance calculated for all observation period (data from net 100 mkm")
+
+```
+
+
+
+Любопытно, что по обоим датасетам пики численности самцов приходятся на сроки чуть ранние, чем пики численностей самок. Кроме того явно читается тенденция, что на меньших глубинах пики численности всех стадий происходят раньше, чем на больших. Что это? Миграци сверху вниз или прсто на разной глубине все идет независимо, но с разной скоростью?
+
+
+
+
+
+### Анализ обилия особей разных стадий 
+
+По сути дела, вид представлен для нас как бы в двух координатах: Фенологические координаты (день года) многолетние тенденции (год). Поэтому можно построить вот такую аддитивную модель (GAM).
+
+$$
+log(N) = s(DOY, Year) + b_0 + \sum b_iStage_i
+$$
+
+где  $s$ - двумерный сплайн, описывающий поведение зависимой переменной ($log(N)$), $Stage_i$ - стадии жизненного цикла.  
+
+Вот параметры полученной модели. 
+
+```{r}
+
+Mod_Oit <- gam(Log_N ~ s(Year, DOY, by = Stage2) + Stage2, data = cop_Oit, family = "gaussian")
+
+new_data_Oit <- expand.grid(Stage2 = unique(cop_Oit$Stage2), DOY = 1:365, Year = seq(min(cop_Oit$Year), max(cop_Oit$Year), 1))
+
+new_data_Oit$Predicted <- predict(Mod_Oit, newdata = new_data_Oit, type = "response")
+
+
+mean_predicted_Oit <- new_data_Oit %>% group_by(Stage2) %>% summarise(Mean_Predicted = mean(Predicted))
+
+new_data_Oit2 <- merge(new_data_Oit, mean_predicted_Oit)
+
+new_data_Oit2$Anom <- ifelse(new_data_Oit2$Predicted >= new_data_Oit2$Mean_Predicted, 1, -1)
+
+
+# ggplot(new_data_Oit2, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Anom)) + facet_wrap(~Stage3, nrow = 1) + scale_fill_gradient(low = "white", high = "red") + geom_point(data = cop_Oit, aes(x = Year, y = DOY), size = 0.1) + guides(fill = "none") + theme(axis.text.x = element_text(angle = 90)) + labs(y = "Day of Year") 
+
+Pl_Oit_GAM <- ggplot(new_data_Oit, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Predicted)) + facet_wrap(~Stage2, nrow = 1) + scale_fill_gradient(low = "white", high = "red") + geom_point(data = cop_Oit, aes(x = Year, y = DOY), size = 0.1) + theme(axis.text.x = element_text(angle = 90)) + labs(y = "Day of Year") + labs(fill = "Log (N)")
+
+
+kable(tidy(Mod_Oit), caption = "Parameters of GAM", digits = 2)
+
+```
+
+
+
+
+Однако на эту таблицу особенно смотреть не надо. Важно посмотреть на визуализацию модели.
+
+```{r}
+Pl_Oit_GAM
+```
+
+
+
+```{r}
+
+cop_Oit100 <- cop100 %>% filter( Sp == "Oithona", Depth =="0_10", Stage2 != "Total")
+
+#####################################3
+Mod_Oit <- gam(Log_N ~ s(Year, DOY, by = Stage3) + Stage3, data = cop_Oit100, family = "gaussian")
+
+###################################################
+# plot(Mod_Oit, pages = 1)
+
+new_data_Oit <- expand.grid(Stage3 = unique(cop_Oit100$Stage3),  DOY = 1:365, Year = seq(min(cop_Oit100$Year), max(cop_Oit100$Year), 1))
+
+new_data_Oit$Predicted <- predict(Mod_Oit, newdata = new_data_Oit, type = "response")
+
+
+mean_Oit <- cop_Oit100 %>% group_by(Stage3) %>% summarise(Mean = mean(Log_N))
+
+new_data_Oit2 <- merge(new_data_Oit, mean_Oit)
+
+# new_data_Oit2$Anom <- ifelse(new_data_Oit2$Predicted >= new_data_Oit2$Mean, 1, -1)
+# 
+# 
+# ggplot(new_data_Oit2, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Anom)) + facet_grid(Depth ~ Stage2) + scale_fill_gradient(low = "white", high = "red") + geom_point(data = cop_Oit, aes(x = Year, y = DOY), size = 0.1) + guides(fill = "none") + theme(axis.text.x = element_text(angle = 90)) + labs(y = "Day of Year") 
+
+ggplot(new_data_Oit, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Predicted)) + facet_wrap( ~ Stage3, nrow = 1) + scale_fill_gradient(low = "white", high = "red") + geom_point(data = cop_Oit100, aes(x = Year, y = DOY), size = 0.1)  + theme(axis.text.x = element_text(angle = 90)) + labs(y = "Day of Year") + labs(fill = "Log(N)") 
+
+  ```
+
+
+
+
+```{r}
+Mod_Oit_GAM_DOY <- gam(Log_N ~ s(DOY,  bs = "cc", by = Stage2) + Stage2 , data = cop_Oit100, family =  "nb")
+
+# plot(Mod_Mic_GAM_DOY)
+# summary(Mod_Mic_GAM_DOY)
+new_data_Oit <- expand.grid(Stage3 = unique(cop_Oit100$Stage3),   DOY = 1:365, Year = mean(cop_Oit100$Year))
+
+new_data_Oit$Predicted <- predict(Mod_Oit_GAM_DOY, newdata = new_data_Oit, type = "response")
+
+
+ggplot(new_data_Oit, aes(x = DOY, y = Predicted, color = Stage3)) + geom_line(size = 2) + labs(x = "Day of year", y = "Log(N)", color = "Stages")
+
+
+
+
+```
+
+
+
