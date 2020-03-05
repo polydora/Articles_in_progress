@@ -6,7 +6,6 @@
 *_cache
 *_files
 .RData
-.Rhistory
 .Rdata
 video
 .Rproj
