@@ -96,6 +96,7 @@ cop_init_100 <- read.table("Data/Oithona_Microsetella_100_mkm.csv", sep = ",", h
 cop100 <- melt(cop_init_100, id.vars = c("Day","Month","Year","Date"), variable.name = "Stage", value.name = "N") 
 
 
+
 cop100$Depth[str_detect(as.character(cop100$Stage), "_1")] <- "0_10"  
 cop100$Depth[str_detect(as.character(cop100$Stage), "_25")] <- "0_25"  
 cop100$Depth[str_detect(as.character(cop100$Stage), "_3")] <- "25_bottom" 
@@ -112,15 +113,20 @@ cop100$Stage2[is.na(cop100$Stage2)] <- "Total"
 
 
 
-
 cop100$Sp[str_detect(as.character(cop100$Stage), "OITO")] <- "Oithona"
 cop100$Sp[str_detect(as.character(cop100$Stage), "MIC")] <- "Microsetella"
+
+
+
+cop100$Stage2 <- factor(cop100$Stage2, levels = c( "Adult", "Male", "Female", "Nauplii", "Juv.", "Cop."))
+
+
 
 
 #Remove all cases with NA in Abundance
 cop100 <- cop100[! is.na(cop100$N), ]
 
-
+cop100$Sp <- factor(cop100$Sp)
 
 
 #Construct the variable vith date of sample
@@ -131,13 +137,17 @@ cop100$Date <- as.POSIXct(as.Date(cop100$Date_text, format = "%d-%m-%Y"))
 
 
 #Combine Males and Females in one category 
-cop100$Stage3 <- cop100$Stage2
+cop100$Stage3 <- as.character(cop100$Stage2)
 
-cop100$Stage3[cop100$Stage3 == "Male" | cop100$Stage3 == "Female"] <- "Adult"
+cop100$Stage3[cop100$Stage3 %in% c("Male", "Female", "Adult")] <- "Adult"
 
+cop100$Stage3 <- as.factor(cop100$Stage3)
 
 #Ordering stages 
-cop100$Stage3 <- factor(cop100$Stage3, levels = c("Adult", "Nauplii", "Juv.", "Cop.", "Total") )
+cop100$Stage3 <- factor(cop100$Stage3, levels = c("Adult", "Nauplii", "Juv.", "Cop.") )
+
+# table(cop100$Stage3, cop100$Sp)
+# unique(cop100$Stage3)
 
 
 #Constructing date of sample as Day from yar beginning
@@ -210,7 +220,7 @@ grid.arrange(Pl_DOY_dist_200, Pl_DOY_dist_100, nrow = 1)
 
 ```
 
-Данные с обеих сеток более или менее совпадают. Красная точка отражает медианы. Для сравнения я вывел таблицу с данными по медианам. Наверное, по разности значений медиан можно грубо оценить сроки развития. 
+Данные с обеих сеток более или менее совпадают. Красная точка отражает медианы. Для сравнения я вывел таблицу с данными по медианам значений дат когда обилие превышает многолетнее среднее значение. Наверное, по разности значений медиан можно грубо оценить сроки развития. 
 
 
 ```{r}
@@ -238,7 +248,7 @@ Oit_all_Depth100 %>% filter(Anom == 1) %>% group_by(Stage2, Depth) %>% summarise
 
 
 
-Любопытно, что по обоим датасетам пики численности самцов приходятся на сроки чуть ранние, чем пики численностей самок. Кроме того явно читается тенденция, что на меньших глубинах пики численности всех стадий происходят раньше, чем на больших. Что это? Миграци сверху вниз или прсто на разной глубине все идет независимо, но с разной скоростью?
+Любопытно, что по обоим датасетам пики численности самцов приходятся на сроки чуть более ранние, чем пики численностей самок. Кроме того, явно читается тенденция, что на меньших глубинах пики численности всех стадий происходят раньше, чем на больших. Что это? Миграции сверху вниз или просто на разной глубине все идет независимо, но с разной скоростью?
 
 
 
@@ -246,7 +256,7 @@ Oit_all_Depth100 %>% filter(Anom == 1) %>% group_by(Stage2, Depth) %>% summarise
 
 ### Анализ обилия особей разных стадий 
 
-По сути дела, вид представлен для нас как бы в двух координатах: Фенологические координаты (день года) многолетние тенденции (год). Поэтому можно построить вот такую аддитивную модель (GAM).
+Строим двумерную аддитивную модель, аналогичную той, что была для Microsetella.
 
 $$
 log(N) = s(DOY, Year) + b_0 + \sum b_iStage_i
@@ -277,32 +287,48 @@ new_data_Oit2$Anom <- ifelse(new_data_Oit2$Predicted >= new_data_Oit2$Mean_Predi
 Pl_Oit_GAM <- ggplot(new_data_Oit, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Predicted)) + facet_wrap(~Stage2, nrow = 1) + scale_fill_gradient(low = "white", high = "red") + geom_point(data = cop_Oit, aes(x = Year, y = DOY), size = 0.1) + theme(axis.text.x = element_text(angle = 90)) + labs(y = "Day of Year") + labs(fill = "Log (N)")
 
 
-kable(tidy(Mod_Oit), caption = "Parameters of GAM", digits = 2)
+# kable(tidy(Mod_Oit), caption = "Parameters of GAM", digits = 2)
 
 ```
 
 
 
 
-Однако на эту таблицу особенно смотреть не надо. Важно посмотреть на визуализацию модели.
+Вот визуализация этой модели.
 
 ```{r}
 Pl_Oit_GAM
 ```
 
+Можно заметить, следующее. 
 
+1. Пик численности самцов приходится на более узкие сроки, чем пик численности самок. Прищурив глаза можно увидеть два пика численности самцов. 
+
+2. Самки в том или ином количестве представлены весь год, Однако пик их численности приходится на те же сроки, что и у самцов (возможно, с очень незначительным сдвигом в большую сторону).
+
+3. Пик обилия у Juv. явно смещается на все более ранние сроки.
+
+4. Копеподиты обильны круглогодично, но с предсказуемым небольшим провалом перед пиком самцов и самок.
+
+
+
+
+Если построить аналогичную картинку для сетки 100 мкм, то в принципе результаты те же. 
 
 ```{r}
 
 cop_Oit100 <- cop100 %>% filter( Sp == "Oithona", Depth =="0_10", Stage2 != "Total")
 
+
+
+
 #####################################3
-Mod_Oit <- gam(Log_N ~ s(Year, DOY, by = Stage3) + Stage3, data = cop_Oit100, family = "gaussian")
+Mod_Oit <- gam(Log_N ~ s(Year, DOY, by = Stage2) + Stage2, data = cop_Oit100, family = "gaussian")
 
 ###################################################
 # plot(Mod_Oit, pages = 1)
 
-new_data_Oit <- expand.grid(Stage3 = unique(cop_Oit100$Stage3),  DOY = 1:365, Year = seq(min(cop_Oit100$Year), max(cop_Oit100$Year), 1))
+new_data_Oit <- expand.grid(Stage2 = unique(cop_Oit100$Stage2),  DOY = 1:365, Year = seq(min(cop_Oit100$Year), max(cop_Oit100$Year), 1))
 
 new_data_Oit$Predicted <- predict(Mod_Oit, newdata = new_data_Oit, type = "response")
 
@@ -316,29 +342,97 @@ new_data_Oit2 <- merge(new_data_Oit, mean_Oit)
 # 
 # ggplot(new_data_Oit2, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Anom)) + facet_grid(Depth ~ Stage2) + scale_fill_gradient(low = "white", high = "red") + geom_point(data = cop_Oit, aes(x = Year, y = DOY), size = 0.1) + guides(fill = "none") + theme(axis.text.x = element_text(angle = 90)) + labs(y = "Day of Year") 
 
-ggplot(new_data_Oit, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Predicted)) + facet_wrap( ~ Stage3, nrow = 1) + scale_fill_gradient(low = "white", high = "red") + geom_point(data = cop_Oit100, aes(x = Year, y = DOY), size = 0.1)  + theme(axis.text.x = element_text(angle = 90)) + labs(y = "Day of Year") + labs(fill = "Log(N)") 
+ggplot(new_data_Oit, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Predicted)) + facet_wrap( ~ Stage2, nrow = 1) + scale_fill_gradient(low = "white", high = "red") + geom_point(data = cop_Oit100, aes(x = Year, y = DOY), size = 0.1)  + theme(axis.text.x = element_text(angle = 90)) + labs(y = "Day of Year") + labs(fill = "Log(N)") 
 
-  ```
+```
+
+Несколько пиков самцов и самок становятся видны более отчетливо.  
+
+Опять же виден небольшой провал в численности копеподитов перед пиком взрослых. 
 
 
+Тенденция смещения пика ювенилов на более ранние сроки на этом датасете  не видна, но это потому, что в этом датасете приведены лишь наблюдения за последние 10 лет. 
+
+
+
+В принципе, аналогичная картинка будет, если построить модель без учета года. Вот, если рассматривать только глубину 0-10 м, получается такая картинка.
 
 
 ```{r}
-Mod_Oit_GAM_DOY <- gam(Log_N ~ s(DOY,  bs = "cc", by = Stage2) + Stage2 , data = cop_Oit100, family =  "nb")
+Mod_Oit_GAM_DOY <- gam(Log_N ~ s(DOY,  bs = "cc", by = Stage2) + Stage2 , data = cop_Oit100, family =  "gaussian")
 
 # plot(Mod_Mic_GAM_DOY)
 # summary(Mod_Mic_GAM_DOY)
-new_data_Oit <- expand.grid(Stage3 = unique(cop_Oit100$Stage3),   DOY = 1:365, Year = mean(cop_Oit100$Year))
+new_data_Oit <- expand.grid(Stage2 = unique(cop_Oit100$Stage2),   DOY = 1:365, Year = mean(cop_Oit100$Year))
 
 new_data_Oit$Predicted <- predict(Mod_Oit_GAM_DOY, newdata = new_data_Oit, type = "response")
 
 
-ggplot(new_data_Oit, aes(x = DOY, y = Predicted, color = Stage3)) + geom_line(size = 2) + labs(x = "Day of year", y = "Log(N)", color = "Stages")
-
+ggplot(new_data_Oit, aes(x = DOY, y = Predicted, color = Stage2)) + geom_line(size = 2) + labs(x = "Day of year", y = "Log(N)", color = "Stages") 
 
 
 
 ```
 
 
+
+Здесь становится хорошо заметна двупиковость численности самцов и самок. Интересно, что в статье Cornwell et al. 2020 тоже отмечали два пика, правда на общей численности. Кстати, эта двупиковость прослеживается и на на науплиусах и на ювенилах. 
+
+В случае оитоны, кстати, в отличие от микросетеллы, обилие копеподитов превышает обилие взрослых. Это еще один довод в пользу того, что мы, скорее всего наблюдаем у микросетеллы какие-то процессы, связанные с миграцией. 
+
+
+
+
+## Сопоставление сезонных процессов у Oithona и Microsetella на всем дипазоне глубины
+
+### По материалам сетки 100 мкм
+
+```{r}
+
+cop100_Oit_Mic <- cop100 %>% filter( Stage3 %in% c( c("Adult", "Nauplii", "Juv.", "Cop.")))
+
+
+Mod_Oit_Mic <- gam(Log_N ~ s(DOY, by = interaction(Stage3, Sp, Depth), bs = "cc") + Stage3 * Sp*Depth, data = cop100_Oit_Mic)
+
+
+new_data_Oit_Mic <- expand.grid(Stage3 = unique(cop100_Oit_Mic$Stage3),   DOY = 1:365, Sp = unique(cop100_Oit_Mic$Sp), Depth = unique(cop100_Oit_Mic$Depth))
+
+new_data_Oit_Mic$Predicted <- predict(Mod_Oit_Mic, newdata = new_data_Oit_Mic, type = "response")
+
+
+ggplot(new_data_Oit_Mic, aes(x = DOY, y = Predicted, color = Sp)) + geom_line(size = 1.5) + labs(x = "Day of year", y = "Log(N)", color = "Species") + facet_grid(Depth~Stage3) + geom_point(data = cop100_Oit_Mic, aes(y = Log_N), size = 0.05) + scale_color_manual(values = c("red", "blue"))
+
+
+
+```
+
+### По материалам сетки 200 мкм
+
+```{r}
+
+cop_Oit_Mic <- cop %>% filter( Stage3 %in% c( c("Adult", "Juv.", "Cop.")), Depth %in% c("0_10", "10_25", "25_bottom"))
+
+
+Mod_Oit_Mic2 <- gam(Log_N ~ s(DOY, by = interaction(Stage3, Sp, Depth), bs = "cc") + Stage3 * Sp*Depth, data = cop_Oit_Mic)
+
+
+new_data_Oit_Mic2 <- expand.grid(Stage3 = unique(cop_Oit_Mic$Stage3),   DOY = 1:365, Sp = unique(cop_Oit_Mic$Sp), Depth = unique(cop_Oit_Mic$Depth))
+
+new_data_Oit_Mic2$Predicted <- predict(Mod_Oit_Mic2, newdata = new_data_Oit_Mic2, type = "response")
+
+
+ggplot(new_data_Oit_Mic2, aes(x = DOY, y = Predicted, color = Sp)) + geom_line(size = 1.5) + labs(x = "Day of year", y = "Log(N)", color = "Species") + facet_grid(Depth ~ Stage3) + geom_point(data = cop_Oit_Mic, aes(y = Log_N), size = 0.051) + scale_color_manual(values = c("blue", "red"))
+
+
+
+```
+
+
+
+Здесь подобраны модели (GAM) для каждой стадии, каждого вида для каждого диапазона  глубины. Точки - первичные данные. 
+
+Неплохо просматривается тенденция появления взрослых особей у оитоны чуть позднее, чем у микросетеллы. Соответственно и все остальные стадии у оитоны дают пики чуть позднее, чем пики соответствующих стадий у микросетеллы. 
+
+
+Насколько все это не бред не знаю, но у меня устойчивое впечатление, что оитона, хоть и более обильна, действительно, свой цикл подстраивает под обилие микросетеллы. Вряд ли что-то кардинально меняется в среде за те несколько дней на которые у нее смещаются пики в отношении пиков микросетеллы.  
 
