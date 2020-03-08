@@ -1439,7 +1439,7 @@ Pl_mod7 <- ggplot(new_data7, aes(x = Prop_T, y = fit)) +
   geom_ribbon(aes(ymin = fit - 1.96*SE, ymax = fit + 1.96*SE), alpha = 0.1) + 
   xlim(0, 1) + 
   ylim(0, 1) +  
-  geom_rug(data = myt2_all, inherit.aes = FALSE,  aes(x = Prop_T), size = 0.1) + 
+  geom_rug(data = myt2_reduced, inherit.aes = FALSE,  aes(x = Prop_T), size = 0.1) + 
   geom_abline()
 
 # unique(new_data7$Subset)
