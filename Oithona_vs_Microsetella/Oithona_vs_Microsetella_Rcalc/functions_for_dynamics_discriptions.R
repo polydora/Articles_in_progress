@@ -39,7 +39,8 @@ boot_PRCF <- function (data, n=999, dl=3, sim="fixed", confid=0.95, ...)
   longiv <- length(data)
   boot_res <- tsboot(data, PRCF, n, sim=sim, l=round(longiv/dl))
   result <- data.frame(lag=1:length(as.numeric(boot_res$t0)), PRCF=as.numeric(boot_res$t0))
-  for (i in 1:round(longiv/dl)) result$se[i] <- sd(boot_res$t[,i])
+  
+  for (i in 1:nrow(result)) result$se[i] <- sd(boot_res$t[,i])
   for(i in 1:length(as.numeric(boot_res$t0)))
   {
     result$low.ci[i] <- boot.ci(boot_res, type="basic", conf=confid, index=i)$basic[4]
