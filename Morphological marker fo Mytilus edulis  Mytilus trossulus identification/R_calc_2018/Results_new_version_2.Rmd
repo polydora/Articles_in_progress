@@ -1214,24 +1214,39 @@ myt2$pop <- factor(myt2$pop)
 
 myt2$Subset <- factor(myt2$Subset)
 
-size_models <- myt2 %>% group_by(pop) %>% do(model = glm(ind ~  size, family = "binomial", data = .))
+
+size_models_tros <- myt2  %>% group_by(pop)%>% filter(Sp == "M.trossulus") %>% do(model = glm(ind ~  size, family = "binomial", data = .)) 
+
+size_models_tros$pop <- factor(size_models_tros$pop)
+
+size_models_tros_res <- size_models_tros %>% tidy(model)
+
+size_models_res_tros_slope <- size_models_tros_res[size_models_tros_res$term != "(Intercept)", ]
+
+size_models_res_tros_slope$p_adj <- p.adjust(size_models_res_tros_slope$p.value, method = "hochberg") 
+
+# size_models_res_tros_slope_signif <-size_models_res_tros_slope[size_models_res_tros_slope$p_adj <0.05, ]
 
 
-size_models_res <- size_models %>% tidy(model)
 
-size_models_res_slope <- size_models_res[size_models_res$term != "(Intercept)", ]
+size_models_edu <- myt2  %>% group_by(pop)%>% filter(Sp == "M.edulis") %>% do(model = glm(ind ~  size, family = "binomial", data = .)) 
 
-size_models_res_slope$p_adj <- p.adjust(size_models_res_slope$p.value, method = "hochberg") 
+size_models_edu$pop <- factor(size_models_edu$pop)
 
-size_models_res_slope_signif <- size_models_res_slope[size_models_res_slope$p_adj <0.05, ]
+size_models_edu_res <- size_models_edu %>% tidy(model)
+
+size_models_res_edu_slope <- size_models_edu_res[size_models_edu_res$term != "(Intercept)", ]
+
+size_models_res_edu_slope$p_adj <- p.adjust(size_models_res_edu_slope$p.value, method = "hochberg") 
 
 
 
-signif_slope <- myt2 %>% filter(pop %in% size_models_res_slope_signif$pop) %>% select(size)
+
+# signif_slope <- myt2 %>% filter(pop %in% size_models_res_slope_signif$pop) %>% select(size)
 
 # length(signif_slope$size)
 
-not_signif_slope <- myt2 %>% filter(!pop %in% size_models_res_slope_signif$pop) %>%  select(size)
+# not_signif_slope <- myt2 %>% filter(!pop %in% size_models_res_slope_signif$pop) %>%  select(size)
 
 # length(not_signif_slope$size)
 
@@ -1241,12 +1256,16 @@ not_signif_slope <- myt2 %>% filter(!pop %in% size_models_res_slope_signif$pop) 
 
 **For Material and Methods about dependence on mussel size**
 
-Since the morphotype test was designed as a diagnostic tool for identification of mussel species  and taxonomic structure of mixed populations we decided  to avoid mussel size as a covariate in predictive models considered. However potentially mussel size could influence the probability of T-morphotype presence (see Katolikova et al., 2016). To check the possible correlation of T-morphotype presence with mussel size we prepared two types  of assessment. Firstly we constructed a set of logistic regression models for each particular population with probability of T-morphotype presence as dependent variable and mussel size as predictor. When all models were fitted we considered those cases where slope-terms  of the models were statistically significant (p < 0.05 after Hochberg’s correction for multiple testing, REF). Secondly  we checked the presence of any patterns in residuals from the Model 5 (the main model which was designed to predict the probability of correct identification of individual mussel by its morphotype) as a function of mussel size.  
+
+********************************
+Для материала и методики 
+
+Since the morphotype test was designed as a diagnostic tool for identification of mussel species  and taxonomic structure of mixed populations we decided  to avoid mussel size as a covariate in predictive models considered. However potentially mussel size could influence the probability of T-morphotype presence (see Katolikova et al., 2016). To check the possible correlation of T-morphotype presence with mussel size we prepared two types  of assessment. Firstly we constructed a set of logistic regression models for each particular population with probability of T-morphotype presence in M.trossulus and in M.edulis separatelly. The probability of T-morphotype presence  was an dependent variable and mussel size was a predictor in theses models. When all models were fitted we considered those cases where slope-terms  of the models were statistically significant (p < 0.05 after Hochberg’s correction for multiple testing, REF). Secondly  we checked the presence of any patterns in residuals from the Model 4 (the main model which was designed to predict the probability of correct identification of individual mussel by its morphotype) as a function of mussel size.  
+
+********************************
 
 
-
-
-Since the presence of T-morphotype potentially can be dependent on mussel size we assessed the statistical significance of the slope-terms for logistic regressions binding T-morphotype presence and mussel size in  each of `r length(unique(myt2$pop))` populations. We found significant association only in 4 cases: one population was from W and three populations were closely situated in one common locality in BH. In all these cases slope-terms were negative indicating lesser probability to find T-morphotype for larger mussels. It should be noted that the mean mussels size calculated for these four populations was significantly larger than the mean size for mussels from all other  populations (`r paste(round(mean(signif_slope$size), 1),"±", round(sd(signif_slope$size), 2) )` and `r paste(round(mean(not_signif_slope$size, na.rm = T), 1),"±", round(sd(not_signif_slope$size, na.rm = T), 2) )` mm (Mean ± SD) respectively, t-test = 7.82, p < 0.001). Additionally we analysed the association of residuals from Model 4 with mussel size. No clear pattern was revealed  in the residual plot (not shown).
+Since the presence of T-morphotype potentially can be dependent on mussel size we assessed the statistical significance of the slope-terms for logistic regressions binding T-morphotype presence and mussel size in  each of  populations. We found no significant association of T-morphotype presence in the case of M.trossulus. However in the case of M.edulis we found two populations ("banka" and "ustie_sub") that were closely situated in one common locality in BH, where significant slope presented. In both these cases slope-terms were negative indicating lesser probability to find T-morphotype for larger M.edulis.  Additionally we analysed the association of residuals from Model 4 with mussel size. No clear pattern was revealed  in the residual plot (not shown).
 
 
 
