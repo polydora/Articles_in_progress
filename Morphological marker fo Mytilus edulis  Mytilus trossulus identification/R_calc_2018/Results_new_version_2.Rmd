@@ -1261,12 +1261,22 @@ size_models_res_edu_slope$p_adj <- p.adjust(size_models_res_edu_slope$p.value, m
 Для материала и методики 
 
 Since the morphotype test was designed as a diagnostic tool for identification of mussel species  and taxonomic structure of mixed populations we decided  to avoid mussel size as a covariate in predictive models considered. However potentially mussel size could influence the probability of T-morphotype presence (see Katolikova et al., 2016). To check the possible correlation of T-morphotype presence with mussel size we prepared two types  of assessment. Firstly we constructed a set of logistic regression models for each particular population with probability of T-morphotype presence in M.trossulus and in M.edulis separatelly. The probability of T-morphotype presence  was an dependent variable and mussel size was a predictor in theses models. When all models were fitted we considered those cases where slope-terms  of the models were statistically significant (p < 0.05 after Hochberg’s correction for multiple testing, REF). Secondly  we checked the presence of any patterns in residuals from the Model 4 (the main model which was designed to predict the probability of correct identification of individual mussel by its morphotype) as a function of mussel size.  
+<<<<<<< HEAD
+=======
+
+********************************
+>>>>>>> 83ac56e3b23a2e689fe54afcfa3660fd550da013
 
 ********************************
 
-
 Since the presence of T-morphotype potentially can be dependent on mussel size we assessed the statistical significance of the slope-terms for logistic regressions binding T-morphotype presence and mussel size in  each of  populations. We found no significant association of T-morphotype presence in the case of M.trossulus. However in the case of M.edulis we found two populations ("banka" and "ustie_sub") that were closely situated in one common locality in BH, where significant slope presented. In both these cases slope-terms were negative indicating lesser probability to find T-morphotype for larger M.edulis.  Additionally we analysed the association of residuals from Model 4 with mussel size. No clear pattern was revealed  in the residual plot (not shown).
 
+<<<<<<< HEAD
+Since the presence of T-morphotype potentially can be dependent on mussel size we assessed the statistical significance of the slope-terms for logistic regressions binding T-morphotype presence and mussel size in  each of  populations. We found no significant association of T-morphotype presence in the case of M.trossulus. However in the case of M.edulis we found two populations ("banka" and "ustie_sub") that were closely situated in one common locality in BH, where significant slope presented. In both these cases slope-terms were negative indicating lesser probability to find T-morphotype for larger M.edulis.  Additionally we analysed the association of residuals from Model 4 with mussel size. No clear pattern was revealed  in the residual plot (not shown).
+=======
+>>>>>>> 83ac56e3b23a2e689fe54afcfa3660fd550da013
+
+<!-- It should be noted that the mean mussels size calculated for these two populations was significantly larger than the mean size for mussels from all other  populations (`r paste(round(mean(signif_slope$size), 1),"±", round(sd(signif_slope$size), 2) )` and `r paste(round(mean(not_signif_slope$size, na.rm = T), 1),"±", round(sd(not_signif_slope$size, na.rm = T), 2) )` mm (Mean ± SD) respectively, t-test = 7.82, p < 0.001). -->
 
 
 
