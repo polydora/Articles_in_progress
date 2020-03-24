@@ -1,0 +1,175 @@
+---
+title: "Фенология формирования водных масс в Южной губе о. Ряжкова в летние месяцы"
+author: "В. М. Хайтов"
+output: 
+      word_document:
+                reference_docx: Letopis_template.docx
+                fig_width: 5
+                fig_height: 5
+
+ 
+abstract: |
+    **Хайтов В. М. Фенология формирования водных масс в Южной губе о. Ряжкова в летние месяцы** // Толмачева Е. Л. (ред.) Летопись природы Кадалакшского заповедника за 2019 год (ежегодный отчет). Кандалакша. Т.1 (Летопись природы Кандалакшского заповедника, кн. ++)
+    
+    Описана многолетняя тенденция изменения сезонности в смене водных масс в точке наблюдения. Показано, что за последнее десятилетие наблюдается расширение сроков присутствия соленой холодной водной массы на поверхности моря. Эта масса представлена не только в июне, как в начале наблюдений, но, в последние годы, и в июле.  
+
+    **Khaitov V.M. Phenology of water mass formation in the Youzhnaya inlet (Ryazhkov island)** // Tolmacheva E. L. (ed.)  The Chronicle of Nature by the Kandalaksha Reserve for 2019 (Annual report).  Kandalaksha. V.1. (The Chronicle of Nature by the Kandalaksha Reserve, Book N ++)
+    
+    The long-term tendency of seasonal variation in the change in water masses at the observation point is described. It has been shown that over the past decade there has been an increase in the timing of the presence of cold water mass with high salinity on the sea surface. This mass is presented not only in June, as at the beginning of observations, but, in recent years, and in July.
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+library(reshape2)
+library(knitr)
+library(pander)
+library(ggplot2)
+
+
+editor <- "Толмачева Е. Л."
+editor_eng <- "Tolmacheva E. L."
+
+# Функция, задающая нумерацию рисунков
+
+figRef <- local({
+    tag <- numeric()
+    created <- logical()
+    used <- logical()
+    function(label, caption, prefix = options("figcap.prefix"), 
+        sep = options("figcap.sep"), prefix.highlight = options("figcap.prefix.highlight")) {
+        i <- which(names(tag) == label)
+        if (length(i) == 0) {
+            i <- length(tag) + 1
+            tag <<- c(tag, i)
+            names(tag)[length(tag)] <<- label
+            used <<- c(used, FALSE)
+            names(used)[length(used)] <<- label
+            created <<- c(created, FALSE)
+            names(created)[length(created)] <<- label
+        }
+        if (!missing(caption)) {
+            created[label] <<- TRUE
+            paste0(prefix.highlight, prefix, " ", i, sep, prefix.highlight, 
+                " ", caption)
+        } else {
+            used[label] <<- TRUE
+            paste(prefix, tag[label])
+        }
+    }
+})
+
+options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**")
+
+theme_set(theme_bw())
+
+```
+
+
+```{r}
+# Читаем данные
+hydr_long_all <- read.table(file = "data/hydrol_data_2007_2019.csv", header = T, sep = ",")
+
+hydr_long_all$Date2 <- strptime(hydr_long_all$Date_Time, format = "%m/%d/%Y %H:%M")
+
+hydr_long_all$Date2 <- as.POSIXct(hydr_long_all$Date2)
+
+
+hydr_long_all$DOY <-  as.numeric(strftime(hydr_long_all$Date2, format = "%j"))
+
+hydr_long_all$Year <- as.numeric(hydr_long_all$Year)
+
+```
+
+
+Как показали многолетние наблюдения (см главу Летописи "Динамика гидрологических показателей в Южной губе о. Ряжкова в летние месяцы 2019 года" и аналогичные главы в предыдущих выпусках Летописи) такие характеристики водной массы, как соленость и температура воды, демонстрируют отчетливую сезонную динамику. При этом наблюдаются и заметные межгодовые вариации этих параметров. Так, например, отчетливо выявляется тенденция к повышению солености в акватории залива. Однако усредненные данные, приведенные в упомянутой главе, не дают представления о механизмах многолетних изменений параметров водных масс. Можно привести две трактовки. Во-первых, увеличение солености может быть следствием следствием общего осолонения вод Кандалакшского залива. Во-вторых, этот процесс может отражать изменение характера циркуляции вод в акватории. Для выбора между этими альтернативами необходимо рассмотреть многолетние тенденции в динамике характеристик водных масс с учетом фенологических параметров. Для этой цели были построены двумерные аддитивные модели следующего вида.
+
+$$
+Salinity = s(DOY, Year)
+$$
+
+
+$$
+WT = s(DOY, Year)
+$$
+Здесь 
+
+*DOY* - Day of Year: номер дня в году, считая  от 1 января соответствующего года; 
+
+*Year* - год наблюдения;    
+
+*s* - непараметрическая сглаживающая функция;    
+
+*Salinity* и *WT* - соленость и температура воды, соответственно (зависимые переменные в моделях).    
+
+
+Согласно полученным данным,  Соленость воды (`r figRef("Sal")`) демонстрирует многолетнюю стабильность в августе. В этот месяце во все годы годы более или менее постоянно отмечается опресненная водная масса. Однако динамика солености в начале лета имеет совершенно иной характер. В начале лета в акватории всегда наблюдается повышенная соленость. Однако, если в начале наблюдений “язык” воды с высокой соленостью присутствовал только в  июне, то после 2014 года берет начало тенденция увеличения сроков пребывания этой водной массы в акватории. В последние годы вода с высокой соленостью стабильно присутствует в акватории до середины июля. Кроме того, в последние годы наметилась тенденция к повышению солености в этой водной массе.  
+
+
+
+```{r, fig.cap=figRef("Sal", "Многолетняя динамика фенологических характеристик солености в Южной губе.  Изолинии проведены с шагом в 5 промилле. DLong-term dynamics of the phenological characteristics of salinity in the Youzhnaya inlet. The contours are drawn in increments of 5 ppm.")}
+library(mgcv)
+Mod <- gam(S ~ s(Year, DOY), data = hydr_long_all)
+
+new_data <- expand.grid(DOY = seq(152, 232), Year = seq(min(hydr_long_all$Year), max(hydr_long_all$Year), 0.1))
+
+new_data$Predicted <- predict(Mod, newdata = new_data, type = "response")
+
+lab = data.frame(y = c(158, 188, 219), x = rep(2008, 3), label = c("Июнь", "Июль", "Август"))
+
+
+ggplot(new_data, aes(x = Year, y = DOY)) + 
+  geom_tile(aes(fill = Predicted)) + 
+  scale_fill_gradient(low = "white", high = "darkblue") +
+  scale_x_continuous(breaks = round(seq(min(hydr_long_all$Year), max(hydr_long_all$Year)))) + 
+  geom_hline(yintercept = c(153, 183, 214), linetype = 2) + 
+  geom_text(data = lab, aes(x = x, y = y, label = label )) + 
+  labs(x = "Годы / Years", y = "Номер календарного дня / Number of year day", fill ="Соленость / Salinity") + theme (legend.position = "bottom") + 
+  geom_contour(aes(z = Predicted), binwidth = 5, color = "black")
+
+
+```
+
+
+
+Температура воды (`r figRef("Temp")`), демонстрировала более устойчивый характер фенологической динамики. Во все годы наблюдений холодная водная масса была представлена в июне. В июле и августе температура стабильно повышается. Однако заметна многолетняя тенденция к более длительному пребыванию в акватории воды с пониженной температурой в начале лета. 
+
+Еще одна явная тенденция проявляется в смещении сроков максимального прогрева воды. Если в 2010-2013 гг пик прогрева приходился на первую половину августа, то в последующие годы он явно смещается на более ранние сроки (вторая половина июля). Кроме того, продолжительность пика максимального прогрева воды сокращается. 
+
+
+
+
+```{r, fig.cap=figRef("Temp", "Многолетняя динамика фенологических характеристик температуры воды в Южной губе. Изолинии проведены с шагом в 5 градусов. Long-term dynamics of the phenological characteristics of water temperature in the Youzhnaya inlet. The contours are drawn in increments of 5 degrees.")}
+
+Mod <- gam(Water_T ~ s(Year, DOY), data = hydr_long_all)
+
+new_data <- expand.grid(DOY = seq(152, 232), Year = seq(min(hydr_long_all$Year), max(hydr_long_all$Year), 0.1))
+
+new_data$Predicted <- predict(Mod, newdata = new_data, type = "response")
+
+lab = data.frame(y = c(158, 188, 219), x = rep(2008, 3), label = c("Июнь", "Июль", "Август"))
+
+
+ggplot(new_data, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Predicted)) + scale_fill_gradient(low = "white", high = "red") +
+  scale_x_continuous(breaks = round(seq(min(hydr_long_all$Year), max(hydr_long_all$Year)))) + geom_hline(yintercept = c(153, 183, 214), linetype = 2) + geom_text(data = lab, aes(x = x, y = y, label = label )) + labs(x = "Годы / Years", y = "Номер календарного дня / Number of year day", fill ="Температура воды / Water Temperature") + theme (legend.position = "bottom") + geom_contour(aes(z = Predicted), binwidth = 5, color = "black")
+
+
+```
+
+
+Таким образом, причины многолетних изменениях температуры и солености воды в акватории, по всей видимости, связаны с изменением характера сезонной циркуляции вод в акватории Кандалакшского залива. Первичные данные по солености и температуре воды за весь период наблюдений приведены в Таблице +.1. 
+
+
+**Таблица +.1**  Температура воды и соленость в Южной губе о. Ряжкова в 2007 - 2019 гг.   
+
+Table +.1 Water temperature and salinity in the Youzhnaza inlet (Ryazhkov island) in 2007 - 2019.
+
+
+```{r}
+hydr_lonf_print <- hydr_long_all[, c("Date_Time", "Water_T", "S")] 
+
+kable(hydr_lonf_print, col.names = c("Месяц/Число/Год Время", "Температура воды", "Соленость"))  
+```
+
+
+

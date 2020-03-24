@@ -1,0 +1,202 @@
+---
+title: "Динамика гидрологических показателей в Южной губе о. Ряжкова в летние месяцы 2019 года."
+author: "В. М. Хайтов"
+output: 
+      word_document:
+                reference_docx: Letopis_template.docx
+                fig_width: 5
+                fig_height: 5
+
+ 
+abstract: |
+    **Хайтов В. М. Динамика гидрологических показателей в Южной губе о. Ряжкова в летние месяцы 2019 года** // Толмачева Е. Л. (ред.) Летопись природы Кадалакшского заповедника за 2019 год (ежегодный отчет). Кандалакша. Т.1 (Летопись природы Кандалакшского заповедника, кн. ++)
+    
+    Рассматриваются данные гидрологических проб, бравшихся ежедневно с 1.06.19 по 19.08.19
+    
+    **Khaitov V.M. Dynamics of salinity, water and air  temperature and wind characteristics in the Youzhnaya inlet (Ryazhkov island)** // Tolmacheva E. L. (ed.)  The Chronicle of Nature by the Kandalaksha Reserve for 2019 (Annual report).  Kandalaksha. V.1. (The Chronicle of Nature by the Kandalaksha Reserve, Book N ++)
+    
+    The data of hydrological samples is discussed. Samples were collected during all summer months.
+      
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+library(reshape2)
+library(knitr)
+library(pander)
+
+
+editor <- "Толмачева Е. Л."
+editor_eng <- "Tolmacheva E. L."
+
+Year <- 2019
+
+# Функция, задающая нумерацию рисунков
+
+figRef <- local({
+    tag <- numeric()
+    created <- logical()
+    used <- logical()
+    function(label, caption, prefix = options("figcap.prefix"), 
+        sep = options("figcap.sep"), prefix.highlight = options("figcap.prefix.highlight")) {
+        i <- which(names(tag) == label)
+        if (length(i) == 0) {
+            i <- length(tag) + 1
+            tag <<- c(tag, i)
+            names(tag)[length(tag)] <<- label
+            used <<- c(used, FALSE)
+            names(used)[length(used)] <<- label
+            created <<- c(created, FALSE)
+            names(created)[length(created)] <<- label
+        }
+        if (!missing(caption)) {
+            created[label] <<- TRUE
+            paste0(prefix.highlight, prefix, " ", i, sep, prefix.highlight, 
+                " ", caption)
+        } else {
+            used[label] <<- TRUE
+            paste(prefix, tag[label])
+        }
+    }
+})
+
+options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**")
+
+```
+
+
+
+```{r}
+# Читаем данные
+hydr <- read.table(file = "data/hydrology_2019.csv", header = T, sep = ",")
+
+hydr$Date_Time <- paste(hydr$date,  hydr$time)
+
+
+hydr$Date2 <- strptime(hydr$Date_Time, format = "%d.%m.%Y %H:%M")
+
+hydr$Date2 <- as.POSIXct(hydr$Date2)
+
+hydr$Date <- format(hydr$Date2, "%d-%m:%H")
+
+hydr$Date_day <- format(hydr$Date2, "%d-%m")
+
+
+hydr$Air_T <- round(hydr$Air_T, 1)
+hydr$Water_T <- round(hydr$Water_T, 1)
+
+
+hydr_print <- data.frame(Year = 2019, Date = hydr$Date, Air_T = hydr$Air_T, Salinity = hydr$S, Water_T = hydr$Water_T)
+
+hydr_print2 <- hydr_print
+hydr_print[is.na(hydr_print)] <- "нет данных"
+
+col_names <- c("Год", "Дата и время", "T воздуха", "Соленость", "Температура воды")
+
+
+
+```
+
+
+Ежедневные метеонаблюдения были проведены в течение трех месяцев с 1 июня  по 19 августа `r Year` г.  Температура воздух оценивалась с помощью цифрового термометра на высоте человеческого роста. Регистрация температуры воды осуществлялась на глубине 1 м автоматическим логгером, свешенным с головки наплавного причала кордона «Ряжков» (логгер был расположен внутри герметичного контейнера). Замеры температуры проводились с интервалом в 6 часов (0.00, 6.00 ,12.00 и 18.00). Отбор проб солености по возможности осуществлялся в те же часы. Взятие солености производилось на той же точке, в которой был размещен логгер, регистрирующий температуру воды. Проба бралась с глубины 1 м. Определение солености осуществлялось с помощью ручного рефрактометра, с точностью до 1 промилле. Данные по измеренным показателям приведены в таблице +.1. 
+
+
+**Таблица +.1**  Температура воздуха и воды и соленость в Южной губе о. Ряжкова  летом `r Year` г.   
+
+Table +.1 Air and water temperature and salinity in the Youzhnaza inlet (Ryazhkov island) in `r Year`
+
+
+```{r}
+
+kable(hydr_print, format = "pandoc",  col.names = col_names)
+
+```
+
+
+
+
+```{r, fig.cap=figRef("Sal", "Динамика солености и температуры воды и воздуха в Южной губе. Dynamics of water salinity and temperature of water and air in Youzhnaya inlet.")}
+
+library(ggplot2)
+library(gridExtra)
+library(dplyr)
+
+
+theme_set(theme_bw())
+
+Means <- hydr %>% group_by(Date_day) %>% summarise(Mean_S = mean(S, na.rm = T), Mean_WT = mean(Water_T, na.rm = T), Mean_AT = mean(Air_T, na.rm = T)) 
+
+Means$Date_day_2 <- as.POSIXct(paste(Year, Means$Date_day), format = "%Y %d-%m" )
+
+
+Pl_sal <- ggplot(hydr, aes(x= Date2 , y = S)) + geom_point() + geom_line(data = Means, aes(x = Date_day_2,  y = Mean_S), color = "gray") + xlab("") + ylab("Соленость") + geom_smooth(se = F, size = 1.5, color = "blue")
+
+Pl_Temp_W <- ggplot(hydr, aes(x= Date2 , y = Water_T)) + geom_point() + geom_line(data = Means, aes(x = Date_day_2,  y = Mean_WT), color = "gray")  + geom_smooth(se = F, size = 1.5, color = "blue") + xlab("") + ylab("Температура воды")
+
+Pl_Temp_A <- ggplot(hydr, aes(x= Date2 , y = Air_T)) + geom_point() + geom_line(data = Means, aes(x = Date_day_2,  y = Mean_AT), color = "gray")  + geom_smooth(se = F, size = 1.5, color = "blue") + xlab("Даты") + ylab("Температура воздуха")
+
+grid.arrange(Pl_sal, Pl_Temp_W, Pl_Temp_A, ncol = 1)
+
+```
+
+
+
+
+
+
+
+Соленость воды, как и в предыдущие годы, демонстрировала колебания (`r figRef("Sal")`) хотя и в заметно меньших, чем в предыдущие годы пределах. При этом, как и в предыдущие годы четко прослеживается связь между соленостью и температурой воды. Более теплая вода обладала пониженной соленостью.  Заметных трендов в изменении солености и температуры воды и воздуха в этом году не выявляется. Это тоже отличает данный год от предыдущих лет, когда в течение летнего сезона наблюдалась смена водных масс. Все лето `r Year` года в точке измерения отмечалась только одна водная масса.
+
+
+
+Важно отметить, что в данном году средняя температура воды достигла минимальной отметки за весь период наблюдений (`r figRef("Temp_long")`). Среднее же значение солености, напротив, достигло максимального значения за тот же период. Столь же низкое значение температуры воздуха в точке наблюдений было отмечено только в 2008 году. Таким образом, `r Year` г. можно рассматривать, как самый холодный год за прошедшие 13 лет.    
+
+
+```{r}
+hydr_long <- read.table(file = "data/hydrol_data_2007_2018.csv", header = T, sep = ",")
+
+hydr_long$Date2 <- as.POSIXct(hydr_long$Date, format = "%d.%m.%Y %H:%M")
+
+
+hydr_long_all <-  rbind(hydr_long[, c("Date2", "Air_T",   "Water_T", "S")], hydr [, c("Date2", "Air_T",   "Water_T", "S")])
+
+hydr_long_all$Year <- format(hydr_long_all$Date2, "%Y")
+
+Means_long <- hydr_long_all %>% group_by(Year) %>% summarise(Mean_S = mean(S, na.rm = T), SD_S = sd(S, na.rm = T), Mean_WT = mean(Water_T, na.rm = T), SD_WT = sd(Water_T, na.rm = T), Mean_AT = mean(Air_T, na.rm = T), SD_AT = sd(Air_T, na.rm = T))
+
+Means_long[ ,2:7] <- round(Means_long[ ,2:7], 2)
+
+hydr_long_all_print <- with(Means_long, data.frame(Year = Year,
+  Salinity = paste(Mean_S, "±", SD_S),
+  Water_T = paste(Mean_WT, "±", SD_WT),
+  Air_T = paste(Mean_AT, "±", SD_AT))
+  )
+
+```
+
+
+
+**Таблица +.2**  Средние (± SD) значения солености, температуры воды и воздуха в Южной губе о. Ряжкова  в разные годы.   
+
+Table +.1 Mean (± SD) values of salinity, water and air temperature in the Youzhnaza inlet (Ryazhkov island) in different years.
+
+```{r}
+kable(hydr_long_all_print, col.names = c("Годы", "Соленость", "Температура воды", "Температура воздуха"), align = "lccc" )
+```
+
+
+```{r, fig.cap=figRef("Temp_long", "Многолетняя динамика солености (средняя ± SD) и температуры воды и воздуха в Южной губе. Long-term dynamics of water salinity (mean ± SD) and temperature of water and air in Youzhnaya inlet.")}
+
+Pl_long_S <- ggplot(Means_long, aes(x = as.numeric(Year), y = Mean_S)) + geom_point() + geom_errorbar(aes(ymin = Mean_S - SD_S, ymax = Mean_S + SD_S), width = 0.2)  + geom_path() + labs(x = "", y = "Сленость") + scale_x_continuous(breaks = round(seq(min(Means_long$Year), max(Means_long$Year)))) 
+  
+
+Pl_long_WT <- ggplot(Means_long, aes(x = as.numeric(Year), y = Mean_WT)) + geom_point() + geom_errorbar(aes(ymin = Mean_WT - SD_WT, ymax = Mean_WT + SD_WT), width = 0.2)  + geom_path() + labs(x = "", y = "Температура воды")+ scale_x_continuous(breaks = round(seq(min(Means_long$Year), max(Means_long$Year)))) 
+  
+
+Pl_long_AT <- ggplot(Means_long, aes(x = as.numeric(Year), y = Mean_AT)) + geom_point() + geom_errorbar(aes(ymin = Mean_AT - SD_AT, ymax = Mean_AT + SD_AT), width = 0.2)  + geom_path() + labs(x = "Годы", y = "Температура воздуха") + scale_x_continuous(breaks = round(seq(min(Means_long$Year), max(Means_long$Year)))) 
+  
+grid.arrange(Pl_long_S, Pl_long_WT, Pl_long_AT, ncol = 1)
+```
+
+
