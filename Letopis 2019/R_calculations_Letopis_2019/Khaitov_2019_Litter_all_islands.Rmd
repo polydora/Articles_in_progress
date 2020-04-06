@@ -1,0 +1,240 @@
+---
+title: "Распределение антропогенного мусора на литорали островов Северного архипелага "
+author: "В. М. Хайтов"
+output: 
+      word_document:
+                reference_docx: Letopis_template.docx
+                fig_width: 5
+                fig_height: 5
+
+ 
+abstract: |
+    **Хайтов В. М. Распределение антропогенного мусора на литорали островов Северного архипелага ** // Толмачева Е. Л. (ред.) Летопись природы Кадалакшского заповедника за 2016 год (ежегодный отчет). Кандалакша. Т.1 (Летопись природы Кандалакшского заповедника, кн. ++)
+    Рассматриваются данные по учету мусора в полосе штормовых выбросов на островах и лудах Северного архипелага.   
+    
+    **Khaitov V.M. Diatribution of litter on island shore of the Severny arhipelago** // Tolmacheva E. L. (ed.)  The Chronicle of Nature by the Kandalaksha Reserve for 2016 (Annual report).  Kandalaksha. V.1. (The Chronicle of Nature by the Kandalaksha Reserve, Book N ++)
+     The data on litter amount on the shoreline of islands are considered.      
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+library(reshape2)
+library(knitr)
+library(pander)
+library(doBy)
+library(ggplot2)
+library(gridExtra)
+library(ggmap)
+
+
+theme_set(theme_bw())
+options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**" )
+
+
+editor <- "Толмачева Е. Л."
+editor_eng <- "Tolmacheva E. L."
+
+# Функция, задающая нумерацию рисунков
+
+figRef <- local({
+    tag <- numeric()
+    created <- logical()
+    used <- logical()
+    function(label, caption, prefix = options("figcap.prefix"), 
+        sep = options("figcap.sep"), prefix.highlight = options("figcap.prefix.highlight")) {
+        i <- which(names(tag) == label)
+        if (length(i) == 0) {
+            i <- length(tag) + 1
+            tag <<- c(tag, i)
+            names(tag)[length(tag)] <<- label
+            used <<- c(used, FALSE)
+            names(used)[length(used)] <<- label
+            created <<- c(created, FALSE)
+            names(created)[length(created)] <<- label
+        }
+        if (!missing(caption)) {
+            created[label] <<- TRUE
+            paste0(prefix.highlight, prefix, " ", i, sep, prefix.highlight, 
+                " ", caption)
+        } else {
+            used[label] <<- TRUE
+            paste(prefix, tag[label])
+        }
+    }
+})
+
+
+```
+
+
+
+```{r}
+# Читаем данные
+island <- read.table(file = "data/Islands_data_UTF8.csv", header = T, sep = ",")
+lit <- read.table(file = "data/Litter_on_island_all_years_UTF8.csv", header = T, sep = ",")
+
+island_lit <- merge(island, lit)
+lit [!lit$Island %in% unique(island_lit$Island), ]
+
+# bal$N <- bal$N/60 + 67
+# bal$E <- bal$E/60 + 32
+
+lit_print <- lit
+island_print <- island
+
+# ggRyazhkov <- read.table("data/ggRyazhkov.csv", header = T, sep = ";")
+
+load("Kand_map.RData")
+
+```
+
+
+
+Учет мусора производился на островах Северного архипелага в период учета гнездящихся птиц в июне 2008-2016 гг.  Всего было обследовано `r length(unique(lit$Island)) - 1` островов. Кроме того в анализ включены данные по обилию мусора на о. Ряжкове, приведенные в отдельной главе настоящего тома. 
+
+Учет производился в полосе штормовых выбросов. При этом отмечались все предметы заметные без разрушения слоя выбросов. Единицей учета были отдельные предметы или их части, представленные в выбросах, как единое целое. В качестве пространственной единицы учета рассматривался весь остров. Исходные данные по учету предметов антропогенного происхождения и данные по площади островов приведены в таблице +.+. 
+
+
+**Таблица +.+**
+
+Количество единиц мусор на островах Северного архипелага в разные годы (данные по о. Ряжкову не приводятся, см. отдельную главу данного тома)
+
+The litter amount on islands of Severny arkhipelago in different years (data on litter from Ryazhkov is given in special chapter of this volume)
+
+
+```{r}
+lit_print$Total <- apply(lit[, -c(1,2)], 1, FUN = function(x) sum(x, na.rm = T))
+lit_print <- lit_print[lit$Island != "Ряжков",]
+
+names(lit_print) <- c("Год", "Остров", "Пластиковые предметы",	"Пластиковые бутылки", "Стеклянные бутылки и битое стекло",	"Полиэтилен и целофан",	"Покрышки и прочие резиновые предметы", "Бумага",	"Металлическе предметы","Консервные банки",	"Предметы одежды",	"Пенопласт",	"Прочее", "Всего")
+
+pander(lit_print[ , c(1:8) ], missing = "нет данных", style = "multiline",  split.tables = Inf, split.cells = 10, justify = "llcccccc")
+```
+
+
+**Таблица +.+**
+
+Продолжение.
+
+```{r}
+pander(lit_print[ , c(1, 2, 9:14) ], missing = "нет данных", style = "simple",  split.tables = Inf, split.cells = 10, justify = "llcccccc")
+```
+
+
+
+
+
+
+Для получения стандартизированной величины, характеризующей обилие мусора на островах,была приблизительно оценена длина береговой линии каждого из островов. Для этого была использована программа Google Earth 7.1.8.3036 (Google, 2017), с помощью которой (инструмент "линейка") был измерен периметр той части островов, которая не заливается во время прилива. Данные координат островов и оценок длины их береговой линии приведены в таблице +.+.  
+
+
+
+**Таблица +.+**   
+
+Размеры и координаты островов, на которых производилась оценка обилия мусора.    
+
+Size and Coordinates of islands where the litter amount was assessed.
+
+*Примечание:* В качестве точки засечения координат рассматривался центр острова. 
+
+```{r}
+names(island_print) <- c("Остров", "Площадь острова (Га)", "Длина береговой линии (км)", "N", "E")
+
+pander(island_print, missing = "нет данных", style = "multiline",  split.tables = Inf, split.cells = Inf, justify = "lcccc", digits = c(0,1,3,6,6))
+
+```
+
+
+
+```{r}
+library(doBy)
+lit_sum <- summaryBy(. ~ Island + Year, data = lit, FUN = sum, keep.names = T)
+
+lit_sum$Total <- apply(lit_sum[,-c(1,2)], 1, FUN = sum)
+
+lit_sum2 <- merge(lit_sum, island)
+lit_rel <- lit_sum[, -c(1,2)] / lit_sum2$Perimetr/10 
+
+lit_rel <- cbind(lit_sum[,c(1,2)], lit_sum2[,c(17,18) ], lit_rel)
+
+```
+
+Оценка удельного количества мусора производилась путем деления количества того или иного типа мусора, найденного на том или ином острове, на периметр данного острова. Данная величина отражает количество единиц мусора на 100 м береговой линии. На рисунке +.+ приведены данные, демонстрирующие многолетние изменения в удельном количестве мусора на всей площади архипелага. Отчетливых, статистически значимых (GAM регрессионная модель), трендов в межгодовых изменениях этой величины выявить не удается (рис. +.+).  
+
+```{r}
+
+library(mgcv)
+
+M1 <- gam(Total ~ s(Year, k = 9), data = lit_rel)
+
+MyData <- data.frame(Year = seq(min(lit_rel$Year), max(lit_rel$Year), 0.1))
+
+MyData$Predict_M1 <- predict(M1, newdata = MyData, type = "response")
+
+ggplot(lit_rel, aes(x = Year, y = Total)) + geom_point() + geom_line(data = MyData, aes(x = Year, y = Predict_M1)) + ylab("Количество единиц мусора на 100 м ") + xlab("Годы")
+
+```
+
+**Рисунок +.+.** Удельное количество единиц антропогенного мусора на 100 м береговой линии по всем островам Северного архипелага в разные годы. 
+
+The specific litter value per 100 m of shoreline on islands of Severny arkhipelago in different years
+
+
+Как и при оценке степени загрязненности береговой линии о. Ряжкова, в качестве маркера обилия мусора мы рассматривали обилие пластиковых бутылок. Корреляция между обилием бутылок и общим количеством единиц мусора достаточно велика (r = `r round(cor(lit_rel$Plastic_botles, (lit_rel$Total - lit_rel$Plastic_botles), use =  "pairwise.complete.obs"), 2)`). Для визуализации характера пространственного распределения мусора мы составили карту (рис. +.+), на которой размер кружка пропорционален удельному количеству пластиковых бутылок. 
+
+
+
+```{r}
+
+Plastic_botle_average <- summaryBy(Plastic_botles + N + E ~ Island, data = lit_rel, FUN = mean, keep.names = T)
+
+ggmap(Kand_map, fullpage = F, darken=0, base_layer=ggplot(aes(x=E, y=N), data=Plastic_botle_average)) + geom_point(aes(size=Plastic_botles), shape=21, fill="yellow", position = position_jitter(width = 0.009)) + labs(size = "Обилие \nбутылок")
+
+```
+
+**Рисунок +.+.** Удельное количество пластиковых бутылок  на 100 м береговой линии на островах  Северного архипелага (усредненные данные за все годы). 
+
+The specific value of plastic botles per 100 m of shoreline on islands of Severny arkhipelago (data on all years were averaged)
+
+
+Приведенные на рисунке данные демонстрируют отчетливую тенденцию - по мере приближения к г.Кандалакша удельное количество пластиковых бутылок заметно возрастает. Эта тенденция демонстрируется иным способом, на рисунке +.+.
+
+
+```{r}
+
+ N_kontora <- 67.132947*pi/180
+ E_kontora <- 32.417517*pi/180
+ 
+ # d = arccos {sin(Фa)·sin(Фb) + cos(Фa)·cos(Фb)·cos(Лa - Лb)}, 
+ 
+Plastic_botle_average$Distance <- with(Plastic_botle_average, acos(sin(N_kontora)*sin(N*pi/180) + cos(N_kontora)*cos(N*pi/180)*cos(E_kontora - E*pi/180))) * 6371  
+
+ggplot(Plastic_botle_average, aes(x = Distance, y = Plastic_botles)) + geom_point() + geom_smooth(method = "glm", method.args = list(family = "quasipoisson")) + ylab("Количество пластиковых бутылок на 100 м") + xlab("Расстояние от Кандалакши (км)")
+
+```
+
+**Рисунок +. +.** Удельное количество пластиковых бутылок  на 100 м береговой линии на островах  Северного архипелага (усредненные данные за все годы) в зависимости от расстояния до Кандалакши. В качестве точки отсчета в Кандалакше взяты координаты конторы Заповедника (N=67.132947, E=32.417517)
+
+The specific value of plastic botles per 100 m of shoreline on islands of Severny arkhipelago (data on all years were averaged) as a function of distnce to Kandalaksha
+
+
+```{r}
+M2 <- glm(Plastic_botles ~ Distance, data = Plastic_botle_average, family = "quasipoisson")
+```
+
+
+Эта зависимость носит статистически значимый характер. Параметры регрессионной модели, описывающей связь между расстоянием от острова до Кандалакши и обилием пластиковых бутылок на побережье приведены в таблице +.+. 
+
+**Таблица +.+**
+
+Параметры регрессионной модели, описывающие связь между удельным количеством пластиковых бутылок и расстоянием от острова до Кандалакши. Линейная модель, основанная на пуассоновском распределении остатков.
+
+The parameters of regression model discribing the association between plastic botles abundance per 100 m of shore line and distance to Kandalaksha. Linear model with poisson error distribution.
+
+
+```{r}
+
+pander((M2))
+```
+

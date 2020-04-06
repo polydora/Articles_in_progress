@@ -1,0 +1,129 @@
+---
+title: "Связь ориентации камбал с их размером в разных заливах Белого моря"
+author: "В. Хайтов"
+date: "4 04 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+```
+
+```{r}
+library(mgcv)
+library(ggplot2)
+library(dplyr)
+library(broom)
+library(car)
+library(reshape2)
+
+options(knitr.kable.NA = '')
+
+
+theme_set(theme_bw())
+
+kam <- read.table("Data/kambala.csv", sep = ",", header = T, dec = ".")
+
+# str(kam)
+kam$Outcome <- ifelse(kam$Orient == "Left", 1, 0)
+
+
+kam$Bay <- factor(kam$Bay, levels = c("Onega_Bay", "Dvina_Bay","Kandalaksha_Bay", "Mezen_Bay" ))
+
+```
+
+
+
+## Размеры левых и правых камбал 
+
+
+```{r }
+ggplot(kam, aes(x = Bay, y = L,  fill = Orient)) + geom_boxplot(notch = T) + facet_wrap(~Sex)
+```
+
+Рисунок 1. Размеры левых и правых камбал среди самцов и самок в разных заливах Белого моря. 
+
+<br>
+<br>
+<br>
+
+
+```{r}
+Mod_size <- lm(L ~ Bay*Orient*Sex, data = kam)
+
+Mod_size_anova <- aov(L ~ Bay*Orient*Sex, data = kam)
+
+
+kable(tidy(Mod_size_anova), caption = "**Таблица 1.** Результаты дисперсионного анализа зависимости размера от факторов Bay, Orient и Sex", digits = 3)
+
+```
+
+Я добавил в анализ фактор Sex и в результате видно, что есть значимое взаимодействие между факторами Bay:Sex. Это означает, что в разных заливах степень различий размеров между самцами и самками разные (в целом везде самки крупнее самцов, но степень различий варьирует от залива к заливу). Важнее другое: Есть значимое взаимодействие Bay:Orient. Это означает, опять же, что степень различий между левыми и правыми в разных заливах разная, что, впрочем, хорошо видно из рисунка 1.  Для более детального сравнения привожу таблицу со значениями средних размеров. 
+
+
+
+
+```{r}
+means <- kam %>% group_by(Bay, Sex, Orient) %>% summarize(Mean_L = round(mean(L), 1), SE = round(sd(L)/sqrt(n()), 2))
+
+means2 <- dcast(means, formula = Bay  ~ Sex + Orient, value.var = c("Mean_L"))
+SE2 <- dcast(means, formula = Bay  ~ Sex + Orient, value.var = c("SE"))
+ 
+results <- data.frame(Bay = means2$Bay, 
+                      FL = means2$Female_Left, d = rep("±", 4), SE_FL = SE2$Female_Left, 
+                      FR = means2$Female_Right, d = rep("±", 4), SE_FR = SE2$Female_Right, 
+                      dif_F = rep(NA, 4),
+                      ML = means2$Male_Left, d = rep("±", 4), SE_ML = SE2$Male_Left, 
+                      MR = means2$Male_Right, d = rep("±", 4), SE_MR = SE2$Male_Right, 
+                      dif_M = rep(NA, 4)
+)
+
+
+
+
+kable(results, col.names = c("Bay",   "Female Left",    " ",     " ", "Female Right",    " ",   " ", "  ", "Male Left",    " ",   " ", "Male Right",    " ",   " ", " "),  caption = "Таблица 2. Средние размеры (± Стандартная ошибка) камбал разной ориентации и разного пола.")
+
+
+```
+
+
+
+```{r}
+
+Tukey_all <-  TukeyHSD(Mod_size_anova, which = "Bay:Orient:Sex")
+
+# Tukey_Orient_Sex <-  TukeyHSD(Mod_size_anova, which = "Orient:Sex")
+# 
+# Tukey_Orient_Sex_print <- tidy(Tukey_Orient_Sex)
+
+# write.table(as.data.frame(Tukey[[1]]), "clipboard", sep = "\t", row.names = T)
+
+```
+
+
+
+**Важно!** Попарное сравнение левых и правых среди самцов и среди самок (в пределах каждого из заливов) с помощью критерия Тьюки (в соответствии с результатами дисперсионного анализа, приведенными в Табл. 1) не выявило достоверных отличий в размерах левых и правых. То есть локально ориентация существенного влияния на размер не оказывает.
+
+
+
+
+
+
+## Соотношение левых и правых в разных заливах
+
+```{r}
+
+frq_Orient <- kam %>% group_by(Bay) %>% summarise(Left = mean(Orient == "Left"), Right = mean(Orient == "Right"))
+
+frq_Orient2 <- melt(frq_Orient)
+
+ggplot(frq_Orient2, aes(x ="", y = value, fill = variable)) + geom_bar(stat= "identity", width=1, color = "black") + coord_polar("y", start=0)  + theme(axis.text = element_blank(), panel.grid = element_blank(), panel.border = element_blank(), axis.title = element_blank())+ guides(fill="none") + facet_wrap(~Bay)  + scale_fill_manual(values = c("red", "blue"))
+
+```
+
+Рисунок 2. Соотношение левых (красный сектор) и правых (синий сектор) камбал в разных заливах.
+
+
+

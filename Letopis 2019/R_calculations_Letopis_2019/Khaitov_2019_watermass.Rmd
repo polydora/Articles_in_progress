@@ -61,6 +61,8 @@ figRef <- local({
 
 options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**")
 
+options(knitr.kable.NA = 'нет данных')
+
 theme_set(theme_bw())
 
 ```
@@ -160,15 +162,16 @@ ggplot(new_data, aes(x = Year, y = DOY)) + geom_tile(aes(fill = Predicted)) + sc
 Таким образом, причины многолетних изменениях температуры и солености воды в акватории, по всей видимости, связаны с изменением характера сезонной циркуляции вод в акватории Кандалакшского залива. Первичные данные по солености и температуре воды за весь период наблюдений приведены в Таблице +.1. 
 
 
-**Таблица +.1**  Температура воды и соленость в Южной губе о. Ряжкова в 2007 - 2019 гг.   
 
-Table +.1 Water temperature and salinity in the Youzhnaza inlet (Ryazhkov island) in 2007 - 2019.
 
 
 ```{r}
 hydr_lonf_print <- hydr_long_all[, c("Date_Time", "Water_T", "S")] 
+hydr_lonf_print$Water_T <- round(hydr_lonf_print$Water_T, 1)
+hydr_lonf_print$S <- round(hydr_lonf_print$S, 1)
 
-kable(hydr_lonf_print, col.names = c("Месяц/Число/Год Время", "Температура воды", "Соленость"))  
+kable(hydr_lonf_print, col.names = c("Месяц/Число/Год Время", "Температура воды", "Соленость"), 
+      caption = "**Таблица +.1**  Температура воды и соленость в Южной губе о. Ряжкова в 2007 - 2019 гг. Water temperature and salinity in the Youzhnaza inlet (Ryazhkov island) in 2007 - 2019.")  
 ```
 
 
