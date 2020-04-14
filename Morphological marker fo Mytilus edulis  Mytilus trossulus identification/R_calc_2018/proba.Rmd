@@ -1,0 +1,128 @@
+---
+title: ""
+author: ""
+date: ""
+output:
+  word_document:
+    reference_docx: article_template.docx
+    fig_width: 8
+    fig_height: 8
+bibliography: 
+csl: marine-biology.csl
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = FALSE, message = FALSE)
+```
+
+
+```{r}
+# 
+# Model_1_final_summary$Model <- "Model_1_final"
+# Model_2_final_summary$Model <- "Model_2_final"
+# Model_3_final_summary$Model <- "Model_3_final"
+# Model_4_final_summary$Model <- "Model_4_final"
+# Model_5_final_summary$Model <- "Model_5_final"
+# Model_6_final_summary$Model <- "Model_6_final"
+# Model_7_final_summary$Model <- "Model_7_final"
+# Model_8_final_summary$Model <- "Model_8_final"
+# 
+# 
+# 
+# 
+# all_models_sum <- rbind(Model_1_final_summary, Model_2_final_summary,  Model_3_final_summary,   Model_4_final_summary,  Model_5_final_summary,  Model_6_final_summary, Model_7_final_summary, Model_8_final_summary)
+
+
+
+# coef(Model_7_final)
+
+
+
+
+
+# WBL
+intercept <- -2.4296771
+
+b1 <- 5.4478252
+
+intercept <- round(intercept, 1)
+b1 <- round(b1, 1)
+
+eq_Model_7_WBL <- paste0('$$Ptros = \\frac{e^{', intercept, ' + ', b1, 'P_T} }{1 + e^{', intercept, ' + ', b1, 'P_T}}$$')
+
+
+
+# BH
+intercept <- -2.4296771 + -1.4533000
+
+b1 <- 5.4478252 + -0.4311163
+
+intercept <- round(intercept, 1)
+b1 <- round(b1, 1)
+
+eq_Model_7_BH <- paste0('$$Ptros = \\frac{e^{', intercept, ' + ', b1, 'P_T} }{1 + e^{', intercept, ' + ', b1, 'P_T}}$$')
+
+
+
+# GOM
+intercept <- -2.4296771 + 0.1485715
+
+b1 <- 5.4478252 + 0.7669863 
+
+intercept <- round(intercept, 1)
+b1 <- round(b1, 1)
+
+eq_Model_7_GOM <- paste0('$$Ptros = \\frac{e^{', intercept, ' + ', b1, 'P_T} }{1 + e^{', intercept, ' + ', b1, 'P_T}}$$')
+
+
+
+
+# BALT
+intercept <- -2.4296771 + 1.7843822
+
+b1 <- 5.4478252 + 6.1480674 
+
+intercept <- round(intercept, 1)
+b1 <- round(b1, 1)
+
+eq_Model_7_BALT <- paste0('$$Ptros = \\frac{e^{', intercept, ' + ', b1, 'P_T} }{1 + e^{', intercept, ' + ', b1, 'P_T}}$$')
+
+
+
+# NORW
+intercept <- -2.4296771 + 1.9254190
+
+b1 <- 5.4478252 + -1.7520192 
+
+intercept <- round(intercept, 1)
+b1 <- round(b1, 1)
+
+eq_Model_7_NORW <- paste0('$$Ptros = \\frac{e^{', intercept, ' + ', b1, 'P_T} }{1 + e^{', intercept, ' + ', b1, 'P_T}}$$')
+
+
+
+# (Intercept)            Prop_T          SubsetBH         SubsetGOM        SubsetBALT        SubsetNORW   Prop_T:SubsetBH  Prop_T:SubsetGOM   # -2.4296771         5.4478252        -1.4533000         0.1485715         1.7843822         1.9254190        -0.4311163         0.7669863 
+# Prop_T:SubsetBALT Prop_T:SubsetNORW 
+        # 6.1480674        -1.7520192 
+
+
+```
+
+
+
+
+`r eq_Model_7_WBL`
+
+
+`r eq_Model_7_BH`
+
+
+`r eq_Model_7_GOM`
+
+
+`r eq_Model_7_BALT`
+
+
+`r eq_Model_7_NORW`
+
