@@ -1,0 +1,274 @@
+---
+title: ""
+author: ""
+date: ""
+output: 
+  word_document:
+                reference_docx: article_template.docx
+                fig_width: 8
+                fig_height: 7
+
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+```
+
+```{r}
+library(mgcv)
+library(ggplot2)
+library(dplyr)
+library(broom)
+library(car)
+library(reshape2)
+
+options(knitr.kable.NA = '')
+
+
+
+
+# Функция, задающая нумерацию рисунков
+
+figRef <- local({
+    tag <- numeric()
+    created <- logical()
+    used <- logical()
+    function(label, caption, prefix = options("figcap.prefix"), 
+        sep = options("figcap.sep"), prefix.highlight = options("figcap.prefix.highlight")) {
+        i <- which(names(tag) == label)
+        if (length(i) == 0) {
+            i <- length(tag) + 1
+            tag <<- c(tag, i)
+            names(tag)[length(tag)] <<- label
+            used <<- c(used, FALSE)
+            names(used)[length(used)] <<- label
+            created <<- c(created, FALSE)
+            names(created)[length(created)] <<- label
+        }
+        if (!missing(caption)) {
+            created[label] <<- TRUE
+            paste0(prefix.highlight, prefix, " ", i, sep, prefix.highlight, 
+                " ", caption)
+        } else {
+            used[label] <<- TRUE
+            paste(prefix, tag[label])
+        }
+    }
+})
+
+options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**")
+
+
+
+theme_set(theme_bw())
+
+kam <- read.table("Data/kambala.csv", sep = ",", header = T, dec = ".")
+
+# str(kam)
+kam$Outcome <- ifelse(kam$Sidedness == "Left", 1, 0)
+
+kam$Bay <- factor(kam$Bay, levels = c("Kandalaksha_Bay", "Onega_Bay", "Dvina_Bay", "Mezen_Bay" ), labels = c("Kandalaksha Bay", "Onega Bay", "Dvina Bay", "Mezen Bay" ))
+
+```
+
+
+
+## РЕЗУЛЬТАТЫ ИССЛЕДОВАНИЯ
+
+Доля левосторонних особей в уловах речной камбалы из Кандалакшского, Онежского, Двинского и Мезенского заливов варьировала от 3,3% до 28,3% (`r figRef("Pie_charts")`). Для Онежского залива выборки из разных его участков были объединены вследствие отсутствия достоверных отличий между ними по анализируемому признаку (χ2 <0.82, р>0.05). Наиболее высокие и сходные значения долей левосторонних рыб отмечены в популяциях камбалы из Кандалакшского (губа Чупа) и Онежского заливов (χ2=1.26, р>0.05). Частоты встречаемости реверсивных особей у камбал Двинского и Мезенского заливов оказались в несколько раз ниже. Следует заметить, что камбалы из этих двух популяций достоверно отличались между собой по сравниваемому признаку (χ2=11.70, р<0.05). По имеющимся данным, левосторонние особи реже всего встречались в популяции камбалы из Мезенского залива.
+
+
+
+```{r, fig.cap=figRef("Pie_charts", "Соотношение левосторонних (красный сектор) и правосторонних (синий сектор) камбал в разных заливах Белого моря.")}
+
+frq_Orient <- kam %>% group_by(Bay) %>% summarise(Left = sum(Sidedness == "Left"), Right = sum(Sidedness == "Right"))
+  
+# Добавляем то, что не было измерено в Кандалакшском заливе
+frq_Orient[frq_Orient$Bay == "Kandalaksha Bay", 2:3] <- frq_Orient[frq_Orient$Bay == "Kandalaksha Bay", 2:3] + c(37, 132)
+  
+frq_Orient2 <- frq_Orient %>% mutate(Left_prop = Left/(Left + Right), Right_prop = Right/(Left + Right)) %>% select(Bay, Left_prop, Right_prop) %>% melt()
+  
+frq_Orient2$perc_value <- round(frq_Orient2$value*100,1)
+
+# library(ggpubr)
+# 
+# ggpie(data = frq_Orient2, x = "perc_value", label = "lab", lab.pos = c("out" ), lab.adjust = 0,
+#   lab.font = c(4, "bold", "black"), font.family = "",
+#   color = "black", fill = "white", palette = NULL, size = NULL,
+#   ggtheme = theme_pubr()) +  facet_grid(~Bay)
+# 
+# 
+
+frq_Orient2$lab <- ifelse(frq_Orient2$variable == "Left_prop", paste(frq_Orient2$perc_value), " ")
+
+frq_Orient3 <- frq_Orient2 %>% group_by(Bay) %>% mutate(position = cumsum(value) - 0.5*value)
+
+frq_Orient3$position <- frq_Orient3$position + c(-0.1, -0.09, 0.05, 0.05, 0,0,0,0)
+
+# library(ggrepel)
+ggplot(frq_Orient3, aes(x ="", y = value, fill = variable)) + 
+  geom_bar(stat= "identity", width=1, color = "black") + 
+  coord_polar("y", start=0)  + 
+  facet_wrap(~Bay)+
+  scale_fill_manual(values = c("gray10", "gray80")) +
+  theme(axis.text = element_blank(), panel.grid = element_blank(), panel.border = element_blank(), axis.title = element_blank())+ 
+  guides(fill="none") + 
+  geom_text(aes(label = lab, y = position))
+  
+
+  
+```
+
+
+
+Соотношение самцов и самок в популяциях Мезенского, Кандалакшского и Онежского заливов было одинаковым, либо очень близким к равновесному. В Двинском заливе в уловах камбалы отмечено некоторое преобладание самок (64,4%). Во всех исследованных выборках соотношение полов среди левосторонних особей не отличалось достоверно от аналогичного показателя для правосторонних рыб. 
+Межгодовая изменчивость доли левосторонних рыб в популяциях Онежского (2002-2019 гг.), Мезенского (2010-2016 гг.) и Двинского (2005-2019 гг.) заливов в целом была незначительной, статистически достоверных долговременных изменений признака не обнаружено. 
+
+
+Размерно-частотные распределения лево- и правосторонних камбал в уловах из четырех заливов Белого моря приведены на `r figRef("Size_density")`. В каждой из исследованных популяций рыбы с разным расположением глаз на теле не различались по диапазону изменчивости длины и набору модальных размерных классов. Среди более крупных рыб относительная численность левосторонних особей была несколько выше, чем правосторонних. Вместе с тем, в разных заливах распределение камбал по длине характеризовалось отличительными особенностями `r figRef("Size_boxplot")`. В северо-западной части Белого моря (Кандалакшский залив) в уловах преобладали более крупные рыбы по сравнению с остальными районами лова. Интересно, что размерный состав камбал, выловленных в юго-западной (Онежский залив) и северо-восточной (Мезенский залив) частях Белого моря, оказался очень сходен. Из `r figRef("Size_boxplot")` также видно, что самки в целом крупнее самцов во всех выборках, однако степень внутрипопуляционных различий между ними варьирует. Для оценки связи длины рыб с факторами "Bay", "Sex" и "Sidedness" был проведен диспервионный анализ (табл. 1).
+
+
+
+```{r}
+Mod_size <- lm(L ~ Bay*Sidedness*Sex, data = kam)
+
+Mod_size_anova <- aov(L ~ Bay*Sidedness*Sex, data = kam)
+
+
+kable(tidy(Mod_size_anova), caption = "**Таблица 1.** Результаты дисперсионного анализа зависимости размера от факторов Bay, Orient и Sex", digits = 3)
+
+```
+
+
+Попарное сравнение средних размеров лево- и правосторонних особей во всех исследованных популяциях не выявило достоверных различий как среди самцов, так и самок (табл. 2; критерий Тьюки p>0.05). Более того, лево- и правосторонние особи среди рыб обоих полов не различались по скорости линейного роста (F=0.54 для самцов и F=1.29 для самок; р>0.05). Эти данные были получены для наиболее многочисленной выборки камбалы из Онежского залива (n=4791 экз.). 
+
+
+
+
+
+```{r, fig.cap=figRef("Size_density", "Размерно-частотное распределение лево- и правосторонних камбал в уловах в разных заливах Белого моря")}
+
+ggplot(kam, aes(x = L)) + geom_density(aes(fill = Sidedness), alpha = 0.5) + 
+  facet_grid(Sex~Bay) + 
+  scale_fill_manual(values = c("gray10", "gray80"))+
+  scale_y_continuous(breaks = c(0, .05, .10,.15,.20),
+       labels =c ("0", "5%", "10%", "15%", "20%") )  +
+labs(y = "Proportion", x = "Length", fill = "Sidedness" ) +
+  theme(panel.grid = element_blank())
+```
+
+
+
+Соотношение самцов и самок в популяциях Мезенского, Кандалакшского и Онежского заливов было одинаковым, либо очень близким к равновесному. В Двинском заливе в уловах камбалы отмечено некоторое преобладание самок (64,4%). Во всех исследованных выборках соотношение полов среди левосторонних особей не отличалось достоверно от аналогичного показателя для правосторонних рыб. 
+Межгодовая изменчивость доли левосторонних рыб в популяциях Онежского (2002-2019 гг.), Мезенского (2010-2016 гг.) и Двинского (2005-2019 гг.) заливов в целом была незначительной, статистически достоверных долговременных изменений признака не обнаружено.
+
+Размерно-частотные распределения лево- и правосторонних камбал в уловах из четырех заливов Белого моря приведены на `r figRef("Size_density")`. В каждой из исследованных популяций рыбы с разным расположением глаз на теле не различались по диапазону изменчивости длины и набору модальных размерных классов. Среди более крупных рыб относительная численность левосторонних особей была несколько выше, чем правосторонних. Вместе с тем, в разных заливах распределение камбал по длине характеризовалось отличительными особенностями `r figRef("Size_boxplot")`. В северо-западной части Белого моря (Кандалакшский залив) в уловах преобладали более крупные рыбы по сравнению с остальными районами лова. Интересно, что размерный состав камбал, выловленных в юго-западной (Онежский залив) и северо-восточной (Мезенский залив) частях Белого моря, оказался очень сходен. Из `r figRef("Size_boxplot")` также видно, что самки в целом крупнее самцов во всех выборках, однако степень внутрипопуляционных различий между ними варьирует. Попарное сравнение средних размеров лево- и правосторонних особей во всех исследованных популяциях не выявило достоверных различий как среди самцов, так и самок (табл. 1; критерий Тьюки,  p>0.05.). Более того, лево- и правосторонние особи среди рыб обоих полов не различались по скорости линейного роста (F=0.54 для самцов и F=1.29 для самок; р>0.05). Эти данные были получены для наиболее многочисленной выборки камбалы из Онежского залива (n=4791 экз.). 
+
+
+
+```{r, fig.cap = figRef("Size_boxplot", "Характеристика размерного состава камбал в разных заливах Белого моря.") }
+
+ggplot(kam, aes(x = Bay, y = L,  fill = Sidedness)) + geom_boxplot(notch = T) + facet_wrap(~Sex) + scale_fill_manual(values = c("gray10", "gray80")) + theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 30, vjust = 0.6)) + labs(x = "Bay", y = "Length", fill = "Sidedness")
+```
+
+
+
+
+
+
+```{r}
+means <- kam %>% group_by(Bay, Sex, Sidedness) %>% summarize(Mean_L = round(mean(L), 1), SE = round(sd(L)/sqrt(n()), 2))
+
+means2 <- dcast(means, formula = Bay  ~ Sex + Sidedness, value.var = c("Mean_L"))
+SE2 <- dcast(means, formula = Bay  ~ Sex + Sidedness, value.var = c("SE"))
+ 
+results <- data.frame(Bay = means2$Bay, 
+                      FL = means2$Female_Left, d = rep("±", 4), SE_FL = SE2$Female_Left, 
+                      FR = means2$Female_Right, d = rep("±", 4), SE_FR = SE2$Female_Right, 
+                      dif_F = rep(NA, 4),
+                      ML = means2$Male_Left, d = rep("±", 4), SE_ML = SE2$Male_Left, 
+                      MR = means2$Male_Right, d = rep("±", 4), SE_MR = SE2$Male_Right, 
+                      dif_M = rep(NA, 4)
+)
+
+
+
+
+kable(results, col.names = c("Bay",   "Female Left",    " ",     " ", "Female Right",    " ",   " ", "  ", "Male Left",    " ",   " ", "Male Right",    " ",   " ", " "),  caption = "Таблица 2. Средние размеры (± Стандартная ошибка) камбал разной ориентации и разного пола.")
+
+
+```
+
+Для анализа связи частоты встречаемости левосторонних особей с размером и полом рыб в рассматриваемых выборках была построена логистическая регрессионная модель, основанная на биномиальном распределении отклика. Для подбора параметров данной модели рыб с левосторонней ориентацией кодировали, как 1, в рыб с правосторонне -- как 0. В качестве пердикторов в модели выступали переменные “*Bay*” (дискретный фактор с четырьмя градациями), “*Sex*” (дискретный фактор с двумя градациями), “*Length*” (непрерывная ковариата) и все возможные взаимодействия предикторов. Поскольку статистически значимого взаимодействия предикторов в полной модели выявлено не было, модель была упрощена в соответствии с протоколом обратного пошагового отбора. Параметры финальной модели представлены в табл. 3. Анализ девиансы финальной модели (табл. 4) показал что все предикторы, включенные в модель, оказывают значимое влияние на вероятность встречи реверсивных особей. 
+
+Для визуализации полученной модели был построен `r figRef("Model")`. Во всех размерных группах доля реверсивных рыб была несколько выше у самцов. Довольно неожиданным оказался результат о различиях доли левосторонних рыб среди камбал разного размера (`r figRef("Model")`). Анализ модели (табл. 4) показал достоверное влияние предиктора “Длина” на вероятность встречи реверсивных особей в размерных классах самцов и самок. Частота встречаемости левосторонних особей достоверно возрастала у более крупных камбал, причем эта закономерность была характерна для всех сравниваемых популяций (`r figRef("Model")`).
+
+
+
+```{r}
+Mod <- glm(Outcome ~  L * Sex*Bay, data = kam, family = "binomial")
+
+# drop1(Mod, test = "Chi")
+Mod_2 <- update(Mod, . ~ . - L:Sex:Bay)
+
+# drop1(Mod_2, test = "Chi")
+Mod_3 <- update(Mod_2, . ~ . - L:Sex)
+
+
+# drop1(Mod_3, test = "Chi")
+Mod_4 <- update(Mod_3, . ~ . - Sex:Bay)
+
+# drop1(Mod_4, test = "Chi")
+Mod_5 <- update(Mod_4, . ~ . - L:Bay)
+
+
+kable(tidy(Mod_5), caption = "**Таблица 3.** Параметры финальной модели, описывающей связь веротяности встречи реверсивных камбал с размером, полом и точкой отлова", digits = 3)
+
+```
+
+
+
+
+```{r}
+kable(tidy(Anova(Mod_5)), caption = "**Таблица 4.**Анализ девиансы финальной модели", digits = 3)
+
+```
+
+
+
+```{r fig.cap=figRef("Mod_visual",  "Зависимость вероятности встретить левостороннюю камбалу от размера у рыб в разных заливах Белого моря. Точками показаны частоты левосторонних особей в пределах раных размерных классов. Серая область вокруг линий регрессии отражает 95% доверительный интервал")}
+
+new_data <- kam %>% group_by(Bay, Sex) %>% do(data.frame(L = seq(min(.$L), max(.$L), length.out = 100) ))
+
+predicted <- predict(Mod_5, newdata = new_data, se.fit = T, type = "response")
+
+new_data$Predicted <- predicted$fit
+new_data$SE <- predicted$se.fit
+
+# Число классов по правилу Freedman-Diaconis
+
+n_cl <- round((max(kam$L) - min(kam$L))/(2 * IQR(kam$L) / length(kam$L)^(1/3)) )
+
+
+Left_prop <- kam %>% mutate(Size_class = ntile(x = L, n = n_cl)) %>% group_by(Bay, Sex, Size_class) %>% summarise(L_mean = mean(L), Left_prop = mean(Sidedness == "Left"))
+
+
+
+
+
+
+ggplot(new_data, aes(x = L, y = Predicted)) + 
+  geom_ribbon(aes(ymin = Predicted - 1.96*SE, ymax = Predicted + 1.96*SE, fill = Sex), alpha = 0.5 ) + 
+  geom_point(data = Left_prop, aes(x = L_mean, y = Left_prop, shape = Sex), size = 2) + 
+  geom_line(aes(linetype = Sex), size = 1) +  
+  facet_wrap(~ Bay, ncol = 2) +
+  labs(x = "Length", y = "Probability of reversed flunder") +
+  scale_fill_manual(values = c("gray", "gray5"))+
+  scale_shape_manual(values = c(21, 22)) + 
+  theme(panel.grid = element_blank())
+
+```
+
+

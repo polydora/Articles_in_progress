@@ -29,8 +29,7 @@ kam <- read.table("Data/kambala.csv", sep = ",", header = T, dec = ".")
 # str(kam)
 kam$Outcome <- ifelse(kam$Orient == "Left", 1, 0)
 
-
-kam$Bay <- factor(kam$Bay, levels = c("Onega_Bay", "Dvina_Bay","Kandalaksha_Bay", "Mezen_Bay" ))
+kam$Bay <- factor(kam$Bay, levels = c("Kandalaksha_Bay", "Onega_Bay", "Dvina_Bay", "Mezen_Bay" ), labels = c("Kandalaksha Bay", "Onega Bay", "Dvina Bay", "Mezen Bay" ))
 
 ```
 
@@ -40,7 +39,7 @@ kam$Bay <- factor(kam$Bay, levels = c("Onega_Bay", "Dvina_Bay","Kandalaksha_Bay"
 
 
 ```{r }
-ggplot(kam, aes(x = Bay, y = L,  fill = Orient)) + geom_boxplot(notch = T) + facet_wrap(~Sex)
+ggplot(kam, aes(x = Bay, y = L,  fill = Orient)) + geom_boxplot(notch = T) + facet_wrap(~Sex) + scale_fill_manual(values = c("gray50", "gray90")) + theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 30, vjust = 0.6))
 ```
 
 Рисунок 1. Размеры левых и правых камбал среди самцов и самок в разных заливах Белого моря. 
@@ -115,9 +114,15 @@ Tukey_all <-  TukeyHSD(Mod_size_anova, which = "Bay:Orient:Sex")
 
 ```{r}
 
-frq_Orient <- kam %>% group_by(Bay) %>% summarise(Left = mean(Orient == "Left"), Right = mean(Orient == "Right"))
+frq_Orient <- kam %>% group_by(Bay) %>% summarise(Left = sum(Orient == "Left"), Right = sum(Orient == "Right"))
+  
+# Добавляем то, что не было измерено в Кандалакшском заливе
+frq_Orient[frq_Orient$Bay == "Kandalaksha_Bay", 2:3] <- frq_Orient[frq_Orient$Bay == "Kandalaksha_Bay", 2:3] + c(37, 132)
+  
+frq_Orient2 <- frq_Orient %>% mutate(Left_prop = Left/(Left + Right), Right_prop = Right/(Left + Right)) %>% select(Bay, Left_prop, Right_prop) %>% melt()
+  
 
-frq_Orient2 <- melt(frq_Orient)
+ 
 
 ggplot(frq_Orient2, aes(x ="", y = value, fill = variable)) + geom_bar(stat= "identity", width=1, color = "black") + coord_polar("y", start=0)  + theme(axis.text = element_blank(), panel.grid = element_blank(), panel.border = element_blank(), axis.title = element_blank())+ guides(fill="none") + facet_wrap(~Bay)  + scale_fill_manual(values = c("red", "blue"))
 
