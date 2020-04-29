@@ -1,0 +1,225 @@
+---
+title: "Про возраст и инверсивность рыб"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+```
+
+```{r}
+library(mgcv)
+library(ggplot2)
+library(dplyr)
+library(broom)
+library(car)
+library(reshape2)
+
+options(knitr.kable.NA = '')
+
+
+
+
+# Функция, задающая нумерацию рисунков
+
+figRef <- local({
+    tag <- numeric()
+    created <- logical()
+    used <- logical()
+    function(label, caption, prefix = options("figcap.prefix"), 
+        sep = options("figcap.sep"), prefix.highlight = options("figcap.prefix.highlight")) {
+        i <- which(names(tag) == label)
+        if (length(i) == 0) {
+            i <- length(tag) + 1
+            tag <<- c(tag, i)
+            names(tag)[length(tag)] <<- label
+            used <<- c(used, FALSE)
+            names(used)[length(used)] <<- label
+            created <<- c(created, FALSE)
+            names(created)[length(created)] <<- label
+        }
+        if (!missing(caption)) {
+            created[label] <<- TRUE
+            paste0(prefix.highlight, prefix, " ", i, sep, prefix.highlight, 
+                " ", caption)
+        } else {
+            used[label] <<- TRUE
+            paste(prefix, tag[label])
+        }
+    }
+})
+
+options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**")
+
+
+
+theme_set(theme_bw())
+
+age_all <- read.table("Data/age_Onega.csv", sep = ",", header = T, dec = ".")
+
+age <- age_all %>% filter(Age %in% 2:7)
+
+```
+
+
+## Особенности построения модели 
+
+1. Из анализа были исключены возрастные группы 1+, и более 7+. Это связано с очень малыми объемами выборок по этим группам.То есть модель будет описывать только возрастной диапазон 2+ - 7+.
+
+2. Была построена модель следующего вида. 
+
+
+<!-- $y_i \sim Binomial(n = 1, \pi_i)$ -->
+
+<!-- $E(y_i) = \pi_i = \cfrac{e ^ {\beta_0 + \beta_1 x_{1} + ... + \beta_{p-1}~x_{p- 1}}}{1 + e^{\beta_0 + \beta_1 x_{1} + ... + \beta_{p-1}~x_{p- 1}}}$ -->
+
+<!-- $ln(\cfrac{\pi_i}{1 - \pi_i}) = \eta_i$ --- функция связи логит, переводит вероятности в логиты. -->
+
+$\eta = b_0 + b_1 Sex_{Male} + b_2(Age) + Interaction$
+
+где 
+
+$\eta$ -- логит-преобразованная вероятность встретить реверсивную рыбу.  
+
+
+## Результаты
+
+```{r}
+Mod_age_continous <- glm(cbind(N_Left, N_Right) ~ Age*Sex, family = "binomial", data = age)
+
+# Mod_age_continous <- gam(cbind(N_Left, N_Right) ~ s(Age, k = 8) + Sex, family = "binomial", data = age)
+
+Mod_parametric <- tidy(Mod_age_continous, parametric = T)
+
+
+
+
+```
+
+
+Значимой зависимости вероятности встречи инверсивных рыб от пола выявлено не было (Таблица 1). Зависимость вероятности встретить инверсивную обсобь от возраста (в исследвоанном диапазоне) оказалась статистически значимой (Таблица 1).
+
+```{r}
+kable(Mod_parametric, digits = 3, caption = c("Таблица 1. Параметры модели."))
+
+```
+
+
+Полученная модель (`r figRef("GAM")`) предсказывает рост вероятности встретить инверсивную рыбу по мере увеличения возраста. 
+
+
+
+
+
+```{r, fig.cap= figRef("GAM", "Зависимость доли инверсивных особей от возраста. Линии отражают предсказание модели.")}
+
+
+# summary(Mod_age_continous)
+
+new_data <- age %>% group_by(Sex) %>% do(data.frame(Age = seq(min(.$Age), max(.$Age), length.out = 100)))
+
+
+predicted <- predict(Mod_age_continous, newdata = new_data, type = "response", se.fit = T)
+
+new_data$fit <- predicted$fit
+
+new_data$SE <- predicted$se.fit
+
+
+
+# Left_perc <- age %>% group_by(Sex) %>% mutate(Age_class = ntile(n = 4)) %>% group_by(Sex, Age_class) %>% summarise(Left_perc = sum(N_Left)/(sum(N_Left) + sum(N_Right)), Age = mean(Age) )
+
+Left_perc <- age %>% group_by(Sex, Age) %>% summarise(Left_perc = sum(N_Left)/(sum(N_Left) + sum(N_Right)))
+
+
+
+ggplot(new_data, aes(x = Age, y = fit, linetype = Sex))+ 
+  geom_point(data = Left_perc, aes(x = Age, y= Left_perc, fill = Sex), shape = 21, size = 4) +
+  geom_line(size = 1) + geom_ribbon(aes(ymin = fit - 1.96*SE, ymax = fit + 1.96*SE), alpha = 0.2)  +
+  scale_fill_manual(values = c("white", "black")) + labs(x = "Age", y = "Probability of reversive fish") +
+  scale_x_continuous(breaks = seq(1, max(age$Age))) +
+  theme(panel.grid = element_blank())
+
+```
+
+Частотное распределение возрастов приведено на рисунке (`r figRef("Age_str")`). Значимых различий между возрастной струкутрой самцов и самок не выявляется. Поэтому можно объединить распределения для самок и самцов (`r figRef("Age_join")`) 
+
+```{r, fig.cap=figRef("Age_str", "Возрастные распределения лево- и правосторонних камбал среди разных полов.")}
+age_all2 <- melt(age_all, measure.vars = c("N_Left", "N_Right"))
+
+age_all2$Sideness <- ifelse(age_all2$variable == "N_Right", "Right", "Left")
+
+ggplot(age_all2, aes(x = Age, y = value, fill = Sideness)) + geom_polygon(alpha = 0.2, color = "black") + facet_wrap(~Sex) + labs(y = "Abundance") + scale_fill_manual(values = c("gray10", "gray10")) + theme(panel.grid = element_blank()) + scale_x_continuous(breaks = 1:max(age_all2$Age))
+```
+
+
+```{r, fig.cap=figRef("Age_join", "Возрастные распределения лево- и правосторонних камбал (оба пола объединены)")}
+
+dd <- data.frame(Age = 1:13)
+
+age_join <- cbind(dd, 
+age_all %>% filter(Sex == "Female") %>% select(N_Right, N_Left) + age_all %>% filter(Sex == "Male") %>% select(N_Right, N_Left))
+
+ggplot(age_join, aes(x = Age)) + geom_polygon(aes(y = N_Left),  color = "gray10") + 
+  geom_polygon(aes(y = N_Right), alpha = 0.5, color = "gray") + theme(panel.grid = element_blank()) + scale_x_continuous(breaks = 1:max(age_join$Age))
+
+```
+
+
+Полученное возрастное распределение явно "аномально", наблюдается недоучет особей ыозрастом 1+ и 2+. В связи с этим следует рассмотреть только возраст от 3+ и выше.  Можно приблизительно (очень прибизительно) реконструировать демографические таблицы для двух групп камбал.   
+
+
+```{r, fig.cap=figRef("Age_join2", "Зависимость вероятности перехода из одной возрастной когорты ")}
+R_right <- log(age_join$N_Right[2:(nrow(age_join))]) - log(age_join$N_Right[1:(nrow(age_join)-1)])
+
+R_left <- log(age_join$N_Left[2:(nrow(age_join))]) - log(age_join$N_Left[1:(nrow(age_join)-1)])
+
+R <- data.frame(Age = 1:(nrow(age_join)-1),R_right, R_left) 
+
+# R <- R[-c(1, 2, 12), ]
+# 
+# R[, 2] <- ifelse(R[, 2] >= 1, NA, R[, 2])
+# 
+# R[, 3] <- ifelse(R[, 3] >= 1, NA, R[, 3])
+
+R_melt <- melt(R, id.vars = "Age") %>% filter(!is.infinite(value)) %>% filter(value<0) 
+
+Mod_dem <- lm(value ~ Age*variable, data = R_melt)
+
+new_data <- expand.grid(Age = 0:13, variable = c("R_right", "R_left"))
+
+new_data$R_predicted <-  predict(Mod_dem, new_data)
+
+
+
+  ggplot(aes(x = Age, y = value, color = variable)) + geom_point() + geom_smooth(method = "lm", se = F)
+
+```
+
+
+```{r}
+
+```
+
+
+
+
+
+
+## Биологическая трактовка
+
+Если предположить, что существует некоторый фактор, действующий против инверсивных рыб, то он максимально эффективен в случае молоди. Однако на половозрелых рыб с возрастом около 5-7 лет он перестает действовать столь сильно, что позволяет этим рыбам размножаться и успешно распространять гены инверсивности в популяции Онежского залива.
+
+
+Отсюда важно посмотреть аналогичные данные по тем заливам, где доля инверсивных мала. Если там этого пика инверсивных рыб, приходящегося на половозрелых, не будет, то станет понятно, что там отбор действует против всех левозакрученных рыб. А тогда можно уже наедятся на то, что сравнивая условия заливов, можно понять, что это за фактор такой.
+
+
+
+*NB! Из серии фантазий. Это немного напоминает хрестоматийную ситуацию с серповидно-клеточной анемией и малярией, когда отбор поддерживает явно неблагоприятную аллель.* 
+ 
+
+
+
+

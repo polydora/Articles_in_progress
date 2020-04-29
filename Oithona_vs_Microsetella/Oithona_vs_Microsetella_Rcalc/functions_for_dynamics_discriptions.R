@@ -81,3 +81,16 @@ Plot_dynamics <- function(x, detrend = F, ...){
   
   grid.arrange(Pl_dynam, Pl_PRCF, Pl_phase, Pl_Rdist, ncol=2) 
 }
+
+
+
+Micr_Cop <- total %>% filter(Sp == "Microsetella" & Stage3 == "Cop.") %>% group_by(Year) %>% summarise(Log_mean = mean(Log_N))  
+
+Oit_Cop <- total %>% filter(Sp == "Oithona" & Stage3 == "Cop.") %>% group_by(Year) %>% summarise(Log_mean = mean(Log_N))  
+
+
+
+Plot_dynamics(x = Micr_Cop$Log_mean, detrend = T)
+
+Plot_dynamics(x = Oit_Cop$Log_mean, detrend = T)
+

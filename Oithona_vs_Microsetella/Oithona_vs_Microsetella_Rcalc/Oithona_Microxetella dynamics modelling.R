@@ -89,7 +89,7 @@ m <- gamm(Log_N ~ s(DOY, bs = "cc", by = interaction(Sp, Stage3) ) + s(Year, by 
 
 summary(m$gam)
 
-
+plot(m$gam, scale = 0, pages = 1)
 
 layout(matrix(1:9, ncol = 3))
 plot(m$gam, scale = 0)
