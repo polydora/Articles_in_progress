@@ -160,6 +160,8 @@ cop100$DOY <- as.numeric(strftime(cop100$Date, format = "%j"))
 cop100$Log_N <- log(cop100$N + 1)
 
 
+env <- read.table("Data/env_gap_filled_short.csv", sep = ",", header = T)
+
 
 ```
 
@@ -167,43 +169,126 @@ cop100$Log_N <- log(cop100$N + 1)
 
 
 ```{r}
-juv_oitona <- cop100 %>% filter(Sp == "Oithona" & Stage3 == "Juv.") %>% filter(Depth == "0_10") %>% filter(DOY <365 & DOY > 0) %>% group_by(Year) %>% summarise(N_oit_juv = (mean(N) + 1))
+oit <- cop %>% filter(Sp == "Oithona") %>% filter(Depth == "0_10") %>% filter(DOY <365 & DOY > 0) %>% group_by(Year, Stage2) %>% filter(Stage2 != "Total") %>% summarise(Log_N = log(mean(N)+1))
 
-juv_micr <- cop100 %>% filter(Sp == "Microsetella" & Stage3 == "Juv.") %>% filter(Depth == "0_10")%>% filter(DOY <365 & DOY > 0) %>% group_by(Year) %>% summarise(N_micr_juv = (mean(N) + 1))
+oit_N <- cop %>% filter(Sp == "Oithona") %>% filter(Depth == "0_10") %>% filter(DOY <365 & DOY > 0) %>% group_by(Year, Stage2) %>% filter(Stage2 != "Total") %>% summarise(N = mean(N))
 
-
-
-adult_micr <- cop100 %>% filter(Sp == "Microsetella" & Stage3 ==  "Adult")%>% filter(Depth == "0_10") %>% filter(DOY <365 & DOY > 0) %>% group_by(Year) %>% summarise(N_micr_adult = (mean(N) + 1))
-
-adult_oitona <- cop100 %>% filter(Sp == "Oithona" & Stage3 == "Adult")%>% filter(Depth == "0_10") %>% filter(DOY <365 & DOY > 0) %>% group_by(Year) %>% summarise(N_oit_adult = (mean(N)+ 1))
-
-
-
-dd <- merge(juv_oitona, juv_micr, by = "Year")
-
-
-dd2 <- merge(adult_oitona, adult_micr, by = "Year")
-
-mic_oit_fuv_adult <- merge(dd, dd2)  
   
-
-ggplot(mic_oit_fuv_adult, aes(N_oit_adult, N_oit_juv)) + geom_point() + geom_smooth(method =  "lm")
-
-ggplot(mic_oit_fuv_adult, aes(N_micr_adult, N_micr_juv)) + geom_point() + geom_smooth(method =  "lm")
+  
+micr <- cop %>% filter(Sp == "Microsetella") %>% filter(Depth == "0_10")%>% filter(DOY <300 & DOY > 100) %>% group_by(Year, Stage3) %>% filter(Stage2 != "Total") %>% summarise(N = log(mean(N)+1) )
 
 
-mod1 <- lm(log(N_oit_juv/N_oit_adult) ~  log(N_micr_adult + 1), data = mic_oit_fuv_adult)
-
-summary(mod1)
-
-mod2 <- lm( log(N_micr_juv / N_micr_adult) ~ log(N_oit_adult) , data = mic_oit_fuv_adult)
-
-summary(mod2)
+oit2 <- dcast(oit, formula = Year ~ Stage2)
+oit_N2 <- dcast(oit_N, formula = Year ~ Stage2)
 
 
-mod3 <- lm( log(N_micr_juv / N_micr_adult) ~ log(N_oit_juv / N_oit_adult) , data = mic_oit_fuv_adult)
+micr2 <- dcast(micr, formula = Year ~ Stage3)
 
-summary(mod3)
+micr2$Adult_1 <- c(NA, micr2$Adult[1:(nrow(micr2)-1)])
+micr2$Cop_1 <- c(NA, micr2$Cop.[1:(nrow(micr2)-1)])
+
+oit2 <- oit2[complete.cases(oit2), ]
+oit_N2 <- oit_N2[complete.cases(oit_N2), ]
+
+
+
+micr2 <- micr2[micr2$Year %in% unique(oit2$Year), ]
+
+env <- env[env$Year  %in% unique(oit2$Year), ]
+
+predictors <- merge(micr2, env, by = "Year")
+names(predictors)[2] <- "Adult_Mic"
+
+```
+
+
+```{r}
+
+library(vegan)
+
+oit_cca <- cca(oit_N2[,-1]  ~  . -t_Spring,  data = predictors[,-1])
+# plot(oit_cca)
+# 
+
+# ordistep(oit_cca)
+
+
+oit_cca_reduced <- cca(formula = oit_N2[, -1] ~ Adult_Mic + Nauplii + Cop. + Sp_start + Ice_clear_G + AOI_DJFM, data = predictors[, -1])
+
+# vif.cca(oit_cca_reduced)
+
+anova(oit_cca_reduced, permutations = 99999)
+
+anova(oit_cca_reduced, by = "axis", permutations = 9999)
+
+anova(oit_cca_reduced, by = "margin", permutations = 9999)
+
+plot(oit_cca_reduced, scaling = "symmetric", display = c("sp", "cn"))
+
+
+```
+
+
+
+
+
+
+
+```{r}
+# str(predictors)
+
+Mod <- lm( log(oit_N2$Male + oit_N2$Female +1)  ~  . , data = predictors)
+
+
+
+
+# vif(Mod)
+# 
+# Mod2 <- update(Mod, . ~ .- t_Spring) 
+# vif(Mod2)
+# 
+# Mod3 <- update(Mod2, . ~ .- Su_duration) 
+# vif(Mod3)
+# 
+# Mod4 <- update(Mod3, . ~ .- Su_duration_1) 
+# vif(Mod4)
+# 
+# Mod5 <- update(Mod4, . ~ .- NAO_1) 
+# vif(Mod5)
+# 
+# Mod6 <- update(Mod5, . ~ .- NAO) 
+# vif(Mod6)
+# 
+# Mod7 <- update(Mod6, . ~ .- t.Spring_1) 
+# vif(Mod7)
+# 
+# Mod8 <- update(Mod7, . ~ .- Adult_1) 
+# vif(Mod8)
+# 
+# Mod9 <- update(Mod8, . ~ .- Cop.) 
+# vif(Mod9)
+# 
+# 
+# summary(Mod9)
+
+library(MASS)
+
+stepAIC(Mod)
+
+Mod_reduced <-lm(formula = log(oit_N2$Male + oit_N2$Female + 1) ~ Year + Nauplii + 
+    Cop. + Adult_1 + t_peak + Sp_start + Su_end + Su_start_1 + 
+    t_Spring + NAO, data = predictors)
+
+
+
+vif(Mod_reduced)
+
+
+summary(Mod_reduced)
+
+qplot(x = oit_N2$Year, y = residuals(Mod_reduced)) + geom_smooth(method = "lm")
+
+acf(residuals(Mod_reduced))
 
 
 
@@ -237,7 +322,7 @@ cop_Oit$Anom <- ifelse(cop_Oit$N >= cop_Oit$Mean_N, 1, -1)
 Oit_median_DOY <- cop_Oit %>% filter(Anom ==1) %>% group_by(Stage2) %>% summarize(Median_DOY = median(DOY))
 
 
-Pl_DOY_dist_200 <- cop_Oit %>% filter(Anom ==1) %>% ggplot(., aes(x = Stage2, y = DOY)) + geom_violin(fill = "gray") + labs(x = "Life Stage", y = "Day of year") + ggtitle("200 mkm") + ylim(1, 365)
+Pl_DOY_dist_200 <- cop_Oit %>% filter(Anom ==1) %>% ggplot(., aes(x = Stage2, y = DOY)) + geom_violin(fill = "gray") + labs(x = "Life Stage", y = "Day of year") + ggtitle("200 mkm") + ylim(1, 365) 
 
 Pl_DOY_dist_200 <- Pl_DOY_dist_200 +  geom_point(data = Oit_median_DOY, aes(y = Median_DOY), color = "red", size = 4 )
 
