@@ -1084,31 +1084,6 @@ calc1_predictions_T$Subset <- factor(calc1_predictions_T$Subset, levels = levels
 
 
 
-<!-- ```{r} -->
-
-<!-- Pl_mod6_with_initial_data_teor_calc2_T <- Pl_mod6_with_initial_data +  -->
-<!--   geom_line(data = calc2_predictions_T, aes(x = freq_MT, y = P_MT_T), color = "red") +  -->
-<!--   geom_line(data = calc2_predictions_T, aes(x = freq_MT, y = P_ME_E), color = "blue") -->
-
-
-<!-- Pl_mod7_with_initial_data_teor_calc1_T <- Pl_mod7_with_initial_data  + -->
-<!--   geom_line(data = calc1_predictions_T, aes(x = P_T, y = Ptros), color = "darkgray", size = 1) -->
-
-<!-- ``` -->
-
-
-
-
-<!-- ```{r, fig.height=9} -->
-<!-- grid.arrange(Pl_mod7_with_initial_data_teor_calc1_T, Pl_mod8_with_initial_data,  Pl_mod6_with_initial_data_teor_calc2_T, ncol =3)  -->
-<!-- ``` -->
-
-
-
-
-
-
-
 ```{r}
 Eq3 <- function(PT, donat){
   P_T_edu <- donat[2]
@@ -1209,7 +1184,7 @@ predict_obs_Eq123_T <- function(Set){
          Ptros_Eq3_mix = Eq3(PT, donat_max_mix), 
          Ptros_Eq3_all = Eq3(PT, donat_all),
          
-         P_MT_T_Eq1_diff_diff = Eq1(Ptros_Eq3_diff, donat_max_diff),
+         P_MT_T_Eq1_all_diff = Eq1(Ptros_Eq3_diff, donat_max_diff),
          P_MT_T_Eq1_diff_mix = Eq1(Ptros_Eq3_diff, donat_max_mix),
          P_MT_T_Eq1_diff_all = Eq1(Ptros_Eq3_diff, donat_all),
          
@@ -1223,7 +1198,7 @@ predict_obs_Eq123_T <- function(Set){
          
 
          
-         P_ME_E_Eq2_diff_diff = Eq2(Ptros_Eq3_diff, donat_max_diff),
+         P_ME_E_Eq2_all_diff = Eq2(Ptros_Eq3_diff, donat_max_diff),
          P_ME_E_Eq2_diff_mix = Eq2(Ptros_Eq3_diff, donat_max_mix),
          P_ME_E_Eq2_diff_all = Eq2(Ptros_Eq3_diff, donat_all),
          
@@ -1320,122 +1295,102 @@ Pl_Eq3_mix <- Pl_Eq3 + aes(y = Ptros_Eq3_mix) +  ggtitle(paste("Stat =", all_obs
 Pl_Eq3_all <- Pl_Eq3 + aes(y = Ptros_Eq3_all) +  ggtitle(paste("Stat =", all_obs_predict_T %>%  filter(!is.na(Ptros_Eq3_all)) %>% summarise(Stat =  sum(abs(Ptros_obs - Ptros_Eq3_all)/(Ptros_obs + Ptros_Eq3_all))) %>% round(., 4)))+ guides(shape = "none", color = "none") + xlim(0,1) + ylim(0,1)
               
 
-Set = "WBL"
+# Set = "WBL"
 
 
 library(pipeR)
 
-Pl_Eq1_2_diff_diff <- 
-  cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_diff_diff, P_ME_E_Eq2_diff_diff) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% 
-  ggplot(aes(x = Observed, y = Predicted, color = variable, shape = Set)) + 
-  geom_point()  + 
-  theme(legend.position = "bottom")   + 
-  geom_abline() + 
-  ggtitle(paste("Stat =",   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_diff_diff, P_ME_E_Eq2_diff_diff) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% summarise(Stat = sum( (Predicted - Observed)^2 )) %>% round(3), " diff_diff" ))  + 
-  xlim(0,1) + ylim(0,1) + guides (shape = "none", color = "none") + geom_smooth(method = "lm", se = F)
 
 
+n_select <- 0
 
+Pl_Eq1_2_all_diff <- 
+  ggplot() + 
+  geom_point(data = all_obs_predict_T %>% filter(N_edu > n_select), aes(x = P_ME_E_obs, y = P_ME_E_Eq2_all_diff), color = "blue", size = 2) +
+  geom_point(data = all_obs_predict_T %>% filter(N_tros > n_select), aes(x = P_MT_T_obs, y = P_MT_T_Eq1_all_diff), color = "red", size = 2) +
+  geom_abline()  + xlim(0,1) + ylim(0,1) +
+  geom_smooth(data = all_obs_predict_T %>% filter(N_edu > n_select), aes(x = P_ME_E_obs, y = P_ME_E_Eq2_all_diff), color = "blue", se = F, method = "lm") +
+  geom_smooth(data = all_obs_predict_T %>% filter(N_tros > n_select), aes(x = P_MT_T_obs, y = P_MT_T_Eq1_all_diff), color = "red", se = F, method = "lm")
 
 
 Pl_Eq1_2_diff_mix <- 
-  cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_diff_mix, P_ME_E_Eq2_diff_mix) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% 
-  ggplot(aes(x = Observed, y = Predicted, color = variable, shape = Set)) + 
-  geom_point()  + 
-  theme(legend.position = "bottom")   + 
-  geom_abline() + 
-  ggtitle(paste("Stat =",   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_diff_mix, P_ME_E_Eq2_diff_mix) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% summarise(Stat = sum( (Predicted - Observed)^2 )) %>% round(3), " diff_mix" ))  + 
-  xlim(0,1) + ylim(0,1) + guides (shape = "none", color = "none") + geom_smooth(method = "lm", se = F)
+  ggplot() + 
+  geom_point(data = all_obs_predict_T %>% filter(N_edu > n_select), aes(x = P_ME_E_obs, y = P_ME_E_Eq2_diff_mix, size = N_edu), color = "blue") +
+  geom_point(data = all_obs_predict_T %>% filter(N_tros > n_select), aes(x = P_MT_T_obs, y = P_MT_T_Eq1_diff_mix, size = N_tros), color = "red") +
+  geom_abline()  + xlim(0,1) + ylim(0,1) +
+  geom_smooth(data = all_obs_predict_T %>% filter(N_edu > n_select), aes(x = P_ME_E_obs, y = P_ME_E_Eq2_diff_mix), color = "blue", se = F, method = "lm") +
+  geom_smooth(data = all_obs_predict_T %>% filter(N_tros > n_select), aes(x = P_MT_T_obs, y = P_MT_T_Eq1_diff_mix), color = "red", se = F, method = "lm")
 
 
-
-
-
-  
 
 Pl_Eq1_2_diff_all <- 
-  cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_diff_all, P_ME_E_Eq2_diff_all) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% 
-  ggplot(aes(x = Observed, y = Predicted, color = variable, shape = Set)) + 
-  geom_point()  + 
-  theme(legend.position = "bottom")   + 
-  geom_abline() + 
-  ggtitle(paste("Stat =",   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_diff_all, P_ME_E_Eq2_diff_all) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% summarise(Stat = sum( (Predicted - Observed)^2 )) %>% round(3), " diff_all" ))  + 
-  xlim(0,1) + ylim(0,1) + guides (shape = "none", color = "none") + geom_smooth(method = "lm", se = F)
-
-
-
-
-
-Pl_Eq1_2_mix_diff <- 
-  cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_mix_diff, P_ME_E_Eq2_mix_diff) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% 
-  ggplot(aes(x = Observed, y = Predicted, color = variable, shape = Set)) + 
-  geom_point()  + 
-  theme(legend.position = "bottom")   + 
-  geom_abline() + 
-  ggtitle(paste("Stat =",   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_mix_diff, P_ME_E_Eq2_mix_diff) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% summarise(Stat = sum( (Predicted - Observed)^2 )) %>% round(3), " mix_diff" ))  + 
-  xlim(0,1) + ylim(0,1) + guides (shape = "none", color = "none") + geom_smooth(method = "lm", se = F)
-
-
-
-Pl_Eq1_2_mix_mix <- 
-  cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_mix_mix, P_ME_E_Eq2_mix_mix) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% 
-  ggplot(aes(x = Observed, y = Predicted, color = variable, shape = Set)) + 
-  geom_point()  + 
-  theme(legend.position = "bottom")   + 
-  geom_abline() + 
-  ggtitle(paste("Stat =",   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_mix_mix, P_ME_E_Eq2_mix_mix) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% summarise(Stat = sum( (Predicted - Observed)^2 )) %>% round(3), " mix_mix" ))  + 
-  xlim(0,1) + ylim(0,1) + guides (shape = "none", color = "none") + geom_smooth(method = "lm", se = F)
-
-
-
-Pl_Eq1_2_mix_all <- 
-  cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_mix_all, P_ME_E_Eq2_mix_all) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% 
-  ggplot(aes(x = Observed, y = Predicted, color = variable, shape = Set)) + 
-  geom_point()  + 
-  theme(legend.position = "bottom")   + 
-  geom_abline() + 
-  ggtitle(paste("Stat =",   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_mix_all, P_ME_E_Eq2_mix_all) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% summarise(Stat = sum( (Predicted - Observed)^2 )) %>% round(3), " mix_all" ))  + 
-  xlim(0,1) + ylim(0,1) + guides (shape = "none", color = "none") + geom_smooth(method = "lm", se = F)
+  ggplot() + 
+  geom_point(data = all_obs_predict_T %>% filter(N_edu > n_select), aes(x = P_ME_E_obs, y = P_ME_E_Eq2_diff_all), color = "blue", size = 2) +
+  geom_point(data = all_obs_predict_T %>% filter(N_tros > n_select), aes(x = P_MT_T_obs, y = P_MT_T_Eq1_diff_all), color = "red", size = 2) +
+  geom_abline()  + xlim(0,1) + ylim(0,1) +
+  geom_smooth(data = all_obs_predict_T %>% filter(N_edu > n_select), aes(x = P_ME_E_obs, y = P_ME_E_Eq2_diff_all), color = "blue", se = F, method = "lm") +
+  geom_smooth(data = all_obs_predict_T %>% filter(N_tros > n_select), aes(x = P_MT_T_obs, y = P_MT_T_Eq1_diff_all), color = "red", se = F, method = "lm")
 
 
 
 
 Pl_Eq1_2_all_diff <- 
-  cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_all_diff, P_ME_E_Eq2_all_diff) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% 
-  ggplot(aes(x = Observed, y = Predicted, color = variable, shape = Set)) + 
-  geom_point()  + 
-  theme(legend.position = "bottom")   + 
-  geom_abline() + 
-  ggtitle(paste("Stat =",   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_all_diff, P_ME_E_Eq2_all_diff) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% summarise(Stat = sum( (Predicted - Observed)^2 )) %>% round(3), " all_diff" ))  + 
-  xlim(0,1) + ylim(0,1) + guides (shape = "none", color = "none") + geom_smooth(method = "lm", se = F)
-
+  ggplot() + 
+  geom_point(data = all_obs_predict_T %>% filter(N_edu > n_select), aes(x = P_ME_E_obs, y = P_ME_E_Eq2_all_diff), color = "blue", size = 2) +
+  geom_point(data = all_obs_predict_T %>% filter(N_tros > n_select), aes(x = P_MT_T_obs, y = P_MT_T_Eq1_all_diff), color = "red", size = 2) +
+  geom_abline()  + xlim(0,1) + ylim(0,1) +
+  geom_smooth(data = all_obs_predict_T %>% filter(N_edu > n_select), aes(x = P_ME_E_obs, y = P_ME_E_Eq2_all_diff), color = "blue", se = F, method = "lm") +
+  geom_smooth(data = all_obs_predict_T %>% filter(N_tros > n_select), aes(x = P_MT_T_obs, y = P_MT_T_Eq1_all_diff), color = "red", se = F, method = "lm")
 
 
 
 Pl_Eq1_2_all_mix <- 
-  cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_all_mix, P_ME_E_Eq2_all_mix) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% 
-  ggplot(aes(x = Observed, y = Predicted, color = variable, shape = Set)) + 
-  geom_point()  + 
-  theme(legend.position = "bottom")   + 
-  geom_abline() + 
-  ggtitle(paste("Stat =",   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_all_mix, P_ME_E_Eq2_all_mix) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% summarise(Stat = sum( (Predicted - Observed)^2 )) %>% round(3), " all_mix" ))  + 
-  xlim(0,1) + ylim(0,1) + guides (shape = "none", color = "none") + geom_smooth(method = "lm", se = F)
-
+  ggplot() + 
+  geom_point(data = all_obs_predict_T %>% filter(N_edu > n_select), aes(x = P_ME_E_obs, y = P_ME_E_Eq2_all_mix), color = "blue", size = 2) +
+  geom_point(data = all_obs_predict_T %>% filter(N_tros > n_select), aes(x = P_MT_T_obs, y = P_MT_T_Eq1_all_mix), color = "red", size = 2) +
+  geom_abline()  + xlim(0,1) + ylim(0,1) +
+  geom_smooth(data = all_obs_predict_T %>% filter(N_edu > n_select), aes(x = P_ME_E_obs, y = P_ME_E_Eq2_all_mix), color = "blue", se = F, method = "lm") +
+  geom_smooth(data = all_obs_predict_T %>% filter(N_tros > n_select), aes(x = P_MT_T_obs, y = P_MT_T_Eq1_all_mix), color = "red", se = F, method = "lm")
 
 
 Pl_Eq1_2_all_all <- 
-  cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_all_all, P_ME_E_Eq2_all_all) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% 
-  ggplot(aes(x = Observed, y = Predicted, color = variable, shape = Set)) + 
-  geom_point()  + 
-  theme(legend.position = "bottom")   + 
-  geom_abline() + 
-  ggtitle(paste("Stat =",   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_all_all, P_ME_E_Eq2_all_all) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% summarise(Stat = sum( (Predicted - Observed)^2 )) %>% round(3), " all_all" ))  + 
-  xlim(0,1) + ylim(0,1) + guides (shape = "none", color = "none") + geom_smooth(method = "lm", se = F)
+  ggplot() + 
+  geom_point(data = all_obs_predict_T %>% filter(N_edu > n_select), aes(x = P_ME_E_obs, y = P_ME_E_Eq2_all_all), color = "blue", size = 2) +
+  geom_point(data = all_obs_predict_T %>% filter(N_tros > n_select), aes(x = P_MT_T_obs, y = P_MT_T_Eq1_all_all), color = "red", size = 2) +
+  geom_abline()  + xlim(0,1) + ylim(0,1) +
+  geom_smooth(data = all_obs_predict_T %>% filter(N_edu > n_select), aes(x = P_ME_E_obs, y = P_ME_E_Eq2_all_all), color = "blue", se = F, method = "lm") +
+  geom_smooth(data = all_obs_predict_T %>% filter(N_tros > n_select), aes(x = P_MT_T_obs, y = P_MT_T_Eq1_all_all), color = "red", se = F, method = "lm")
+
+
+Pl_Eq1_2_mix_diff <- 
+  ggplot() + 
+  geom_point(data = all_obs_predict_T %>% filter(N_edu > n_select), aes(x = P_ME_E_obs, y = P_ME_E_Eq2_mix_diff), color = "blue", size = 2) +
+  geom_point(data = all_obs_predict_T %>% filter(N_tros > n_select), aes(x = P_MT_T_obs, y = P_MT_T_Eq1_mix_diff), color = "red", size = 2) +
+  geom_abline()  + xlim(0,1) + ylim(0,1) +
+  geom_smooth(data = all_obs_predict_T %>% filter(N_edu > n_select), aes(x = P_ME_E_obs, y = P_ME_E_Eq2_mix_diff), color = "blue", se = F, method = "lm") +
+  geom_smooth(data = all_obs_predict_T %>% filter(N_tros > n_select), aes(x = P_MT_T_obs, y = P_MT_T_Eq1_mix_diff), color = "red", se = F, method = "lm")
 
 
 
+Pl_Eq1_2_mix_mix <- 
+  ggplot() + 
+  geom_point(data = all_obs_predict_T %>% filter(N_edu > n_select), aes(x = P_ME_E_obs, y = P_ME_E_Eq2_mix_mix), color = "blue", size = 2) +
+  geom_point(data = all_obs_predict_T %>% filter(N_tros > n_select), aes(x = P_MT_T_obs, y = P_MT_T_Eq1_mix_mix), color = "red", size = 2) +
+  geom_abline()  + xlim(0,1) + ylim(0,1) +
+  geom_smooth(data = all_obs_predict_T %>% filter(N_edu > n_select), aes(x = P_ME_E_obs, y = P_ME_E_Eq2_mix_mix), color = "blue", se = F, method = "lm") +
+  geom_smooth(data = all_obs_predict_T %>% filter(N_tros > n_select), aes(x = P_MT_T_obs, y = P_MT_T_Eq1_mix_mix), color = "red", se = F, method = "lm")
 
-grid.arrange(Pl_Eq3_diff, Pl_Eq3_mix, Pl_Eq3_all, Pl_Eq1_2_diff_diff, Pl_Eq1_2_diff_mix, Pl_Eq1_2_diff_all, Pl_Eq1_2_mix_diff, Pl_Eq1_2_mix_mix, Pl_Eq1_2_mix_all, Pl_Eq1_2_all_diff, Pl_Eq1_2_all_mix, Pl_Eq1_2_all_all, ncol = 3)
+Pl_Eq1_2_mix_all <- 
+  ggplot() + 
+  geom_point(data = all_obs_predict_T %>% filter(N_edu > n_select), aes(x = P_ME_E_obs, y = P_ME_E_Eq2_mix_all), color = "blue", size = 2) +
+  geom_point(data = all_obs_predict_T %>% filter(N_tros > n_select), aes(x = P_MT_T_obs, y = P_MT_T_Eq1_mix_all), color = "red", size = 2) +
+  geom_abline()  + xlim(0,1) + ylim(0,1) +
+  geom_smooth(data = all_obs_predict_T %>% filter(N_edu > n_select), aes(x = P_ME_E_obs, y = P_ME_E_Eq2_mix_all), color = "blue", se = F, method = "lm") +
+  geom_smooth(data = all_obs_predict_T %>% filter(N_tros > n_select), aes(x = P_MT_T_obs, y = P_MT_T_Eq1_mix_all), color = "red", se = F, method = "lm")
+
+
+
+grid.arrange(Pl_Eq3_diff, Pl_Eq3_mix, Pl_Eq3_all, Pl_Eq1_2_all_diff, Pl_Eq1_2_diff_mix, Pl_Eq1_2_diff_all, Pl_Eq1_2_mix_diff, Pl_Eq1_2_mix_mix, Pl_Eq1_2_mix_all, Pl_Eq1_2_all_diff, Pl_Eq1_2_all_mix, Pl_Eq1_2_all_all, ncol = 3)
 
 
 

@@ -7,17 +7,17 @@ library(ggrepel)
 
 
 # Define UI for application 
-ui <- fluidPage(
+ui1 <- fluidPage(
   
   # Application title
-  titlePanel("Mytilus trossulus and Mytilus edulis identification by morphotype-test"),
+  titlePanel("Assessment of population structure and individual identification probability by morphotype-test"),
   
   sidebarLayout(
     sidebarPanel(
             
       #
       sliderInput(inputId = "P_T_MT",
-                  label = "Frequency of T-morphotype among M.trossulus in calibrating samples",
+                  label = "Frequency of T-morphotype among M.trossulus in calibrating samples (P(T|tros) for max different populations)",
                   min = 0,
                   max = 1,
                   step = 0.01,
@@ -25,7 +25,24 @@ ui <- fluidPage(
       
       #
       sliderInput(inputId = "P_E_ME",
-                  label = "Frequency of E-morphotype among M.edulis in calibrating samples",
+                  label = "Frequency of E-morphotype among M.edulis in calibrating samples (P(E|edu) for max different populations)",
+                  min = 0,
+                  max = 1,
+                  step = 0.01,
+                  value = 0.90),
+      
+     
+      #
+      sliderInput(inputId = "P_T_MT2",
+                  label = "Frequency of T-morphotype among M.trossulus in calibrating samples (P*(T|tros) for  mixed populations)",
+                  min = 0,
+                  max = 1,
+                  step = 0.01,
+                  value = 0.75), 
+      
+      #
+      sliderInput(inputId = "P_E_ME2",
+                  label = "Frequency of E-morphotype among M.edulis in calibrating samples (P*(E|edu) for  mixed populations)",
                   min = 0,
                   max = 1,
                   step = 0.01,
@@ -37,9 +54,7 @@ ui <- fluidPage(
                   min = 0,
                   max = 1,
                   step = 0.001,
-                  value = 0.5) #То с чего начинается
-      
-      
+                  value = 0.5),  #То с чего начинается 
       
     ),
     
@@ -69,8 +84,8 @@ server <- function(input, output) {
     # P(edu|E) = (1-Ptros)*P(E|edu)/(1-Ptros)*P(E|edu) + Ptros*(1 - P(Т|tros) )     
     
     Ptros_sample <- (input$P_T - (1 - input$P_E_ME)) / (input$P_T_MT - (1-input$P_E_ME))
-    P_MT_T_sample <- Ptros_sample*input$P_T_MT/((1-Ptros_sample)*(1 - input$P_E_ME) + Ptros_sample*input$P_T_MT)
-    P_ME_E_sample <- (1 - Ptros_sample)*input$P_E_ME/((1-Ptros_sample)*input$P_E_ME + Ptros_sample * (1- input$P_T_MT))
+    P_MT_T_sample <- Ptros_sample*input$P_T_MT2/((1-Ptros_sample)*(1 - input$P_E_ME2) + Ptros_sample*input$P_T_MT2)
+    P_ME_E_sample <- (1 - Ptros_sample)*input$P_E_ME2/((1-Ptros_sample)*input$P_E_ME2 + Ptros_sample * (1- input$P_T_MT2))
 
     min_P_T_sample <- 1 - input$P_E_ME
     max_P_T_sample <- input$P_T_MT
@@ -91,8 +106,8 @@ server <- function(input, output) {
     
     df_bayes <- data.frame(Ptros = seq(0, 1, by = 0.01), P_T = seq(0, 1, by = 0.01))
     
-    df_bayes$P_MT_T <- df_bayes$Ptros * input$P_T_MT /((1-df_bayes$Ptros)*(1 - input$P_E_ME) + df_bayes$Ptros*input$P_T_MT) 
-    df_bayes$P_ME_E <- (1 - df_bayes$Ptros)*input$P_E_ME/((1-df_bayes$Ptros)*input$P_E_ME + df_bayes$Ptros * (1- input$P_T_MT)) 
+    df_bayes$P_MT_T <- df_bayes$Ptros * input$P_T_MT2 /((1-df_bayes$Ptros)*(1 - input$P_E_ME2) + df_bayes$Ptros*input$P_T_MT2) 
+    df_bayes$P_ME_E <- (1 - df_bayes$Ptros)*input$P_E_ME2/((1-df_bayes$Ptros)*input$P_E_ME2 + df_bayes$Ptros * (1- input$P_T_MT2)) 
     
     
     df_bayes$Ptros_predicted <- (df_bayes$P_T - (1 - input$P_E_ME)) / (input$P_T_MT - (1-input$P_E_ME))
@@ -108,6 +123,7 @@ Pl_congr <-  ggplot(df_bayes, aes(x = Ptros)) +
       theme(legend.position = "bottom") + 
       xlim(0, 1) +
       ylim(0, 1) +
+  geom_hline(yintercept = 0.5, linetype = 2)+
       ggtitle("Individual mussel identification")
   
 
@@ -138,5 +154,7 @@ grid.arrange(Pl_ptros, Pl_congr, nrow = 2)
 
 
 
+
+
 # Run the application 
-shinyApp(ui = ui, server = server)
+shinyApp(ui = ui1, server = server)
