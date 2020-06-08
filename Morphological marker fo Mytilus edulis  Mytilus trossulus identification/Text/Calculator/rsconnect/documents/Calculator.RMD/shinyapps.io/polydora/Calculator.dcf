@@ -1,0 +1,12 @@
+name: Calculator
+title: Calculator
+username:
+account: polydora
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2418024
+bundleId: 3238024
+url: https://polydora.shinyapps.io/Calculator/
+when: 1591523887.7944
+asMultiple: FALSE
+asStatic: FALSE

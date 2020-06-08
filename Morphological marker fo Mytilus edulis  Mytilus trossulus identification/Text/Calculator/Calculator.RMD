@@ -1,0 +1,336 @@
+---
+title: "Assessment of population structure and individual identification probability by morphotype-test"
+runtime: shiny
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# knitr::opts_chunk$set(fig.width = 20, fig.height=20)
+```
+
+
+<style type="text/css">
+
+body{ /* Normal  */
+      font-size: 18px;
+  }
+td {  /* Table  */
+  font-size: 18px;
+}
+h1.title {
+  font-size: 38px;
+  color: DarkRed;
+}
+h1 { /* Header 1 */
+  font-size: 30px;
+  color: DarkBlue;
+}
+h2 { /* Header 2 */
+    font-size: 20px;
+  color: DarkBlue;
+}
+h3 { /* Header 3 */
+  font-size: 20px;
+  font-family: "Times New Roman", Times, serif;
+  color: DarkBlue;
+}
+code.r{ /* Code block */
+    font-size: 12px;
+}
+pre { /* Code block - determines code spacing between lines */
+    font-size: 14px;
+}
+</style>
+
+
+
+```{r, echo=FALSE}
+library(gridExtra)
+library(ggplot2)
+library(shiny)
+library(ggrepel)
+```
+
+
+
+
+```{r, echo=FALSE, fig.height=10}
+
+
+# Define UI for application 
+ui1 <- fluidPage(
+  
+  # Application title
+  # titlePanel("Assessment of population structure and individual identification probability by morphotype-test"),
+  
+  sidebarLayout(
+    sidebarPanel(
+            
+      #
+      sliderInput(inputId = "P_T_MT",
+                  label = "Frequency of T-morphotype among M.trossulus in calibrating samples (P(T|tros) for max different populations)",
+                  min = 0,
+                  max = 1,
+                  step = 0.01,
+                  value = 0.75), 
+      
+      #
+      sliderInput(inputId = "P_T_ME",
+                  label = "Frequency of T-morphotype among M.edulis in calibrating samples (P(T|edu) for max different populations)",
+                  min = 0,
+                  max = 1,
+                  step = 0.01,
+                  value = 0.05),
+      
+     
+      #
+      sliderInput(inputId = "P_T_MT2",
+                  label = "Frequency of T-morphotype among M.trossulus in calibrating samples (P*(T|tros) for  mixed populations)",
+                  min = 0,
+                  max = 1,
+                  step = 0.01,
+                  value = 0.75), 
+      
+      #
+      sliderInput(inputId = "P_T_ME2",
+                  label = "Frequency of T-morphotype among M.edulis in calibrating samples (P*(E|edu) for  mixed populations)",
+                  min = 0,
+                  max = 1,
+                  step = 0.01,
+                  value = 0.05),
+      
+      fluidRow("Desirable minimal probability of correct identification (PD)",
+        column(width = 6,
+               selectInput("Dtros", "for M.trossulus", seq(0.5, 1, 0.01), selected = 0.75)
+        ),
+        column(width = 6, 
+               selectInput("Dedu", "for M.edulis", seq(0.5, 1, 0.01), selected = 0.75)
+        )
+      ),
+      
+      
+      #Задаем параметр P_T
+      sliderInput(inputId = "P_T",
+                  label = "Frequency of T-morphotype (PT) in population of interest:",
+                  min = 0,
+                  max = 1,
+                  step = 0.001,
+                  value = 0.5) #То с чего начинается 
+      
+    ),
+    
+    
+    
+    # Show a plot of the generated distribution
+    mainPanel(
+      plotOutput("my_graph", height = "1000px")
+    )
+  )
+)
+
+# Define server logic required to draw 
+
+server <- function(input, output) {
+  
+  output$my_graph <- renderPlot({
+    
+    #Здесь может быть код 
+    #Функция рисующая график 
+
+    # Ptros = (PT – (1 - P(E|edu)))/ (P(T|tros) -  (1 -P(E|edu)) 
+    # P_T_MT = 0.7
+    # P_E_ME = 0.99
+    # P_T = 0.5
+    # P(tros|T) = Ptros*P(T|tros)/(1-Ptros)*(1 - P(E|edu)) + Ptros*P(Т|tros)   
+    # P(edu|E) = (1-Ptros)*P(E|edu)/(1-Ptros)*P(E|edu) + Ptros*(1 - P(Т|tros) )     
+    
+    #########################
+    #Пороговые значения Ptros и PT для выбора миногного морфотипа
+    
+    D_tros <- as.numeric(input$Dtros)
+    
+    Ptros_minor_tros <- (-D_tros)*input$P_T_ME2/(D_tros*input$P_T_MT2 - D_tros*input$P_T_ME2 - input$P_T_MT2)
+    
+    PT_minor_tros <- Ptros_minor_tros * (input$P_T_MT - input$P_T_ME) + input$P_T_ME
+    #
+    
+    D_edu <- as.numeric(input$Dedu)
+    
+    Ptros_minor_edu <- (-D_edu + D_edu * input$P_T_ME2 + 1 - input$P_T_ME2)/(D_edu * input$P_T_ME2 - D_edu * input$P_T_MT2 + 1 - input$P_T_ME2)
+    
+    PT_minor_edu <- Ptros_minor_edu * (input$P_T_MT - input$P_T_ME) + input$P_T_ME
+    
+
+    
+    Ptros_sample <- (input$P_T -  input$P_T_ME) / (input$P_T_MT - input$P_T_ME)
+    P_MT_T_sample <- Ptros_sample*input$P_T_MT2/((1-Ptros_sample)*input$P_T_ME2 + Ptros_sample*input$P_T_MT2)
+    P_ME_E_sample <- (1 - Ptros_sample)*(1-input$P_T_ME2)/((1-Ptros_sample)*(1-input$P_T_ME2) + Ptros_sample * (1- input$P_T_MT2))
+
+    min_P_T_sample <- input$P_T_ME
+    max_P_T_sample <- input$P_T_MT
+    
+   
+    
+    
+    # min_Ptros_sample <- (min_P_T_sample - (1 - input$P_E_ME)) / (input$P_T_MT - (1-input$P_E_ME))
+    # max_Ptros_sample <- (max_P_T_sample - (1 - input$P_E_ME)) / (input$P_T_MT - (1-input$P_E_ME))
+    
+    
+    # Ptros_sample <- (P_T - (1 - P_E_ME)) / (P_T_MT - (1-P_E_ME))
+    # P_MT_T_sample <- Ptros_sample*P_T_MT/((1-Ptros_sample)*(1 - P_E_ME) + Ptros_sample*P_T_MT)
+    # P_ME_E_sample <- (1 - Ptros_sample)*P_E_ME/((1-Ptros_sample)*P_E_ME + Ptros_sample * (1- P_T_MT)) 
+    # 
+    
+        
+    df_sample <- data.frame(Ptros = c(Ptros_sample, Ptros_sample), Sp = c("M.trossulus", "M.edulis"), P = c(P_MT_T_sample, P_ME_E_sample ))
+    
+    
+    
+    df_bayes <- data.frame(Ptros = seq(0, 1, by = 0.01), P_T = seq(0, 1, by = 0.01))
+    
+
+    df_bayes$P_MT_T <- df_bayes$Ptros * input$P_T_MT2 /((1-df_bayes$Ptros)*input$P_T_ME2 + df_bayes$Ptros*input$P_T_MT2) 
+    df_bayes$P_ME_E <- (1 - df_bayes$Ptros)*(1-input$P_T_ME2)/((1-df_bayes$Ptros)*(1-input$P_T_ME2) + df_bayes$Ptros * (1- input$P_T_MT2)) 
+    
+    
+    df_bayes$Ptros_predicted <- (df_bayes$P_T - input$P_T_ME) / (input$P_T_MT - input$P_T_ME)
+    
+    
+Pl_congr <-  ggplot(df_bayes, aes(x = Ptros)) + 
+      geom_line(aes(y = P_MT_T), color = "red", size = 1) + 
+      geom_line(aes(y = P_ME_E), color = "blue", size = 1)  +
+      geom_point(data = df_sample, aes(x = Ptros, y = P, fill = Sp), positon = position_jitter(), shape = 21, size = 4) +
+      geom_text_repel(data = df_sample, aes(x = Ptros, y = P, label = round(P, 2)), direction = "both", point.padding = 1) + 
+      scale_fill_manual(values = c("blue", "red")) +
+      labs(y = "Probability of correct identification", x = "Mytilus trossulus prevalence (Ptros)", fill = "Species") + 
+      theme(legend.position = "bottom") + 
+      xlim(0, 1) +
+      ylim(0, 1) +
+  geom_hline(yintercept = 0.5, linetype = 2)+
+      ggtitle("Individual mussel identification")
+  
+
+   
+Pl_ptros <- ggplot(df_bayes, aes(x = P_T, y = Ptros_predicted)) + 
+  geom_line(size = 1, color = "darkgray") + 
+  xlim(0,1) + 
+  ylim(0, 1) + 
+  geom_point(x = input$P_T, y = Ptros_sample, size = 4) + 
+  geom_text(x = input$P_T+0.1, y = Ptros_sample + 0.02, aes(label = paste("Ptros = ", round(Ptros_sample, 2) )), family = "mono", fontface = "plain") + 
+  labs(x = "Frequency of T-morphotype (PT)", y ="Predicted frequency of Mytilus trossulus (Ptros)") +
+  geom_abline(linetype = 2, size = 0.5) +
+  geom_point(x = min_P_T_sample, y = 0, shape = 25, size = 5, fill = "yellow") + 
+  geom_text(x = min_P_T_sample + 0.1, y = 0, label = paste("min P_T = ", round(min_P_T_sample, 2) ), hjust = "left" ) +
+  geom_point(x = max_P_T_sample, y = 1, shape = 24, size = 5, fill = "yellow") + 
+  geom_text(x = max_P_T_sample - 0.1, y = 1, label = paste("max P_T = ", round(max_P_T_sample, 2) ), hjust = "right" )+
+  ggtitle("Taxonomical structure of mixed population")
+
+
+#пририсовываем пороговые значения, отсекающие мнорный морфотип
+
+Pl_ptros <- Pl_ptros 
+# + 
+#   geom_vline(xintercept = PT_minor_tros, linetype = 2, color = "red") +
+#   geom_vline(xintercept = PT_minor_edu, linetype = 2, color = "blue") +
+#   geom_text(x = PT_minor_tros-0.06, y = 0.75, label = paste("min PT \nfor Desirable\nprobability\n PT = ", round(PT_minor_tros, 2)), color = "red") +
+#   geom_text(x = PT_minor_edu+0.06, y = 0.25, label = paste("max PT \nfor Desirable\nprobability\n PT = ", round(PT_minor_edu, 2)), color = "blue")
+#   
+
+Pl_congr <- Pl_congr + 
+  geom_vline(xintercept = Ptros_minor_tros, linetype = 2, color = "red")+
+  geom_vline(xintercept = Ptros_minor_edu, linetype = 2, color = "blue") + 
+  geom_segment(x = Ptros_minor_tros, xend = Ptros_minor_tros-0.05, y = 0.2, yend = 0.2, color = "red", arrow =  arrow(angle = 10,type = "closed", ends = "last")) + 
+  geom_text(x = Ptros_minor_tros-0.09, y = 0.2, label = paste("Minor \nSpecies\nPtros < ", round(Ptros_minor_tros, 2), "\nPT < ", round(PT_minor_tros, 2)), color = "red", family = "mono", fontface = "plain")+ 
+  geom_segment(x = Ptros_minor_edu, xend = Ptros_minor_edu + 0.05, y = 0.2, yend = 0.2, color = "blue", arrow =  arrow(angle = 10,type = "closed", ends = "last"))+ 
+  geom_text(x = Ptros_minor_edu + 0.09, y = 0.2, label = paste("Minor \nSpecies\nPtros > ", round(Ptros_minor_edu, 2), "\nPT > ", round(PT_minor_edu, 2)), color = "blue", family = "mono", fontface = "plain")
+
+grid.arrange(Pl_ptros, Pl_congr, nrow = 2)
+
+    
+  })
+}
+
+
+
+# shinyApp(ui, server, options = list(height = 1000)
+# shinyApp(ui = ui1, server = server, options = list(height = 1000, width = 1200))
+
+
+# Run the application 
+# shinyApp(ui = ui1, server = server)
+shinyApp(ui = ui1, server = server, options = list(height = 1000, width = 1200))
+
+
+
+```
+
+
+
+
+
+# Calculator calibrating
+
+Before using the calculator it should be calibrated. 
+
+Parameters should be assessed by genotyping of at least three samples:
+
+1. Sample with minimal proportion of T-morphotype (PT)
+2. Sample with maximal proportion of T-morphotype 
+3. Sample with PT approximately equal to 0.5.
+
+First two samples allow to assess two parameters as follows:
+$$ P_{T|tros} = \frac{N1_{tros|T} + N2_{tros|T}}{N1_{tros|T} + N1_{tros|E} + N2_{tros|T} + N2_{tros|E}}$$
+
+$$P_{T|edu} = \frac{N1_{edu|T} + N2_{edu|T}}{N1_{edu|T} + N1_{edu|E} + N2_{edu|T} + N2_{edu|E}}$$
+
+The third sample allows to assess two additional parameters:
+$$P^*_{T|tros} = \frac{N3_{tros|T}}{N3_{tros|T} + N3_{tros|E}}$$
+
+
+$$P^*_{T|edu} = \frac{N3_{edu|T}}{N3_{edu|T} + N3_{edu|E}}$$
+
+Where
+
++ $N_{tros|T}$ - number of *M.trossulus* with T-morphotype
+
++ $N_{tros|E}$ - number of *M.trossulus* with E-morphotype
+
++ $N_{edu|T}$ - number of *M.edulis* with T-morphotype
+
++ $N_{edu|E}$ - number of *M.edulis* with E-morphotype
+
+
+
+**Recommendation**: sample size ($N$) of genotyped mussels should be large enough to avoid biasments.
+
+# Formulas 
+
++ To assess the probability to find *M.trossulus* (Ptros) in a population of interest with known proportion of T-morphotype.
+
+$$Ptros = \frac{PT - P_{T|edu}}{P_{T|tros} - P_{T|edu}}$$ 
+
++ To assess the probability of correct species identification for individual mussel with known morphotype.
+$$P_{tros|T} = \frac{P^*_{T|tros} \cdot Ptros}{P^*_{T|tros} \cdot Ptros + P^*_{T|edu} \cdot (1-Ptros)}$$
+
+$$P_{edu|E} = \frac{(1-P^*_{T|edu}) \cdot (1-Ptros)}{(1-P^*_{T|edu}) \cdot (1-Ptros) +  (1-P^*_{T|tros}) \cdot Ptros}$$
+
+
+
+Since $P_{tros|T}$ and $P_{edu|E}$ are dependent on $Ptros$ the parameter $Ptros$ could be evaluated usind data on $PT$. 
+
+**Recommendation**:  One should choose the desirable minimal level of probability of correct identification ($P_D$) for each species. It give the possibility to assess the threshold value of $PT$ which allows to separate minor species for which probability of correct identification is lesser than chosen $P_D$ (morphotype-test is not recomended for use in this case). These threshold values could be assessed by formulas as follows.
+
+For *M.trossulus* 
+$$Ptros_{minor} = \frac{-P_D \cdot P^*_{T|edu}} {P_D \cdot (P^*_{T|tros} - P^*_{T|edu}) - P^*_{T|tros}} $$
+
+$$PT_{minor} =  Ptros_{minor} \cdot (P_{T|tros} - P_{T|edu}) + P_{T|edu}$$
+
+For *M.edulis*
+$$Ptros_{minor} = \frac{P_D \cdot (P^*_{T|edu} - 1) - P^*_{T|edu} + 1} {P_D \cdot (P^*_{T|edu} - P^*_{T|tros}) - P^*_{T|edu} + 1}$$
+
+$$PT_{minor} =  Ptros_{minor} \cdot (P_{T|tros} - P_{T|edu}) + P_{T|edu}$$
+
+
+
+

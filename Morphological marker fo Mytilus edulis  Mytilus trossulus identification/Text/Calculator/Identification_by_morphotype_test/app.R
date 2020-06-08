@@ -24,12 +24,12 @@ ui1 <- fluidPage(
                   value = 0.75), 
       
       #
-      sliderInput(inputId = "P_E_ME",
-                  label = "Frequency of E-morphotype among M.edulis in calibrating samples (P(E|edu) for max different populations)",
+      sliderInput(inputId = "P_T_ME",
+                  label = "Frequency of T-morphotype among M.edulis in calibrating samples (P(T|edu) for max different populations)",
                   min = 0,
                   max = 1,
                   step = 0.01,
-                  value = 0.90),
+                  value = 0.05),
       
      
       #
@@ -41,12 +41,22 @@ ui1 <- fluidPage(
                   value = 0.75), 
       
       #
-      sliderInput(inputId = "P_E_ME2",
-                  label = "Frequency of E-morphotype among M.edulis in calibrating samples (P*(E|edu) for  mixed populations)",
+      sliderInput(inputId = "P_T_ME2",
+                  label = "Frequency of T-morphotype among M.edulis in calibrating samples (P*(E|edu) for  mixed populations)",
                   min = 0,
                   max = 1,
                   step = 0.01,
-                  value = 0.90),
+                  value = 0.05),
+      
+      fluidRow("Desirable probability of correct species identification",
+        column(width = 6,
+               selectInput("Dtros", "for M.trossulus", seq(0.5, 1, 0.01), selected = 0.75)
+        ),
+        column(width = 6, 
+               selectInput("Dedu", "for M.edulis", seq(0.5, 1, 0.01), selected = 0.75)
+        )
+      ),
+      
       
       #Задаем параметр P_T
       sliderInput(inputId = "P_T",
@@ -54,7 +64,7 @@ ui1 <- fluidPage(
                   min = 0,
                   max = 1,
                   step = 0.001,
-                  value = 0.5),  #То с чего начинается 
+                  value = 0.5) #То с чего начинается 
       
     ),
     
@@ -83,12 +93,33 @@ server <- function(input, output) {
     # P(tros|T) = Ptros*P(T|tros)/(1-Ptros)*(1 - P(E|edu)) + Ptros*P(Т|tros)   
     # P(edu|E) = (1-Ptros)*P(E|edu)/(1-Ptros)*P(E|edu) + Ptros*(1 - P(Т|tros) )     
     
-    Ptros_sample <- (input$P_T - (1 - input$P_E_ME)) / (input$P_T_MT - (1-input$P_E_ME))
-    P_MT_T_sample <- Ptros_sample*input$P_T_MT2/((1-Ptros_sample)*(1 - input$P_E_ME2) + Ptros_sample*input$P_T_MT2)
-    P_ME_E_sample <- (1 - Ptros_sample)*input$P_E_ME2/((1-Ptros_sample)*input$P_E_ME2 + Ptros_sample * (1- input$P_T_MT2))
+    #########################
+    #Пороговые значения Ptros и PT для выбора миногного морфотипа
+    
+    D_tros <- as.numeric(input$Dtros)
+    
+    Ptros_minor_tros <- (-D_tros)*input$P_T_ME2/(D_tros*input$P_T_MT2 - D_tros*input$P_T_ME2 - input$P_T_MT2)
+    
+    PT_minor_tros <- Ptros_minor_tros * (input$P_T_MT - input$P_T_ME) + input$P_T_ME
+    #
+    
+    D_edu <- as.numeric(input$Dedu)
+    
+    Ptros_minor_edu <- (-D_edu + D_edu * input$P_T_ME2 + 1 - input$P_T_ME2)/(D_edu * input$P_T_ME2 - D_edu * input$P_T_MT2 + 1 - input$P_T_ME2)
+    
+    PT_minor_edu <- Ptros_minor_edu * (input$P_T_MT - input$P_T_ME) + input$P_T_ME
+    
 
-    min_P_T_sample <- 1 - input$P_E_ME
+    
+    Ptros_sample <- (input$P_T -  input$P_T_ME) / (input$P_T_MT - input$P_T_ME)
+    P_MT_T_sample <- Ptros_sample*input$P_T_MT2/((1-Ptros_sample)*input$P_T_ME2 + Ptros_sample*input$P_T_MT2)
+    P_ME_E_sample <- (1 - Ptros_sample)*(1-input$P_T_ME2)/((1-Ptros_sample)*(1-input$P_T_ME2) + Ptros_sample * (1- input$P_T_MT2))
+
+    min_P_T_sample <- input$P_T_ME
     max_P_T_sample <- input$P_T_MT
+    
+   
+    
     
     # min_Ptros_sample <- (min_P_T_sample - (1 - input$P_E_ME)) / (input$P_T_MT - (1-input$P_E_ME))
     # max_Ptros_sample <- (max_P_T_sample - (1 - input$P_E_ME)) / (input$P_T_MT - (1-input$P_E_ME))
@@ -106,11 +137,12 @@ server <- function(input, output) {
     
     df_bayes <- data.frame(Ptros = seq(0, 1, by = 0.01), P_T = seq(0, 1, by = 0.01))
     
-    df_bayes$P_MT_T <- df_bayes$Ptros * input$P_T_MT2 /((1-df_bayes$Ptros)*(1 - input$P_E_ME2) + df_bayes$Ptros*input$P_T_MT2) 
-    df_bayes$P_ME_E <- (1 - df_bayes$Ptros)*input$P_E_ME2/((1-df_bayes$Ptros)*input$P_E_ME2 + df_bayes$Ptros * (1- input$P_T_MT2)) 
+
+    df_bayes$P_MT_T <- df_bayes$Ptros * input$P_T_MT2 /((1-df_bayes$Ptros)*input$P_T_ME2 + df_bayes$Ptros*input$P_T_MT2) 
+    df_bayes$P_ME_E <- (1 - df_bayes$Ptros)*(1-input$P_T_ME2)/((1-df_bayes$Ptros)*(1-input$P_T_ME2) + df_bayes$Ptros * (1- input$P_T_MT2)) 
     
     
-    df_bayes$Ptros_predicted <- (df_bayes$P_T - (1 - input$P_E_ME)) / (input$P_T_MT - (1-input$P_E_ME))
+    df_bayes$Ptros_predicted <- (df_bayes$P_T - input$P_T_ME) / (input$P_T_MT - input$P_T_ME)
     
     
 Pl_congr <-  ggplot(df_bayes, aes(x = Ptros)) + 
@@ -143,7 +175,22 @@ Pl_ptros <- ggplot(df_bayes, aes(x = P_T, y = Ptros_predicted)) +
   ggtitle("Taxonomical structure of mixed population")
 
 
+#пририсовываем пороговые значения, отсекающие мнорный морфотип
 
+Pl_ptros <- Pl_ptros + 
+  geom_vline(xintercept = PT_minor_tros, linetype = 2, color = "red") +
+  geom_vline(xintercept = PT_minor_edu, linetype = 2, color = "blue") +
+  geom_text(x = PT_minor_tros-0.05, y = 0.75, label = paste("min PT \nfor Desirable\nprobability\nPT = ", round(PT_minor_tros, 2)), color = "red") +
+  geom_text(x = PT_minor_edu+0.05, y = 0.25, label = paste("max PT \nfor Desirable\nprobability\nPT = ", round(PT_minor_edu, 2)), color = "blue")
+  
+
+Pl_congr <- Pl_congr + 
+  geom_vline(xintercept = Ptros_minor_tros, linetype = 2, color = "red")+
+  geom_vline(xintercept = Ptros_minor_edu, linetype = 2, color = "blue") + 
+  geom_segment(x = Ptros_minor_tros, xend = Ptros_minor_tros-0.05, y = 0.2, yend = 0.2, color = "red", arrow =  arrow(angle = 10,type = "closed", ends = "last")) + 
+  geom_text(x = Ptros_minor_tros-0.08, y = 0.2, label = paste("Minor \nSpecies\nPtros < ", round(Ptros_minor_tros, 2)), color = "red")+ 
+  geom_segment(x = Ptros_minor_edu, xend = Ptros_minor_edu + 0.05, y = 0.2, yend = 0.2, color = "blue", arrow =  arrow(angle = 10,type = "closed", ends = "last"))+ 
+  geom_text(x = Ptros_minor_edu + 0.08, y = 0.2, label = paste("Minor \nSpecies\nPtros > ", round(Ptros_minor_edu, 2)), color = "blue")
 
 grid.arrange(Pl_ptros, Pl_congr, nrow = 2)
 

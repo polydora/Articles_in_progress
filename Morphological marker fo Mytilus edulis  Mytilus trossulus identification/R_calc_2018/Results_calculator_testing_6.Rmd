@@ -686,7 +686,8 @@ Eq1 <- function(Ptros, donat){
 Eq2 <- function(Ptros, donat){
   P_T_MT <- donat[1]
   P_T_ME <- donat[2]
-  P_ME_E <- ((1 - P_T_ME) * (1 - Ptros))/(1 - P_T_ME + Ptros * (P_T_ME - P_T_MT))
+  # P_ME_E <- ((1 - P_T_ME) * (1 - Ptros))/(1 - P_T_ME + Ptros * (P_T_ME - P_T_MT))
+  P_ME_E <- ((1 - P_T_ME) * (1 - Ptros))/((1-Ptros)*(1-P_T_ME) + Ptros * (1 - P_T_MT))
   P_ME_E
 }
 

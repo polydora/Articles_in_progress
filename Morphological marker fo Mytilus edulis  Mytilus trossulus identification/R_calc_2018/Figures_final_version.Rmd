@@ -187,7 +187,8 @@ calc1 <- function(P_T_MT, P_T_ME){
 calc2 <- function(P_T_MT, P_T_ME){
   result <- data.frame(freq_MT = seq(0, 1, 0.01))
   result$P_MT_T <- (P_T_MT * result$freq_MT)/(P_T_MT * result$freq_MT + P_T_ME*(1-result$freq_MT))
-  result$P_ME_E <- ((1 - P_T_ME) * (1 - result$freq_MT))/(1 - P_T_ME + result$freq_MT * (P_T_ME - P_T_MT))
+  # result$P_ME_E <- ((1 - P_T_ME) * (1 - result$freq_MT))/(1 - P_T_ME + result$freq_MT * (P_T_ME - P_T_MT))
+  result$P_ME_E <- ((1 - P_T_ME) * (1 - result$freq_MT))/( (1 - P_T_ME) * (1 - result$freq_MT) + result$freq_MT * (1 - P_T_MT))
   result
 }
 
