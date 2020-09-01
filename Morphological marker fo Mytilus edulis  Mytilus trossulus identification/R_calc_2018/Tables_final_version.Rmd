@@ -1,8 +1,15 @@
 ---
-title: ""
+title: "Tables"
 author: ""
 date: ""
-output: pdf_document
+output:
+  word_document:
+    reference_docx: article_template.docx
+    fig_width: 5
+    fig_height: 5
+bibliography: morph_marker_literature.bib
+csl: the-biological-bulletin.csl
+
 ---
 
 ```{r setup, include=FALSE, echo=FALSE}
@@ -18,8 +25,6 @@ panderOptions('table.alignment.default', function(df)
 panderOptions('table.split.table', Inf)
 panderOptions('big.mark', ",")
 panderOptions('keep.trailing.zeros', TRUE)
-
-opts_chunk$set(dev='cairo_pdf')
 
 ```
 
@@ -533,7 +538,7 @@ overdisp_fun <- function(model) {
 
 ```{r}
 ##### Theme for ggplot ######
-theme_set(theme_bw() + theme(axis.title.x = element_text(size = 10, face = "bold.italic"), axis.title.y = element_text(size = 10, face = "bold.italic"), axis.text= element_text(size = 10), legend.position = "none" , title = element_text(size = 10)))  
+theme_set(theme_bw() + theme(axis.title.x = element_text(size = 10), axis.title.y = element_text(size = 10), axis.text= element_text(size = 10), legend.position = "none" , title = element_text(size = 10)))  
 
 ```
 
@@ -994,15 +999,15 @@ all_models_print$std.error [is.na(all_models_print$std.error)] <- c(
 
 ```
 
-<!-- ```{r} -->
+```{r}
 
-<!-- options(knitr.kable.NA = '') -->
+options(knitr.kable.NA = '')
 
-<!-- # options(knitr.kable.NA = ' ') -->
-<!-- kable(all_models_print, col.names = c("Terms", "Estimate", "SE", "z-statistic", "p-value"), caption = "Table ++. Parameters of regression models fitted") -->
+# options(knitr.kable.NA = ' ')
+kable(all_models_print, col.names = c("Terms", "Estimate", "SE", "z-statistic", "p-value"), caption = "Table ++. Parameters of regression models fitted")
 
 
-<!-- ``` -->
+```
 
 
 
@@ -1034,7 +1039,7 @@ Pl_mod1_with_initial_data_no_test <- Pl_mod1 +
   geom_point(data = link_over_M, aes(y = freq_Tmorph, size = (N_MT+N_ME)), shape = 21, fill = "gray") + 
   scale_fill_continuous(high = "black", low = "white" ) + 
   geom_abline() + 
-  labs(x =  "Ptros", y = "PT \n") + 
+  labs(x =  "Proportion of M. trossulus", y = "Proportion of T-morphotype \n") + 
   theme(axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank()) 
 
 # test_Model_1 <- myt3 %>% group_by(Subset, pop) %>% summarise(freq_MT = mean(Sp2), freq_Tmorph = mean(ind), N_MT = sum(Sp2 == 1),  N_ME = sum(Sp2 == 0))
@@ -1080,7 +1085,7 @@ Pl_mod2_with_initial_data_no_test <- Pl_mod2 +   geom_segment(data = pops_over_M
   geom_hline(aes(yintercept=0.5), color="black") + 
   geom_point(data = pops_over_M, aes(y = (1-P_E_ME), size= N_ME, group =1), fill = "white", shape = 21)+
   geom_point(data = pops_over_M, aes(y = P_T_MT, size=N_MT, group =1), fill = "black", shape = 21)  + xlim(0,1)+ 
-  labs(y =  "P(T|edu)\nP(T|tros)", x = "Ptros", fill = "") + 
+  labs(y =  "Proportion of T-morphotype \n among  M. trossulus  and  M. edulis", x = "Proportion of M. trossulus", fill = "") + 
   ylim(0,1) + xlim(0,1) + 
   theme(axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank()) 
 
@@ -1182,7 +1187,7 @@ Pl_mod4_with_initial_data_no_test <- Pl_mod4 + geom_segment(data = pr_value_M, a
   geom_hline(data = pr_value_M, aes(yintercept=0.5), color="black") +
   geom_point(data = pr_value_M, aes(y = PME_E, size= N_E), fill = "white", shape = 21) +
   geom_point(data = pr_value_M, aes(y = PMT_T, size=N_T), fill = "black", shape = 21) +
-  labs(y =  "P(edu|E)\nP(tros|T)", x = "Ptros", fill = "")+
+  labs(y =  "Proportions of correct species \n identification by morphotypes", x = "Proportion of M. trossulus", fill = "")+
   ylim(0,1) +
   xlim(0,1)
 # +
@@ -1220,7 +1225,7 @@ Pl_mod5 <- ggplot(new_data5, aes(x = Prop_T, y = fit)) + geom_line(linetype = 2,
 
 init_data_Model_5 <- myt2 %>% group_by(Subset, pop) %>% summarise(Prop_T = mean(morph == "T_m"),  freq_MT = mean(Sp == "M.trossulus"), N = n())
 
-Pl_mod5_with_initial_data_no_test <- Pl_mod5 + geom_point(data = init_data_Model_5, aes( y = freq_MT, size = N), shape = 21, fill = "gray" ) + scale_fill_continuous(low = "white", high = "black") + labs(x = "PT", y = "Ptros \n")
+Pl_mod5_with_initial_data_no_test <- Pl_mod5 + geom_point(data = init_data_Model_5, aes( y = freq_MT, size = N), shape = 21, fill = "gray" ) + scale_fill_continuous(low = "white", high = "black") + labs(x = "Proportion of mussels with T-morphotype", y = "Proportion of M.trossulus \n")
 
 #  test_Model_5 <- myt3 %>% group_by(Subset, pop) %>% summarise(Prop_T = mean(morph == "T_m"),  freq_MT = mean(Sp == "M.trossulus"), N = n())
 # 
@@ -1410,15 +1415,15 @@ new_data_ptros_1_model_8$CI <- logit_back(1.96 *new_data_ptros_1_model_8$SE_eta)
 
 
 
-grid.arrange(Pl_mod1_with_initial_data_no_test ,
-             Pl_mod2_with_initial_data_no_test + theme(strip.text = element_blank()),
-             Pl_mod4_with_initial_data_no_test + theme(strip.text = element_blank()) ,
-             ncol = 1)
+# grid.arrange(Pl_mod1_with_initial_data_no_test ,
+#              Pl_mod2_with_initial_data_no_test + theme(strip.text = element_blank()),
+#              Pl_mod4_with_initial_data_no_test + theme(strip.text = element_blank()) ,
+#              ncol = 1)
 
 
 ```
 
-Figure ++. Variation of PT, P(T|tros), P(E|edu), P(tros|T), P(edu|E) as functions of Ptros in the White Sea (WS), brackish Barents Sea (BL) and saline Barents Sea (BH). Points - empirical estimates, size is proportional to sample sizes. Lines – regression model predictions, grey filling – 95% confidence intervals of regressions. (A) Proportions of T-morphotypes (PT) (Model 1). (B). Proportions of T-morphotypes among *M. trossulus* (filled points) and *M. edulis* (empty points) (Model 2). (C) Frequencies of *M. trossulus* among T-morphotypes (filled points) and of *M. edulis* among E-morphotypes (Model 4). Vertical lines on B and C connect subsamples of *M. trossulus* and *M. edulis* from the same samples.
+<!-- Figure ++. Variation of PT, P(T|tros), P(E|edu), P(tros|T), P(edu|E) as functions of Ptros in the White Sea (WS), brackish Barents Sea (BL) and saline Barents Sea (BH). Points - empirical estimates, size is proportional to sample sizes. Lines – regression model predictions, grey filling – 95% confidence intervals of regressions. (A) Proportions of T-morphotypes (PT) (Model 1). (B). Proportions of T-morphotypes among *M. trossulus* (filled points) and *M. edulis* (empty points) (Model 2). (C) Frequencies of *M. trossulus* among T-morphotypes (filled points) and of *M. edulis* among E-morphotypes (Model 4). Vertical lines on B and C connect subsamples of *M. trossulus* and *M. edulis* from the same samples. -->
 
 
 
@@ -1750,9 +1755,10 @@ Pl_mod6_with_initial_data <- Pl_mod6 + geom_segment(data = pr_value_myt3_and_Atl
   geom_hline(aes(yintercept=0.5), color="black") +
   geom_point(data = pr_value_myt3_and_Atlantic, aes(y = PME_E), fill = "white", shape = 22) +
   geom_point(data = pr_value_myt3_and_Atlantic, aes(y = PMT_T), fill = "black", shape = 22) +
-  labs(y =  "P(edu|E)\nP(tros|T)", x = "Ptros", fill = "")+
+  labs(y =  "Probability of correct species \n identification by morphotypes", x = "Proportion of M. trossulus", fill = "")+
   ylim(0,1) +
-  xlim(0,1)
+  xlim(0,1) + 
+  theme_bw() 
 
 
 
@@ -1800,7 +1806,7 @@ init_data_Model_7$Subset <- factor(init_data_Model_7$Subset, levels = c("WSBL", 
 
 # init_data_Model_7 <- init_data_Model_7[init_data_Model_7$pop %in% c("Limh88", "CBCP"),  ]
 
-Pl_mod7_with_initial_data <- Pl_mod7 + geom_point(data = init_data_Model_7, aes( y = freq_MT), shape = 22, size = 2 ) + scale_fill_continuous(low = "white", high = "black") + labs(y = "Ptros", x = "PT")
+Pl_mod7_with_initial_data <- Pl_mod7 + geom_point(data = init_data_Model_7, aes( y = freq_MT), shape = 22, size = 2 ) + scale_fill_continuous(low = "white", high = "black") + labs(x = "Proportion of mussels with T-morphotype", y = "Proportion of M.trossulus \n") + theme_bw()
 
 
 # Model 8#########################
@@ -1847,8 +1853,8 @@ test_Model_8$P_T_ME <- with(test_Model_8, N_T_ME / N_ME)
 
 
 Pl_mod8_with_initial_data <- Pl_mod8 + 
-  labs(y =  "P(T|edu)\nP(T|tros) ", 
-       x = "Ptros", fill = "") +
+  labs(y =  "Proportion of T-morphotype \n among  M. trossulus  and  M. edulis", 
+       x = "Proportion of M. trossulus", fill = "") +
   geom_segment(data = test_Model_8, aes(x = freq_MT, y = (1-P_E_ME), xend = freq_MT, yend = P_T_MT, group = 1), color = "darkgray")+ 
   geom_point(data = test_Model_8, aes(y = (1-P_E_ME),  group =1), fill = "white", shape = 22)+
   geom_point(data = test_Model_8, aes(y = P_T_MT,  group =1), fill = "black", shape = 22)  + 
@@ -2151,18 +2157,18 @@ Pl_mod7_with_initial_data_teor_calc1 <- Pl_mod7_with_initial_data  +
 <br>
 <br>
 
-```{r, fig.height=9}
-grid.arrange(Pl_mod7_with_initial_data_teor_calc1, Pl_mod8_with_initial_data,  Pl_mod6_with_initial_data_teor_calc2, ncol =3) 
-```
+<!-- ```{r, fig.height=9} -->
+<!-- grid.arrange(Pl_mod7_with_initial_data_teor_calc1, Pl_mod8_with_initial_data,  Pl_mod6_with_initial_data_teor_calc2, ncol =3)  -->
+<!-- ``` -->
 
 
-Figure ++. Predictive power of morphotype test in different regions. (A) Dependence of Ptros on proportion of T-morphotype mussels. Dotted line is empirical regression line (Model 4). Solid gray line - prediction accordingly to Eq. 3. Solid black lines represent Y=X dependence. (B) Probability to find a mussel with T-morphotype among *M.edulis* and *M.trossulus*. Dotted lines correspond to regression Model 5. Black squares - *M.trossulus*, white - *M.edulis*. (C) Probability of correct species identification by morphotype-test.  Dotted lines are empirical regression lines (Model 6). Sold red line - prediction by Eq.1, Solid blue line - prediction by Eq.2. Shedded areas around regression lines represent 95% CI. In all cases dots represent observed proportons in samples. 
+<!-- Figure ++. Predictive power of morphotype test in different regions. (A) Dependence of Ptros on proportion of T-morphotype mussels. Dotted line is empirical regression line (Model 4). Solid gray line - prediction accordingly to Eq. 3. Solid black lines represent Y=X dependence. (B) Probability to find a mussel with T-morphotype among *M.edulis* and *M.trossulus*. Dotted lines correspond to regression Model 5. Black squares - *M.trossulus*, white - *M.edulis*. (C) Probability of correct species identification by morphotype-test.  Dotted lines are empirical regression lines (Model 6). Sold red line - prediction by Eq.1, Solid blue line - prediction by Eq.2. Shedded areas around regression lines represent 95% CI. In all cases dots represent observed proportons in samples.  -->
 
-<!-- <br> -->
-<!-- <br> -->
-<!-- <br> -->
-<!-- <br> -->
-<!-- ________________ -->
+<br>
+<br>
+<br>
+<br>
+________________
 
 <!-- **Att! При вычислении предсказаний уравнений Eq1, 2, 3, представленных на этом рисунке, в качестве калибровочных были взяты выборки, отвечающие следующим условиям.** -->
 
@@ -2188,7 +2194,7 @@ new_data_mix$fit <- predict(Model_6_final, newdata = new_data_mix, type = "respo
 
 # Предсказанные значеня в шкале логитов
 new_data_mix$fit_eta <- predict(Model_6_final, newdata = new_data_mix, re.form = NA)
-  
+
 # Вычисление доверительного инеравала
 # formula(Model_6_final)
 
@@ -2218,7 +2224,7 @@ predict_Ptros_05_print[1,] <- c(NA, "Predicted", "Low", "Up", "Predicted", "Low"
 
 
 
-# kable(predict_Ptros_05_print, col.names = c("Subset", "P(edu|E)", "", "", "P(tros|T)", "", "" ), align = "rcccccc", caption = "Table ++. Predicted values of probability of correct species identification by mussel morphotype in mixed populations (Ptros = 0.5) in different geographical regions. Low and upper boundaries of 95% conficencal intervals are given for predicted values.")
+kable(predict_Ptros_05_print, col.names = c("Subset", "P(edu|E)", "", "", "P(tros|T)", "", "" ), align = "rcccccc", caption = "Table ++. Predicted values of probability of correct species identification by mussel morphotype in mixed populations (Ptros = 0.5) in different geographical regions. Low and upper boundaries of 95% conficencal intervals are given for predicted values.")
 
 
 # Реальные частоты M.trossulus среди T-морфотипа и реальные частоты M.edulis  среди E-морфотипа 
@@ -2362,11 +2368,11 @@ Pl_teor_empir_Mod_6_add <- Pl_teor_empir_Mod_6 + geom_hline(yintercept = Goodnes
 
 
 
-```{r}
+<!-- ```{r} -->
 
-grid.arrange( Pl_teor_empir_Mod_7_add, Pl_teor_empir_Mod_6_add, ncol = 2)
+<!-- grid.arrange( Pl_teor_empir_Mod_7_add, Pl_teor_empir_Mod_6_add, ncol = 2) -->
 
-```
+<!-- ``` -->
 
 <!-- Figure +. Correspondence between empirical regression models and predictions of Eq1, Eq2 and Eq3.  (A) Correspondence between Model 4 describing  the dependence of proportion of *M.trossulus* (Ptros) on proportion of T-morphotype (PT) predictions of Eq3. (B) Correspondence between Model 6  describing  the dependence of probability of correct species identification on  proportion of *M.trossulus* (Ptros)  and morphotype and predictions of Eq1 and Eq2. Each point corresponds to one of the possible pairs of samples from WSBL.  OX axis represents the differencу in genetic structre for each pair. OY axis represents Goodness values reflecting correspondence between regression model and equations. Solid blue lines represent LOESS-smoother. Dashed lines represent the levels of Goodness for equations calibrated as represented at Fig.3.   -->
 
@@ -2717,13 +2723,13 @@ eq_Model_6_NORW_T <- formula_constructor_2_T(intercept, b1)
 <br>
 
 
-<!-- | Region | Model 4             | Model 6  E-morphotype | Model 6  T-morphotype | -->
-<!-- |--------|---------------------|-----------------------|-----------------------| -->
-<!-- | WSBL   | `r eq_Model_7_WBL`  | `r eq_Model_6_WBL_E`  | `r eq_Model_6_WBL_T`  | -->
-<!-- | BH     | `r eq_Model_7_BH`   | `r eq_Model_6_BH_E`   | `r eq_Model_6_BH_T`   | -->
-<!-- | GOM    | `r eq_Model_7_GOM`  | `r eq_Model_6_GOM_E`  | `r eq_Model_6_GOM_T`  | -->
-<!-- | BALT   | `r eq_Model_7_BALT` | `r eq_Model_6_BALT_E` | `r eq_Model_6_BALT_T` | -->
-<!-- | NORW   | `r eq_Model_7_NORW` | `r eq_Model_6_NORW_E` | `r eq_Model_6_NORW_T` | -->
+| Region | Model 4             | Model 6  E-morphotype | Model 6  T-morphotype |
+|--------|---------------------|-----------------------|-----------------------|
+| WSBL   | `r eq_Model_7_WBL`  | `r eq_Model_6_WBL_E`  | `r eq_Model_6_WBL_T`  |
+| BH     | `r eq_Model_7_BH`   | `r eq_Model_6_BH_E`   | `r eq_Model_6_BH_T`   |
+| GOM    | `r eq_Model_7_GOM`  | `r eq_Model_6_GOM_E`  | `r eq_Model_6_GOM_T`  |
+| BALT   | `r eq_Model_7_BALT` | `r eq_Model_6_BALT_E` | `r eq_Model_6_BALT_T` |
+| NORW   | `r eq_Model_7_NORW` | `r eq_Model_6_NORW_E` | `r eq_Model_6_NORW_T` |
 
 
 
@@ -2891,395 +2897,5 @@ calc1_predictions_T$Subset <- factor(calc1_predictions_T$Subset, levels = levels
 
 ```
 
-
-
-
-<!-- ```{r} -->
-
-<!-- Pl_mod6_with_initial_data_teor_calc2_T <- Pl_mod6_with_initial_data +  -->
-<!--   geom_line(data = calc2_predictions_T, aes(x = freq_MT, y = P_MT_T), color = "red") +  -->
-<!--   geom_line(data = calc2_predictions_T, aes(x = freq_MT, y = P_ME_E), color = "blue") -->
-
-
-<!-- Pl_mod7_with_initial_data_teor_calc1_T <- Pl_mod7_with_initial_data  + -->
-<!--   geom_line(data = calc1_predictions_T, aes(x = P_T, y = Ptros), color = "darkgray", size = 1) -->
-
-<!-- ``` -->
-
-
-
-
-<!-- ```{r, fig.height=9} -->
-<!-- grid.arrange(Pl_mod7_with_initial_data_teor_calc1_T, Pl_mod8_with_initial_data,  Pl_mod6_with_initial_data_teor_calc2_T, ncol =3)  -->
-<!-- ``` -->
-
-
-
-
-
-
-
-<!-- ```{r} -->
-<!-- Eq3 <- function(PT, donat){ -->
-<!--   P_T_edu <- donat[2] -->
-<!--   P_T_tros <- donat[1] -->
-<!--   b1 <- 1/(P_T_tros - P_T_edu) -->
-<!--   b0 <- b1*P_T_edu -->
-
-<!--   # predictor <- b1*PT - b0 -->
-<!--   #  -->
-<!--   # Ptros <- exp(predictor)/(1 + exp(predictor))   -->
-
-<!--   Ptros = (PT - P_T_edu)/ ((P_T_tros) -  P_T_edu) -->
-<!--   Ptros <- ifelse(Ptros <0 | Ptros >1 , NA, Ptros) -->
-<!--   Ptros -->
-<!-- } -->
-
-
-
-<!-- Eq1 <- function(Ptros, donat){ -->
-<!--   P_T_MT <- donat[1] -->
-<!--   P_T_ME <- donat[2] -->
-<!--   P_MT_T <- (P_T_MT * Ptros)/(P_T_MT * Ptros + P_T_ME*(1-Ptros)) -->
-<!--   P_MT_T -->
-<!-- } -->
-
-
-<!-- Eq2 <- function(Ptros, donat){ -->
-<!--   P_T_MT <- donat[1] -->
-<!--   P_T_ME <- donat[2] -->
-<!--   P_ME_E <- ((1 - P_T_ME) * (1 - Ptros))/(1 - P_T_ME + Ptros * (P_T_ME - P_T_MT)) -->
-<!--   P_ME_E -->
-<!-- } -->
-
-
-
-
-<!-- # Предсказания по уравнениям, для случая, когда в качестве калибровочных выборок берутся максимально различные и мексимально смешанные выборки по частоте M.trossulus  -->
-
-<!-- predict_obs_Eq123 <- function(Set){ -->
-<!-- df <- myt2_all %>% filter(Subset == Set) %>% group_by(pop) %>% summarise(PT = mean(ind == 1), Ptros_obs = mean(Sp == "M.trossulus")) %>%  -->
-<!--   mutate(Ptros_Eq3 = Eq3(PT, get(paste("donat_max_dif_", Set, sep = "" ))), -->
-<!--          P_MT_T_Eq1 = Eq1(Ptros_Eq3, get(paste("donat_max_mix_", Set, sep = "" ))),  -->
-<!--          P_ME_E_Eq2 = Eq2(Ptros_Eq3, get(paste("donat_max_mix_", Set, sep = "" )))) -->
-
-
-<!-- df2 <- myt2_all %>% filter(Subset == Set, morph == "T_m") %>% group_by(pop) %>% summarise(P_MT_T_obs = mean(ind == 1 & Sp == "M.trossulus"))  -->
-
-<!-- df3 <- myt2_all %>% filter(Subset == Set, morph == "E_m") %>% group_by(pop) %>% summarise(P_ME_E_obs = mean(ind == 0 & Sp == "M.edulis"))  -->
-
-<!-- dd <- merge(df, df2, all = T) -->
-<!-- ddd <- merge(dd, df3, all = T) -->
-
-<!-- df_final <- ddd %>% select(pop, PT, Ptros_obs, P_MT_T_obs, P_ME_E_obs, Ptros_Eq3, P_MT_T_Eq1, P_ME_E_Eq2 ) -->
-
-
-<!-- df_final$max_mix <- 0 -->
-
-<!-- df_final$max_dif <- 0 -->
-
-<!-- max_dif_pop <- max_dif(df = myt2_all, Subset = Set) -->
-<!-- max_mix_pop <- max_mix(df = myt2_all, Subset = Set) -->
-
-<!-- df_final$max_dif [df_final$pop %in% max_dif_pop] <- 1 -->
-
-<!-- df_final$max_mix [df_final$pop %in% max_mix_pop] <- 1 -->
-<!-- df_final$Set = Set -->
-
-<!-- Pl_Eq3 <- ggplot(df_final, aes(y = Ptros_Eq3, x =  Ptros_obs)) + geom_point() + geom_abline()  -->
-<!-- Pl_Eq1 <- ggplot(df_final, aes(y = P_MT_T_Eq1, x = P_MT_T_obs )) + geom_point() + geom_abline()  -->
-<!-- Pl_Eq2 <- ggplot(df_final, aes(y = P_ME_E_Eq2, x = P_ME_E_obs )) + geom_point() + geom_abline()  -->
-
-
-<!-- result <- list(df_final, Pl_Eq3, Pl_Eq1, Pl_Eq2) -->
-<!-- result -->
-<!-- } -->
-
-
-
-
-
-
-
-<!-- # Предсказания по уравнениям, для случая, когда в качестве калибровочных выборок берутся максимально различные и мексимально смешанные выборки по частоте T-морфотипа  -->
-
-
-<!-- predict_obs_Eq123_T <- function(Set){ -->
-<!--   pop_max_diff <- max_dif_T(df = myt2_all, Subset = Set) -->
-<!--   donat_max_diff <- donat(df = myt2_all[myt2_all$pop %in% pop_max_diff, ]) -->
-
-<!--   pop_max_mix <- max_mix_T(df = myt2_all, Subset = Set) -->
-<!--   donat_max_mix <- donat(df = myt2_all[myt2_all$pop %in% pop_max_mix, ]) -->
-
-<!--   donat_all <- donat(df = myt2_all[myt2_all$Subset == Set, ]) -->
-
-
-<!--   df <- myt2_all %>% filter(Subset == Set) %>% group_by(pop) %>% summarise(PT = mean(ind == 1), Ptros_obs = mean(Sp == "M.trossulus")) %>%  -->
-<!--   mutate(Ptros_Eq3_diff = Eq3(PT, donat_max_diff), -->
-<!--          Ptros_Eq3_mix = Eq3(PT, donat_max_mix),  -->
-<!--          Ptros_Eq3_all = Eq3(PT, donat_all), -->
-
-<!--          P_MT_T_Eq1_diff_diff = Eq1(Ptros_Eq3_diff, donat_max_diff), -->
-<!--          P_MT_T_Eq1_diff_mix = Eq1(Ptros_Eq3_diff, donat_max_mix), -->
-<!--          P_MT_T_Eq1_diff_all = Eq1(Ptros_Eq3_diff, donat_all), -->
-
-<!--          P_MT_T_Eq1_mix_diff = Eq1(Ptros_Eq3_mix, donat_max_diff), -->
-<!--          P_MT_T_Eq1_mix_mix = Eq1(Ptros_Eq3_mix, donat_max_mix), -->
-<!--          P_MT_T_Eq1_mix_all = Eq1(Ptros_Eq3_mix, donat_all), -->
-
-<!--          P_MT_T_Eq1_all_diff = Eq1(Ptros_Eq3_all, donat_max_diff), -->
-<!--          P_MT_T_Eq1_all_mix = Eq1(Ptros_Eq3_all, donat_max_mix), -->
-<!--          P_MT_T_Eq1_all_all = Eq1(Ptros_Eq3_all, donat_all), -->
-
-
-
-<!--          P_ME_E_Eq2_diff_diff = Eq2(Ptros_Eq3_diff, donat_max_diff), -->
-<!--          P_ME_E_Eq2_diff_mix = Eq2(Ptros_Eq3_diff, donat_max_mix), -->
-<!--          P_ME_E_Eq2_diff_all = Eq2(Ptros_Eq3_diff, donat_all), -->
-
-<!--          P_ME_E_Eq2_mix_diff = Eq2(Ptros_Eq3_mix, donat_max_diff), -->
-<!--          P_ME_E_Eq2_mix_mix = Eq2(Ptros_Eq3_mix, donat_max_mix), -->
-<!--          P_ME_E_Eq2_mix_all = Eq2(Ptros_Eq3_mix, donat_all), -->
-
-<!--          P_ME_E_Eq2_all_diff = Eq2(Ptros_Eq3_all, donat_max_diff), -->
-<!--          P_ME_E_Eq2_all_mix = Eq2(Ptros_Eq3_all, donat_max_mix), -->
-<!--          P_ME_E_Eq2_all_all = Eq2(Ptros_Eq3_all, donat_all)) -->
-
-
-<!-- df2 <- myt2_all %>% filter(Subset == Set, morph == "T_m") %>% group_by(pop) %>% summarise(P_MT_T_obs = mean(ind == 1 & Sp == "M.trossulus"))  -->
-
-<!-- df3 <- myt2_all %>% filter(Subset == Set, morph == "E_m") %>% group_by(pop) %>% summarise(P_ME_E_obs = mean(ind == 0 & Sp == "M.edulis"))  -->
-
-<!-- dd <- merge(df, df2, all = T) -->
-<!-- ddd <- merge(dd, df3, all = T) -->
-
-<!-- df_final <- ddd  -->
-
-
-<!-- df_final$max_mix <- 0 -->
-
-<!-- df_final$max_dif <- 0 -->
-
-<!-- max_dif_pop <- max_dif_T(df = myt2_all, Subset = Set) -->
-<!-- max_mix_pop <- max_mix_T(df = myt2_all, Subset = Set) -->
-
-<!-- df_final$max_dif [df_final$pop %in% max_dif_pop] <- 1 -->
-
-<!-- df_final$max_mix [df_final$pop %in% max_mix_pop] <- 1 -->
-<!-- df_final$Set = Set -->
-<!-- result <- df_final -->
-<!-- result -->
-<!-- } -->
-
-
-
-
-
-<!-- WBL <- as.data.frame(predict_obs_Eq123("WSBL")[1]) -->
-<!-- BH <-  as.data.frame(predict_obs_Eq123("BH")[1]) -->
-<!-- GOM <- as.data.frame(predict_obs_Eq123("GOM")[1]) -->
-<!-- BALT <- as.data.frame(predict_obs_Eq123("BALT")[1]) -->
-<!-- NORW <- as.data.frame(predict_obs_Eq123("NORW")[1]) -->
-
-
-<!-- WBL_T <- as.data.frame(predict_obs_Eq123_T("WSBL")) -->
-<!-- BH_T <-  as.data.frame(predict_obs_Eq123_T("BH")) -->
-<!-- GOM_T <- as.data.frame(predict_obs_Eq123_T("GOM")) -->
-<!-- BALT_T <- as.data.frame(predict_obs_Eq123_T("BALT")) -->
-<!-- NORW_T <- as.data.frame(predict_obs_Eq123_T("NORW")) -->
-
-
-<!-- all_obs_predict <- rbind(WBL, BH, GOM, BALT, NORW) -->
-<!-- all_obs_predict_T <- rbind(WBL_T, BH_T, GOM_T, BALT_T, NORW_T) -->
-
-
-<!-- ``` -->
-
-
-<br>
-<br>
-<br>
-<br>
-
-<!-- ## К разделу "Practical recomendations" -->
-
-<!-- СВою задачу я понял так: понять какой тип калибровочных выборок даст наилучшее соответсвие между наблюдаемыми величинами и предсказанными калькулятором, если на входе исслдватель имеет данные по морфотипам и может генотиприровать только ограниченное количество выборок. -->
-
-<!-- Для этого анализа я оставил только WBL. Можно включить и остальные датасеты, но, мне кажется, что так проще разобраться. При этом, ход анализа я максимально приблизил к боевым условиям, т.е. для выбора калибровочных сборов я использовал информацию о частоте Т-морфортипа, а не не генетической структуре, которая для начального исследования неизвестна. Соответственно, для калибровочных бубликов использованы три варианта: 1. Максимально различные по частоте Т-морфотипа выборки (diff); 2. Максимально смешанные выборки (mix) частота T-морфотипа близка к 0.5; 3. Все имеющиеся выборки (all).     -->
-
-<!-- Всплыли следующие проблемы. -->
-
-<!-- 0. Как уже обсуждалось, часть выборок вылетают из анализа, так как калькулятор предсказывает для них предсказанные значения Ptros_Eq<0 или Ptros_Eq>1. При разных вариантах формирования калибровочной выборки количество отброшенных получается разным. -->
-
-<!-- 1. Статистики (все которые я пробовал) дают ответ, не укладывающийся в нашу гипотезу о том, что для оценки бубликов для вычисления Ptros как функции от PT лучше брать максимально различные калибровочные выборки. На графиках сейчас приведены суммы квадратов разниц между наблюдаемой величиной и величиной, предсказанной калькулятором. Это получается из-за того, что разное количество краевых выборок откидывается (Ptros_Eq<0 или Ptros_Eq>1). Это приводит к тому, что в анализе остаются только самые "лучшие" выборки, которые и дают наиболее хорошее соответствие наблюдаемого и предсказанного. -->
-
-<!-- 2. При вычислении P(tros|T) и P(edu|E) пришлось рассмотреть 9(!) комбинаций калибровочных выборок. Они маркированы в заголовке графика, на первом месте стоит тип калибровочной выборки, использованной для Ptros_Eq, а на втором месте тип выборки, использованной для вычисления P(tros|T) и P(edu|E). Линии регрессии позволяют рассмотреть общий ход облака точек. Видно, что для edu все ОК (точки хорошо лежат около Y=X), но в случае tros все не так. Здесь гадят те точки, у которых наблюдаемая Ptros равна 1, а предсказанная калькулятором Ptros_eq пляшет в широких пределах. Что с этим делать не знаю.  -->
-
-
-
-
-
-
-
-
-<!-- ```{r, fig.width=10, fig.height=10} -->
-<!-- # ggplot(all_obs_predict, aes(x = Ptros_obs, y = Ptros_Eq3, shape = Set)) + geom_point(size = 4) + geom_abline() + theme(legend.position = "bottom") + labs(x = "Ptros Observed", y = "Ptros predicted by Eq3")  -->
-
-<!-- # logist <- function(x)exp(x)/(1+exp(x)) -->
-<!-- # unlogist <- function(x)exp(x)/(1+exp(x)) -->
-
-
-
-<!-- options(scipen = 10, digits=5) -->
-
-<!-- Pl_Eq3 <- all_obs_predict_T %>%  ggplot(aes(x = Ptros_obs, shape = Set)) + geom_point(size = 3)  + theme(legend.position = "bottom")   + geom_abline()   -->
-
-
-
-<!-- Pl_Eq3_diff <- Pl_Eq3 + aes(y = Ptros_Eq3_diff) +  ggtitle(paste("Stat =", all_obs_predict_T %>%  filter(!is.na(Ptros_Eq3_diff)) %>% summarise(Stat =  sum(abs(Ptros_obs - Ptros_Eq3_diff)/(Ptros_obs + Ptros_Eq3_diff))) %>% round(., 4)))+ guides(shape = "none", color = "none") + xlim(0,1) + ylim(0,1) -->
-
-
-
-
-<!-- Pl_Eq3_mix <- Pl_Eq3 + aes(y = Ptros_Eq3_mix) +  ggtitle(paste("Stat =", all_obs_predict_T %>%  filter(!is.na(Ptros_Eq3_mix)) %>% summarise(Stat =  sum(abs(Ptros_obs - Ptros_Eq3_mix)/(Ptros_obs + Ptros_Eq3_mix))) %>% round(., 4)))+ guides(shape = "none", color = "none") + xlim(0,1) + ylim(0,1) -->
-
-
-<!-- Pl_Eq3_all <- Pl_Eq3 + aes(y = Ptros_Eq3_all) +  ggtitle(paste("Stat =", all_obs_predict_T %>%  filter(!is.na(Ptros_Eq3_all)) %>% summarise(Stat =  sum(abs(Ptros_obs - Ptros_Eq3_all)/(Ptros_obs + Ptros_Eq3_all))) %>% round(., 4)))+ guides(shape = "none", color = "none") + xlim(0,1) + ylim(0,1) -->
-
-
-<!-- Set = "WBL" -->
-
-
-<!-- library(pipeR) -->
-
-<!-- Pl_Eq1_2_diff_diff <-  -->
-<!--   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_diff_diff, P_ME_E_Eq2_diff_diff) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>%  -->
-<!--   ggplot(aes(x = Observed, y = Predicted, color = variable, shape = Set)) +  -->
-<!--   geom_point()  +  -->
-<!--   theme(legend.position = "bottom")   +  -->
-<!--   geom_abline() +  -->
-<!--   ggtitle(paste("Stat =",   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_diff_diff, P_ME_E_Eq2_diff_diff) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% summarise(Stat = sum( (Predicted - Observed)^2 )) %>% round(3), " diff_diff" ))  +  -->
-<!--   xlim(0,1) + ylim(0,1) + guides (shape = "none", color = "none") + geom_smooth(method = "lm", se = F) -->
-
-
-
-
-
-<!-- Pl_Eq1_2_diff_mix <-  -->
-<!--   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_diff_mix, P_ME_E_Eq2_diff_mix) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>%  -->
-<!--   ggplot(aes(x = Observed, y = Predicted, color = variable, shape = Set)) +  -->
-<!--   geom_point()  +  -->
-<!--   theme(legend.position = "bottom")   +  -->
-<!--   geom_abline() +  -->
-<!--   ggtitle(paste("Stat =",   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_diff_mix, P_ME_E_Eq2_diff_mix) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% summarise(Stat = sum( (Predicted - Observed)^2 )) %>% round(3), " diff_mix" ))  +  -->
-<!--   xlim(0,1) + ylim(0,1) + guides (shape = "none", color = "none") + geom_smooth(method = "lm", se = F) -->
-
-
-
-
-
-
-
-<!-- Pl_Eq1_2_diff_all <-  -->
-<!--   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_diff_all, P_ME_E_Eq2_diff_all) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>%  -->
-<!--   ggplot(aes(x = Observed, y = Predicted, color = variable, shape = Set)) +  -->
-<!--   geom_point()  +  -->
-<!--   theme(legend.position = "bottom")   +  -->
-<!--   geom_abline() +  -->
-<!--   ggtitle(paste("Stat =",   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_diff_all, P_ME_E_Eq2_diff_all) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% summarise(Stat = sum( (Predicted - Observed)^2 )) %>% round(3), " diff_all" ))  +  -->
-<!--   xlim(0,1) + ylim(0,1) + guides (shape = "none", color = "none") + geom_smooth(method = "lm", se = F) -->
-
-
-
-
-
-<!-- Pl_Eq1_2_mix_diff <-  -->
-<!--   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_mix_diff, P_ME_E_Eq2_mix_diff) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>%  -->
-<!--   ggplot(aes(x = Observed, y = Predicted, color = variable, shape = Set)) +  -->
-<!--   geom_point()  +  -->
-<!--   theme(legend.position = "bottom")   +  -->
-<!--   geom_abline() +  -->
-<!--   ggtitle(paste("Stat =",   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_mix_diff, P_ME_E_Eq2_mix_diff) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% summarise(Stat = sum( (Predicted - Observed)^2 )) %>% round(3), " mix_diff" ))  +  -->
-<!--   xlim(0,1) + ylim(0,1) + guides (shape = "none", color = "none") + geom_smooth(method = "lm", se = F) -->
-
-
-
-<!-- Pl_Eq1_2_mix_mix <-  -->
-<!--   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_mix_mix, P_ME_E_Eq2_mix_mix) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>%  -->
-<!--   ggplot(aes(x = Observed, y = Predicted, color = variable, shape = Set)) +  -->
-<!--   geom_point()  +  -->
-<!--   theme(legend.position = "bottom")   +  -->
-<!--   geom_abline() +  -->
-<!--   ggtitle(paste("Stat =",   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_mix_mix, P_ME_E_Eq2_mix_mix) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% summarise(Stat = sum( (Predicted - Observed)^2 )) %>% round(3), " mix_mix" ))  +  -->
-<!--   xlim(0,1) + ylim(0,1) + guides (shape = "none", color = "none") + geom_smooth(method = "lm", se = F) -->
-
-
-
-<!-- Pl_Eq1_2_mix_all <-  -->
-<!--   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_mix_all, P_ME_E_Eq2_mix_all) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>%  -->
-<!--   ggplot(aes(x = Observed, y = Predicted, color = variable, shape = Set)) +  -->
-<!--   geom_point()  +  -->
-<!--   theme(legend.position = "bottom")   +  -->
-<!--   geom_abline() +  -->
-<!--   ggtitle(paste("Stat =",   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_mix_all, P_ME_E_Eq2_mix_all) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% summarise(Stat = sum( (Predicted - Observed)^2 )) %>% round(3), " mix_all" ))  +  -->
-<!--   xlim(0,1) + ylim(0,1) + guides (shape = "none", color = "none") + geom_smooth(method = "lm", se = F) -->
-
-
-
-
-<!-- Pl_Eq1_2_all_diff <-  -->
-<!--   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_all_diff, P_ME_E_Eq2_all_diff) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>%  -->
-<!--   ggplot(aes(x = Observed, y = Predicted, color = variable, shape = Set)) +  -->
-<!--   geom_point()  +  -->
-<!--   theme(legend.position = "bottom")   +  -->
-<!--   geom_abline() +  -->
-<!--   ggtitle(paste("Stat =",   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_all_diff, P_ME_E_Eq2_all_diff) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% summarise(Stat = sum( (Predicted - Observed)^2 )) %>% round(3), " all_diff" ))  +  -->
-<!--   xlim(0,1) + ylim(0,1) + guides (shape = "none", color = "none") + geom_smooth(method = "lm", se = F) -->
-
-
-
-
-<!-- Pl_Eq1_2_all_mix <-  -->
-<!--   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_all_mix, P_ME_E_Eq2_all_mix) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>%  -->
-<!--   ggplot(aes(x = Observed, y = Predicted, color = variable, shape = Set)) +  -->
-<!--   geom_point()  +  -->
-<!--   theme(legend.position = "bottom")   +  -->
-<!--   geom_abline() +  -->
-<!--   ggtitle(paste("Stat =",   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_all_mix, P_ME_E_Eq2_all_mix) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% summarise(Stat = sum( (Predicted - Observed)^2 )) %>% round(3), " all_mix" ))  +  -->
-<!--   xlim(0,1) + ylim(0,1) + guides (shape = "none", color = "none") + geom_smooth(method = "lm", se = F) -->
-
-
-
-<!-- Pl_Eq1_2_all_all <-  -->
-<!--   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_all_all, P_ME_E_Eq2_all_all) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>%  -->
-<!--   ggplot(aes(x = Observed, y = Predicted, color = variable, shape = Set)) +  -->
-<!--   geom_point()  +  -->
-<!--   theme(legend.position = "bottom")   +  -->
-<!--   geom_abline() +  -->
-<!--   ggtitle(paste("Stat =",   cbind(all_obs_predict_T %>%  select(P_MT_T_obs, P_ME_E_obs) %>% melt(value.name = "Observed"),all_obs_predict_T %>%  select(P_MT_T_Eq1_all_all, P_ME_E_Eq2_all_all) %>% melt(value.name = "Predicted") %>% select(Predicted))  %>%  filter(!is.na(Predicted)) %>% summarise(Stat = sum( (Predicted - Observed)^2 )) %>% round(3), " all_all" ))  +  -->
-<!--   xlim(0,1) + ylim(0,1) + guides (shape = "none", color = "none") + geom_smooth(method = "lm", se = F) -->
-
-
-
-
-<!-- grid.arrange(Pl_Eq3_diff, Pl_Eq3_mix, Pl_Eq3_all, Pl_Eq1_2_diff_diff, Pl_Eq1_2_diff_mix, Pl_Eq1_2_diff_all, Pl_Eq1_2_mix_diff, Pl_Eq1_2_mix_mix, Pl_Eq1_2_mix_all, Pl_Eq1_2_all_diff, Pl_Eq1_2_all_mix, Pl_Eq1_2_all_all, ncol = 3) -->
-
-
-
-<!-- ``` -->
-
-
-
-
-
-<!-- Вот исходники можешь покопаться сам -->
-<!-- ```{r} -->
-
-<!-- options(knitr.kable.NA = '-') -->
-
-<!-- # kable(all_obs_predict,digits = 3, caption = "Calibration on the base of genetic structure") -->
-<!-- kable(all_obs_predict_T,digits = 3, caption = "Calibration on the base of T-morphotype frequency") -->
-
-<!-- ``` -->
 
 
