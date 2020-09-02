@@ -315,7 +315,16 @@ Pl_cca_sites <-
 
 
 ```{r}
-Day_pos <- data.frame(Manth = cal_full$Manth, Day_position = cal_constr_sites2$Day_position)
+
+# Day_pos <- data.frame(Manth = cal_full$Manth, Day_position = cal_constr_sites2$Day_position)
+
+Day_pos <- data.frame(DOY = 1:365)
+Day_pos$Day_position <-  -cos(2*pi/365*Day_pos$DOY)
+
+Day_pos$Dummy <- 1
+  
+ggplot(Day_pos, aes(x = "", y = Dummy, fill = Day_position)) + geom_bar(width = 1, stat = "identity") +  coord_polar("y", start=0) + theme(axis.text.x=element_blank()) + scale_fill_gradient(low = "black", high = "white")
+
 
 Day_pos$Season <-
   case_when(
@@ -328,6 +337,8 @@ Day_pos$Season <-
 Day_pos_distr
 
 ggplot(Day_pos, aes(x = Season, y = Day_position)) + geom_boxplot()
+
+
 ```
 
 
