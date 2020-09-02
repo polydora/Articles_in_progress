@@ -323,7 +323,11 @@ Day_pos$Day_position <-  -cos(2*pi/365*Day_pos$DOY)
 
 Day_pos$Dummy <- 1
   
+<<<<<<< HEAD
 ggplot(Day_pos, aes(x = "", y = Dummy, fill = Day_position)) + geom_bar(width = 1, stat = "identity") +  coord_polar("y", start=0) + theme(axis.text.x=element_blank()) + scale_fill_gradient(low = "black", high = "white")
+=======
+ggplot(Day_pos, aes(x = "", y = Dummy, fill = Day_position)) + geom_bar(width = 1, stat = "identity") +  coord_polar("y", start=0) + theme(axis.text.x=element_blank())
+>>>>>>> 839e945e80b8344435153b93c593969a03313a4d
 
 
 Day_pos$Season <-
