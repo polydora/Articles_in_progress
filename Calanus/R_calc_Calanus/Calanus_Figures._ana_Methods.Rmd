@@ -323,24 +323,9 @@ Day_pos$Day_position <-  -cos(2*pi/365*Day_pos$DOY)
 
 Day_pos$Dummy <- 1
   
-<<<<<<< HEAD
 ggplot(Day_pos, aes(x = "", y = Dummy, fill = Day_position)) + geom_bar(width = 1, stat = "identity") +  coord_polar("y", start=0) + theme(axis.text.x=element_blank()) + scale_fill_gradient(low = "black", high = "white")
-=======
-ggplot(Day_pos, aes(x = "", y = Dummy, fill = Day_position)) + geom_bar(width = 1, stat = "identity") +  coord_polar("y", start=0) + theme(axis.text.x=element_blank())
->>>>>>> 839e945e80b8344435153b93c593969a03313a4d
 
 
-Day_pos$Season <-
-  case_when(
-  Day_pos$Manth %in% c(12, 1, 2) ~ "Winter",
-  Day_pos$Manth %in% 3:5 ~ "Spring",
-  Day_pos$Manth %in% 6:8 ~ "Summer",
-  Day_pos$Manth %in% 9:11 ~ "Fall"
-)
-
-Day_pos_distr
-
-ggplot(Day_pos, aes(x = Season, y = Day_position)) + geom_boxplot()
 
 
 ```
