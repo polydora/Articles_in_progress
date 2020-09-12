@@ -79,6 +79,14 @@ cal$Date <- as.POSIXct(as.Date(cal$Date_text, format = "%d/%m/%Y"))
 
 cal$DOY <- as.numeric(strftime(cal$Date, format = "%j"))
 
+cal <- cal %>% mutate (Season = case_when(Manth %in% c(12, 1, 2) ~ "Winter", 
+                  Manth %in% 3:5 ~ "Spring", 
+                  Manth %in% 6:8 ~ "Summer", 
+                  Manth %in% 9:11 ~ "Fall"))
+
+cal$Season <- factor(cal$Season, levels = c("Winter", "Spring", "Summer", "Fall"))
+
+
 cal_full <- cal %>% filter(complete.cases(cal)) 
 
 cal_full <- cal_full[rowSums(cal_full %>% select("Female", "Male", "cop_V", "cop_IV", "cop_III", "cop.II", "cop.I", "nauplii")) > 0, ]  
@@ -124,21 +132,23 @@ cal_full %>% group_by(Year, Station) %>% summarise(N_sample = n()) %>% spread(St
 
 
 
-Был проведен канонический корреспндентный анализ  (CCA) (TerBarak +++, Legendre & Legendre 20++). В качестве зависимой матрицы была использована матица, столбцами которой (variables) были стадии жизненного цикла Calanus (Np, CI, CII, CIII, CIV, CV, CM, CF) строками матрицы были сборы, каждая строка - отдельная проба. В ячейках матрицы располагались значения обилия соответствующей стадии в данной пробе. Вторая матрица, использованная в CCA, характеризовала следующие параметры среды, описанные для каждой пробы: Глубина (срденее значение глубины для протяжки сетью), соленость, температура и концентрация хлорофилла, измеренные на тех же горизонтах глубины, где была взята проба. Дополнительно, в качестве дискретного предиктора, в модель CCA была включена точка взятия проб (две градации: D1 vs D3). 
-В анализе были использованы только те пробы, для которых были проведены оценки всех элементов обеих матриц (всего ++++ проб). 
+Был проведен канонический корреспндентный анализ  (CCA) (ter Braak 1994, Legendre & Legendre 2012). В качестве зависимой матрицы была использована матица, столбцами которой (variables) были стадии жизненного цикла Calanus (Np, CI, CII, CIII, CIV, CV, CM, CF) строками матрицы были сборы, каждая строка - отдельная проба. В ячейках матрицы располагались значения обилия соответствующей стадии в данной пробе. Вторая матрица, использованная в CCA, характеризовала следующие параметры среды, описанные для каждой пробы: Глубина (срденее значение глубины для протяжки сетью), соленость, температура и концентрация хлорофилла, измеренные на тех же горизонтах глубины, где была взята проба. Дополнительно, в качестве дискретного предиктора, в модель CCA была включена точка взятия проб (две градации: D1 vs D3). 
+В анализе были использованы только те пробы, для которых были проведены оценки всех элементов обеих матриц (всего `r nrow(cal_full)` проб). 
 
-Для оценки статистической значимости модели CCA в целом, значимости отдельных constrained axes и конкретных предикторов был применен пермутационный метод (++++++). Для оценки уровня значимости во всех анализах проводилось 9999 пермутаций.  
+Для оценки статистической значимости модели CCA в целом, значимости отдельных constrained axes и конкретных предикторов был применен пермутационный метод (Borcard et al., 2011). Для оценки уровня значимости во всех анализах проводилось 9999 пермутаций.  
 
 Вычисления были проведены с использованием функций пакета vegan (Oksanen et al, 2019) для языка статистического программирования R 3.6.2 (R Core Team, 2019).
 
-При ординации отдельных проб в constrained axes для визуализации связи этой ординации с календарными датами дата взятия проб была стандартизована в соответствии со следующей формулой:
-
-$$
-Day_{position} = -cos(\frac{2 \pi DOY }{365})
-$$
 
 
-Величина DAYposition отражает циклический характер изменения дат в календарном году: даты взятия проб в каждый из сезонов, вне зависимости от года взятия проб, имеют близкие значения стандартизованной величины (Fig. ++).
+<!-- При ординации отдельных проб в constrained axes для визуализации связи этой ординации с календарными датами дата взятия проб была стандартизована в соответствии со следующей формулой: -->
+
+<!-- $$ -->
+<!-- Day_{position} = -cos(\frac{2 \pi DOY }{365}) -->
+<!-- $$ -->
+
+
+<!-- Величина DAYposition отражает циклический характер изменения дат в календарном году: даты взятия проб в каждый из сезонов, вне зависимости от года взятия проб, имеют близкие значения стандартизованной величины (Fig. ++). -->
 
 
 ```{r}
@@ -207,15 +217,15 @@ Pl_cca <-
   ggplot(cal_constr_sp, aes(CCA1, CCA2, label = Label2)) + 
   geom_hline(yintercept = 0) + 
   geom_vline(xintercept = 0) +
-  geom_point() +
+  geom_point(size = 3) +
   geom_text_repel() + 
   geom_segment(data = cal_constr_biplot, aes(x = 0, y = 0, xend = CCA1, yend = CCA2), arrow = arrow(type = "closed", angle = 10, length = unit(0.15, "inches")), color = "gray50") +
   geom_text_repel(data = cal_constr_biplot, color = "gray50") +
   geom_point(data = cal_constr_centroid, color = "gray50", shape = 21) + 
   geom_text_repel(data = cal_constr_centroid, color = "gray50") + 
   geom_path(data = cal_constr_sp%>% filter(! Label %in% c("Female", "Male")), linetype = 2, color = "gray20" ) +
-  xlim(-1.5, 1.5) + 
-  ylim(-2.1, 1.2) + 
+  xlim(-1.5, 2.5) + 
+  ylim(-3, 1.2) + 
   theme(panel.grid = element_blank())
 
 
@@ -247,29 +257,6 @@ Pl_cca_stages <-
 
 
 
-
-
-
-Следующий не очень нужный рисунок, но можно его сунуть в приложение, так как он показывает, что на двух станциях закономерности более или менее сходные.
-
-```{r }
-cal_constr_sites$DOY <- predictors$DOY
-cal_constr_sites$Station <- predictors$Station
-
-
-
-Pl_CCA1 <- ggplot(cal_constr_sites, aes(x = DOY, y = CCA1)) + geom_point() + geom_smooth(aes(color = Station)) + geom_hline(yintercept = 0, linetype = 2) + scale_x_continuous(breaks = seq(1,365, 30))
-
-Pl_CCA2 <- ggplot(cal_constr_sites, aes(x = DOY, y = CCA2)) + geom_point() + geom_smooth(aes(color = Station)) + geom_hline(yintercept = 0, linetype = 2) + scale_x_continuous(breaks = seq(1,365, 30))
-
-
-grid.arrange(Pl_CCA1, Pl_CCA2)
-
-```
-
-
-
-
 ```{r}
 cal_constr_sum2 <- fortify(cal_constr, scaling = "sites")
 
@@ -286,24 +273,30 @@ cal_constr_biplot2 <- cal_constr_sum2 %>% filter(Score == "biplot") %>% filter(L
 cal_constr_centroid2 <- cal_constr_sum2 %>% filter(Score == "centroids")
 
 
+
 # qplot(cal_constr_sites2$DOY, cal_constr_sites2$Day_position)
 
 rectangle <- data.frame(x = c(-0.5, 0.5, 0.5, -0.5), y = c(0.6, 0.6, -0.6, -0.6), Label = NA)
 rectangle <- data.frame(x = c(-1.5, 2.5, 2.5, -1.5), y = c(1.5, 1.5, -3, -3), Label = NA)
 
+cal_constr_sites2$Season <- cal_full$Season 
+
 Pl_cca_sites <- 
   ggplot(cal_constr_sites2, aes(CCA1, CCA2, label = Label)) + 
-  geom_point(aes(fill = Day_position, size = log(N_total+1), shape = Station), alpha = 0.7, color = "black") + 
-    scale_fill_gradient(low = "black", high = "white") + 
-    scale_shape_manual(values = c(21, 24)) + 
+  geom_point(aes(size = log(N_total+1), shape = Season, fill = Season), alpha = 0.7, color = "black") + 
+    scale_fill_manual(values = c("black", "gray20", "white", "gray60")) + 
+    scale_shape_manual(values = c(8, 24, 21, 9)) + 
     geom_polygon(data = rectangle, aes(x = x, y = y), fill = "white", alpha = 0.3) +
   geom_hline(yintercept = 0, size = 0.01) +
   geom_vline(xintercept = 0, size = 0.01) +
-
       geom_segment(data = cal_constr_biplot2, aes(x = 0, y = 0, xend = CCA1, yend = CCA2), arrow = arrow(type = "closed", angle = 10, length = unit(0.15, "inches")), color = "black") +
   geom_text_repel(data = cal_constr_biplot2, color = "black") + 
-  guides(fill = "none", size = "none", shape = "none")  +
-    theme(panel.grid = element_blank())
+  guides(size = "none")  +
+  guides(shape = guide_legend(override.aes = list(size=2))) + 
+  labs(shape = "Season:", fill = "Season:") +
+  xlim(-1.5, 2.5) + 
+  ylim(-3, 1.2) + 
+    theme(panel.grid = element_blank(), legend.position = c(0.82, 0.82))
 
   # + 
   # geom_text(data = cal_constr_centroid2, color = "black") 
@@ -314,29 +307,68 @@ Pl_cca_sites <-
 
 
 
-```{r}
+<!-- ```{r} -->
 
-# Day_pos <- data.frame(Manth = cal_full$Manth, Day_position = cal_constr_sites2$Day_position)
+<!-- # Day_pos <- data.frame(Manth = cal_full$Manth, Day_position = cal_constr_sites2$Day_position) -->
 
-Day_pos <- data.frame(DOY = 1:365)
-Day_pos$Day_position <-  -cos(2*pi/365*Day_pos$DOY)
+<!-- Day_pos <- data.frame(DOY = 1:365) -->
+<!-- Day_pos$Day_position <-  -cos(2*pi/365*Day_pos$DOY) -->
 
-Day_pos$Dummy <- 1
-  
-ggplot(Day_pos, aes(x = "", y = Dummy, fill = Day_position)) + geom_bar(width = 1, stat = "identity") +  coord_polar("y", start=0) + theme(axis.text.x=element_blank()) + scale_fill_gradient(low = "black", high = "white")
+<!-- Day_pos$Dummy <- 1 -->
 
-
+<!-- ggplot(Day_pos, aes(x = "", y = Dummy, fill = Day_position)) + geom_bar(width = 1, stat = "identity") +  coord_polar("y", start=0) + theme(axis.text.x=element_blank()) + scale_fill_gradient(low = "black", high = "white") -->
 
 
-```
 
 
-```{r}
+<!-- ``` -->
+
+
+```{r fig.height=7, fig.width=10}
 Pl_cca_stages + Pl_cca_sites
 ```
 
 
 
 
-Ordination of samples from station D1 (circles) and D3 (triangles) in the space of constrained axes. The size of points is proportional to *Calanus* abundance. The fill intensity is proportional to value of $Day_{position}$ (dark points are close to calendar year beginning, i.e. winter, white points are close to  the midle of calendar year, i.e. summer).  
+Ordination of life cycle stages (left) and samples (right) in the space of constrained axes. The mean values of environmental parameters calculated for points situated in each ordination quadrant are presented on the left pannel, the size of points on the right pannel is proportional to *Calanus* abundance.  
+
+
+
+
+Следующий не очень нужный рисунок,он показывает, что на двух станциях закономерности более или менее сходные.
+
+```{r }
+cal_constr_sites$DOY <- predictors$DOY
+cal_constr_sites$Station <- predictors$Station
+
+
+
+Pl_CCA1 <- ggplot(cal_constr_sites, aes(x = DOY, y = CCA1)) + 
+  geom_point(aes(shape = Station)) + 
+  geom_smooth(aes(linetype = Station), se = F, color = "black") +
+  scale_shape_manual(values = c(21, 22)) +
+  scale_linetype_manual(values = c(1, 2)) +
+  geom_hline(yintercept = 0, linetype = 1, color = "black") + 
+  scale_x_continuous(breaks = seq(1,360, 30)) +
+  labs(x = "Julian day") 
+
+
+Pl_CCA2 <- ggplot(cal_constr_sites, aes(x = DOY, y = CCA2)) + 
+  geom_point(aes(shape = Station)) + 
+  geom_smooth(aes(linetype = Station), se = F, color = "black") +
+  scale_shape_manual(values = c(21, 22)) +
+  scale_linetype_manual(values = c(1, 2)) +
+  geom_hline(yintercept = 0, linetype = 1, color = "black") + 
+  scale_x_continuous(breaks = seq(1,360, 30)) +
+  labs(x = "Julian day")
+
+library(ggpubr)
+ggarrange(Pl_CCA1, Pl_CCA2, ncol=2, common.legend = TRUE, legend="bottom")
+
+
+
+```
+
+Seasonal changes in CCA1 and CCA2 values at two sampling stations. Curves represent LOESS smoothers. 
 
