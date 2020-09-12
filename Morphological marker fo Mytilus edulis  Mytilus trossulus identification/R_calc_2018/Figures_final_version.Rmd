@@ -11,13 +11,13 @@ library(knitr)
 
 opts_chunk$set(echo = FALSE, cache = FALSE, fig.align ="center", warning = FALSE, message = FALSE)
 
-# set pander table-layout options
-library(pander)
-panderOptions('table.alignment.default', function(df)
-    ifelse(sapply(df, is.numeric), 'right', 'left'))
-panderOptions('table.split.table', Inf)
-panderOptions('big.mark', ",")
-panderOptions('keep.trailing.zeros', TRUE)
+# # set pander table-layout options
+# library(pander)
+# panderOptions('table.alignment.default', function(df)
+#     ifelse(sapply(df, is.numeric), 'right', 'left'))
+# panderOptions('table.split.table', Inf)
+# panderOptions('big.mark', ",")
+# panderOptions('keep.trailing.zeros', TRUE)
 
 opts_chunk$set(dev='cairo_pdf')
 
@@ -36,7 +36,9 @@ library(doBy)
 library(pROC)
 library(betareg)
 library(lmtest)
+library(tidyverse)
 library(broom)
+library(broom.mixed) #Пакет для вытаскивания информации из объектов MerMod
 library(MuMIn)
 library(gridExtra)
 
@@ -937,7 +939,7 @@ Model_8_final_R2_c <- r.squaredGLMM(Model_8_final)[1, 2]
 empty_row <- rep(NA, 5 )
 
 
-all_models <- rbind(empty_row, Model_1_final_summary, empty_row, Model_2_final_summary, empty_row,  Model_4_final_summary, empty_row,  Model_7_final_summary, empty_row, Model_8_final_summary,empty_row, Model_6_final_summary)
+all_models <- rbind(empty_row, Model_1_final_summary, empty_row, Model_2_final_summary[, -1], empty_row,  Model_4_final_summary[, -1], empty_row,  Model_7_final_summary, empty_row, Model_8_final_summary[, -1],empty_row, Model_6_final_summary[, -1])
 
 all_models$estimate <- round(all_models$estimate, 1)
 
@@ -1429,7 +1431,7 @@ Figure ++. Variation of PT, P(T|tros), P(E|edu), P(tros|T), P(edu|E) as function
 # Анализ корреляции с размерами
 
 # residuals(Model_2_final)
-Model_2_final_diagn <- fortify(Model_2_final)
+Model_2_final_diagn <- fortify.merMod(Model_2_final)
 
 # sum(is.na(myt2$resid_siz))
 
@@ -1460,7 +1462,7 @@ resid_cor$p_adj <- p.adjust(resid_cor$p, method = "hochberg")
 # То же самое для модели 4
 
 # residuals(Model_4_final)
-Model_4_final_diagn <- fortify(Model_4_final)
+Model_4_final_diagn <- fortify.merMod(Model_4_final)
 
 # sum(is.na(myt2$resid_siz))
 
@@ -1497,7 +1499,7 @@ resid_cor2$p_adj <- p.adjust(resid_cor2$p, method = "hochberg")
 
 
 # residuals(Model_6_final)
-Model_6_final_diagn <- fortify(Model_6_final)
+Model_6_final_diagn <- fortify.merMod(Model_6_final)
 
 resid_siz2 <- merge(myt2_reduced, Model_6_final_diagn)
 resid_siz2 <- resid_siz2[!is.na(resid_siz2$siz), ]
@@ -1540,13 +1542,16 @@ myt2_all$pop <- factor(myt2_all$pop)
 myt2_all$Subset <- factor(myt2_all$Subset)
 
 
-size_models_tros <- myt2_all  %>% group_by(pop)%>% filter(Sp == "M.trossulus") %>% do(model = glm(ind ~  size, family = "binomial", data = .)) 
+size_models_tros_res <- myt2_all  %>% group_by(pop)%>% filter(Sp == "M.trossulus") %>% do(tidy(glm(ind ~  size, family = "binomial", data = .))) 
 
-size_models_tros$pop <- factor(size_models_tros$pop)
 
-size_models_tros_res <- size_models_tros %>% tidy(model)
+
+
+
 
 size_models_tros_res$p.value <- round(size_models_tros_res$p.value, 4)
+
+
 
 # write.table(size_models_tros_res, "clipboard", sep = "\t", row.names = F)
 
@@ -1559,11 +1564,7 @@ size_models_res_tros_slope$p_adj <- p.adjust(size_models_res_tros_slope$p.value,
 
 
 
-size_models_edu <- myt2_all  %>% group_by(pop)%>% filter(Sp == "M.edulis") %>% do(model = glm(ind ~  size, family = "binomial", data = .)) 
-
-size_models_edu$pop <- factor(size_models_edu$pop)
-
-size_models_edu_res <- size_models_edu %>% tidy(model)
+size_models_edu_res <- myt2_all  %>% group_by(pop)%>% filter(Sp == "M.edulis") %>% do(tidy(glm(ind ~  size, family = "binomial", data = .))) 
 
 size_models_edu_res$p.value <- round(size_models_edu_res$p.value, 4)
 
@@ -2892,6 +2893,21 @@ calc1_predictions_T$Subset <- factor(calc1_predictions_T$Subset, levels = levels
 ```
 
 
+```{r}
+# В этом чаке строится иллюстрация "ленивого калькулятора". П.П.Стрелков предложил в качестве калибровочны выборок брать выбрки с минимальной и максимальной частотой Т-морфотииа, счита их выборками, состоящимии из чистых Mt (для выборок с максимальным PT) или Me (для выборок с минимальным PT)
+
+lazy_calc_data <- read.table("Data/ptros by pt 260620.csv", header = T, sep = ",")
+
+lazy_calc_data$Set <-  factor(lazy_calc_data$Set, levels = c("WS" , "BL", "BH", "NORW", "BALT", "SCOT", "GOM" ))
+
+ggplot(lazy_calc_data, aes(x = Ptros, y = Ptros_eq3)) + geom_point() + facet_wrap(~Set) + geom_smooth(method = "lm", se = F, color = "black") + geom_abline(linetype = 2) + ylim(0, 1) + xlim(0, 1) + labs(x = "Ptros observed", y = "Ptros predicted")
+
+
+```
+
+
+
+![](Figures/Morphotypes_final.jpg)
 
 
 <!-- ```{r} -->
@@ -3095,11 +3111,6 @@ calc1_predictions_T$Subset <- factor(calc1_predictions_T$Subset, levels = levels
 
 <!-- ``` -->
 
-
-<br>
-<br>
-<br>
-<br>
 
 <!-- ## К разделу "Practical recomendations" -->
 
