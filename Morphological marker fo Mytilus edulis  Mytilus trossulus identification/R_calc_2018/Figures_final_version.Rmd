@@ -2,7 +2,7 @@
 title: ""
 author: ""
 date: ""
-output: pdf_document
+output: html_document
 ---
 
 ```{r setup, include=FALSE, echo=FALSE}
@@ -19,7 +19,7 @@ opts_chunk$set(echo = FALSE, cache = FALSE, fig.align ="center", warning = FALSE
 # panderOptions('big.mark', ",")
 # panderOptions('keep.trailing.zeros', TRUE)
 
-opts_chunk$set(dev='cairo_pdf')
+# opts_chunk$set(dev='cairo_pdf')
 
 ```
 
