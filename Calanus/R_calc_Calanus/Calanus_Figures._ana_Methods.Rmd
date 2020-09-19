@@ -73,6 +73,12 @@ theme_set(theme_bw())
 
 
 cal <- read.table("Data/Calanus_tidy.csv", sep = ",", header = T)
+cal <- cal[, 1:16]
+
+env <- read.table("Data/Environment_tidy.csv", sep = ",", header = T)
+
+
+
 
 
 cal$Date <- as.POSIXct(as.Date(cal$Date_text, format = "%d/%m/%Y"))
@@ -86,16 +92,22 @@ cal <- cal %>% mutate (Season = case_when(Manth %in% c(12, 1, 2) ~ "Winter",
 
 cal$Season <- factor(cal$Season, levels = c("Winter", "Spring", "Summer", "Fall"))
 
+cal2 <- merge(cal, env)
 
-cal_full <- cal %>% filter(complete.cases(cal)) 
+
+
+
+
+
+cal_full <- cal2[complete.cases(cal2), ] 
+
 
 cal_full <- cal_full[rowSums(cal_full %>% select("Female", "Male", "cop_V", "cop_IV", "cop_III", "cop.II", "cop.I", "nauplii")) > 0, ]  
 
 
+predictors <- cal_full %>% select("DOY", "Depth", "Station", "Temp",  "Sal", "Chl")
 
-predictors <- cal_full %>% select("DOY", "Column_width" , "Depth", "Station", "Temp",  "Sal", "Chl")
-
-cal_abund <- cal_full %>% select("Female", "Male", "cop_V", "cop_IV", "cop_III", "cop.II", "cop.I", "nauplii")/predictors$Column_width 
+cal_abund <- cal_full %>% select("Female", "Male", "cop_V", "cop_IV", "cop_III", "cop.II", "cop.I", "nauplii") 
 
 
 
@@ -231,13 +243,13 @@ Pl_cca <-
 
 
 
-I <- predictors %>% filter(cal_constr_sites$CCA1 >= 0 & cal_constr_sites$CCA2 >= 0) %>% select(Depth, Temp, Sal, Chl) %>% summarise_all(.funs = "mean") %>% round(.,1)  %>% mutate(CCA1 = 1, CCA2 = 1)
+I <- predictors %>% filter(cal_constr_sites$CCA1 >= 0 & cal_constr_sites$CCA2 >= 0) %>% select(Depth, Temp, Sal, Chl) %>% summarise_all(.funs = "mean") %>% round(.,1)  %>% mutate(CCA1 = 1.5, CCA2 = 1)
 
-II <- predictors %>% filter(cal_constr_sites$CCA1 < 0 & cal_constr_sites$CCA2 >= 0) %>% select(Depth, Temp, Sal, Chl) %>% summarise_all(.funs = "mean") %>% round(.,1) %>% mutate(CCA1 = -1, CCA2 = 1)
+II <- predictors %>% filter(cal_constr_sites$CCA1 < 0 & cal_constr_sites$CCA2 >= 0) %>% select(Depth, Temp, Sal, Chl) %>% summarise_all(.funs = "mean") %>% round(.,1) %>% mutate(CCA1 = -1.5, CCA2 = 1)
 
-III <- predictors %>% filter(cal_constr_sites$CCA1 < 0 & cal_constr_sites$CCA2 < 0) %>% select(Depth, Temp, Sal, Chl) %>% summarise_all(.funs = "mean") %>% round(.,1) %>% mutate(CCA1 = -1, CCA2 = -1.5)
+III <- predictors %>% filter(cal_constr_sites$CCA1 < 0 & cal_constr_sites$CCA2 < 0) %>% select(Depth, Temp, Sal, Chl) %>% summarise_all(.funs = "mean") %>% round(.,1) %>% mutate(CCA1 = -1.5, CCA2 = -1.5)
 
-IV <- predictors %>% filter(cal_constr_sites$CCA1 >= 0 & cal_constr_sites$CCA2 < 0) %>% select(Depth, Temp, Sal, Chl) %>% summarise_all(.funs = "mean") %>% round(.,1) %>% mutate(CCA1 = 1, CCA2 = -1.5)
+IV <- predictors %>% filter(cal_constr_sites$CCA1 >= 0 & cal_constr_sites$CCA2 < 0) %>% select(Depth, Temp, Sal, Chl) %>% summarise_all(.funs = "mean") %>% round(.,1) %>% mutate(CCA1 = 1.5, CCA2 = -1.5)
 
 
 params <- rbind(I, II, III, IV)
