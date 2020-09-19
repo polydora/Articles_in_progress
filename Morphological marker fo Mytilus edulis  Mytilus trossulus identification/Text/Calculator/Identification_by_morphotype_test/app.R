@@ -42,7 +42,7 @@ ui1 <- fluidPage(
       
       #
       sliderInput(inputId = "P_T_ME2",
-                  label = "Frequency of T-morphotype among M.edulis in calibrating samples (P*(E|edu) for  mixed populations)",
+                  label = "Frequency of T-morphotype among M.edulis in calibrating samples (P*(T|edu) for  mixed populations)",
                   min = 0,
                   max = 1,
                   step = 0.01,

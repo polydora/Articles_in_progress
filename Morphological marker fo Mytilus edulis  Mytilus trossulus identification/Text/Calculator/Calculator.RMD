@@ -94,7 +94,7 @@ ui1 <- fluidPage(
       
       #
       sliderInput(inputId = "P_T_ME2",
-                  label = "Frequency of T-morphotype among M.edulis in calibrating samples (P*(E|edu) for  mixed populations)",
+                  label = "Frequency of T-morphotype among M.edulis in calibrating samples (P*(T|edu) for  mixed populations)",
                   min = 0,
                   max = 1,
                   step = 0.01,
@@ -224,7 +224,7 @@ Pl_ptros <- ggplot(df_bayes, aes(x = P_T, y = Ptros_predicted)) +
   geom_text(x = min_P_T_sample + 0.1, y = 0, label = paste("min P_T = ", round(min_P_T_sample, 2) ), hjust = "left" ) +
   geom_point(x = max_P_T_sample, y = 1, shape = 24, size = 5, fill = "yellow") + 
   geom_text(x = max_P_T_sample - 0.1, y = 1, label = paste("max P_T = ", round(max_P_T_sample, 2) ), hjust = "right" )+
-  ggtitle("Taxonomical structure of mixed population")
+  ggtitle("Taxonomic structure of mixed population")
 
 
 #пририсовываем пороговые значения, отсекающие мнорный морфотип
@@ -317,9 +317,9 @@ $$P_{edu|E} = \frac{(1-P^*_{T|edu}) \cdot (1-Ptros)}{(1-P^*_{T|edu}) \cdot (1-Pt
 
 
 
-Since $P_{tros|T}$ and $P_{edu|E}$ are dependent on $Ptros$ the parameter $Ptros$ could be evaluated usind data on $PT$. 
+Since $P_{tros|T}$ and $P_{edu|E}$ are dependent on $Ptros$ the parameter $Ptros$ could be evaluated using data on $PT$. 
 
-**Recommendation**:  One should choose the desirable minimal level of probability of correct identification ($P_D$) for each species. It give the possibility to assess the threshold value of $PT$ which allows to separate minor species for which probability of correct identification is lesser than chosen $P_D$ (morphotype-test is not recomended for use in this case). These threshold values could be assessed by formulas as follows.
+**Recommendation**:  One should choose the desirable minimal level of probability of correct identification ($P_D$) for each species. It give the possibility to assess the threshold value of $PT$ which allows to separate minor species for which probability of correct identification is lesser than chosen $P_D$ (morphotype-test is not recommended for use in this case). These threshold values could be assessed by formulas as follows.
 
 For *M.trossulus* 
 $$Ptros_{minor} = \frac{-P_D \cdot P^*_{T|edu}} {P_D \cdot (P^*_{T|tros} - P^*_{T|edu}) - P^*_{T|tros}} $$
