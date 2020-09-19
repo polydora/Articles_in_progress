@@ -5,8 +5,8 @@ account: polydora
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 2418024
-bundleId: 3434104
+bundleId: 3646361
 url: https://polydora.shinyapps.io/Calculator/
-when: 1595667528.31359
+when: 1600505896.01286
 asMultiple: FALSE
 asStatic: FALSE
