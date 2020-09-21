@@ -2514,7 +2514,6 @@ eq_Model_7_NORW <- formula_constructor_1(intercept, b1)
 ```{r}
 
 
-
 # Для WBL E-morphotype
 
 intercept <- term_constructor(c("(Intercept)"))
@@ -2559,9 +2558,9 @@ eq_Model_6_BH_E <- formula_constructor_2_E(intercept, b1)
 
 # Для BH T-morphotype
 
-intercept <- term_constructor(c("(Intercept)", "SubsetBH", "morphT_m", "morphT_m:SubsetBH" ))
+intercept <- term_constructor(c("(Intercept)", "SubsetBH", "morphT_m:SubsetBH" ))
 
-b1 <-  term_constructor(c("freq_MT", "freq_MT:SubsetBH", "morphT_m:freq_MT", "morphT_m:freq_MT:SubsetBH" ))
+b1 <-  term_constructor(c("freq_MT", "freq_MT:SubsetBH", "morphT_m:freq_MT:SubsetBH" ))
 
 intercept <- round(intercept, 1)
 b1 <- round(b1, 1)
@@ -2584,10 +2583,9 @@ eq_Model_6_GOM_E <- formula_constructor_2_E(intercept, b1)
 
 # Для GOM T-morphotype
 
-intercept <- term_constructor(c("(Intercept)", "SubsetGOM", "morphT_m", "morphT_m:SubsetGOM" ))
+intercept <- term_constructor(c("(Intercept)", "SubsetGOM", "morphT_m:SubsetGOM" ))
 
-b1 <-  term_constructor(c("freq_MT", "freq_MT:SubsetGOM", "morphT_m:freq_MT", "morphT_m:freq_MT:SubsetGOM" ))
-
+b1 <-  term_constructor(c("freq_MT", "freq_MT:SubsetGOM", "morphT_m:freq_MT:SubsetGOM" ))
 
 intercept <- round(intercept, 1)
 b1 <- round(b1, 1)
@@ -2612,11 +2610,9 @@ eq_Model_6_BALT_E <- formula_constructor_2_E(intercept, b1)
 
 # Для BALT T-morphotype
 
+intercept <- term_constructor(c("(Intercept)", "SubsetBALT", "morphT_m:SubsetBALT" ))
 
-
-intercept <- term_constructor(c("(Intercept)", "SubsetBALT", "morphT_m", "morphT_m:SubsetBALT" ))
-
-b1 <-  term_constructor(c("freq_MT", "freq_MT:SubsetBALT", "morphT_m:freq_MT", "morphT_m:freq_MT:SubsetBALT" ))
+b1 <-  term_constructor(c("freq_MT", "freq_MT:SubsetBALT", "morphT_m:freq_MT:SubsetBALT" ))
 
 intercept <- round(intercept, 1)
 b1 <- round(b1, 1)
@@ -2637,12 +2633,11 @@ b1 <- round(b1, 1)
 eq_Model_6_NORW_E <-formula_constructor_2_E(intercept, b1)
 
 
-# Для NORW T-morphotype
+# Для BALT T-morphotype
 
+intercept <- term_constructor(c("(Intercept)", "SubsetNORW", "morphT_m:SubsetNORW" ))
 
-intercept <- term_constructor(c("(Intercept)", "SubsetNORW", "morphT_m", "morphT_m:SubsetNORW" ))
-
-b1 <-  term_constructor(c("freq_MT", "freq_MT:SubsetBALT", "morphT_m:freq_MT", "morphT_m:freq_MT:SubsetNORW" ))
+b1 <-  term_constructor(c("freq_MT", "freq_MT:SubsetNORW", "morphT_m:freq_MT:SubsetNORW" ))
 
 intercept <- round(intercept, 1)
 b1 <- round(b1, 1)
@@ -2723,13 +2718,13 @@ eq_Model_6_NORW_T <- formula_constructor_2_T(intercept, b1)
 <br>
 
 
-| Region | Model 4             | Model 6  E-morphotype | Model 6  T-morphotype |
-|--------|---------------------|-----------------------|-----------------------|
-| WSBL   | `r eq_Model_7_WBL`  | `r eq_Model_6_WBL_E`  | `r eq_Model_6_WBL_T`  |
-| BH     | `r eq_Model_7_BH`   | `r eq_Model_6_BH_E`   | `r eq_Model_6_BH_T`   |
-| GOM    | `r eq_Model_7_GOM`  | `r eq_Model_6_GOM_E`  | `r eq_Model_6_GOM_T`  |
-| BALT   | `r eq_Model_7_BALT` | `r eq_Model_6_BALT_E` | `r eq_Model_6_BALT_T` |
-| NORW   | `r eq_Model_7_NORW` | `r eq_Model_6_NORW_E` | `r eq_Model_6_NORW_T` |
+<!-- | Region | Model 4             | Model 6  E-morphotype | Model 6  T-morphotype | -->
+<!-- |--------|---------------------|-----------------------|-----------------------| -->
+<!-- | WSBL   | `r eq_Model_7_WBL`  | `r eq_Model_6_WBL_E`  | `r eq_Model_6_WBL_T`  | -->
+<!-- | BH     | `r eq_Model_7_BH`   | `r eq_Model_6_BH_E`   | `r eq_Model_6_BH_T`   | -->
+<!-- | GOM    | `r eq_Model_7_GOM`  | `r eq_Model_6_GOM_E`  | `r eq_Model_6_GOM_T`  | -->
+<!-- | BALT   | `r eq_Model_7_BALT` | `r eq_Model_6_BALT_E` | `r eq_Model_6_BALT_T` | -->
+<!-- | NORW   | `r eq_Model_7_NORW` | `r eq_Model_6_NORW_E` | `r eq_Model_6_NORW_T` | -->
 
 
 

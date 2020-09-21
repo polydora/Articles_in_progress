@@ -495,30 +495,71 @@ summary {
 <!-- E-morphotype -->
 <!-- $$P(edu|E) = \frac{e^{3.3 - 4.8Ptros} }{1 + e^{3.3 - 4.8Ptros}}$$ -->
 <!-- T-morphotype -->
-<!-- $$P(tros|T) = \frac{e^{1.4 - 3.4Ptros} }{1 + e^{1.4 - 3.4Ptros}}$$ -->
+<!-- $$P(tros|T) = \frac{e^{-2.1 + 4.7Ptros} }{1 + e^{-2.1 + 4.7Ptros}}$$ -->
 <!-- **For GOM Set**  -->
 <!-- E-morphotype -->
 <!-- $$P(edu|E) = \frac{e^{4.7 - 8.1Ptros} }{1 + e^{4.7 - 8.1Ptros}}$$ -->
 <!-- T-morphotype -->
-<!-- $$P(tros|T) = \frac{e^{2.9 - 3.2Ptros} }{1 + e^{2.9 - 3.2Ptros}}$$ -->
+<!-- $$P(tros|T) = \frac{e^{-0.6 + 4.9Ptros} }{1 + e^{-0.6 + 4.9Ptros}}$$ -->
 <!-- **For BALT Set**  -->
 <!-- E-morphotype -->
 <!-- $$P(edu|E) = \frac{e^{2.7 - 5.4Ptros} }{1 + e^{2.7 - 5.4Ptros}}$$ -->
 <!-- T-morphotype -->
-<!-- $$P(tros|T) = \frac{e^{3.1 - 4.2Ptros} }{1 + e^{3.1 - 4.2Ptros}}$$ -->
+<!-- $$P(tros|T) = \frac{e^{-0.4 + 3.9Ptros} }{1 + e^{-0.4 + 3.9Ptros}}$$ -->
 <!-- **For NORW Set**  -->
 <!-- E-morphotype -->
 <!-- $$P(edu|E) = \frac{e^{3.1 - 5Ptros} }{1 + e^{3.1 - 5Ptros}}$$ -->
 <!-- T-morphotype -->
-<!-- $$P(tros|T) = \frac{e^{2 - 1.4Ptros} }{1 + e^{2 - 1.4Ptros}}$$ -->
+<!-- $$P(tros|T) = \frac{e^{-1.5 + 6.3Ptros} }{1 + e^{-1.5 + 6.3Ptros}}$$ -->
 <p><br> <br> <br> <br></p>
-<!-- | Region | Model 4             | Model 6  E-morphotype | Model 6  T-morphotype | -->
-<!-- |--------|---------------------|-----------------------|-----------------------| -->
-<!-- | WSBL   | $$Ptros = \frac{e^{-2.4 + 5.4PT} }{1 + e^{-2.4 + 5.4PT}}$$  | $$P(edu|E) = \frac{e^{3.7 - 4.9Ptros} }{1 + e^{3.7 - 4.9Ptros}}$$  | $$P(tros|T) = \frac{e^{0.2 + 3.2Ptros} }{1 + e^{0.2 + 3.2Ptros}}$$  | -->
-<!-- | BH     | $$Ptros = \frac{e^{-3.9 + 5PT} }{1 + e^{-3.9 + 5PT}}$$   | $$P(edu|E) = \frac{e^{3.3 - 4.8Ptros} }{1 + e^{3.3 - 4.8Ptros}}$$   | $$P(tros|T) = \frac{e^{1.4 - 3.4Ptros} }{1 + e^{1.4 - 3.4Ptros}}$$   | -->
-<!-- | GOM    | $$Ptros = \frac{e^{-2.3 + 6.2PT} }{1 + e^{-2.3 + 6.2PT}}$$  | $$P(edu|E) = \frac{e^{4.7 - 8.1Ptros} }{1 + e^{4.7 - 8.1Ptros}}$$  | $$P(tros|T) = \frac{e^{2.9 - 3.2Ptros} }{1 + e^{2.9 - 3.2Ptros}}$$  | -->
-<!-- | BALT   | $$Ptros = \frac{e^{-0.6 + 11.6PT} }{1 + e^{-0.6 + 11.6PT}}$$ | $$P(edu|E) = \frac{e^{2.7 - 5.4Ptros} }{1 + e^{2.7 - 5.4Ptros}}$$ | $$P(tros|T) = \frac{e^{3.1 - 4.2Ptros} }{1 + e^{3.1 - 4.2Ptros}}$$ | -->
-<!-- | NORW   | $$Ptros = \frac{e^{-0.5 + 3.7PT} }{1 + e^{-0.5 + 3.7PT}}$$ | $$P(edu|E) = \frac{e^{3.1 - 5Ptros} }{1 + e^{3.1 - 5Ptros}}$$ | $$P(tros|T) = \frac{e^{2 - 1.4Ptros} }{1 + e^{2 - 1.4Ptros}}$$ | -->
+<table>
+<colgroup>
+<col width="10%"></col>
+<col width="28%"></col>
+<col width="30%"></col>
+<col width="30%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th>Region</th>
+<th>Model 4</th>
+<th>Model 6 E-morphotype</th>
+<th>Model 6 T-morphotype</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>WSBL</td>
+<td><span class="math display">\[Ptros = \frac{e^{-2.4 + 5.4PT} }{1 + e^{-2.4 + 5.4PT}}\]</span></td>
+<td><span class="math display">\[P(edu|E) = \frac{e^{3.7 - 4.9Ptros} }{1 + e^{3.7 - 4.9Ptros}}\]</span></td>
+<td><span class="math display">\[P(tros|T) = \frac{e^{0.2 + 3.2Ptros} }{1 + e^{0.2 + 3.2Ptros}}\]</span></td>
+</tr>
+<tr class="even">
+<td>BH</td>
+<td><span class="math display">\[Ptros = \frac{e^{-3.9 + 5PT} }{1 + e^{-3.9 + 5PT}}\]</span></td>
+<td><span class="math display">\[P(edu|E) = \frac{e^{3.3 - 4.8Ptros} }{1 + e^{3.3 - 4.8Ptros}}\]</span></td>
+<td><span class="math display">\[P(tros|T) = \frac{e^{-2.1 + 4.7Ptros} }{1 + e^{-2.1 + 4.7Ptros}}\]</span></td>
+</tr>
+<tr class="odd">
+<td>GOM</td>
+<td><span class="math display">\[Ptros = \frac{e^{-2.3 + 6.2PT} }{1 + e^{-2.3 + 6.2PT}}\]</span></td>
+<td><span class="math display">\[P(edu|E) = \frac{e^{4.7 - 8.1Ptros} }{1 + e^{4.7 - 8.1Ptros}}\]</span></td>
+<td><span class="math display">\[P(tros|T) = \frac{e^{-0.6 + 4.9Ptros} }{1 + e^{-0.6 + 4.9Ptros}}\]</span></td>
+</tr>
+<tr class="even">
+<td>BALT</td>
+<td><span class="math display">\[Ptros = \frac{e^{-0.6 + 11.6PT} }{1 + e^{-0.6 + 11.6PT}}\]</span></td>
+<td><span class="math display">\[P(edu|E) = \frac{e^{2.7 - 5.4Ptros} }{1 + e^{2.7 - 5.4Ptros}}\]</span></td>
+<td><span class="math display">\[P(tros|T) = \frac{e^{-0.4 + 3.9Ptros} }{1 + e^{-0.4 + 3.9Ptros}}\]</span></td>
+</tr>
+<tr class="odd">
+<td>NORW</td>
+<td><span class="math display">\[Ptros = \frac{e^{-0.5 + 3.7PT} }{1 + e^{-0.5 + 3.7PT}}\]</span></td>
+<td><span class="math display">\[P(edu|E) = \frac{e^{3.1 - 5Ptros} }{1 + e^{3.1 - 5Ptros}}\]</span></td>
+<td><span class="math display">\[P(tros|T) = \frac{e^{-1.5 + 6.3Ptros} }{1 + e^{-1.5 + 6.3Ptros}}\]</span></td>
+</tr>
+</tbody>
+</table>
 <!-- ## Предсказания формул Eq3 and Eq1, Eq2 -->
 <!-- Рассматривается два тип калибровочных выборок. -->
 <!-- 1. Калибровочные выборки, основанные на максимально различных генетических структурах  и максимально смешанных генетических структурах. В качестве оценки генетической структуры рассматривается частота M.trossulus (Ptros) -->

@@ -2563,9 +2563,9 @@ eq_Model_6_BH_E <- formula_constructor_2_E(intercept, b1)
 
 # Для BH T-morphotype
 
-intercept <- term_constructor(c("(Intercept)", "SubsetBH", "morphT_m:SubsetBH" ))
+intercept <- term_constructor(c("(Intercept)", "SubsetBH", "morphT_m", "morphT_m:SubsetBH" ))
 
-b1 <-  term_constructor(c("freq_MT", "freq_MT:SubsetBH", "morphT_m:freq_MT:SubsetBH" ))
+b1 <-  term_constructor(c("freq_MT", "freq_MT:SubsetBH", "morphT_m:freq_MT", "morphT_m:freq_MT:SubsetBH" ))
 
 intercept <- round(intercept, 1)
 b1 <- round(b1, 1)
@@ -2588,9 +2588,10 @@ eq_Model_6_GOM_E <- formula_constructor_2_E(intercept, b1)
 
 # Для GOM T-morphotype
 
-intercept <- term_constructor(c("(Intercept)", "SubsetGOM", "morphT_m:SubsetGOM" ))
+intercept <- term_constructor(c("(Intercept)", "SubsetGOM", "morphT_m", "morphT_m:SubsetGOM" ))
 
-b1 <-  term_constructor(c("freq_MT", "freq_MT:SubsetGOM", "morphT_m:freq_MT:SubsetGOM" ))
+b1 <-  term_constructor(c("freq_MT", "freq_MT:SubsetGOM", "morphT_m:freq_MT", "morphT_m:freq_MT:SubsetGOM" ))
+
 
 intercept <- round(intercept, 1)
 b1 <- round(b1, 1)
@@ -2615,9 +2616,11 @@ eq_Model_6_BALT_E <- formula_constructor_2_E(intercept, b1)
 
 # Для BALT T-morphotype
 
-intercept <- term_constructor(c("(Intercept)", "SubsetBALT", "morphT_m:SubsetBALT" ))
 
-b1 <-  term_constructor(c("freq_MT", "freq_MT:SubsetBALT", "morphT_m:freq_MT:SubsetBALT" ))
+
+intercept <- term_constructor(c("(Intercept)", "SubsetBALT", "morphT_m", "morphT_m:SubsetBALT" ))
+
+b1 <-  term_constructor(c("freq_MT", "freq_MT:SubsetBALT", "morphT_m:freq_MT", "morphT_m:freq_MT:SubsetBALT" ))
 
 intercept <- round(intercept, 1)
 b1 <- round(b1, 1)
@@ -2638,11 +2641,12 @@ b1 <- round(b1, 1)
 eq_Model_6_NORW_E <-formula_constructor_2_E(intercept, b1)
 
 
-# Для BALT T-morphotype
+# Для NORW T-morphotype
 
-intercept <- term_constructor(c("(Intercept)", "SubsetNORW", "morphT_m:SubsetNORW" ))
 
-b1 <-  term_constructor(c("freq_MT", "freq_MT:SubsetNORW", "morphT_m:freq_MT:SubsetNORW" ))
+intercept <- term_constructor(c("(Intercept)", "SubsetNORW", "morphT_m", "morphT_m:SubsetNORW" ))
+
+b1 <-  term_constructor(c("freq_MT", "freq_MT:SubsetBALT", "morphT_m:freq_MT", "morphT_m:freq_MT:SubsetNORW" ))
 
 intercept <- round(intercept, 1)
 b1 <- round(b1, 1)
