@@ -1708,7 +1708,7 @@ Pl_mod6 <- ggplot(new_data6, aes(x = freq_MT)) +
   scale_color_manual(values = c("blue", "red")) +
   scale_fill_manual(values = c("blue", "red"))  +
   xlim(0,1)  +
-  facet_wrap( ~ Subset, ncol = 1) +
+  facet_wrap( ~ Subset, ncol = 1, strip.position="right") +
   guides(color = "none")
 
 
@@ -1784,7 +1784,7 @@ new_data7$SE <- predicted7$se.fit
 
 Pl_mod7 <- ggplot(new_data7, aes(x = Prop_T, y = fit)) + 
   geom_line(linetype = 2, color = "red", size = 1) + 
-  facet_wrap(~Subset, ncol = 1) + 
+  facet_wrap(~Subset, ncol = 1, strip.position="right") + 
   geom_ribbon(aes(ymin = fit - 1.96*SE, ymax = fit + 1.96*SE), alpha = 0.1) + 
   xlim(0, 1) + 
   ylim(0, 1) +  
@@ -1801,7 +1801,7 @@ init_data_Model_7$Subset <- factor(init_data_Model_7$Subset, levels = c("WSBL", 
 
 # init_data_Model_7 <- init_data_Model_7[init_data_Model_7$pop %in% c("Limh88", "CBCP"),  ]
 
-Pl_mod7_with_initial_data <- Pl_mod7 + geom_point(data = init_data_Model_7, aes( y = freq_MT), shape = 22, size = 2 ) + scale_fill_continuous(low = "white", high = "black") + labs(y = "Ptros", x = "PT")
+Pl_mod7_with_initial_data <- Pl_mod7 + geom_point(data = init_data_Model_7, aes( y = freq_MT), shape = 22, size = 2 ) + scale_fill_continuous(low = "white", high = "black") + labs(y = "Ptros \n", x = "PT") + theme(strip.text = element_blank())
 
 
 # Model 8#########################
@@ -1824,7 +1824,16 @@ new_data8$lwr <- logit_back(new_data8$eta -  1.96 *new_data8$SE_eta)
 
 new_data8$upr <- logit_back(new_data8$eta +  1.96 *new_data8$SE_eta)
 
-Pl_mod8 <-  ggplot(new_data8, aes(x = freq_MT, y = fit, group = Sp)) + geom_line(linetype = 2,  size = 1, aes(color = Sp)) + geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.1) + facet_wrap(~Subset, ncol = 1)  + xlim(0, 1) + ylim(0, 1) + scale_color_manual(values=c("blue", "red")) + guides(color = "none") +  geom_rug(data = myt2_reduced, inherit.aes = FALSE,  aes(x = freq_MT), size = 0.1)
+Pl_mod8 <-  ggplot(new_data8, aes(x = freq_MT, y = fit, group = Sp)) + 
+  geom_line(linetype = 2,  size = 1, aes(color = Sp)) + 
+  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.1) + 
+  facet_wrap(~Subset, ncol = 1)  + 
+  xlim(0, 1) + ylim(0, 1) + 
+  scale_color_manual(values=c("blue", "red")) + 
+  guides(color = "none") +  
+  geom_rug(data = myt2_reduced, inherit.aes = FALSE,  aes(x = freq_MT), size = 0.1) +
+  theme(strip.text = element_blank())
+  
 
 
 
@@ -1857,7 +1866,7 @@ Pl_mod8_with_initial_data <- Pl_mod8 +
   ylim(0,1) + 
   xlim(0,1) +
   geom_hline(aes(yintercept=0.5), color="black") 
-
+  
 
 
 
@@ -2153,7 +2162,9 @@ Pl_mod7_with_initial_data_teor_calc1 <- Pl_mod7_with_initial_data  +
 <br>
 
 ```{r, fig.height=9}
-grid.arrange(Pl_mod7_with_initial_data_teor_calc1, Pl_mod8_with_initial_data,  Pl_mod6_with_initial_data_teor_calc2, ncol =3) 
+Pl <- grid.arrange(Pl_mod7_with_initial_data_teor_calc1, Pl_mod8_with_initial_data,  Pl_mod6_with_initial_data_teor_calc2, ncol =3) 
+
+ggsave("plot.tiff", plot = Pl )
 ```
 
 
@@ -2365,8 +2376,9 @@ Pl_teor_empir_Mod_6_add <- Pl_teor_empir_Mod_6 + geom_hline(yintercept = Goodnes
 
 ```{r}
 
-grid.arrange( Pl_teor_empir_Mod_7_add, Pl_teor_empir_Mod_6_add, ncol = 2)
+Pl <- grid.arrange( Pl_teor_empir_Mod_7_add, Pl_teor_empir_Mod_6_add, ncol = 2)
 
+ggsave("plot2.tiff", plot = Pl)
 ```
 
 <!-- Figure +. Correspondence between empirical regression models and predictions of Eq1, Eq2 and Eq3.  (A) Correspondence between Model 4 describing  the dependence of proportion of *M.trossulus* (Ptros) on proportion of T-morphotype (PT) predictions of Eq3. (B) Correspondence between Model 6  describing  the dependence of probability of correct species identification on  proportion of *M.trossulus* (Ptros)  and morphotype and predictions of Eq1 and Eq2. Each point corresponds to one of the possible pairs of samples from WSBL.  OX axis represents the differencу in genetic structre for each pair. OY axis represents Goodness values reflecting correspondence between regression model and equations. Solid blue lines represent LOESS-smoother. Dashed lines represent the levels of Goodness for equations calibrated as represented at Fig.3.   -->
