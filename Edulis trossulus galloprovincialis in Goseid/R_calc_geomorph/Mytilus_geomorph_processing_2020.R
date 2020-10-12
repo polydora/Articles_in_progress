@@ -36,23 +36,27 @@ ID <- All %>% select(ID, file) %>% unique(.)
 
 
 ids <- read_xlsx("Data/gen_markers.xlsx") 
-ids$T <- as.numeric(ids$T)
-ids$E <- as.numeric(ids$E)
-ids$G <- as.numeric(ids$G)
+ids$Tr <- as.numeric(ids$Tr)
+ids$Ed <- as.numeric(ids$Ed)
+ids$Ga <- as.numeric(ids$Ga)
 
 
 
 
 ids <- ids[complete.cases(ids), ]
 
+ids <- merge(ids, data.frame(file = unique(All$file)))
 
+
+
+# Удаляю те файлы, которые не имеют генетических оценок
 All <- All[All$file %in% ids$file, ]
 
 
 
 # Проверка правильности заполеннеия матрицы лендмарков
 All[is.na(All$V1)|is.na(All$V2),]
-table(All$file)
+as.data.frame(table(All$file))
 
 
 
@@ -61,9 +65,9 @@ table(All$file)
 myt_matr <- array(rep(NA, length(unique(All$ID))*20*2), dim = c(20, 2, length(unique(All$ID))))
 
 
-for(i in 1:length(unique(All$ID))){
-  id <- unique(All$ID)[i]
-  d <- All[All$ID ==id , ]
+for(i in 1:length(unique(All$file))){
+  id <- unique(All$file)[i]
+  d <- All[All$file == id , ]
   myt_matr[ , , i] <- as.matrix(d[ , c(3,4)])
   
 }
@@ -112,196 +116,38 @@ plotRefToTarget(myt_gpa$coords[, , 29], myt_gpa$coords[, , 16],
 
 
 
-plotAllSpecimens(myt_gpa$coords)
-
-
 
 PCA <- gm.prcomp(myt_gpa$coords)
 
 plot(PCA)
-str(PCA)
 
 PCA_scores <- as.data.frame(PCA$x)
 
 PCA_scores$file <- unique(All$file)
 
 
+
 PCA_scores <- merge(PCA_scores, ids, by = "file")
 
-
-
-ggplot(PCA_scores, aes(x = Comp1, y = Comp2)) + geom_point(aes(size = G))
-
-
-ggplot(PCA_scores, aes(x = Comp1, y = Comp2)) + geom_point(aes(size = T))
-
-
-ggplot(PCA_scores, aes(x = Comp1, y = Comp2)) + geom_point(aes(size = E))
-
-
-
-ggplot(PCA_scores, aes(x = T, y = Comp1)) + geom_point() + geom_smooth(method = "lm")
-ggplot(PCA_scores, aes(x = T, y = Comp2)) + geom_point() + geom_smooth(method = "lm")
-ggplot(PCA_scores, aes(x = T, y = Comp3)) + geom_point()+ geom_smooth(method = "lm")
-ggplot(PCA_scores, aes(x = T, y = Comp4)) + geom_point()+ geom_smooth(method = "lm")
-
-
-ggplot(PCA_scores, aes(x = E, y = Comp1)) + geom_point() + geom_smooth(method = "lm")
-ggplot(PCA_scores, aes(x = E, y = Comp2)) + geom_point() + geom_smooth(method = "lm")
-ggplot(PCA_scores, aes(x = E, y = Comp3)) + geom_point()+ geom_smooth(method = "lm")
-ggplot(PCA_scores, aes(x = E, y = Comp4)) + geom_point()+ geom_smooth(method = "lm")
-
-
-ggplot(PCA_scores, aes(x = G, y = Comp1)) + geom_point() + geom_smooth(method = "lm")
-ggplot(PCA_scores, aes(x = G, y = Comp2)) + geom_point() + geom_smooth(method = "lm")
-ggplot(PCA_scores, aes(x = G, y = Comp3)) + geom_point()+ geom_smooth(method = "lm")
-ggplot(PCA_scores, aes(x = G, y = Comp4)) + geom_point()+ geom_smooth(method = "lm")
+PCA_scores$Sp[PCA_scores$Ga >= 0.5 & PCA_scores$Tr <0.5 & PCA_scores$Ed < 0.5] <- "Ga"  
+PCA_scores$Sp[PCA_scores$Ga < 0.5 & PCA_scores$Tr >= 0.5 & PCA_scores$Ed < 0.5] <- "Tr"  
+PCA_scores$Sp[PCA_scores$Ga < 0.5 & PCA_scores$Tr < 0.5 & PCA_scores$Ed >= 0.5] <- "Ed"  
+PCA_scores$Sp[PCA_scores$Ga >= 0.5 & PCA_scores$Tr >= 0.5 & PCA_scores$Ed < 0.5] <- "Ga_Tr"  
+PCA_scores$Sp[PCA_scores$Ga >= 0.5 & PCA_scores$Tr < 0.5 & PCA_scores$Ed >= 0.5] <- "Ga_Ed"  
+PCA_scores$Sp[PCA_scores$Ga < 0.5 & PCA_scores$Tr >= 0.5 & PCA_scores$Ed >= 0.5] <- "Ed_Tr"  
+PCA_scores$Sp[PCA_scores$Ga >= 0.5 & PCA_scores$Tr >= 0.5 & PCA_scores$Ed >= 0.5] <- "Ga_Ed_Tr"  
+PCA_scores$Sp[PCA_scores$Ga < 0.5 & PCA_scores$Tr < 0.5 & PCA_scores$Ed < 0.5] <- "Bl"  
 
 
 
-# ref <- mshape(Y.gpa$coords)
-
-myt_ref <- mshape(myt_gpa$coords)
+ggplot(PCA_scores, aes(x = Comp1, y = Comp2)) + geom_point(aes(fill = Sp), shape = 21, size = 4, position = "jitter")
 
 
-plotRefToTarget(myt_ref, myt_ref, method = "TPS")
-
-m <- matrix(data = c(1, 1, 2, 2,
-                     3, 3, 3, 3,
-                     3, 3, 3, 3),
-            nrow = 3, ncol = 4, byrow = TRUE)
-
-l <- layout(m, heights = c(3, 2))
+ggplot(PCA_scores, aes(x = Sp, y = Comp1)) + geom_boxplot(notch = F)
 
 
-op <- par( mar = c(4, 4, 1, 1))
-plotRefToTarget(myt_ref, myt_gpa$coords[, , 7], method = "vector", mag = 1)
-plotRefToTarget(myt_ref, myt_gpa$coords[, , 1], method = "points", mag = 1)
-
-
-plotRefToTarget(myt_ref, myt_gpa$coords[, , 2], method = "TPS", mag = 2)
-
-par(op)
-
-
-
-labels <- rep(NA,length(unique(All$ID)) )
-  
-for(i in 1:length(unique(All$ID))) {
-  id <- unique(All$ID)[i]
-  d <- All[All$ID ==id , ]
-  labels[i] <- as.character((d[1,3]))
-}
-
-Spec <- labels
-Site <- labels
-#????? ??????????????? ? for ????????? 1,3 -> site -> ????????? ?? 1,2 -> Spec
-
-# 
-# 
-# colvec <- c(" Morphtred_1" = "yellow"," Morphtred_5" = "red")
-
-# colvec <- c("E" = "yellow2","T" = "red")
-
-
-colvec_site <- Site 
-
-colvec_site [Site == "Morphtred_1"] <- "red"
-colvec_site [Site == "Morphtred_2"] <- "yellow"
-colvec_site [Site == "Morphtred_4"] <- "black"
-colvec_site [Site == "Morphtred_5"] <- "blue"
-
-
-colvec_spec <- Spec 
-colvec_spec [Spec == "Tr"] <- "red"
-
-colvec_spec [Spec == "Ed"] <- "yellow"
-
-
-
-summary(myt_gpa)
-
-# plotTangentSpace(myt_gpa$coords, axis1 = 1, axis2 = 2, groups = colvec_site, warpgrids = T )
-
-plotTangentSpace(myt_gpa)
-
-
-gdf <- geomorph.data.frame(myt_gpa, species = Spec, site = Site)
-
-
-myt_lm <- procD.lm(coords ~ species * site, data = gdf, iter = 999, RRPP = TRUE) # randomize residuals
-
-summary(myt_lm)
-
-plot(myt_lm, type = "PC", pch = 19, col = colvec_site)
-
-
-
-# Усредненная мдия
-myt_ref <- mshape(myt_gpa$coords[ , , ])
-
-
-plotRefToTarget(myt_ref, myt_ref, method = "TPS")
-
-
-
-# # Усредненная Мидия из Morphtred_1
-# 
-# myt_ref_Morphtred_1 <- mshape(myt_gpa$coords[ , , which(gdf$site == "Morphtred_1") ])
-# 
-# 
-# plotRefToTarget(myt_ref_Morphtred_1, myt_ref, method = "TPS")
-# 
-# 
-# # Усредненная Мидия из Morphtred_2
-# 
-# myt_ref_Morphtred_2 <- mshape(myt_gpa$coords[ , , which(gdf$site == "Morphtred_2") ])
-# 
-# 
-# plotRefToTarget(myt_ref_Morphtred_2, myt_ref, method = "TPS")
-# 
-# 
-# 
-# # Усредненная Мидия из Morphtred_4
-# 
-# myt_ref_Morphtred_4 <- mshape(myt_gpa$coords[ , , which(gdf$site == "Morphtred_4") ])
-# 
-# 
-# plotRefToTarget(myt_ref_Morphtred_4, myt_ref, method = "TPS")
-# 
-# 
-# # Усредненная Мидия из Morphtred_5
-# 
-# myt_ref_Morphtred_5 <- mshape(myt_gpa$coords[ , , which(gdf$site == "Morphtred_5") ])
-# 
-# 
-# plotRefToTarget(myt_ref_Morphtred_5, myt_ref, method = "TPS")
-# 
-# 
-# 
-# # Искривления раковины средней для каждого сайта
-# 
-# plotRefToTarget(myt_ref_Morphtred_4, myt_ref_Morphtred_4, method = "TPS")
-# 
-# 
-# plotRefToTarget(myt_ref_Morphtred_4, myt_ref_Morphtred_5, method = "TPS")
-# 
-# plotRefToTarget(myt_ref_Morphtred_4, myt_ref_Morphtred_1, method = "TPS")
-# 
-# 
-# plotRefToTarget(myt_ref_Morphtred_4, myt_ref_Morphtred_2, method = "TPS")
-# 
-# 
-# 
-# 
-# 
-# myt_pairs <- advanced.procD.lm(f1= myt_gpa$coords ~ Site + Spec, f2=  ~  Spec, 
-#                                    groups = ~ Site, iter=999)
-# summary(myt_pairs)
-# 
-# plot(myt_lm)
-# 
-# 
-#  morphol.disparity(coords ~ site + species, groups= ~ site, data = gdf, iter=499)
-# 
-#                   
+ord <- data.frame(PC1 = PCA_scores$Comp1, PC2 = PCA_scores$Comp2)
+env <- data.frame(Tr = PCA_scores$Tr, Ed = PCA_scores$Ed, Ga =  PCA_scores$Ga) 
+efit <- envfit(ord, env)
+plot(ord)
+plot(efit)
