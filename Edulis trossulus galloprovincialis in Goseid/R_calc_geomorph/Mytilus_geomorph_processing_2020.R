@@ -10,7 +10,7 @@ library(readxl)
 
 
 
-reads <- function(path = "Data/"){
+reads <- function(path = "./Data/Lands/"){
 
   files1 <- list.files(path)
   
@@ -35,7 +35,19 @@ All <- reads()
 ID <- All %>% select(ID, file) %>% unique(.)
 
 
-ids <- read_xls("Data/geomorph_gen_ID.xls", sheet = "geomorph_gen_ID")
+ids <- read_xlsx("Data/gen_markers.xlsx") 
+ids$T <- as.numeric(ids$T)
+ids$E <- as.numeric(ids$E)
+ids$G <- as.numeric(ids$G)
+
+
+
+
+ids <- ids[complete.cases(ids), ]
+
+
+All <- All[All$file %in% ids$file, ]
+
 
 
 # Проверка правильности заполеннеия матрицы лендмарков
@@ -111,22 +123,39 @@ str(PCA)
 
 PCA_scores <- as.data.frame(PCA$x)
 
-PCA_scores$ID <- 1:nrow(PCA_scores)
-
-PCA_scores <- merge(PCA_scores, ids)
+PCA_scores$file <- unique(All$file)
 
 
-gen_markers <- read_xlsx("Data/gen_markers.xlsx")
+PCA_scores <- merge(PCA_scores, ids, by = "file")
 
 
-PCA_scores <- merge(PCA_scores, gen_markers, by = "Gen_ID")
+
+ggplot(PCA_scores, aes(x = Comp1, y = Comp2)) + geom_point(aes(size = G))
 
 
-ggplot(PCA_scores, aes(x = Comp1, y = Comp2)) + geom_point(aes(size = galo))
+ggplot(PCA_scores, aes(x = Comp1, y = Comp2)) + geom_point(aes(size = T))
 
 
-ggplot(PCA_scores, aes(x = Comp1, y = Comp2)) + geom_point(aes(size = Sex))
+ggplot(PCA_scores, aes(x = Comp1, y = Comp2)) + geom_point(aes(size = E))
 
+
+
+ggplot(PCA_scores, aes(x = T, y = Comp1)) + geom_point() + geom_smooth(method = "lm")
+ggplot(PCA_scores, aes(x = T, y = Comp2)) + geom_point() + geom_smooth(method = "lm")
+ggplot(PCA_scores, aes(x = T, y = Comp3)) + geom_point()+ geom_smooth(method = "lm")
+ggplot(PCA_scores, aes(x = T, y = Comp4)) + geom_point()+ geom_smooth(method = "lm")
+
+
+ggplot(PCA_scores, aes(x = E, y = Comp1)) + geom_point() + geom_smooth(method = "lm")
+ggplot(PCA_scores, aes(x = E, y = Comp2)) + geom_point() + geom_smooth(method = "lm")
+ggplot(PCA_scores, aes(x = E, y = Comp3)) + geom_point()+ geom_smooth(method = "lm")
+ggplot(PCA_scores, aes(x = E, y = Comp4)) + geom_point()+ geom_smooth(method = "lm")
+
+
+ggplot(PCA_scores, aes(x = G, y = Comp1)) + geom_point() + geom_smooth(method = "lm")
+ggplot(PCA_scores, aes(x = G, y = Comp2)) + geom_point() + geom_smooth(method = "lm")
+ggplot(PCA_scores, aes(x = G, y = Comp3)) + geom_point()+ geom_smooth(method = "lm")
+ggplot(PCA_scores, aes(x = G, y = Comp4)) + geom_point()+ geom_smooth(method = "lm")
 
 
 
