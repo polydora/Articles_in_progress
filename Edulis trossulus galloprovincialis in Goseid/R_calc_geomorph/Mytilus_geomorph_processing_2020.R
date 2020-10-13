@@ -47,6 +47,9 @@ ids <- ids[complete.cases(ids), ]
 
 ids <- merge(ids, data.frame(file = unique(All$file)))
 
+ids <- ids[ids$Tr < 0.20,]
+
+
 
 
 # Удаляю те файлы, которые не имеют генетических оценок
@@ -62,13 +65,13 @@ as.data.frame(table(All$file))
 
 
 # Создание матрицы с лэндмарками
-myt_matr <- array(rep(NA, length(unique(All$ID))*20*2), dim = c(20, 2, length(unique(All$ID))))
+myt_matr <- array(rep(NA, length(unique(All$ID))*13*2), dim = c(13, 2, length(unique(All$ID))))
 
 
 for(i in 1:length(unique(All$file))){
   id <- unique(All$file)[i]
   d <- All[All$file == id , ]
-  myt_matr[ , , i] <- as.matrix(d[ , c(3,4)])
+  myt_matr[ , , i] <- as.matrix(d[ c(1,3:14) , c(3,4)])
   
 }
 
@@ -79,7 +82,10 @@ for(i in 1:length(unique(All$file))){
 myt_gpa <- gpagen(myt_matr)
 
 # Точки абриса
-myt_links <- data.frame(LM1 = c(1, 3, 4:13, 2, 16, 17, 18, 19), LM2 = c(3:13, 1, 15, 17, 18, 19, 20))
+# myt_links <- data.frame(LM1 = c(1, 3, 4:13, 2, 16, 17, 18, 19), LM2 = c(3:13, 1, 15, 17, 18, 19, 20))
+
+myt_links <- data.frame(LM1 = c(1, 3, 4:14), LM2 = c(3:14, 1))
+
 
 myt_links <- as.matrix(myt_links)
 
@@ -91,28 +97,18 @@ ref <- mshape(myt_gpa$coords)
 plotRefToTarget(ref, ref, method = "TPS", links = myt_links)
 
 
-# Выгнутая мидия
-plotRefToTarget(ref, myt_gpa$coords[, , 16], 
-                method = "vector", mag = 1, 
-                links = myt_links)
-
-# Вогнутая мидия
-plotRefToTarget(ref, myt_gpa$coords[, , 29], 
-                method = "vector", mag = 1, 
-                links = myt_links)
-
-
-
+# # Выгнутая мидия
+# plotRefToTarget(ref, myt_gpa$coords[, , 16], 
+#                 method = "vector", mag = 1, 
+#                 links = myt_links)
+# 
+# # Вогнутая мидия
+# plotRefToTarget(ref, myt_gpa$coords[, , 29], 
+#                 method = "vector", mag = 1, 
+#                 links = myt_links)
+# 
 
 
-plotRefToTarget(myt_gpa$coords[, , 16], myt_gpa$coords[, , 29],
-                method = "vector", mag = 1,
-                links = myt_links)
-
-
-plotRefToTarget(myt_gpa$coords[, , 29], myt_gpa$coords[, , 16],
-                method = "vector", mag = 1,
-                links = myt_links)
 
 
 
@@ -140,10 +136,23 @@ PCA_scores$Sp[PCA_scores$Ga < 0.5 & PCA_scores$Tr < 0.5 & PCA_scores$Ed < 0.5] <
 
 
 
-ggplot(PCA_scores, aes(x = Comp1, y = Comp2)) + geom_point(aes(fill = Sp), shape = 21, size = 4, position = "jitter")
+ggplot(PCA_scores, aes(x = Comp1, y = Comp2))  + geom_point(aes(fill = Sp, shape = Sex), size = 4) + scale_shape_manual(values = c(21, 23))
+  
+  
+  geom_text(aes(label = 1:nrow(PCA_scores)))
 
 
-ggplot(PCA_scores, aes(x = Sp, y = Comp1)) + geom_boxplot(notch = F)
+
+plotRefToTarget(myt_gpa$coords[, , 1], myt_gpa$coords[, , 1],
+                method = "TPS", mag = 1,
+                links = myt_links)
+
+plotRefToTarget(myt_gpa$coords[, , 30], myt_gpa$coords[, , 30],
+                method = "TPS", mag = 1,
+                links = myt_links)
+
+
+ggplot(PCA_scores, aes(x = Sp, y = Comp2)) + geom_boxplot(notch = T)
 
 
 ord <- data.frame(PC1 = PCA_scores$Comp1, PC2 = PCA_scores$Comp2)
@@ -151,3 +160,14 @@ env <- data.frame(Tr = PCA_scores$Tr, Ed = PCA_scores$Ed, Ga =  PCA_scores$Ga)
 efit <- envfit(ord, env)
 plot(ord)
 plot(efit)
+
+
+
+summary(PCA)
+
+ggplot(PCA_scores, aes(x = Ga, y = Comp1)) + geom_point() + geom_smooth()
+ggplot(PCA_scores, aes(x = Ga, y = Comp2)) + geom_point() + geom_smooth()
+ggplot(PCA_scores, aes(x = Ga, y = Comp3)) + geom_point() + geom_smooth()
+ggplot(PCA_scores, aes(x = Ga, y = Comp4)) + geom_point() + geom_smooth()
+ggplot(PCA_scores, aes(x = Ga, y = Comp5)) + geom_point() + geom_smooth()
+
