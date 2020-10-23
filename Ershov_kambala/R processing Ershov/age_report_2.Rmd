@@ -168,49 +168,66 @@ dd <- data.frame(Age = 1:13)
 age_join <- cbind(dd,
 age_all %>% filter(Sex == "Female") %>% select(N_Right, N_Left) + age_all %>% filter(Sex == "Male") %>% select(N_Right, N_Left))
 
-ggplot(age_join, aes(x = Age)) + geom_polygon(aes(y = N_Left),  color = "gray10") +
-  geom_polygon(aes(y = N_Right), alpha = 0.5, color = "gray") + theme(panel.grid = element_blank()) + scale_x_continuous(breaks = 1:max(age_join$Age))
+ggplot(age_join, aes(x = Age)) + geom_polygon(aes(y = N_Left/sum(N_Right + N_Left)),  color = "gray10") +
+  geom_polygon(aes(y = N_Right/ sum(N_Right + N_Left) ), alpha = 0.5, color = "gray") + theme(panel.grid = element_blank()) + scale_x_continuous(breaks = 1:max(age_join$Age)) + geom_vline(xintercept = c(3, 8))
+
+
+
 
 ```
 
+```{r}
+# 
+# age_join$P_Right <- age_join$N_Right/sum(age_join$N_Right)
+# age_join$P_Left <- age_join$N_Left/sum(age_join$N_Left)
 
-<!-- Полученное возрастное распределение явно "аномально", наблюдается недоучет особей ыозрастом 1+ и 2+. В связи с этим следует рассмотреть только возраст от 3+ и выше.  Можно приблизительно (очень прибизительно) реконструировать демографические таблицы для двух групп камбал.    -->
-
-
-<!-- ```{r, fig.cap=figRef("Age_join2", "Зависимость вероятности перехода из одной возрастной когорты ")} -->
-<!-- R_right <- log(age_join$N_Right[2:(nrow(age_join))]) - log(age_join$N_Right[1:(nrow(age_join)-1)]) -->
-
-<!-- R_left <- log(age_join$N_Left[2:(nrow(age_join))]) - log(age_join$N_Left[1:(nrow(age_join)-1)]) -->
-
-<!-- R <- data.frame(Age = 1:(nrow(age_join)-1),R_right, R_left)  -->
-
-<!-- # R <- R[-c(1, 2, 12), ] -->
-<!-- #  -->
-<!-- # R[, 2] <- ifelse(R[, 2] >= 1, NA, R[, 2]) -->
-<!-- #  -->
-<!-- # R[, 3] <- ifelse(R[, 3] >= 1, NA, R[, 3]) -->
-
-<!-- R_melt <- melt(R, id.vars = "Age") %>% filter(!is.infinite(value)) %>% filter(value<0)  -->
-
-<!-- Mod_dem <- lm(value ~ Age*variable, data = R_melt) -->
-
-<!-- new_data <- expand.grid(Age = 0:13, variable = c("R_right", "R_left")) -->
-
-<!-- new_data$R_predicted <-  predict(Mod_dem, new_data) -->
+# ggplot(age_join, aes(x = Age)) + geom_line(aes(y = P_Right)) + geom_line(aes(y = P_Left), color = "blue")
 
 
 
-<!--   ggplot(aes(x = Age, y = value, color = variable)) + geom_point() + geom_smooth(method = "lm", se = F) -->
-
-<!-- ``` -->
 
 
-<!-- ```{r} -->
+d <- melt(age_join, id.vars = c("Age") ) %>%  filter(Age > 2 & value !=0)
 
-<!-- ``` -->
+d$P2 [d$] <- 
 
 
+d %>% group_by(variable) %>% sum(.)
 
+
+d$P <- d$value/sum(d$value)
+
+sum(d$P)
+
+library(betareg)
+
+M1 <- betareg(P ~ Age*variable, data = d, link = "logit")
+M2 <- betareg(P ~ Age*variable, data = d, link = "probit")
+M3 <- betareg(P ~ Age*variable, data = d, link = "cloglog")
+M4 <- betareg(P ~ Age*variable, data = d, link = "log")
+M5 <- betareg(P ~ Age*variable, data = d, link = "loglog")
+
+
+AIC(M1, M2, M3, M4, M5)
+
+summary(M2)
+Anova(M2)
+
+My_data = expand.grid(Age = 3:13, variable = c("N_Right", "N_Left" ))
+
+My_data$Predicted <- predict(M1, newdata = My_data, type = "response")
+
+ggplot(My_data, aes(x = Age, y = Predicted, color = variable)) + geom_line(size = 1) +  geom_point(data = d, aes(y = P), size = 3)
+
+-0.29507
+
+-0.29507 + 0.07350 
+
+exp(-0.29507)
+
+exp(-0.29507 + 0.07350)
+
+```
 
 
 
