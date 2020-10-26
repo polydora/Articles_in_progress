@@ -1,0 +1,304 @@
+---
+title: ""
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+```
+
+```{r}
+library(mgcv)
+library(ggplot2)
+library(dplyr)
+library(broom)
+library(car)
+library(reshape2)
+
+options(knitr.kable.NA = '')
+
+
+
+
+# Функция, задающая нумерацию рисунков
+
+figRef <- local({
+    tag <- numeric()
+    created <- logical()
+    used <- logical()
+    function(label, caption, prefix = options("figcap.prefix"), 
+        sep = options("figcap.sep"), prefix.highlight = options("figcap.prefix.highlight")) {
+        i <- which(names(tag) == label)
+        if (length(i) == 0) {
+            i <- length(tag) + 1
+            tag <<- c(tag, i)
+            names(tag)[length(tag)] <<- label
+            used <<- c(used, FALSE)
+            names(used)[length(used)] <<- label
+            created <<- c(created, FALSE)
+            names(created)[length(created)] <<- label
+        }
+        if (!missing(caption)) {
+            created[label] <<- TRUE
+            paste0(prefix.highlight, prefix, " ", i, sep, prefix.highlight, 
+                " ", caption)
+        } else {
+            used[label] <<- TRUE
+            paste(prefix, tag[label])
+        }
+    }
+})
+
+options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**")
+
+
+
+theme_set(theme_bw())
+
+age_all <- read.table("Data/age_Onega.csv", sep = ",", header = T, dec = ".")
+
+age <- age_all %>% filter(Age %in% 2:7)
+
+```
+
+
+## Связь частоты реверсивных особей с возрастом 
+
+Для "Материалов и методов"
+
+Из анализа были исключены возрастные группы 1+, и более 7+. Это связано с очень малыми объемами выборок по этим группам.То есть модель будет описывать только возрастной диапазон 2+ - 7+. 
+
+Была построена логистическая регрессионная модель, описывающая связь вероятности встречи реверсивных особей в зависимости от возраста и пола. 
+
+
+<!-- $y_i \sim Binomial(n = 1, \pi_i)$ -->
+
+<!-- $E(y_i) = \pi_i = \cfrac{e ^ {\beta_0 + \beta_1 x_{1} + ... + \beta_{p-1}~x_{p- 1}}}{1 + e^{\beta_0 + \beta_1 x_{1} + ... + \beta_{p-1}~x_{p- 1}}}$ -->
+
+<!-- $ln(\cfrac{\pi_i}{1 - \pi_i}) = \eta_i$ --- функция связи логит, переводит вероятности в логиты. -->
+
+<!-- $\eta = b_0 + b_1 Sex_{Male} + b_2(Age) + Interaction$ -->
+
+<!-- где  -->
+
+<!-- $\eta$ -- логит-преобразованная вероятность встретить реверсивную рыбу.   -->
+
+
+Для "Результатов"
+
+```{r}
+Mod_age_continous <- glm(cbind(Left, Right) ~ Age*Sex, family = "binomial", data = age)
+
+# Mod_age_continous <- gam(cbind(N_Left, N_Right) ~ s(Age, k = 8) + Sex, family = "binomial", data = age)
+
+Mod_parametric <- tidy(Mod_age_continous, parametric = T)
+
+
+```
+
+
+Значимой зависимости вероятности встречи инверсивных рыб от пола выявлено не было (Таблица 1). Нет и значимого взаимодействия предикторов. Зависимость вероятности встретить инверсивную особь от возраста (в исследованном диапазоне) оказалась статистически значимой (Таблица 1).
+
+```{r}
+kable(Mod_parametric, digits = 3, caption = c("Таблица 1. Параметры модели."))
+
+```
+
+
+Полученная модель (`r figRef("Age_mod")`) предсказывает рост вероятности встретить инверсивную рыбу по мере увеличения возраста. 
+
+
+
+
+
+```{r, fig.cap= figRef("Age_mod", "Зависимость доли инверсивных особей от возраста. Линии отражают предсказание модели.")}
+
+
+# summary(Mod_age_continous)
+
+new_data <- age %>% group_by(Sex) %>% do(data.frame(Age = seq(min(.$Age), max(.$Age), length.out = 100)))
+
+
+predicted <- predict(Mod_age_continous, newdata = new_data, type = "response", se.fit = T)
+
+new_data$fit <- predicted$fit
+
+new_data$SE <- predicted$se.fit
+
+
+
+# Left_perc <- age %>% group_by(Sex) %>% mutate(Age_class = ntile(n = 4)) %>% group_by(Sex, Age_class) %>% summarise(Left_perc = sum(N_Left)/(sum(N_Left) + sum(N_Right)), Age = mean(Age) )
+
+Left_perc <- age %>% group_by(Sex, Age) %>% summarise(Left_perc = sum(Left)/(sum(Left) + sum(Right)))
+
+
+
+ggplot(new_data, aes(x = Age, y = fit, linetype = Sex))+ 
+  geom_point(data = Left_perc, aes(x = Age, y= Left_perc, fill = Sex), shape = 21, size = 4) +
+  geom_line(size = 1) + geom_ribbon(aes(ymin = fit - 1.96*SE, ymax = fit + 1.96*SE), alpha = 0.2)  +
+  scale_fill_manual(values = c("white", "black")) + labs(x = "Age", y = "Probability of reversive fish") +
+  scale_x_continuous(breaks = seq(1, max(age$Age))) +
+  theme(panel.grid = element_blank())
+
+```
+
+
+
+
+<!-- Частотное распределение возрастов приведено на рисунке (`r figRef("Age_str")`). Значимых различий между возрастной структурой самцов и самок не выявляется, равно как не видно по этим графикам и  существенной разницы между возрастной структурой левых и правых рыб.  -->
+
+
+
+
+<!-- Что еще сказать, глядя на эти графики, не знаю. Видно, что возрастное распределение "аномально", виден недолов младших когорт. Но это ведь, как я понимаю, результат того, что ловили там, где молодь не живет...  -->
+
+
+<!-- В принципе, если есть желание, то по этим данным можно приблизительно (очень приблизительно) реконструировать кривые выживания для левых и правых рыб. Но это будет так себе по надежности. -->
+
+
+<!-- ```{r, fig.cap=figRef("Age_str", "Возрастные распределения лево- и правосторонних камбал среди разных полов.")} -->
+<!-- age_all2 <- melt(age_all, measure.vars = c("Left", "Right")) -->
+
+<!-- age_all2$Sideness <- ifelse(age_all2$variable == "Right", "Right", "Left") -->
+
+<!-- ggplot(age_all2, aes(x = Age, y = value, fill = Sideness)) + geom_polygon(alpha = 0.2, color = "black") + facet_wrap(~Sex) + labs(y = "Abundance") + scale_fill_manual(values = c("gray10", "gray10")) + theme(panel.grid = element_blank()) + scale_x_continuous(breaks = 1:max(age_all2$Age)) -->
+<!-- ``` -->
+
+
+<!-- ```{r, fig.cap=figRef("Age_join", "Возрастные распределения лево- и правосторонних камбал (оба пола объединены)")} -->
+
+<!-- dd <- data.frame(Age = 1:13) -->
+
+<!-- age_join <- cbind(dd, -->
+<!-- age_all %>% filter(Sex == "Female") %>% select(Right, Left) + age_all %>% filter(Sex == "Male") %>% select(Right, Left)) -->
+
+<!-- ggplot(age_join, aes(x = Age)) + geom_polygon(aes(y = Left/sum(Right + Left)),  color = "gray10") + -->
+<!--   geom_polygon(aes(y = Right/ sum(Right + Left) ), alpha = 0.5, color = "gray") + theme(panel.grid = element_blank()) + scale_x_continuous(breaks = 1:max(age_join$Age)) -->
+
+
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- #  -->
+
+
+<!-- d <- melt(age_join, id.vars = c("Age"), variable.name = "Orient", value.name = "N" ) %>%  filter(Age > 2 & N !=0) -->
+
+
+
+<!-- Age_fr <-  d %>% group_by(Orient) %>%  mutate(P2 = prop.table(N)) %>% ungroup(Orient) %>% mutate(P = prop.table(N)) -->
+
+
+
+
+<!-- library(betareg) -->
+
+<!-- M1 <- betareg(P ~ Age * Orient, data = Age_fr, link = "logit") -->
+<!-- M2 <- betareg(P ~ Age * Orient, data = Age_fr, link = "probit") -->
+<!-- M3 <- betareg(P ~ Age * Orient, data = Age_fr, link = "cloglog") -->
+<!-- M4 <- betareg(P ~ Age * Orient, data = Age_fr, link = "log") -->
+<!-- M5 <- betareg(P ~ Age * Orient, data = Age_fr, link = "loglog") -->
+
+
+<!-- AIC(M1, M2, M3, M4, M5) -->
+
+<!-- summary(M2) -->
+<!-- Anova(M2) -->
+
+
+
+<!-- #  -->
+<!-- # dd <- age_join %>% filter(Age > 3)  -->
+<!-- #  -->
+<!-- # lost <- data.frame(Right = diff(dd$Right), Left = diff(dd$Left)) * -1 -->
+<!-- #  -->
+<!-- # lost$Right_Prop <- lost$Right/dd$Right[-length(dd$Right)] -->
+<!-- #  -->
+<!-- # lost$Left_Prop <- lost$Left/dd$Left[-length(dd$Left)] -->
+<!-- #  -->
+<!-- # ggplot(lost[1:5,], aes(x = Right_Prop, y = Left_Prop)) + geom_path() + geom_abline() -->
+<!-- #  -->
+
+
+
+
+
+<!-- My_data = expand.grid(Age = 3:13, Orient = c("Right", "Left" )) -->
+
+<!-- My_data$Predicted <- predict(M2, newdata = My_data, type = "response") -->
+
+<!-- ggplot(My_data, aes(x = Age, y = Predicted, color = Orient)) + geom_line(size = 1) +  geom_point(data = Age_fr, aes(y = P), size = 3) -->
+
+<!-- diff(My_data$Predicted) -->
+<!-- ``` -->
+
+
+
+<!-- ## Биологическая трактовка -->
+
+<!-- Основное наблюдение осталось неизменным - чем старше рыба тем выше вероятность встретить инверсивную особь. То есть, фактор действующих против левосторонних рыб, особо сильно действует на ранних стадиях развития, но смягчается на более поздних.  -->
+
+
+## Частота реверсивных особей в разных географических областях 
+
+```{r}
+library(ggmap)
+library(mapproj)
+library(maps)
+
+library(rgeos) #этот пакет содержит какую-то хрень, которая позволяет обойти проблему пр чтении фалов средсвами maptools. 
+#Att! Этот пакет должен быть загружен до maptools
+
+library(mapdata)
+library(maptools) # Rgshhs
+library(PBSmapping)
+library(gridExtra)
+library(grid)
+library(ggrepel)
+
+
+theme_set(theme_bw() + theme(legend.key = element_blank()))
+
+df_europ <- read.csv("Data/Europe_polygon.csv", header = T)
+
+
+# Задаем пределы координат
+
+Full_x <- c(-10, 50)
+Full_y <- c(49, 72)
+
+gg_full <- ggplot(df_europ, aes(x=long, y=lat, group=group)) +
+  geom_polygon(fill = "gray95", colour = "gray60") + coord_map(xlim = Full_x, ylim = Full_y) + theme_bw() +  theme(axis.title.x =element_blank(),  axis.title.y= element_blank(), plot.background = element_rect(fill = "white"), panel.grid = element_blank()) + theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + theme(axis.ticks = element_blank()) 
+
+
+```
+
+
+
+
+```{r,  fig.cap= figRef("Left_map", "Частота реверсивных особей в разных частях ареала. Размер точки пропорционален частоте.")}
+
+left_prop <- read.csv("Data/point_proportion.csv", header = T)
+point_coord <- read.csv("Data/point_coordinates.csv", header = T)
+
+point_coord$Lat <- point_coord$Lat + point_coord$Lat_m / 60 
+point_coord$Long <- point_coord$Long + point_coord$Long_m / 60
+
+points <- data.frame(Point = 1:nrow(left_prop), left_prop, Lat = point_coord$Lat, Long = point_coord$Long)
+
+gg_full + geom_point(data = points, aes(x = Long, y = Lat, size = Left_prop, group = 1), shape = 21, fill = "blue") + scale_size_continuous(breaks = seq(0, 50, 5)) + geom_text_repel(data = points, aes(x = Long, y = Lat, group = 1, label = 1:nrow(points)), force = 2) + labs(size= "Proportion of Reverse")
+
+```
+
+<br>
+<br>
+
+```{r}
+points_print <- points[ ,1:4]
+
+kable(points_print, caption = "**Таблица 2**. Доля (%) реверсивных рыб в разных участках ареала.", col.names = c("№", "Место", "Доля левосторонних", "Источник данных") )
+```
+
