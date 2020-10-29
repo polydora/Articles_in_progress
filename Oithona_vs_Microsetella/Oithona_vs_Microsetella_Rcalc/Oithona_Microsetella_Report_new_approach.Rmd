@@ -1,7 +1,7 @@
 ---
 title: "Взаимоотношения Oithona и Microsetella"
 author: "Вадим Хайтов"
-date: '4  марта 2020'
+date: ''
 output: html_document
 ---
 
@@ -22,75 +22,12 @@ library(gridExtra)
 library(broom)
 library(tidyr)
 library(car)
+library(vegan)
+library(ggvegan)
 
 
 
 theme_set(theme_bw())
-
-cop_init <- read.table("Data/Oithona_Microsetella.csv", sep = ";", header = T)
-
-
-cop <- melt(cop_init, id.vars = c("Day","Month","Year","Day.of.year"), variable.name = "Stage", value.name = "N") 
-
-cop$Depth[str_detect(as.character(cop$Stage), "_1")] <- "0_10"  
-cop$Depth[str_detect(as.character(cop$Stage), "_25")] <- "0_25"  
-cop$Depth[str_detect(as.character(cop$Stage), "_3")] <- "25_bottom" 
-cop$Depth[str_detect(as.character(cop$Stage), "_65")] <- "0_bottom" 
-
-cop$Depth[is.na(cop$Depth)] <- "10_25" 
-
-# unique(cop$Depth)
-
-
-
-
-cop$Stage2[str_detect(as.character(cop$Stage), "_F_")] <- "Female"
-cop$Stage2[str_detect(as.character(cop$Stage), "_M_")] <- "Male"
-cop$Stage2[str_detect(as.character(cop$Stage), "_C_")] <- "Cop."
-cop$Stage2[str_detect(as.character(cop$Stage), "_J_")] <- "Juv."
-cop$Stage2[str_detect(as.character(cop$Stage), "_A_")] <- "Adult"
-cop$Stage2[str_detect(as.character(cop$Stage), "_N_")] <- "Nauplii"
-cop$Stage2[is.na(cop$Stage2)] <- "Total"
-
-cop$Sp[str_detect(as.character(cop$Stage), "OITO")] <- "Oithona"
-cop$Sp[str_detect(as.character(cop$Stage), "MIC")] <- "Microsetella"
-
-
-#Remove all cases with NA in Abundance
-cop <- cop[! is.na(cop$N), ]
-
-
-#Construct the variable vith date of sample
-cop$Date_text <- with(cop, paste(Day,Month,Year, sep = "-"))
-
-cop$Date <- as.POSIXct(as.Date(cop$Date_text, format = "%d-%m-%Y"))
-
-
-
-#Combine Males and Females in one category 
-cop$Stage3 <- cop$Stage2
-
-cop$Stage3[cop$Stage3 == "Male" | cop$Stage3 == "Female"] <- "Adult"
-
-# unique(cop$Stage3)
-
-
-
-
-#Ordering stages 
-cop$Stage3 <- factor(cop$Stage3, levels = c("Adult", "Nauplii", "Juv.", "Cop.", "Total") )
-                     
-#Constructing date of sample as Day from yar beginning
-
-cop$DOY <- as.numeric(strftime(cop$Date, format = "%j"))
-
-# Log transformation of abundance
-cop$Log_N <- log(cop$N + 1)
-
-
-
-
-
 
 cop_init_100 <- read.table("Data/Oithona_Microsetella_100_mkm.csv", sep = ",", header = T)
 
@@ -199,279 +136,56 @@ hydr100$DOY <- as.numeric(strftime(hydr100$Date, format = "%j"))
 ```
 
 
-
-
 ```{r}
-oit <- cop %>% filter(Sp == "Oithona") %>% filter(Depth == "0_10") %>% filter(DOY <365 & DOY > 0) %>% group_by(Year, Stage2) %>% filter(Stage2 != "Total") %>% summarise(Log_N = log(mean(N)+1))
+# Переводим данные по обилию в матрицу, пригодную для сса
 
-oit_N <- cop %>% filter(Sp == "Oithona") %>% filter(Depth == "0_10") %>% filter(DOY <365 & DOY > 0) %>% group_by(Year, Stage2) %>% filter(Stage2 != "Total") %>% summarise(N = mean(N))
+cop100_N <- dcast(cop100, formula = Date_text + Depth  ~ Sp + Stage3, value.var = "N", fun.aggregate = sum )
 
-  
-  
-micr <- cop %>% filter(Sp == "Microsetella") %>% filter(Depth == "0_10")%>% filter(DOY <300 & DOY > 100) %>% group_by(Year, Stage3) %>% filter(Stage2 != "Total") %>% summarise(N = log(mean(N)+1) )
+hydr100_Param <- dcast(hydr100, formula = Date_text + Depth  ~ Param, value.var = "Value", fun.aggregate = mean)
 
+hydr100_Param$Depth2 <- 
+  case_when(hydr100_Param$Depth ==  "0_10" ~ 5.5,
+           hydr100_Param$Depth == "10_25" ~ 17.5,
+           hydr100_Param$Depth == "25_bottom" ~ 45)
 
-oit2 <- dcast(oit, formula = Year ~ Stage2)
-oit_N2 <- dcast(oit_N, formula = Year ~ Stage2)
 
+cop100_N_env <- merge(cop100_N, hydr100_Param )
 
-micr2 <- dcast(micr, formula = Year ~ Stage3)
 
-micr2$Adult_1 <- c(NA, micr2$Adult[1:(nrow(micr2)-1)])
-micr2$Cop_1 <- c(NA, micr2$Cop.[1:(nrow(micr2)-1)])
 
-oit2 <- oit2[complete.cases(oit2), ]
-oit_N2 <- oit_N2[complete.cases(oit_N2), ]
-
-
-
-micr2 <- micr2[micr2$Year %in% unique(oit2$Year), ]
-
-env <- env[env$Year  %in% unique(oit2$Year), ]
-
-predictors <- merge(micr2, env, by = "Year")
-names(predictors)[2] <- "Adult_Mic"
-
-```
-
-Предуведомление.
-Все анализы, которые я здесь сделал проведены на основе материала по слою воды 0-10 м. Я запутался с тем, как объединить данные по слоям. Возможно, когда слои объединим, то все будет не так... Но пока работаю в этом режиме. 
-
-
-
-Итак.
-Базовой посылкой для этого анализа было то, что при изучении фенологии видов мы натолкнулись на зависимость фенологии Oithona от обилия Microsetella. Чем больше обилие микросетеллы, тем позднее происходят некоторые события в жизни оитоны. 
-
-Мы видим, что на фоне многолетней тенденции роста обилия микросетеллы идет снижение обилия оитоны, что у нас тоже было в той статье.
-
-```{r}
-cop_tot <- cop %>% filter(Stage2 == "Total") %>% filter(Year > 1962)
-  
-ggplot(cop_tot, aes(x = Year, y = Log_N, color = Sp)) + geom_point(size = 0.2) + geom_smooth(se =F, size = 1) + geom_smooth(method = "lm", se =F, size = 1.5) + facet_wrap(~Sp, scales = "free_y") 
-
-```
-
-
-
-
-Нечто похожее мы выявили при анализе сезонных процессов в жизни двух видов. На рисунке, приведенном ниже, прослеживается локальное падение обилия оитоны в те периоды, когда наблюдается массовый выход микросетеллы. Кстати, пик микросетеллы очень узкий.  
-
-```{r, fig.cap="Seasonal dynamics of abundance of different stages. 100 mkm net was used"}
-
-cop100_Oit_Mic <- cop100 %>% filter( Stage3 %in% c( c("Adult", "Nauplii", "Juv.", "Cop."))) %>% filter(Depth == "0_10")
-
-
-Mod_Oit_Mic <- gam(Log_N ~ s(DOY, by = interaction(Stage3, Sp), bs = "cc") + Stage3 * Sp, data = cop100_Oit_Mic)
-
-
-new_data_Oit_Mic <- expand.grid(Stage3 = unique(cop100_Oit_Mic$Stage3),   DOY = 1:365, Sp = unique(cop100_Oit_Mic$Sp), Depth = unique(cop100_Oit_Mic$Depth))
-
-new_data_Oit_Mic$Predicted <- predict(Mod_Oit_Mic, newdata = new_data_Oit_Mic, type = "response")
-
-
-Pl_stages <- ggplot(new_data_Oit_Mic, aes(x = DOY, y = Predicted, color = Sp)) + geom_line(size = 1.5) + labs(x = "Day of year", y = "Log(N)", color = "Species") + facet_wrap(~Stage3, ncol = 1) + geom_point(data = cop100_Oit_Mic, aes(y = Log_N), size = 0.05) + scale_color_manual(values = c("red", "blue")) + theme(legend.position = "bottom")
-
-Pl_stages
-```
-
-
-## Анализ данных по сетке 100 мкм
-
-
-```{r}
-oit100 <- cop100 %>% filter(Sp == "Oithona") %>% filter(Depth %in% c("0_10", "10_25","25_bottom") )  %>% group_by(Date, Depth, Stage2) %>% filter(Stage2 != "Total") %>% summarise(Log_N = log(mean(N)+1))
-
-oit_N100 <- cop100 %>% filter(Sp == "Oithona") %>% filter(Depth %in% c("0_10", "10_25","25_bottom") )  %>% group_by(Date, Depth, Stage2) %>% filter(Stage2 != "Total") %>% summarise(N = mean(N))
-
-  
-  
-micr100 <- cop100 %>% filter(Sp == "Microsetella") %>%  filter(Depth %in% c("0_10", "10_25","25_bottom") )  %>% group_by(Date, Depth, Stage3) %>% filter(Stage2 != "Total") %>% summarise(N = log(mean(N)+1) )
-
-
-oit2_100 <- dcast(oit100, formula = Date + Depth ~ Stage2)
-oit_N2_100 <- dcast(oit_N100, Date + Depth ~ Stage2)
-
-
-micr2_100 <- dcast(micr100, formula = Date + Depth ~ Stage3)
-
-# micr2_100$Adult_1 <- c(NA, micr2_100$Adult[1:(nrow(micr2_100)-1)])
-# micr2_100$Cop_1 <- c(NA, micr2$Cop.[1:(nrow(micr2)-1)])
-
-oit2_100 <- oit2_100[complete.cases(oit2_100), ]
-oit_N2_100 <- oit_N2_100[complete.cases(oit_N2_100), ]
-
-names(oit_N2_100) <- c("Date", "Depth", "Oit_Male",  "Oit_Female",  "Oit_Nauplii",   "Oit_Juv.",   "Oit_Cop.")
-
-
-
-micr2_100 <- micr2_100[micr2_100$Date %in% unique(oit2_100$Date), ]
-
-
-hydr100_surf <- hydr100 %>%  filter(Depth %in% c("0_10")) %>% group_by(Year, Month, Day, DOY, Param) %>% summarise(Value = mean(Value)) %>% dcast(., formula = Year + Month + Day + DOY ~ Param)
-
-
-hydr100_2 <- hydr100 %>%  filter(Depth %in% c("0_10", "10_25","25_bottom") ) %>% group_by(Date, Depth, Param) %>% summarise(Value = mean(Value)) %>% dcast(., formula = Date + Depth ~ Param)
-
-
-
-
-# Формируем датасет пригодный для ССА
-
-dd <- merge(micr2_100, hydr100_2)
-
-all_data_100 <- merge(oit_N2_100, dd)
-
-all_data_100$DOY <- as.numeric(strftime(all_data_100$Date, format = "%j"))
-all_data_100$Year <- as.numeric(strftime(all_data_100$Date, format = "%Y"))
-
-
-
-all_data_100_full <- all_data_100 %>% filter(complete.cases(.))
+cop100_N_env <- cop100_N_env[complete.cases(cop100_N_env),]
 
 
 ```
-
-
-
-
-
-<!-- ```{r} -->
-<!-- hydr100 %>%  filter(Depth =="0_10") %>% ggplot(., aes(x = DOY, y = Value, color = Param)) + geom_point() + facet_wrap(~Param, scales = "free_y") -->
-
-<!-- ``` -->
-
-## Многолетние изменения параметров
-```{r}
-
-  
-ggplot(hydr100_2, aes(x = Date, y = Sal, color = Depth)) + geom_line() + geom_smooth()  
-
-ggplot(hydr100_2, aes(x = Date, y = Temp, color = Depth)) + geom_line() + geom_smooth()  
-
-ggplot(hydr100_2, aes(x = Date, y = Chl, color = Depth)) + geom_line() + geom_smooth()  
-
-
-```
-
-
-## Структура водных масс
-
-```{r}
-ggplot(hydr100_2, aes(x = Sal, y = Temp, color = Depth)) + geom_point(size = 0.1) + geom_density2d() + facet_wrap(~Depth)   
-
-# ggplot(hydr100_2, aes(x = Temp, y = Chl, color = Depth)) + geom_point(size = 1) + geom_density2d() + facet_wrap(~Depth)   
-
-ggplot(hydr100_2, aes(x = Temp, y = Chl, color = Depth)) + geom_point(size = 1) + geom_density2d() + facet_wrap(~Depth)   + ylim(0,3)
-
-
-```
-
-
-
-## Сезонный ход параметров на глубине 0-10 м
-
 
 ```{r}
 
+# CCA RDA
 
-Pl_Sal <- ggplot(hydr100_surf, aes(x = DOY, y = Sal)) + geom_point(size = 1) + geom_smooth(se = F, size = 1.5)
+N_100 <- cop100_N_env %>% select(-c(Date_text, Depth, Chl,  Sal, Temp, Depth2))
 
-Pl_Temp <- ggplot(hydr100_surf, aes(x = DOY, y = Temp)) + geom_point(size = 1) + geom_smooth(se = F, size = 1.5)
+cop100_N_env_2 <- cop100_N_env %>% filter(rowSums(N_100) != 0)
 
-Pl_Chl <- ggplot(hydr100_surf, aes(x = DOY, y = Chl)) + geom_point(size = 1) + geom_smooth(se = F, size = 1.5)
-
-Pl_Adult <- new_data_Oit_Mic %>% filter(Stage3 == "Adult") %>% ggplot( aes(x = DOY, y = Predicted, color = Sp)) + geom_line(size = 1.5) + labs(x = "Day of year", y = "Log(N)") +  scale_color_manual(values = c("red", "blue")) + guides(color = "none") + ggtitle("Adult")
-
-Pl_Juv <- new_data_Oit_Mic %>% filter(Stage3 == "Juv.") %>% ggplot( aes(x = DOY, y = Predicted, color = Sp)) + geom_line(size = 1.5) + labs(x = "Day of year", y = "Log(N)") +  scale_color_manual(values = c("red", "blue")) + guides(color = "none") + ggtitle("Juv")
-
-grid.arrange(Pl_Temp, Pl_Chl, Pl_Sal, ncol = 1 )
-
-```
+N_100_2 <- cop100_N_env_2 %>% select(-c(Date_text, Depth, Chl,  Sal, Temp, Depth2))
 
 
-
-## Стадии,  температура и хлорофилл на глубине 10 м
-
-
-```{r}
-grid.arrange(Pl_Adult, Pl_Juv, Pl_Temp, Pl_Chl, ncol = 1 )
-
-```
+mod_cca <- cca(N_100_2  ~ Chl +  Sal + Temp + Depth2, data = cop100_N_env_2)
 
 
+# anova(mod_cca)
+# anova(mod_cca, by = "margin")
+# 
+# anova(mod_cca, by = "axis")
 
-## CCA по наиболее теплым дням
-
-Полная модель
-
-```{r}
-
-
-## Отрезаем только теплые месяцы 
-
-all_data_100_full_warm <-  all_data_100_full %>% filter(DOY %in% 150:250)
-
-predictors_100 <- all_data_100_full_warm [, c("Depth", "Adult", "Nauplii", "Juv.", "Cop.", "Chl","Sal","Temp", "DOY")] 
-
-
-oit_N_100_3 <- all_data_100_full_warm [ , c("Oit_Male",  "Oit_Female",  "Oit_Nauplii",   "Oit_Juv.",   "Oit_Cop.")] 
+plot(mod_cca, display = c("sp", "cn" ), choices = c(1, 2), scaling = "species")
 
 
 
 
-library(vegan)
 
-oit_N_100_4 <- oit_N_100_3[rowSums(oit_N_100_3)>0, ]
-predictors_100_4 <- predictors_100[rowSums(oit_N_100_3)>0, ]
-
-
-oit_cca_100 <- cca(oit_N_100_4  ~  Adult + Nauplii + Juv. + Cop. + Chl + Sal + Temp ,  data = predictors_100_4)
-
-# vif.cca(oit_cca_100)
-
-anova(oit_cca_100)
 
 
 ```
-
-
-Оптимальная модель
-
-
-```{r}
-# ordistep(oit_cca_100)
-
-oit_cca_100_reduced <- cca(formula = oit_N_100_4 ~ Adult + Nauplii + Sal + Temp, data = predictors_100_4)
-
-
-anova(oit_cca_100_reduced)
-
-anova(oit_cca_100_reduced, by = "axis", permutations = 9999)
-
-anova(oit_cca_100_reduced, by = "margin")
-
-plot(oit_cca_100_reduced, scaling = "sp", display = c("sp", "cn"), choices = c(1,2) )
-
-
-```
-
-
-## Усредненные данные по годам
-
-```{r}
-
-all_data_100_means <- all_data_100_full [c("Adult", "Nauplii", "Juv.", "Cop.", "Chl","Sal","Temp", "Oit_Male",  "Oit_Female",  "Oit_Nauplii",   "Oit_Juv.",   "Oit_Cop.", "Year" )] %>% group_by(Year) %>% summarise_all("mean")
-
-
-predictors_mean <- all_data_100_means  [, c("Adult", "Nauplii", "Juv.", "Cop.", "Chl","Sal","Temp")] 
-
-oit_N_mean <- all_data_100_means[ , c("Oit_Male",  "Oit_Female",  "Oit_Nauplii",   "Oit_Juv.",   "Oit_Cop.")] 
-
-oit_mean_cca <- cca(oit_N_mean ~  Adult + Nauplii + Juv. + Cop. + Sal + Temp, data = predictors_mean)
-
-anova(oit_mean_cca)
-```
-
 
 
 
