@@ -41,13 +41,13 @@ wdb_borders.f.b <- "d:/Data_LMBE/Maps/Gshhs/wdb_borders_f.b"
 
 Kl <- getRgshhsMap(fn = gshhs.l.b, xlim = Full_x, ylim = Full_y)
 
-Kf <- getRgshhsMap(fn = gshhs.f.b, xlim = Small_x, ylim = Small_y)
-
 dfKl <- fortify(Kl)
-dfKf <- fortify(Kf)
+
+write.csv(dfKl, "Data/Europe_polygon.csv", row.names = F)
 
 gg_full <- ggplot(dfKl, aes(x=long, y=lat, group=group)) +
   geom_polygon(fill = "gray90", colour = "gray20") + coord_map(xlim = Full_x, ylim = Full_y) + theme_bw() +  theme(axis.title.x =element_blank(),  axis.title.y= element_blank(), plot.background = element_rect(fill = "white"), panel.grid = element_blank()) + theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + theme(axis.ticks = element_blank()) 
+
 
 
 ```
