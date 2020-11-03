@@ -139,7 +139,7 @@ hydr100$DOY <- as.numeric(strftime(hydr100$Date, format = "%j"))
 ```{r}
 # Переводим данные по обилию в матрицу, пригодную для сса
 
-cop100_N <- dcast(cop100, formula = Date_text + Depth  ~ Sp + Stage3, value.var = "N", fun.aggregate = sum )
+cop100_N <- dcast(cop100, formula = Date_text + Depth  ~ Sp + Stage2, value.var = "N", fun.aggregate = sum )
 
 hydr100_Param <- dcast(hydr100, formula = Date_text + Depth  ~ Param, value.var = "Value", fun.aggregate = mean)
 
@@ -149,24 +149,44 @@ hydr100_Param$Depth2 <-
            hydr100_Param$Depth == "25_bottom" ~ 45)
 
 
+
+
 cop100_N_env <- merge(cop100_N, hydr100_Param )
 
 
 
 cop100_N_env <- cop100_N_env[complete.cases(cop100_N_env),]
 
+cop100_N_env$Station <- "D1"
+
+
 
 ```
+
+
+```{r}
+# Читаем данные по станции D3
+
+cop100_D3_N_env <- read.csv("data/Oithona_Microsetella_100_mkm_Station_D3.csv", header = T)
+
+cop100_D3_N_env$Station <- "D3"
+
+
+```
+
+
+
+
 
 ```{r}
 
 # CCA RDA
 
-N_100 <- cop100_N_env %>% select(-c(Date_text, Depth, Chl,  Sal, Temp, Depth2))
+N_100 <- cop100_N_env %>% select(-c(Date_text, Depth, Chl,  Sal, Temp, Depth2, Station))
 
 cop100_N_env_2 <- cop100_N_env %>% filter(rowSums(N_100) != 0)
 
-N_100_2 <- cop100_N_env_2 %>% select(-c(Date_text, Depth, Chl,  Sal, Temp, Depth2))
+N_100_2 <- cop100_N_env_2 %>% select(-c(Date_text, Depth, Chl,  Sal, Temp, Depth2, Station))
 
 
 mod_cca <- cca(N_100_2  ~ Chl +  Sal + Temp + Depth2, data = cop100_N_env_2)
@@ -188,4 +208,35 @@ plot(mod_cca, display = c("sp", "cn" ), choices = c(1, 2), scaling = "species")
 ```
 
 
+
+
+
+```{r}
+cop100_N_env_D13 <- rbind(cop100_N_env, cop100_D3_N_env)
+
+cop100_N_env_D13 <- cop100_N_env_D13[complete.cases(cop100_N_env_D13), ]
+
+N_100 <- cop100_N_env_D13 %>% select(-c(Date_text, Depth, Chl,  Sal, Temp, Depth2, Station))
+
+
+
+cop100_N_env_2 <- cop100_N_env_D13 %>% filter(rowSums(N_100) != 0)
+
+
+N_100_2 <- cop100_N_env_2 %>% select(-c(Date_text, Depth, Chl,  Sal, Temp, Depth2, Station))
+
+
+mod_cca <- cca(N_100_2  ~ Chl +  Sal + Temp + Depth2 + Station, data = cop100_N_env_2)
+
+anova(mod_cca)
+
+anova(mod_cca, by = "axis")
+
+anova(mod_cca, by = "margin")
+
+
+plot(mod_cca, display = c("sp", "cn" ), choices = c(1, 2), scaling = "species")
+
+
+```
 
