@@ -65,13 +65,13 @@ as.data.frame(table(All$file))
 
 
 # Создание матрицы с лэндмарками
-myt_matr <- array(rep(NA, length(unique(All$ID))*13*2), dim = c(13, 2, length(unique(All$ID))))
+myt_matr <- array(rep(NA, length(unique(All$ID))*20*2), dim = c(20, 2, length(unique(All$ID))))
 
 
 for(i in 1:length(unique(All$file))){
   id <- unique(All$file)[i]
   d <- All[All$file == id , ]
-  myt_matr[ , , i] <- as.matrix(d[ c(1,3:14) , c(3,4)])
+  myt_matr[ , , i] <- as.matrix(d[  , c(3,4)])
   
 }
 
@@ -82,9 +82,9 @@ for(i in 1:length(unique(All$file))){
 myt_gpa <- gpagen(myt_matr)
 
 # Точки абриса
-# myt_links <- data.frame(LM1 = c(1, 3, 4:13, 2, 16, 17, 18, 19), LM2 = c(3:13, 1, 15, 17, 18, 19, 20))
+myt_links <- data.frame(LM1 = c(1, 3, 4:13, 2, 16, 17, 18, 19), LM2 = c(3:13, 1, 15, 17, 18, 19, 20))
 
-myt_links <- data.frame(LM1 = c(1, 3, 4:14), LM2 = c(3:14, 1))
+# myt_links <- data.frame(LM1 = c(1, 3, 4:14), LM2 = c(3:14, 1))
 
 
 myt_links <- as.matrix(myt_links)
@@ -107,6 +107,24 @@ plotRefToTarget(ref, ref, method = "TPS", links = myt_links)
 #                 method = "vector", mag = 1, 
 #                 links = myt_links)
 # 
+
+
+
+gdf <- geomorph.data.frame(myt_gpa, Tr = ids$Tr, Ed = ids$Ed, Ga = ids$Ga, Sex = ids$Sex)
+
+
+fit.genotype <- procD.lm(coords ~  Ga + Ed + Tr + Sex, data = gdf, print.progress = T) 
+
+
+summary(fit.genotype)
+
+anova(fit.genotype, perm = 10000)
+
+
+
+plot(fit.genotype)
+
+
 
 
 
