@@ -35,21 +35,43 @@ All <- reads()
 ID <- All %>% select(ID, file) %>% unique(.)
 
 
-ids <- read_xlsx("Data/gen_markers.xlsx") 
+# Генетические маркеры и классические морфологические маркеры по  McDonald
+ids <- read_xlsx("Data/gen_markers.xlsx", na = "NA") 
+str(ids)
 ids$Tr <- as.numeric(ids$Tr)
-ids$Ed <- as.numeric(ids$Ed)
-ids$Ga <- as.numeric(ids$Ga)
+
+
+ids <- ids[complete.cases(ids[,1:6]), ]
 
 
 
 
-ids <- ids[complete.cases(ids), ]
+ids_morph <- merge(ids, data.frame(file = unique(All$file)))
 
-ids <- merge(ids, data.frame(file = unique(All$file)))
+# ids <- ids[ids$Tr < 0.20,]
 
-ids <- ids[ids$Tr < 0.20,]
+#################################################3
+# Классическая морфометрия
+#################################################
+
+ids_morph_McDonald <- ids_morph %>% select(7:15)  %>% select(-l, -a)
+
+ids_morph_McDonald2 <- ids_morph_McDonald[, -2] / ids_morph_McDonald$L
+
+str(ids_morph)
+mod_rda <- rda(ids_morph_McDonald2 ~ Tr + Ed + Ga, data = ids_morph)
+
+anova(mod_rda)
+
+vif.cca(mod_rda)
+
+plot(mod_rda)
 
 
+
+#################################################3
+# Геометрическая морфометрия
+#################################################
 
 
 # Удаляю те файлы, которые не имеют генетических оценок
@@ -113,7 +135,7 @@ plotRefToTarget(ref, ref, method = "TPS", links = myt_links)
 gdf <- geomorph.data.frame(myt_gpa, Tr = ids$Tr, Ed = ids$Ed, Ga = ids$Ga, Sex = ids$Sex)
 
 
-fit.genotype <- procD.lm(coords ~  Ga + Ed + Tr + Sex, data = gdf, print.progress = T) 
+fit.genotype <- procD.lm(coords ~  Sex + Ga , data = gdf, print.progress = T) 
 
 
 summary(fit.genotype)
@@ -127,7 +149,7 @@ plot(fit.genotype)
 
 
 
-
+######################################3
 
 
 
