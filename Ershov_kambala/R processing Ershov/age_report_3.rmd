@@ -61,6 +61,12 @@ age_all <- read.table("Data/age_Onega.csv", sep = ",", header = T, dec = ".")
 
 age <- age_all %>% filter(Age %in% 2:7)
 
+# age_old <- age_all %>% filter(Age > 7)
+# 
+# age_old <- age_old %>% group_by(Sex) %>% filter(Right + Left >0) %>% summarise(Age = mean(Age), Right = sum(Right), Left  = sum(Left))
+# 
+# age <- rbind(age, age_old)
+
 ```
 
 
@@ -68,7 +74,9 @@ age <- age_all %>% filter(Age %in% 2:7)
 
 Для "Материалов и методов"
 
-Из анализа были исключены возрастные группы 1+, и более 7+. Это связано с очень малыми объемами выборок по этим группам.То есть модель будет описывать только возрастной диапазон 2+ - 7+. 
+Из анализа были исключены возрастные группы 1+, отлов которых имеющимися средствами не дает реперзентативной выборки. 
+
+Поскольку обилие рыб возрастом более 7+ было невелико, всех рыб с возрстом 8+ - 13+ объединили в одну группу, возраст рыб в этой группе рассматривался, как среднее значение возраста. 
 
 Была построена логистическая регрессионная модель, описывающая связь вероятности встречи реверсивных особей в зависимости от возраста и пола. 
 
@@ -113,57 +121,57 @@ kable(Mod_parametric, digits = 3, caption = c("Таблица 1. Парамет�
 
 
 
-```{r, fig.cap= figRef("Age_mod", "Зависимость доли инверсивных особей от возраста. Линии отражают предсказание модели.")}
+<!-- ```{r, fig.cap= figRef("Age_mod", "Зависимость доли инверсивных особей от возраста. Линии отражают предсказание модели.")} -->
 
 
-# summary(Mod_age_continous)
+<!-- # summary(Mod_age_continous) -->
 
-new_data <- age %>% group_by(Sex) %>% do(data.frame(Age = seq(min(.$Age), max(.$Age), length.out = 100)))
-
-
-predicted <- predict(Mod_age_continous, newdata = new_data, type = "response", se.fit = T)
-
-new_data$fit <- predicted$fit
-
-new_data$SE <- predicted$se.fit
+<!-- new_data <- age %>% group_by(Sex) %>% do(data.frame(Age = seq(min(.$Age), max(.$Age), length.out = 100))) -->
 
 
+<!-- predicted <- predict(Mod_age_continous, newdata = new_data, type = "response", se.fit = T) -->
 
-# Left_perc <- age %>% group_by(Sex) %>% mutate(Age_class = ntile(n = 4)) %>% group_by(Sex, Age_class) %>% summarise(Left_perc = sum(N_Left)/(sum(N_Left) + sum(N_Right)), Age = mean(Age) )
+<!-- new_data$fit <- predicted$fit -->
 
-Left_perc <- age %>% group_by(Sex, Age) %>% summarise(Left_perc = sum(Left)/(sum(Left) + sum(Right)))
+<!-- new_data$SE <- predicted$se.fit -->
 
 
 
-ggplot(new_data, aes(x = Age, y = fit, linetype = Sex))+ 
-  geom_point(data = Left_perc, aes(x = Age, y= Left_perc, fill = Sex), shape = 21, size = 4) +
-  geom_line(size = 1) + geom_ribbon(aes(ymin = fit - 1.96*SE, ymax = fit + 1.96*SE), alpha = 0.2)  +
-  scale_fill_manual(values = c("white", "black")) + labs(x = "Age", y = "Probability of reversive fish") +
-  scale_x_continuous(breaks = seq(1, max(age$Age))) +
-  theme(panel.grid = element_blank())
+<!-- # Left_perc <- age %>% group_by(Sex) %>% mutate(Age_class = ntile(n = 4)) %>% group_by(Sex, Age_class) %>% summarise(Left_perc = sum(N_Left)/(sum(N_Left) + sum(N_Right)), Age = mean(Age) ) -->
 
-```
+<!-- Left_perc <- age %>% group_by(Sex, Age) %>% summarise(Left_perc = sum(Left)/(sum(Left) + sum(Right))) -->
 
 
 
+<!-- ggplot(new_data, aes(x = Age, y = fit, linetype = Sex))+  -->
+<!--   geom_point(data = Left_perc, aes(x = Age, y= Left_perc, fill = Sex), shape = 21, size = 4) + -->
+<!--   geom_line(size = 1) + geom_ribbon(aes(ymin = fit - 1.96*SE, ymax = fit + 1.96*SE), alpha = 0.2)  + -->
+<!--   scale_fill_manual(values = c("white", "black")) + labs(x = "Age", y = "Probability of reversive fish") + -->
+<!--   scale_x_continuous(breaks = seq(1, max(age$Age))) + -->
+<!--   theme(panel.grid = element_blank()) -->
 
-Вот все то же самое, но если не отрезать совсем стариков до 10+, 11-13+ не будем брать, так как там совсем почти никого нет.
-
-
-```{r}
-
-age <- age_all %>% filter(Age %in% 2:10)
-
-Mod_age_continous <- glm(cbind(Left, Right) ~ Age*Sex, family = "binomial", data = age)
-
-# Mod_age_continous <- gam(cbind(N_Left, N_Right) ~ s(Age, k = 8) + Sex, family = "binomial", data = age)
-
-Mod_parametric <- tidy(Mod_age_continous, parametric = T)
-
-kable(Mod_parametric, digits = 3, caption = c("Таблица 1_a. Параметры модели."))
+<!-- ``` -->
 
 
-```
+
+
+<!-- Вот все то же самое, но если не отрезать совсем стариков до 10+, 11-13+ не будем брать, так как там совсем почти никого нет. -->
+
+
+<!-- ```{r} -->
+
+<!-- age <- age_all %>% filter(Age %in% 2:10) -->
+
+<!-- Mod_age_continous <- glm(cbind(Left, Right) ~ Age*Sex, family = "binomial", data = age) -->
+
+<!-- # Mod_age_continous <- gam(cbind(N_Left, N_Right) ~ s(Age, k = 8) + Sex, family = "binomial", data = age) -->
+
+<!-- Mod_parametric <- tidy(Mod_age_continous, parametric = T) -->
+
+<!-- kable(Mod_parametric, digits = 3, caption = c("Таблица 1_a. Параметры модели.")) -->
+
+
+<!-- ``` -->
 
 
 
