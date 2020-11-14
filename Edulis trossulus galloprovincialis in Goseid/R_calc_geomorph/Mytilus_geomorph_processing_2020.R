@@ -37,8 +37,10 @@ ID <- All %>% select(ID, file) %>% unique(.)
 
 # Генетические маркеры и классические морфологические маркеры по  McDonald
 ids <- read_xlsx("Data/gen_markers.xlsx", na = "NA") 
-str(ids)
+
 ids$Tr <- as.numeric(ids$Tr)
+
+str(ids)
 
 
 ids <- ids[complete.cases(ids[,1:6]), ]
@@ -48,25 +50,44 @@ ids <- ids[complete.cases(ids[,1:6]), ]
 
 ids_morph <- merge(ids, data.frame(file = unique(All$file)))
 
-# ids <- ids[ids$Tr < 0.20,]
+
+
+
+
 
 #################################################3
 # Классическая морфометрия
 #################################################
 
-ids_morph_McDonald <- ids_morph %>% select(7:15)  %>% select(-l, -a)
+ids_morph_McDonald <- ids_morph %>% filter(complete.cases(ids_morph))
 
-ids_morph_McDonald2 <- ids_morph_McDonald[, -2] / ids_morph_McDonald$L
 
-str(ids_morph)
-mod_rda <- rda(ids_morph_McDonald2 ~ Tr + Ed + Ga, data = ids_morph)
+ids_morph_McDonald_traits <- ids_morph_McDonald %>% select(7:15)%>% select( -a, -L)
 
-anova(mod_rda)
+ids_morph_McDonald_traits <- log10(ids_morph_McDonald_traits) / log10(ids_morph_McDonald$L)
 
-vif.cca(mod_rda)
 
-plot(mod_rda)
 
+mod_rda <- rda(ids_morph_McDonald_traits ~  Ga, data = ids_morph_McDonald)
+
+
+anova(mod_rda, permutations = 99999)
+
+anova(mod_rda, by = "margin", permutations = 99999)
+
+anova(mod_rda, by = "axis", permutations = 99999)
+
+
+
+plot(mod_rda,  display = c("sp", "cn"))
+
+qplot(ids_morph_McDonald$Ga, ids_morph_McDonald$L) + geom_smooth(method = "lm")
+
+qplot(ids_morph_McDonald$Ga, ids_morph_McDonald$aam) + geom_smooth(method = "lm")
+
+qplot(ids_morph_McDonald$Ga, ids_morph_McDonald$lpr) + geom_smooth(method = "lm")
+
+qplot(ids_morph_McDonald$Ga, ids_morph_McDonald$hp) + geom_smooth(method = "lm")
 
 
 #################################################3
@@ -87,15 +108,20 @@ as.data.frame(table(All$file))
 
 
 # Создание матрицы с лэндмарками
-myt_matr <- array(rep(NA, length(unique(All$ID))*20*2), dim = c(20, 2, length(unique(All$ID))))
+myt_matr <- array(rep(NA, length(unique(All$ID))*20*2), dim = c(13, 2, length(unique(All$ID))))
 
 
 for(i in 1:length(unique(All$file))){
   id <- unique(All$file)[i]
   d <- All[All$file == id , ]
+  d <- d[c(1, 3, 4:14), ] #Отбор лэндмарков, описывающих внешний контур раковины
   myt_matr[ , , i] <- as.matrix(d[  , c(3,4)])
   
 }
+
+
+
+All %>% group_by(file) %>% summarise(ID = unique(ID))
 
 
 
@@ -104,9 +130,9 @@ for(i in 1:length(unique(All$file))){
 myt_gpa <- gpagen(myt_matr)
 
 # Точки абриса
-myt_links <- data.frame(LM1 = c(1, 3, 4:13, 2, 16, 17, 18, 19), LM2 = c(3:13, 1, 15, 17, 18, 19, 20))
+# myt_links <- data.frame(LM1 = c(1, 3, 4:13, 2, 16, 17, 18, 19), LM2 = c(3:13, 1, 15, 17, 18, 19, 20))
 
-# myt_links <- data.frame(LM1 = c(1, 3, 4:14), LM2 = c(3:14, 1))
+myt_links <- data.frame(LM1 = c(1:13), LM2 = c(2:13, 1))
 
 
 myt_links <- as.matrix(myt_links)
@@ -120,22 +146,22 @@ plotRefToTarget(ref, ref, method = "TPS", links = myt_links)
 
 
 # # Выгнутая мидия
-# plotRefToTarget(ref, myt_gpa$coords[, , 16], 
-#                 method = "vector", mag = 1, 
-#                 links = myt_links)
-# 
+plotRefToTarget(ref, myt_gpa$coords[, , 16],
+                method = "TPS", mag = 1,
+                links = myt_links)
+
 # # Вогнутая мидия
-# plotRefToTarget(ref, myt_gpa$coords[, , 29], 
-#                 method = "vector", mag = 1, 
-#                 links = myt_links)
-# 
+plotRefToTarget(myt_gpa$coords[, , 13], myt_gpa$coords[, , 13],
+                method = "TPS", mag = 1,
+                links = myt_links)
+
 
 
 
 gdf <- geomorph.data.frame(myt_gpa, Tr = ids$Tr, Ed = ids$Ed, Ga = ids$Ga, Sex = ids$Sex)
 
 
-fit.genotype <- procD.lm(coords ~  Sex + Ga , data = gdf, print.progress = T) 
+fit.genotype <- procD.lm(coords ~  Tr , data = gdf, print.progress = T) 
 
 
 summary(fit.genotype)
