@@ -47,7 +47,7 @@ ids <- ids[complete.cases(ids[,1:6]), ]
 
 
 
-
+# Датафрейм с генетическими данными и измерениями классическиз морфометрических признаков
 ids_morph <- merge(ids, data.frame(file = unique(All$file)))
 
 
@@ -96,7 +96,7 @@ qplot(ids_morph_McDonald$Ga, ids_morph_McDonald$hp) + geom_smooth(method = "lm")
 
 
 # Удаляю те файлы, которые не имеют генетических оценок
-All <- All[All$file %in% ids$file, ]
+All <- All[All$file %in% ids_morph$file, ]
 
 
 
@@ -108,20 +108,28 @@ as.data.frame(table(All$file))
 
 
 # Создание матрицы с лэндмарками
-myt_matr <- array(rep(NA, length(unique(All$ID))*20*2), dim = c(13, 2, length(unique(All$ID))))
+# landmarks_included <- c(1, 3, 4:14) #Чистый абрис раковины
+
+landmarks_included <- c(1, 3, 4:14, 16:20) #абрис раковины и внутренние отпечатки
+
+
+myt_matr <- array(rep(NA, length(unique(All$ID))*length(landmarks_included)*2), dim = c(length(landmarks_included), 2, length(unique(All$ID))))
 
 
 for(i in 1:length(unique(All$file))){
   id <- unique(All$file)[i]
   d <- All[All$file == id , ]
-  d <- d[c(1, 3, 4:14), ] #Отбор лэндмарков, описывающих внешний контур раковины
+  d <- d[landmarks_included, ] #Отбор лэндмарков, описывающих внешний контур раковины
   myt_matr[ , , i] <- as.matrix(d[  , c(3,4)])
   
 }
 
 
+# Проверка на соответствие матриц
+myt_matr[ , , 25]
 
-All %>% group_by(file) %>% summarise(ID = unique(ID))
+ids_morph[ids_morph$file == "g46_landmarks.txt", ]
+
 
 
 
@@ -129,16 +137,28 @@ All %>% group_by(file) %>% summarise(ID = unique(ID))
 
 myt_gpa <- gpagen(myt_matr)
 
-# Точки абриса
-# myt_links <- data.frame(LM1 = c(1, 3, 4:13, 2, 16, 17, 18, 19), LM2 = c(3:13, 1, 15, 17, 18, 19, 20))
+myt_gpa <- rotate.coords(myt_gpa, type = "rotateC")
 
-myt_links <- data.frame(LM1 = c(1:13), LM2 = c(2:13, 1))
+myt_gpa <- rotate.coords(myt_gpa, type = "rotateC")
+
+myt_gpa <- rotate.coords(myt_gpa, type = "flipX")
+
+
+# Точки абриса
+myt_links <- data.frame(LM1 = c(1:13,  14:17), LM2 = c(2:13, 1, 15:18))
+
+# myt_links <- data.frame(LM1 = c(1:13), LM2 = c(2:13, 1))
 
 
 myt_links <- as.matrix(myt_links)
 
+
+
+
+
 # Усреденная мидия
 plotAllSpecimens(myt_gpa$coords,mean = T, links=myt_links)
+
 
 ref <- mshape(myt_gpa$coords) 
 
@@ -151,45 +171,92 @@ plotRefToTarget(ref, myt_gpa$coords[, , 16],
                 links = myt_links)
 
 # # Вогнутая мидия
-plotRefToTarget(myt_gpa$coords[, , 13], myt_gpa$coords[, , 13],
+plotRefToTarget(ref, myt_gpa$coords[, , 25],
                 method = "TPS", mag = 1,
                 links = myt_links)
 
 
+# Получение картинки для заданной точки в морфоспейсе
+
+Plot_myt_gpa <- plot(gm.prcomp(myt_gpa$coords))
+# picknplot.shape(Plot_myt_gpa)
 
 
-gdf <- geomorph.data.frame(myt_gpa, Tr = ids$Tr, Ed = ids$Ed, Ga = ids$Ga, Sex = ids$Sex)
 
 
-fit.genotype <- procD.lm(coords ~  Tr , data = gdf, print.progress = T) 
+
+# Рисую картинки для крайних точек в компонентном анализе
+
+PC_score_myt_gpa <- gm.prcomp(myt_gpa$coords)$x
+
+PC1 <- PC_score_myt_gpa[ , 1]
+preds_PC1 <- shape.predictor(myt_gpa$coords, x= PC1, Intercept = FALSE, 
+                         pred1 = min(PC1), pred2 = mean(PC1), pred3 = max(PC1)) 
+plotRefToTarget(ref, preds_PC1$pred1, links = myt_links)
+plotRefToTarget(ref, preds_PC1$pred2, links = myt_links)
+plotRefToTarget(ref, preds_PC1$pred3, links = myt_links)
+
+
+PC2 <- PC_score_myt_gpa[ , 2]
+preds_PC2 <- shape.predictor(myt_gpa$coords, x= PC2, Intercept = FALSE, 
+                             pred1 = min(PC2), pred2 = mean(PC2), pred3 = max(PC2)) 
+plotRefToTarget(ref, preds_PC2$pred1, links = myt_links)
+plotRefToTarget(ref, preds_PC2$pred2, links = myt_links)
+plotRefToTarget(ref, preds_PC2$pred3, links = myt_links)
+
+
+PC_score_myt_gpa<-as.data.frame(PC_score_myt_gpa)
+
+ggplot(PC_score_myt_gpa, aes(x = Comp1, y = Comp2)) + geom_point(aes(color = ids_morph$Sex, size = ids_morph$Ga))
+
+
+
+#Строим линейную модель, опсывающую форму раковины от пола и генотипа
+
+gdf <- geomorph.data.frame(myt_gpa, Tr = ids_morph$Tr, Ed = ids_morph$Ed, Ga = ids_morph$Ga, Sex = ids_morph$Sex)
+
+
+fit.genotype <- procD.lm(coords ~  Sex * Ga, data = gdf, print.progress = T, SS.type = "II") 
 
 
 summary(fit.genotype)
 
-anova(fit.genotype, perm = 10000)
-
-
+# anova(fit.genotype)
 
 plot(fit.genotype)
+
+
+
+# Выводим среднюю форму характерную для разных полов
+
+Sex <- as.numeric(ids_morph$Sex == "f") 
+preds_Sex <- shape.predictor(myt_gpa$coords, x= Sex, Intercept = FALSE, 
+                            pred1 = 1,  pred2 = 0) 
+plotRefToTarget(ref, preds_Sex$pred1, links = myt_links)
+plotRefToTarget(ref, preds_Sex$pred2, links = myt_links)
+
+
+
+
+
+# Выводим форму среднюю  характерную для разных видов
+
+Ga <- as.vector(ids_morph$Ga) 
+preds_Ga <- shape.predictor(myt_gpa$coords, x= Ga, Intercept = FALSE, 
+                             pred1 = mean(Ga[Ga<=0.2]), pred2 = mean(Ga[Ga>0.2 & Ga<0.8]), pred3 = mean(Ga[Ga>=0.8])) 
+plotRefToTarget(ref, preds_Ga$pred1, links = myt_links)
+plotRefToTarget(ref, preds_Ga$pred2, links = myt_links)
+plotRefToTarget(ref, preds_Ga$pred3, links = myt_links)
+
+
+
+
 
 
 
 
 ######################################3
 
-
-
-PCA <- gm.prcomp(myt_gpa$coords)
-
-plot(PCA)
-
-PCA_scores <- as.data.frame(PCA$x)
-
-PCA_scores$file <- unique(All$file)
-
-
-
-PCA_scores <- merge(PCA_scores, ids, by = "file")
 
 PCA_scores$Sp[PCA_scores$Ga >= 0.5 & PCA_scores$Tr <0.5 & PCA_scores$Ed < 0.5] <- "Ga"  
 PCA_scores$Sp[PCA_scores$Ga < 0.5 & PCA_scores$Tr >= 0.5 & PCA_scores$Ed < 0.5] <- "Tr"  
