@@ -1,0 +1,78 @@
+---
+title: "Отчет по анализу морфологии раковин из Гасейда"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = TRUE)
+
+library(geomorph)
+library(ggplot2)
+library(dplyr)
+library(readxl)
+library(broom)
+
+
+```
+
+```{r}
+
+
+reads <- function(path = "./Data/Lands/"){
+
+  files1 <- list.files(path)
+  
+  i = 1
+  data <- read.table(paste(path, files1[i], sep = ""))
+  
+  measure1 <- data.frame(ID = i, file = files1[i], data)
+  
+  for(i in 2:length(files1)) {
+    data <- read.table(paste(path, files1[i], sep = ""))
+    print(i)
+    X <- data.frame(ID = i, file = files1[i], data) 
+    measure1 <- rbind(measure1, X)
+  } 
+  measure1
+}
+
+
+
+All <- reads()
+
+ID <- All %>% select(ID, file) %>% unique(.)
+
+
+# Генетические маркеры и классические морфологические маркеры по  McDonald
+ids <- read_xlsx("Data/gen_markers.xlsx", na = "NA") 
+
+ids$Tr <- as.numeric(ids$Tr)
+
+str(ids)
+
+
+ids <- ids[complete.cases(ids[,1:6]), ]
+
+
+
+# Датафрейм с генетическими данными и измерениями классическиз морфометрических признаков
+ids_morph <- merge(ids, data.frame(file = unique(All$file)))
+
+
+```
+
+
+
+Целью данной части исследования был анализ морфологической вариации раковин мидий в условиях гибридизации. В качестве материала были использованы мидии, собранные в районе города Госейд (Gåseid, Восточная Норвегия), где были представлены мидии, имеющие генетические маркерные диагносцирующие все три вида мидий комплекса "Mytilus edulis": *M.edulis* (Ed), *M.trossulus* (Tr) и *M.galloprovincialis* (Ga).
+
+Анализ формы раковины был проведен в соответствии с методологией геомтрической морфометрии. Раковины идий (`r nrow(ids_morph)` генотипированных особей) были отсканированы и на внутренней поверхности левой створки были нанесены 18 опорных точек (landmarks) которые позволили описать форму раковины и форму системы отпечатков мышц на внутренней поверхности раковины (рис. 1).
+
+```{r}
+include_graphics("Figures/Landmark_illaustration.png", dpi = 300)
+
+```
+
+
+
+
