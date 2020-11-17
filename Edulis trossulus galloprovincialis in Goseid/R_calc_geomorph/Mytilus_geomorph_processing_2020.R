@@ -179,7 +179,9 @@ plotRefToTarget(ref, myt_gpa$coords[, , 25],
 # Получение картинки для заданной точки в морфоспейсе
 
 Plot_myt_gpa <- plot(gm.prcomp(myt_gpa$coords))
-# picknplot.shape(Plot_myt_gpa)
+
+
+picknplot.shape(Plot_myt_gpa)
 
 
 
@@ -207,7 +209,13 @@ plotRefToTarget(ref, preds_PC2$pred3, links = myt_links)
 
 PC_score_myt_gpa<-as.data.frame(PC_score_myt_gpa)
 
-ggplot(PC_score_myt_gpa, aes(x = Comp1, y = Comp2)) + geom_point(aes(color = ids_morph$Sex, size = ids_morph$Ga))
+Pl_pca <- ggplot(PC_score_myt_gpa, aes(y = Comp2, x = Comp1)) + 
+  geom_point(aes(shape = ids_morph$Sp, fill = ids_morph$Ed), size = 4)  + 
+  scale_shape_manual(values = c(21:25, 11))+
+  scale_fill_gradient(low = "white", high = "blue" )
+xlim(-0.5, 0.5) +
+  labs(x = paste("PC 2 (",PC2_prop, "%)", sep =""), y = paste("PC 1 (",PC1_prop, "%)", sep =""))  + 
+  theme(legend.position = "bottom")
 
 
 
@@ -216,7 +224,7 @@ ggplot(PC_score_myt_gpa, aes(x = Comp1, y = Comp2)) + geom_point(aes(color = ids
 gdf <- geomorph.data.frame(myt_gpa, Tr = ids_morph$Tr, Ed = ids_morph$Ed, Ga = ids_morph$Ga, Sex = ids_morph$Sex)
 
 
-fit.genotype <- procD.lm(coords ~  Sex * Ga, data = gdf, print.progress = T, SS.type = "II") 
+fit.genotype <- procD.lm(coords ~  Sex + Ga, data = gdf, print.progress = T, SS.type = "II") 
 
 
 summary(fit.genotype)
@@ -242,65 +250,37 @@ plotRefToTarget(ref, preds_Sex$pred2, links = myt_links)
 # Выводим форму среднюю  характерную для разных видов
 
 Ga <- as.vector(ids_morph$Ga) 
-preds_Ga <- shape.predictor(myt_gpa$coords, x= Ga, Intercept = FALSE, 
-                             pred1 = mean(Ga[Ga<=0.2]), pred2 = mean(Ga[Ga>0.2 & Ga<0.8]), pred3 = mean(Ga[Ga>=0.8])) 
+
+X <- model.matrix(~ Sp - 1, data = ids_morph )
+
+
+preds_Ed <- shape.predictor(myt_gpa$coords, x = X[,1], Intercept = FALSE, 
+                             pred1 = 1)
+preds_Ga <- shape.predictor(myt_gpa$coords, x = X[,5], Intercept = FALSE, 
+                            pred1 = 1)
+
+preds_EdGa <- shape.predictor(myt_gpa$coords, x = X[,2], Intercept = FALSE, 
+                            pred1 = 1)
+
+preds_EdGaTr <- shape.predictor(myt_gpa$coords, x = X[,3], Intercept = FALSE, 
+                              pred1 = 1)
+
+preds_EdTr <- shape.predictor(myt_gpa$coords, x = X[,4], Intercept = FALSE, 
+                                pred1 = 1)
+preds_GaTr <- shape.predictor(myt_gpa$coords, x = X[,6], Intercept = FALSE, 
+                              pred1 = 1)
+
+
+
+plotRefToTarget(ref, ref, links = myt_links)
+
+plotRefToTarget(ref, preds_Ed$pred1, links = myt_links)
 plotRefToTarget(ref, preds_Ga$pred1, links = myt_links)
-plotRefToTarget(ref, preds_Ga$pred2, links = myt_links)
-plotRefToTarget(ref, preds_Ga$pred3, links = myt_links)
+plotRefToTarget(ref, preds_EdGa$pred1, links = myt_links)
+plotRefToTarget(ref, preds_EdGaTr$pred1, links = myt_links)
+plotRefToTarget(ref, preds_EdTr$pred1, links = myt_links)
+plotRefToTarget(ref, preds_GaTr$pred1, links = myt_links)
 
 
-
-
-
-
-
-
-######################################3
-
-
-PCA_scores$Sp[PCA_scores$Ga >= 0.5 & PCA_scores$Tr <0.5 & PCA_scores$Ed < 0.5] <- "Ga"  
-PCA_scores$Sp[PCA_scores$Ga < 0.5 & PCA_scores$Tr >= 0.5 & PCA_scores$Ed < 0.5] <- "Tr"  
-PCA_scores$Sp[PCA_scores$Ga < 0.5 & PCA_scores$Tr < 0.5 & PCA_scores$Ed >= 0.5] <- "Ed"  
-PCA_scores$Sp[PCA_scores$Ga >= 0.5 & PCA_scores$Tr >= 0.5 & PCA_scores$Ed < 0.5] <- "Ga_Tr"  
-PCA_scores$Sp[PCA_scores$Ga >= 0.5 & PCA_scores$Tr < 0.5 & PCA_scores$Ed >= 0.5] <- "Ga_Ed"  
-PCA_scores$Sp[PCA_scores$Ga < 0.5 & PCA_scores$Tr >= 0.5 & PCA_scores$Ed >= 0.5] <- "Ed_Tr"  
-PCA_scores$Sp[PCA_scores$Ga >= 0.5 & PCA_scores$Tr >= 0.5 & PCA_scores$Ed >= 0.5] <- "Ga_Ed_Tr"  
-PCA_scores$Sp[PCA_scores$Ga < 0.5 & PCA_scores$Tr < 0.5 & PCA_scores$Ed < 0.5] <- "Bl"  
-
-
-
-ggplot(PCA_scores, aes(x = Comp1, y = Comp2))  + geom_point(aes(fill = Sp, shape = Sex), size = 4) + scale_shape_manual(values = c(21, 23))
-  
-  
-  geom_text(aes(label = 1:nrow(PCA_scores)))
-
-
-
-plotRefToTarget(myt_gpa$coords[, , 1], myt_gpa$coords[, , 1],
-                method = "TPS", mag = 1,
-                links = myt_links)
-
-plotRefToTarget(myt_gpa$coords[, , 30], myt_gpa$coords[, , 30],
-                method = "TPS", mag = 1,
-                links = myt_links)
-
-
-ggplot(PCA_scores, aes(x = Sp, y = Comp2)) + geom_boxplot(notch = T)
-
-
-ord <- data.frame(PC1 = PCA_scores$Comp1, PC2 = PCA_scores$Comp2)
-env <- data.frame(Tr = PCA_scores$Tr, Ed = PCA_scores$Ed, Ga =  PCA_scores$Ga) 
-efit <- envfit(ord, env)
-plot(ord)
-plot(efit)
-
-
-
-summary(PCA)
-
-ggplot(PCA_scores, aes(x = Ga, y = Comp1)) + geom_point() + geom_smooth()
-ggplot(PCA_scores, aes(x = Ga, y = Comp2)) + geom_point() + geom_smooth()
-ggplot(PCA_scores, aes(x = Ga, y = Comp3)) + geom_point() + geom_smooth()
-ggplot(PCA_scores, aes(x = Ga, y = Comp4)) + geom_point() + geom_smooth()
-ggplot(PCA_scores, aes(x = Ga, y = Comp5)) + geom_point() + geom_smooth()
+plotRefToTarget(preds_Ga$pred1, preds_Ed$pred1, links = myt_links)
 
