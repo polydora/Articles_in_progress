@@ -48,6 +48,12 @@ ids <- ids[complete.cases(ids[,1:6]), ]
 
 
 # Датафрейм с генетическими данными и измерениями классическиз морфометрических признаков
+
+
+
+
+
+
 ids_morph <- merge(ids, data.frame(file = unique(All$file)))
 
 
@@ -110,7 +116,9 @@ as.data.frame(table(All$file))
 # Создание матрицы с лэндмарками
 # landmarks_included <- c(1, 3, 4:14) #Чистый абрис раковины
 
-landmarks_included <- c(1, 3, 4:14, 16:20) #абрис раковины и внутренние отпечатки
+landmarks_included <- c(1:14) #абрис раковины и внутренние отпечатки
+
+# ++++++++++++++++++++++++++
 
 
 myt_matr <- array(rep(NA, length(unique(All$ID))*length(landmarks_included)*2), dim = c(length(landmarks_included), 2, length(unique(All$ID))))
@@ -221,7 +229,7 @@ xlim(-0.5, 0.5) +
 
 #Строим линейную модель, опсывающую форму раковины от пола и генотипа
 
-gdf <- geomorph.data.frame(myt_gpa, Tr = ids_morph$Tr, Ed = ids_morph$Ed, Ga = ids_morph$Ga, Sex = ids_morph$Sex)
+gdf <- geomorph.data.frame(myt_gpa, Ga = ids_morph$Ga, Ed = ids_morph$Ed, Ga = ids_morph$Ga, Sex = ids_morph$Sex)
 
 
 fit.genotype <- procD.lm(coords ~  Sex + Ga, data = gdf, print.progress = T, SS.type = "II") 
