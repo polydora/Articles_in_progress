@@ -35,6 +35,8 @@ All <- reads()
 ID <- All %>% select(ID, file) %>% unique(.)
 
 
+write.table(ID, "clipboard", row.names = F, sep = "\t")
+
 # Генетические маркеры и классические морфологические маркеры по  McDonald
 ids <- read_xlsx("Data/gen_markers.xlsx", na = "NA") 
 
@@ -50,16 +52,11 @@ ids <- ids[complete.cases(ids[,1:6]), ]
 # Датафрейм с генетическими данными и измерениями классическиз морфометрических признаков
 
 
-
-
-
-
 ids_morph <- merge(ids, data.frame(file = unique(All$file)))
 
+ids_morph$file %in% unique(All$file)
 
-
-
-
+length(unique(All$file))
 
 #################################################3
 # Классическая морфометрия
@@ -68,7 +65,7 @@ ids_morph <- merge(ids, data.frame(file = unique(All$file)))
 ids_morph_McDonald <- ids_morph %>% filter(complete.cases(ids_morph))
 
 
-ids_morph_McDonald_traits <- ids_morph_McDonald %>% select(7:15)%>% select( -a, -L)
+ids_morph_McDonald_traits <- ids_morph_McDonald %>% select(9:17)%>% select( -a, -L)
 
 ids_morph_McDonald_traits <- log10(ids_morph_McDonald_traits) / log10(ids_morph_McDonald$L)
 
@@ -114,9 +111,10 @@ as.data.frame(table(All$file))
 
 
 # Создание матрицы с лэндмарками
-# landmarks_included <- c(1, 3, 4:14) #Чистый абрис раковины
 
-landmarks_included <- c(1:14) #абрис раковины и внутренние отпечатки
+landmarks_included <- c(1:9) #Чистый абрис раковины
+
+# landmarks_included <- c(1:14) #абрис раковины и внутренние отпечатки
 
 # ++++++++++++++++++++++++++
 
@@ -134,9 +132,12 @@ for(i in 1:length(unique(All$file))){
 
 
 # Проверка на соответствие матриц
+
+ids_morph[ids_morph$file == "ga_42_result.txt", ]
+
+
 myt_matr[ , , 25]
 
-ids_morph[ids_morph$file == "g46_landmarks.txt", ]
 
 
 
@@ -153,9 +154,9 @@ myt_gpa <- rotate.coords(myt_gpa, type = "flipX")
 
 
 # Точки абриса
-myt_links <- data.frame(LM1 = c(1:13,  14:17), LM2 = c(2:13, 1, 15:18))
+# myt_links <- data.frame(LM1 = c(1:9,  10:14), LM2 = c(2:9, 1, 11:14, 14))
 
-# myt_links <- data.frame(LM1 = c(1:13), LM2 = c(2:13, 1))
+myt_links <- data.frame(LM1 = c(1:9), LM2 = c(2:9, 1))
 
 
 myt_links <- as.matrix(myt_links)
@@ -173,31 +174,42 @@ ref <- mshape(myt_gpa$coords)
 plotRefToTarget(ref, ref, method = "TPS", links = myt_links)
 
 
-# # Выгнутая мидия
-plotRefToTarget(ref, myt_gpa$coords[, , 16],
+# # Мидия с выпуклым брюшным краем
+plotRefToTarget(ref, myt_gpa$coords[, , 22],
                 method = "TPS", mag = 1,
                 links = myt_links)
 
-# # Вогнутая мидия
+# # Мидия с вогнутым брюшным краем
+plotRefToTarget(ref, myt_gpa$coords[, , 7],
+                method = "TPS", mag = 1,
+                links = myt_links)
+
+##################################################################################
+# # Аномальная мидия
 plotRefToTarget(ref, myt_gpa$coords[, , 25],
                 method = "TPS", mag = 1,
                 links = myt_links)
 
 
+
 # Получение картинки для заданной точки в морфоспейсе
 
-Plot_myt_gpa <- plot(gm.prcomp(myt_gpa$coords))
+# Ординация мидий в осях PCA
 
+pca_myt_gpa <- gm.prcomp(myt_gpa$coords)
 
+Plot_myt_gpa <- plot(pca_myt_gpa)
+
+# Локатор 
 picknplot.shape(Plot_myt_gpa)
 
-
+##########################################################################33333
 
 
 
 # Рисую картинки для крайних точек в компонентном анализе
 
-PC_score_myt_gpa <- gm.prcomp(myt_gpa$coords)$x
+PC_score_myt_gpa <- pca_myt_gpa$x
 
 PC1 <- PC_score_myt_gpa[ , 1]
 preds_PC1 <- shape.predictor(myt_gpa$coords, x= PC1, Intercept = FALSE, 
@@ -215,24 +227,62 @@ plotRefToTarget(ref, preds_PC2$pred2, links = myt_links)
 plotRefToTarget(ref, preds_PC2$pred3, links = myt_links)
 
 
-PC_score_myt_gpa<-as.data.frame(PC_score_myt_gpa)
 
-Pl_pca <- ggplot(PC_score_myt_gpa, aes(y = Comp2, x = Comp1)) + 
-  geom_point(aes(shape = ids_morph$Sp, fill = ids_morph$Ed), size = 4)  + 
-  scale_shape_manual(values = c(21:25, 11))+
-  scale_fill_gradient(low = "white", high = "blue" )
-xlim(-0.5, 0.5) +
-  labs(x = paste("PC 2 (",PC2_prop, "%)", sep =""), y = paste("PC 1 (",PC1_prop, "%)", sep =""))  + 
-  theme(legend.position = "bottom")
+
+
+#### Рисуем ординацию мидий в морфоспейсе 
+
+PC_score_myt_gpa_df<-as.data.frame(PC_score_myt_gpa)
+
+PC_score_myt_gpa_df <- data.frame(PC_score_myt_gpa_df[, 1:4], Sp = ids_morph$Sp)
+
+PC_score_myt_gpa_df$Sp3 <- NA 
+  
+PC_score_myt_gpa_df$Sp3 [PC_score_myt_gpa_df$Sp == "Ga"] <- "Ga"
+
+PC_score_myt_gpa_df$Sp3 [PC_score_myt_gpa_df$Sp == "Ed"] <- "Ed"
+
+PC_score_myt_gpa_df$Sp3 [is.na(PC_score_myt_gpa_df$Sp3)]<- "H"
+
+
+
+PC_score_myt_gpa_df$Sp <- factor(PC_score_myt_gpa_df$Sp, levels = c("Ed", "EdTr", "EdGaTr", "EdGa",  "GaTr", "Ga"))
+
+PC_score_myt_gpa_df$Sp3 <- factor(PC_score_myt_gpa_df$Sp3, levels = c("Ed", "H", "Ga"))
+
+
+PC_score_myt_gpa_df$Tr <- ids_morph$Tr 
+PC_score_myt_gpa_df$Ed <- ids_morph$Ed 
+PC_score_myt_gpa_df$Ga <- ids_morph$Ga 
+
+
+
+Pl_pca <- ggplot(PC_score_myt_gpa_df, aes(y = Comp2, x = Comp1)) + 
+  geom_point(aes(shape = Sp3, fill = Sp3), size = 4)  + 
+  scale_shape_manual(values = c(21:25, 11)) +
+  scale_fill_manual(values = c("blue", "black", "yellow")) 
+
+# +
+#   xlim(-0.5, 0.5)
+
+# +
+#   labs(x = paste("PC 2 (",PC2_prop, "%)", sep =""), y = paste("PC 1 (",PC1_prop, "%)", sep =""))  + 
+#   theme(legend.position = "bottom")
+
+
+
+ggplot(PC_score_myt_gpa_df, aes(x = Sp, y = Comp1)) + geom_boxplot()
+
+ggplot(PC_score_myt_gpa_df, aes(x = Sp, y = Comp2)) + geom_boxplot()
 
 
 
 #Строим линейную модель, опсывающую форму раковины от пола и генотипа
 
-gdf <- geomorph.data.frame(myt_gpa, Ga = ids_morph$Ga, Ed = ids_morph$Ed, Ga = ids_morph$Ga, Sex = ids_morph$Sex)
+gdf <- geomorph.data.frame(myt_gpa, Ga = ids_morph$Ga, Ed = ids_morph$Ed, Ga = ids_morph$Ga, Sp = ids_morph$Sp, Sp3 = PC_score_myt_gpa_df$Sp3, Sex = ids_morph$Sex)
 
 
-fit.genotype <- procD.lm(coords ~  Sex + Ga, data = gdf, print.progress = T, SS.type = "II") 
+fit.genotype <- procD.lm(coords ~  Sp, data = gdf, print.progress = T, SS.type = "II") 
 
 
 summary(fit.genotype)
@@ -290,5 +340,5 @@ plotRefToTarget(ref, preds_EdTr$pred1, links = myt_links)
 plotRefToTarget(ref, preds_GaTr$pred1, links = myt_links)
 
 
-plotRefToTarget(preds_Ga$pred1, preds_Ed$pred1, links = myt_links)
+plotRefToTarget(preds_Ga$pred1, preds_EdGa$pred1, links = myt_links)
 
