@@ -4,10 +4,10 @@ library(dplyr)
 library(ggvegan)
 library(ggrepel)
 library(reshape2)
+library(readxl)
 
 
-
-tuv <- read.csv("Data/TuMyt_2020.csv", header = T)
+tuv <- read_excel("Data/TuMyt_2009_2010.xlsx")
 str(tuv)
 
 tuv_reduc <- tuv %>% filter(!is.na(PT))
@@ -18,16 +18,21 @@ tuv_demogr <- tuv_reduc %>% select(Age2, Age3,Age4, Age5, Age6, Age7, Age8, Age9
 
 colSums(is.na(tuv_demogr))
 
-tuv_predictors <-  tuv_reduc %>% select(Depth, Position2)
-
-tuv_sites <- tuv_reduc %>% select(Sample.ID, Transect, Position)
+tuv_predictors <-  tuv_reduc %>% select(Depth, Dist, Algae, Substrate)
 
 
 
 
 
 
-tuv_cca <- cca(tuv_demogr ~ ., data = tuv_predictors) 
+tuv_cca <- cca(tuv_demogr ~ Substrate + Algae, data = tuv_predictors) 
+vif.cca(tuv_cca)
+
+
+
+
+vif.cca(tuv_cca)
+
 
 plot(tuv_cca, display = c("cn", "sp"))
 
@@ -43,6 +48,11 @@ plot(tuv_cca, display = c("cn", "site"))
 
 
 tuv_cca_objects <- fortify(tuv_cca)
+
+write.table(scores(tuv_cca)$species, "clipboard",  sep = "\t")
+write.table(scores(tuv_cca)$sites, "clipboard",  sep = "\t")
+write.table(scores(tuv_cca)$centroids, "clipboard",  sep = "\t")
+
 
 tuv_cca_sites <- tuv_cca_objects %>% filter(Score == "constraints")
 
@@ -74,21 +84,33 @@ ord_tuv_domogr <- metaMDS(tuv_demogr_r)
 
 plot(ord_tuv_domogr, display = c("sites"), type = "t")
 
-envfitted <- envfit(ord_tuv_domogr ~ Depth + N + OGP + W + PT, data = tuv_predictors)
 
-plot(ord_tuv_domogr)
+
+
+
+
+tuv_ca <- cca(tuv_demogr ) 
+
+envfitted <- envfit(tuv_ca ~ Depth + Dist, data = tuv_predictors)
+
+plot(tuv_ca)
 plot(envfitted)
 
 
+gg_tuv_ca <- fortify(tuv_ca)
+gg_tuv_ca_predictor <- fortify(envfitted)
 
-gg_ord_tuv_predictor <- fortify(envfitted)
-gg_ord_tuv_domogr <- fortify(ord_tuv_domogr)
-
-gg_ord_tuv_domogr_sites <- gg_ord_tuv_domogr %>% filter(Score == "sites") 
-gg_ord_tuv_domogr_sites$Site <- tuv_reduc$Sample.ID
+gg_ord_tuv_ca_sites <- gg_tuv_ca %>% filter(Score == "sites") 
+gg_ord_tuv_ca_species <- gg_tuv_ca %>% filter(Score == "species")
 
 
-gg_ord_tuv_domogr_sp <- gg_ord_tuv_domogr %>% filter(Score == "species")
+write.table(gg_tuv_ca_predictor, "clipboard",  sep = "\t")
+
+write.table(gg_ord_tuv_ca_sites, "clipboard",  sep = "\t")
+
+
+write.table(gg_ord_tuv_ca_species, "clipboard",  sep = "\t")
+
 
 
 ggplot(gg_ord_tuv_domogr_sites, aes(x = NMDS1, y = NMDS2) ) + 
@@ -124,5 +146,21 @@ all <- merge(tuv_demogr_age_long, tuv_demogr_age_long_CV)
 
 
 ggplot(all, aes(x = reorder(variable, CV), y = log(value+1) )) + geom_col() + facet_wrap(~ Site, ncol = 4)
+
+
+
+tuv_demogr <- tuv_reduc %>% select(Age2, Age3,Age4, Age5, Age6, Age7, Age8, Age9, Age10, Age11, Age12)
+
+tuv_demogr_rel <- decostand(tuv_demogr, method = "total")
+
+ord <- metaMDS(tuv_demogr_rel, mem)
+
+plot(ord, type = "t")
+
+
+write.table(fortify(ord), "clipboard",  sep = "\t")
+
+autoplot(ord)
+
 
          
