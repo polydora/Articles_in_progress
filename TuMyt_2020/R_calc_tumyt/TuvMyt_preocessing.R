@@ -12,33 +12,37 @@ str(tuv)
 
 tuv_reduc <- tuv %>% filter(!is.na(PT))
 
-tuv_demogr <- tuv_reduc %>% select(Age2, Age3,Age4, Age5, Age6, Age7, Age8, Age9, Age10, Age11, Age12, PT, N, W, OGP, max_L)
+tuv_demogr <- tuv_reduc %>% select(Age2, Age3,Age4, Age5, Age6, Age7, Age8, Age9, Age10, Age11, Age12, PT, N, W, OGP, max_L) %>% as.data.frame()
 
-
+row.names(tuv_demogr) <- tuv_reduc$Sample_ID
 
 colSums(is.na(tuv_demogr))
 
-tuv_predictors <-  tuv_reduc %>% select(Depth, Dist, Algae, Substrate)
+tuv_predictors <-  tuv_reduc %>% select(Transect, Depth, Distance, Exposition, Fucus, Alaria, Cover, Slope, Width, Substrate)
+
+tuv_predictors$Alaria <- factor(tuv_predictors$Alaria)
+tuv_predictors$Fucus <- factor(tuv_predictors$Fucus)
 
 
 
 
-
-
-tuv_cca <- cca(tuv_demogr ~ Substrate + Algae, data = tuv_predictors) 
-vif.cca(tuv_cca)
-
-
-
-
+tuv_cca <- cca(tuv_demogr ~ Distance + Depth + Slope  + Cover + Alaria, data = tuv_predictors) 
 vif.cca(tuv_cca)
 
 
 plot(tuv_cca, display = c("cn", "sp"))
 
+
+
+plot(tuv_cca, display = c("cn", "sites"))
+
+
 anova(tuv_cca)
 anova(tuv_cca, by = "axis")
 anova(tuv_cca, by = "margin")
+anova(tuv_cca, by = "terms")
+
+
 
 plot(tuv_cca, display = c("cn", "site"))
 
@@ -47,32 +51,28 @@ plot(tuv_cca, display = c("cn", "site"))
 
 
 
-tuv_cca_objects <- fortify(tuv_cca)
 
-write.table(scores(tuv_cca)$species, "clipboard",  sep = "\t")
-write.table(scores(tuv_cca)$sites, "clipboard",  sep = "\t")
-write.table(scores(tuv_cca)$centroids, "clipboard",  sep = "\t")
+demogr_scores <- fortify(tuv_cca, scaling = "symmetric")
 
+demogr_scores_site <- demogr_scores[demogr_scores$Score == "constraints", ] 
+demogr_scores_site$Transect <- tuv_predictors$Transect 
+demogr_scores_site$High <- -tuv_predictors$Depth 
 
-tuv_cca_sites <- tuv_cca_objects %>% filter(Score == "constraints")
-
-tuv_cca_sites$Sample <- tuv_reduc$Sample.ID
+demogr_scores_sp <- demogr_scores[demogr_scores$Score == "species", ] 
 
 
-tuv_cca_sp <- tuv_cca_objects %>% filter(Score == "species")
+demogr_scores_cons <- demogr_scores[demogr_scores$Score == "biplot", ] 
 
-tuv_cca_predictors  <- tuv_cca_objects %>% filter(Score == "biplot")
-
-
-
-
-ggplot(data = tuv_cca_sites, aes(x = CCA1, y = CCA2)) +
-  geom_point(aes(label = Sample, color = tuv_sites$Transect, size = tuv_demogr$PT), position = position_jitter(width = 0.1)) +
-  geom_segment(data = tuv_cca_predictors,  aes(x = 0, y = 0, yend = CCA2, xend = CCA1), color = "blue", arrow = arrow()) +
-  geom_text_repel(aes(label = tuv_predictors$Depth)) +
-  geom_text_repel(data = tuv_cca_sp,  aes(x = CCA1, y = CCA2, label = Label), color = "red", size= 4)
-
-
+ggplot(demogr_scores_site, aes(x = CCA1, y = CCA2)) + 
+  geom_point(aes(fill = Transect, size = High ), shape = 21) + 
+  scale_fill_manual(values = c("pink", "red", "green", "blue", "darkblue", "yellow", "orange", "black")) + 
+  theme_bw() + 
+  scale_size(range = c(3, 10)) + 
+  geom_vline(xintercept = 0) + 
+  geom_hline(yintercept = 0)  + 
+  geom_segment(data = demogr_scores_cons, aes(x = 0, y = 0, xend = CCA1, yend = CCA2), color = "brown", arrow = arrow(type = "closed", angle = 10), size = 1) +
+  geom_text_repel(data = demogr_scores_sp, aes(label = Label)) + 
+  geom_text_repel(data = demogr_scores_cons, aes(label = Label), color = "black", size = 6,box.padding = 0.3)
 
 
 
@@ -104,14 +104,6 @@ gg_ord_tuv_ca_sites <- gg_tuv_ca %>% filter(Score == "sites")
 gg_ord_tuv_ca_species <- gg_tuv_ca %>% filter(Score == "species")
 
 
-write.table(gg_tuv_ca_predictor, "clipboard",  sep = "\t")
-
-write.table(gg_ord_tuv_ca_sites, "clipboard",  sep = "\t")
-
-
-write.table(gg_ord_tuv_ca_species, "clipboard",  sep = "\t")
-
-
 
 ggplot(gg_ord_tuv_domogr_sites, aes(x = NMDS1, y = NMDS2) ) + 
   geom_point(aes(shape = tuv_reduc$Transect), size = 6) + 
@@ -120,47 +112,3 @@ ggplot(gg_ord_tuv_domogr_sites, aes(x = NMDS1, y = NMDS2) ) +
   geom_text_repel(data = gg_ord_tuv_predictor,  aes(x = NMDS1, y = NMDS2, label = Label), color = "blue", size= 10)
 
 
-
-
-###### Анализ возрастной структуры 
-
-tuv_demogr_age <- tuv_demogr %>% select(Age2, Age3,Age4, Age5, Age6, Age7, Age8, Age9, Age10, Age11, Age12)
-
-tuv_demogr_age2 <- decostand(tuv_demogr_age, method = "total" )
-
-ca_age <- cca(tuv_demogr_age)
-
-
-plot(ca_age, display = "sp")
-
-
-tuv_demogr_age2$Site <- tuv_sites$Sample.ID
-
-tuv_demogr_age_long <- melt(tuv_demogr_age2, id.vars = "Site")
-
-tuv_demogr_age_long_CV <- tuv_demogr_age_long %>% group_by(Site) %>% summarise(CV = sd(value)/mean(value))
-
-
-all <- merge(tuv_demogr_age_long, tuv_demogr_age_long_CV)
-
-
-
-ggplot(all, aes(x = reorder(variable, CV), y = log(value+1) )) + geom_col() + facet_wrap(~ Site, ncol = 4)
-
-
-
-tuv_demogr <- tuv_reduc %>% select(Age2, Age3,Age4, Age5, Age6, Age7, Age8, Age9, Age10, Age11, Age12)
-
-tuv_demogr_rel <- decostand(tuv_demogr, method = "total")
-
-ord <- metaMDS(tuv_demogr_rel, mem)
-
-plot(ord, type = "t")
-
-
-write.table(fortify(ord), "clipboard",  sep = "\t")
-
-autoplot(ord)
-
-
-         

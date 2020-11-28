@@ -63,9 +63,9 @@ as.data.frame(table(All$file))
 
 # Создание матрицы с лэндмарками
 
-landmarks_included <- c(1:9) #Чистый абрис раковины
+# landmarks_included <- c(1:9) #Чистый абрис раковины
 
-# landmarks_included <- c(1:14) #абрис раковины и внутренние отпечатки
+landmarks_included <- c(1:14) #абрис раковины и внутренние отпечатки
 
 # ++++++++++++++++++++++++++
 
@@ -261,9 +261,23 @@ ggplot(PC_score_myt_gpa_df, aes(y = Comp2, x = Comp1)) +
 
 
 
-ggplot(PC_score_myt_gpa_df, aes(x = Sp, y = Comp1)) + geom_boxplot() + facet_grid(~Area) + geom_hline(yintercept = 0) + theme(axis.text.x = element_text(angle = 90))
+ggplot(PC_score_myt_gpa_df, aes(x = Sp3, y = Comp1)) + geom_boxplot() + facet_grid(~Area) + geom_hline(yintercept = 0) + theme(axis.text.x = element_text(angle = 90))
 
 ggplot(PC_score_myt_gpa_df, aes(x = Sp, y = Comp2)) + geom_boxplot() + facet_grid(~Area) + geom_hline(yintercept = 0) + theme(axis.text.x = element_text(angle = 90))
+
+
+
+
+# Распределение по квадрантам
+
+PC_score_myt_gpa_df_Gaseid$Quadr <-  
+  case_when(PC_score_myt_gpa_df_Gaseid$Comp1 >=0 & PC_score_myt_gpa_df_Gaseid$Comp2 >= 0 ~ "I",
+            PC_score_myt_gpa_df_Gaseid$Comp1 < 0 & PC_score_myt_gpa_df_Gaseid$Comp2 >= 0 ~ "II",
+            PC_score_myt_gpa_df_Gaseid$Comp1 <=0 & PC_score_myt_gpa_df_Gaseid$Comp2 < 0 ~ "III",
+            PC_score_myt_gpa_df_Gaseid$Comp1 > 0 & PC_score_myt_gpa_df_Gaseid$Comp2 < 0 ~ "IV")
+
+
+PC_score_myt_gpa_df_Gaseid %>%  group_by(Quadr, Sp) %>% summarise(freq = n()) %>% ggplot(., aes(x = Sp, y = freq)) + geom_col() + facet_wrap(~Quadr)
 
 
 
