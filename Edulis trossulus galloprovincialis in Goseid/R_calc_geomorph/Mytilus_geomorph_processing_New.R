@@ -35,62 +35,13 @@ All <- reads()
 ID <- All %>% select(ID, file) %>% unique(.)
 
 
-write.table(ID, "clipboard", row.names = F, sep = "\t")
+# write.table(ID, "clipboard", row.names = F, sep = "\t")
 
 # Генетические маркеры и классические морфологические маркеры по  McDonald
-ids <- read_xlsx("Data/gen_markers.xlsx", na = "NA") 
-
-ids$Tr <- as.numeric(ids$Tr)
+ids <- read_xlsx("Data/Species_from_different_areas.xlsx", na = "NA") 
 
 str(ids)
 
-
-ids <- ids[complete.cases(ids[,1:6]), ]
-
-
-
-# Датафрейм с генетическими данными и измерениями классическиз морфометрических признаков
-
-
-ids_morph <- merge(ids, data.frame(file = unique(All$file)))
-
-ids_morph$file %in% unique(All$file)
-
-length(unique(All$file))
-
-#################################################3
-# Классическая морфометрия
-#################################################
-
-ids_morph_McDonald <- ids_morph %>% filter(complete.cases(ids_morph))
-
-
-ids_morph_McDonald_traits <- ids_morph_McDonald %>% select(9:17)%>% select( -a, -L)
-
-ids_morph_McDonald_traits <- log10(ids_morph_McDonald_traits) / log10(ids_morph_McDonald$L)
-
-
-
-mod_rda <- rda(ids_morph_McDonald_traits ~  Ga, data = ids_morph_McDonald)
-
-
-anova(mod_rda, permutations = 99999)
-
-anova(mod_rda, by = "margin", permutations = 99999)
-
-anova(mod_rda, by = "axis", permutations = 99999)
-
-
-
-plot(mod_rda,  display = c("sp", "cn"))
-
-qplot(ids_morph_McDonald$Ga, ids_morph_McDonald$L) + geom_smooth(method = "lm")
-
-qplot(ids_morph_McDonald$Ga, ids_morph_McDonald$aam) + geom_smooth(method = "lm")
-
-qplot(ids_morph_McDonald$Ga, ids_morph_McDonald$lpr) + geom_smooth(method = "lm")
-
-qplot(ids_morph_McDonald$Ga, ids_morph_McDonald$hp) + geom_smooth(method = "lm")
 
 
 #################################################3
@@ -99,7 +50,7 @@ qplot(ids_morph_McDonald$Ga, ids_morph_McDonald$hp) + geom_smooth(method = "lm")
 
 
 # Удаляю те файлы, которые не имеют генетических оценок
-All <- All[All$file %in% ids_morph$file, ]
+All <- All[All$file %in% ids$file, ]
 
 
 
@@ -133,10 +84,10 @@ for(i in 1:length(unique(All$file))){
 
 # Проверка на соответствие матриц
 
-ids_morph[ids_morph$file == "ga_42_result.txt", ]
+ids[ids$file == "ga_42_result.txt", ]
 
 
-myt_matr[ , , 25]
+myt_matr[ , , 51]
 
 
 
@@ -154,9 +105,9 @@ myt_gpa <- rotate.coords(myt_gpa, type = "flipX")
 
 
 # Точки абриса
-# myt_links <- data.frame(LM1 = c(1:9,  10:14), LM2 = c(2:9, 1, 11:14, 14))
+myt_links <- data.frame(LM1 = c(1:9,  10:14), LM2 = c(2:9, 1, 11:14, 14))
 
-myt_links <- data.frame(LM1 = c(1:9), LM2 = c(2:9, 1))
+# myt_links <- data.frame(LM1 = c(1:9), LM2 = c(2:9, 1))
 
 
 myt_links <- as.matrix(myt_links)
@@ -175,20 +126,41 @@ plotRefToTarget(ref, ref, method = "TPS", links = myt_links)
 
 
 # # Мидия с выпуклым брюшным краем
-plotRefToTarget(ref, myt_gpa$coords[, , 22],
+plotRefToTarget(ref, myt_gpa$coords[, , 9],
                 method = "TPS", mag = 1,
                 links = myt_links)
 
 # # Мидия с вогнутым брюшным краем
-plotRefToTarget(ref, myt_gpa$coords[, , 7],
+plotRefToTarget(ref, myt_gpa$coords[, , 55],
                 method = "TPS", mag = 1,
                 links = myt_links)
 
-##################################################################################
-# # Аномальная мидия
-plotRefToTarget(ref, myt_gpa$coords[, , 25],
+
+
+# # Мидия с высоким спинным краем
+plotRefToTarget(ref, myt_gpa$coords[, , 22],
                 method = "TPS", mag = 1,
                 links = myt_links)
+
+
+##################################################################################
+# # Аномальная мидия
+plotRefToTarget(ref, myt_gpa$coords[, , 51],
+                method = "TPS", mag = 1,
+                links = myt_links)
+
+
+
+
+
+myt_gpa <- gpagen(myt_matr[ , ,-51])
+
+myt_gpa <- rotate.coords(myt_gpa, type = "rotateC")
+
+myt_gpa <- rotate.coords(myt_gpa, type = "rotateC")
+
+myt_gpa <- rotate.coords(myt_gpa, type = "flipX")
+
 
 
 
@@ -234,7 +206,18 @@ plotRefToTarget(ref, preds_PC2$pred3, links = myt_links)
 
 PC_score_myt_gpa_df<-as.data.frame(PC_score_myt_gpa)
 
-PC_score_myt_gpa_df <- data.frame(PC_score_myt_gpa_df[, 1:4], Sp = ids_morph$Sp)
+# 
+PC_score_myt_gpa_df <- data.frame(PC_score_myt_gpa_df[, 1:4], Sp = ids$Sp[-51], Area = ids$Area[-51])
+
+# PC_score_myt_gpa_df <- data.frame(PC_score_myt_gpa_df[, 1:4], Sp = ids$Sp, Area = ids$Area)
+
+
+PC_score_myt_gpa_df$Area2 <- ifelse(PC_score_myt_gpa_df$Area == "Gaseid", "Gaseid", "Ref")
+
+
+
+PC_score_myt_gpa_df <- PC_score_myt_gpa_df[complete.cases(PC_score_myt_gpa_df), ]
+
 
 PC_score_myt_gpa_df$Sp3 <- NA 
   
@@ -242,25 +225,32 @@ PC_score_myt_gpa_df$Sp3 [PC_score_myt_gpa_df$Sp == "Ga"] <- "Ga"
 
 PC_score_myt_gpa_df$Sp3 [PC_score_myt_gpa_df$Sp == "Ed"] <- "Ed"
 
+PC_score_myt_gpa_df$Sp3 [PC_score_myt_gpa_df$Sp == "Tr"] <- "Tr"
+
 PC_score_myt_gpa_df$Sp3 [is.na(PC_score_myt_gpa_df$Sp3)]<- "H"
 
 
 
-PC_score_myt_gpa_df$Sp <- factor(PC_score_myt_gpa_df$Sp, levels = c("Ed", "EdTr", "EdGaTr", "EdGa",  "GaTr", "Ga"))
+PC_score_myt_gpa_df$Sp <- factor(PC_score_myt_gpa_df$Sp, levels = c("Tr", "Ed", "EdTr", "EdGaTr", "EdGa",  "GaTr", "Ga"))
 
-PC_score_myt_gpa_df$Sp3 <- factor(PC_score_myt_gpa_df$Sp3, levels = c("Ed", "H", "Ga"))
+PC_score_myt_gpa_df$Sp3 <- factor(PC_score_myt_gpa_df$Sp3, levels = c("Tr", "Ed", "H", "Ga"))
 
-
-PC_score_myt_gpa_df$Tr <- ids_morph$Tr 
-PC_score_myt_gpa_df$Ed <- ids_morph$Ed 
-PC_score_myt_gpa_df$Ga <- ids_morph$Ga 
+PC_score_myt_gpa_df_Gaseid <- PC_score_myt_gpa_df %>% filter(Area == "Gaseid")
 
 
+PC_score_myt_gpa_df$Area <- factor(PC_score_myt_gpa_df$Area, levels = c("Gaseid", "Bergen", "Ar", "Candao", "Porto", "Vigo"))
 
-Pl_pca <- ggplot(PC_score_myt_gpa_df, aes(y = Comp2, x = Comp1)) + 
-  geom_point(aes(shape = Sp3, fill = Sp3), size = 4)  + 
+
+ggplot(PC_score_myt_gpa_df, aes(y = Comp2, x = Comp1)) + 
+  geom_point(aes(shape = Sp3, fill = Sp3, alpha = Area2), size = 4)  + 
   scale_shape_manual(values = c(21:25, 11)) +
-  scale_fill_manual(values = c("blue", "black", "yellow")) 
+  scale_fill_manual(values = c("red", "blue", "gray", "yellow")) +
+  scale_alpha_manual(values = c(0.3, 1)) +
+  geom_text(data = PC_score_myt_gpa_df_Gaseid, aes(label = Sp))+
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  geom_hline(yintercept = 0) +
+  geom_vline(xintercept = 0)
 
 # +
 #   xlim(-0.5, 0.5)
@@ -271,35 +261,28 @@ Pl_pca <- ggplot(PC_score_myt_gpa_df, aes(y = Comp2, x = Comp1)) +
 
 
 
-ggplot(PC_score_myt_gpa_df, aes(x = Sp, y = Comp1)) + geom_boxplot()
+ggplot(PC_score_myt_gpa_df, aes(x = Sp, y = Comp1)) + geom_boxplot() + facet_grid(~Area) + geom_hline(yintercept = 0) + theme(axis.text.x = element_text(angle = 90))
 
-ggplot(PC_score_myt_gpa_df, aes(x = Sp, y = Comp2)) + geom_boxplot()
-
-
-
-#Строим линейную модель, опсывающую форму раковины от пола и генотипа
-
-gdf <- geomorph.data.frame(myt_gpa, Ga = ids_morph$Ga, Ed = ids_morph$Ed, Ga = ids_morph$Ga, Sp = ids_morph$Sp, Sp3 = PC_score_myt_gpa_df$Sp3, Sex = ids_morph$Sex)
-
-
-fit.genotype <- procD.lm(coords ~  Sp, data = gdf, print.progress = T, SS.type = "II") 
-
-
-summary(fit.genotype)
-
-# anova(fit.genotype)
-
-plot(fit.genotype)
+ggplot(PC_score_myt_gpa_df, aes(x = Sp, y = Comp2)) + geom_boxplot() + facet_grid(~Area) + geom_hline(yintercept = 0) + theme(axis.text.x = element_text(angle = 90))
 
 
 
-# Выводим среднюю форму характерную для разных полов
+# #Строим линейную модель, опсывающую форму раковины от пола и генотипа
+# 
+# gdf <- geomorph.data.frame(myt_gpa, Ga = ids_morph$Ga, Ed = ids_morph$Ed, Ga = ids_morph$Ga, Sp = ids_morph$Sp, Sp3 = PC_score_myt_gpa_df$Sp3, Sex = ids_morph$Sex)
+# 
+# 
+# fit.genotype <- procD.lm(coords ~  Sp, data = gdf, print.progress = T, SS.type = "II") 
+# 
+# 
+# summary(fit.genotype)
+# 
+# # anova(fit.genotype)
+# 
+# plot(fit.genotype)
+# 
 
-Sex <- as.numeric(ids_morph$Sex == "f") 
-preds_Sex <- shape.predictor(myt_gpa$coords, x= Sex, Intercept = FALSE, 
-                            pred1 = 1,  pred2 = 0) 
-plotRefToTarget(ref, preds_Sex$pred1, links = myt_links)
-plotRefToTarget(ref, preds_Sex$pred2, links = myt_links)
+
 
 
 
