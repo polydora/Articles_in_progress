@@ -3,6 +3,8 @@ library(ggplot2)
 library(vegan)
 library(dplyr)
 library(readxl)
+library(reshape2)
+
 
 
 
@@ -37,8 +39,14 @@ ID <- All %>% select(ID, file) %>% unique(.)
 
 # write.table(ID, "clipboard", row.names = F, sep = "\t")
 
-# Генетические маркеры и классические морфологические маркеры по  McDonald
+# Генетические маркеры
 ids <- read_xlsx("Data/Species_from_different_areas.xlsx", na = "NA") 
+
+str(ids)
+
+ids$Tr <- as.numeric(ids$Tr)
+ids$Ed <- as.numeric(ids$Ed)
+ids$Ga <- as.numeric(ids$Ga)
 
 str(ids)
 
@@ -151,7 +159,7 @@ plotRefToTarget(ref, myt_gpa$coords[, , 51],
 
 
 
-
+# Удаляем аномальную мидию
 
 myt_gpa <- gpagen(myt_matr[ , ,-51])
 
@@ -207,9 +215,9 @@ plotRefToTarget(ref, preds_PC2$pred3, links = myt_links)
 PC_score_myt_gpa_df<-as.data.frame(PC_score_myt_gpa)
 
 # 
-PC_score_myt_gpa_df <- data.frame(PC_score_myt_gpa_df[, 1:4], Sp = ids$Sp[-51], Area = ids$Area[-51])
+PC_score_myt_gpa_df <- data.frame(PC_score_myt_gpa_df[, 1:2], Sp = ids$Sp[-51], Area = ids$Area[-51], Tr = ids$Tr[-51], Ed = ids$Ed[-51], Ga = ids$Ga[-51])
 
-# PC_score_myt_gpa_df <- data.frame(PC_score_myt_gpa_df[, 1:4], Sp = ids$Sp, Area = ids$Area)
+# PC_score_myt_gpa_df <- data.frame(PC_score_myt_gpa_df[, 1:2], Sp = ids$Sp, Area = ids$Area)
 
 
 PC_score_myt_gpa_df$Area2 <- ifelse(PC_score_myt_gpa_df$Area == "Gaseid", "Gaseid", "Ref")
@@ -231,53 +239,117 @@ PC_score_myt_gpa_df$Sp3 [is.na(PC_score_myt_gpa_df$Sp3)]<- "H"
 
 
 
+
 PC_score_myt_gpa_df$Sp <- factor(PC_score_myt_gpa_df$Sp, levels = c("Tr", "Ed", "EdTr", "EdGaTr", "EdGa",  "GaTr", "Ga"))
 
 PC_score_myt_gpa_df$Sp3 <- factor(PC_score_myt_gpa_df$Sp3, levels = c("Tr", "Ed", "H", "Ga"))
 
 PC_score_myt_gpa_df_Gaseid <- PC_score_myt_gpa_df %>% filter(Area == "Gaseid")
 
+PC_score_myt_gpa_df_Ref <- PC_score_myt_gpa_df %>% filter(Area2 == "Ref")
 
-PC_score_myt_gpa_df$Area <- factor(PC_score_myt_gpa_df$Area, levels = c("Gaseid", "Bergen", "Ar", "Candao", "Porto", "Vigo"))
+
+# Квартили по каждой из компоенент
+
+PC1_Q25 <- quantile(PC_score_myt_gpa_df$Comp1, probs = 0.25)
+PC1_Q50 <- quantile(PC_score_myt_gpa_df$Comp1, probs = 0.5)
+PC1_Q75 <- quantile(PC_score_myt_gpa_df$Comp1, probs = 0.75)
+
+PC2_Q25 <- quantile(PC_score_myt_gpa_df$Comp2, probs = 0.25)
+PC2_Q50 <- quantile(PC_score_myt_gpa_df$Comp2, probs = 0.5)
+PC2_Q75 <- quantile(PC_score_myt_gpa_df$Comp2, probs = 0.75)
 
 
-ggplot(PC_score_myt_gpa_df, aes(y = Comp2, x = Comp1)) + 
-  geom_point(aes(shape = Sp3, fill = Sp3, alpha = Area2), size = 4)  + 
-  scale_shape_manual(values = c(21:25, 11)) +
-  scale_fill_manual(values = c("red", "blue", "gray", "yellow")) +
-  scale_alpha_manual(values = c(0.3, 1)) +
-  geom_text(data = PC_score_myt_gpa_df_Gaseid, aes(label = Sp))+
-  theme_bw() +
+
+
+ggplot() + aes(y = Comp2, x = Comp1)+
+  geom_point(data = PC_score_myt_gpa_df_Ref, aes(fill = Sp3, shape = Sp3),  size = 4)  +   scale_shape_manual(values = c(21:25, 11)) +
+  scale_fill_manual(values = c("red", "blue", "yellow", "gray")) +
+  geom_point(data = PC_score_myt_gpa_df_Gaseid, shape = 24, size = 2, fill = "gray") +     theme_bw() +
   theme(panel.grid = element_blank()) +
-  geom_hline(yintercept = 0) +
-  geom_vline(xintercept = 0)
-
-# +
-#   xlim(-0.5, 0.5)
-
-# +
-#   labs(x = paste("PC 2 (",PC2_prop, "%)", sep =""), y = paste("PC 1 (",PC1_prop, "%)", sep =""))  + 
-#   theme(legend.position = "bottom")
+  geom_hline(yintercept = c(PC2_Q25, PC2_Q50, PC2_Q75), linetype = 2) +
+  geom_vline(xintercept = c(PC1_Q25, PC1_Q50, PC1_Q75), linetype = 2) +
+  theme(legend.position = "bottom") + 
+  labs(shape = "Референсные генотипы")+
+  guides(fill = "none")
 
 
+# Значения компонент у референсных генотипов
 
-ggplot(PC_score_myt_gpa_df, aes(x = Sp3, y = Comp1)) + geom_boxplot() + facet_grid(~Area) + geom_hline(yintercept = 0) + theme(axis.text.x = element_text(angle = 90))
+ggplot(PC_score_myt_gpa_df_Ref, aes(x = Sp3, y = Comp1, fill = Sp3)) + geom_boxplot()  + geom_hline(yintercept = 0) + theme(axis.text.x = element_text(angle = 0)) + theme_bw() + scale_fill_manual(values = c("red", "blue", "yellow", "gray")) + guides(fill = "none")
 
-ggplot(PC_score_myt_gpa_df, aes(x = Sp, y = Comp2)) + geom_boxplot() + facet_grid(~Area) + geom_hline(yintercept = 0) + theme(axis.text.x = element_text(angle = 90))
-
-
-
-
-# Распределение по квадрантам
-
-PC_score_myt_gpa_df_Gaseid$Quadr <-  
-  case_when(PC_score_myt_gpa_df_Gaseid$Comp1 >=0 & PC_score_myt_gpa_df_Gaseid$Comp2 >= 0 ~ "I",
-            PC_score_myt_gpa_df_Gaseid$Comp1 < 0 & PC_score_myt_gpa_df_Gaseid$Comp2 >= 0 ~ "II",
-            PC_score_myt_gpa_df_Gaseid$Comp1 <=0 & PC_score_myt_gpa_df_Gaseid$Comp2 < 0 ~ "III",
-            PC_score_myt_gpa_df_Gaseid$Comp1 > 0 & PC_score_myt_gpa_df_Gaseid$Comp2 < 0 ~ "IV")
+ggplot(PC_score_myt_gpa_df_Ref, aes(x = Sp3, y = Comp2, fill = Sp3)) + geom_boxplot()  + geom_hline(yintercept = 0) + theme(axis.text.x = element_text(angle = 0)) + theme_bw() + scale_fill_manual(values = c("red", "blue", "yellow", "gray")) + guides(fill = "none")
 
 
-PC_score_myt_gpa_df_Gaseid %>%  group_by(Quadr, Sp) %>% summarise(freq = n()) %>% ggplot(., aes(x = Sp, y = freq)) + geom_col() + facet_wrap(~Quadr)
+# 
+# 
+# # Распределение по квадрантам
+# 
+# PC_score_myt_gpa_df_Gaseid$Quadr <-  
+#   case_when(PC_score_myt_gpa_df_Gaseid$Comp1 >=0 & PC_score_myt_gpa_df_Gaseid$Comp2 >= 0 ~ "I",
+#             PC_score_myt_gpa_df_Gaseid$Comp1 < 0 & PC_score_myt_gpa_df_Gaseid$Comp2 > 0 ~ "II",
+#             PC_score_myt_gpa_df_Gaseid$Comp1 < 0 & PC_score_myt_gpa_df_Gaseid$Comp2 < 0 ~ "III",
+#             PC_score_myt_gpa_df_Gaseid$Comp1 > 0 & PC_score_myt_gpa_df_Gaseid$Comp2 < 0 ~ "IV")
+
+# 
+# PC_score_myt_gpa_df_Gaseid %>%  group_by(Quadr, Sp) %>% summarise(freq = n()) %>% ggplot(., aes(x = Sp, y = freq)) + geom_col() + facet_wrap(~Quadr)
+
+# 
+# PC_score_myt_gpa_df_Gaseid_long <- melt(PC_score_myt_gpa_df_Gaseid, id.vars = c("Comp1","Comp2","Sp","Area",  "Area2", "Sp3", "Quadr"), variable.name = "Species", value.name = "q_score")
+# 
+# 
+# ggplot(PC_score_myt_gpa_df_Gaseid_long, aes(x = Species, y = q_score)) + geom_boxplot() + facet_wrap(~ Quadr) + geom_hline(yintercept = 0.5)
+# 
+
+
+
+# Распределение квартилям первой главной компоненты
+
+PC1_Q25 <- quantile(PC_score_myt_gpa_df_Gaseid$Comp1, probs = 0.25)
+PC1_Q50 <- quantile(PC_score_myt_gpa_df_Gaseid$Comp1, probs = 0.5)
+PC1_Q75 <- quantile(PC_score_myt_gpa_df_Gaseid$Comp1, probs = 0.75)
+
+
+# PC_score_myt_gpa_df_Gaseid$Quant <-  
+#   case_when(PC_score_myt_gpa_df_Gaseid$Comp1 <= PC1_Q25 ~ "A",
+#             PC_score_myt_gpa_df_Gaseid$Comp1 <= PC1_Q50 & PC_score_myt_gpa_df_Gaseid$Comp1 > PC1_Q25 ~ "B",
+#             PC_score_myt_gpa_df_Gaseid$Comp1 <= PC1_Q75 & PC_score_myt_gpa_df_Gaseid$Comp1 > PC1_Q50 ~ "C",
+#             PC_score_myt_gpa_df_Gaseid$Comp1 > PC1_Q75  ~ "D")
+# 
+# 
+# PC_score_myt_gpa_df_Gaseid_long2 <- melt(PC_score_myt_gpa_df_Gaseid, id.vars = c("Comp1","Comp2","Sp","Area",  "Area2", "Sp3", "Quadr", "Quant"), variable.name = "Species", value.name = "q_score")
+# 
+# 
+# ggplot(PC_score_myt_gpa_df_Gaseid_long2, aes(x = Species, y = q_score)) + geom_boxplot() + facet_wrap(~ Quant, nrow = 1) + geom_hline(yintercept = 0.5)
+# 
+
+
+# ++++++++++++++++++++++
+
+binomial_smooth <- function(...) {
+  geom_smooth(method = "glm", se = F,  method.args = list(family = "binomial"), ...)
+}
+
+ggplot(PC_score_myt_gpa_df_Gaseid_long, aes(x = Comp1, y = q_score, color = Species, fill = Species)) +
+  geom_point(shape = 21, size = 4, color = "black") +  
+  binomial_smooth(formula = y ~ splines::ns(x, 3)) +
+  scale_fill_manual(values = c("red", "blue", "yellow")) +
+  scale_color_manual(values = c("red", "blue", "yellow")) + 
+  theme(panel.background = element_rect(fill = "gray70"), panel.grid = element_blank()) +   geom_vline(xintercept = c(PC1_Q25, PC1_Q50, PC1_Q75), linetype = 2) + 
+  labs(x = "Shape PC1", y = "Structure score")
+  
+
+
+  
+  
+ggplot(PC_score_myt_gpa_df_Gaseid_long, aes(x = Comp2, y = q_score, color = Species, fill = Species)) +
+  geom_point(shape = 21, size = 4, color = "black") +  
+  binomial_smooth(formula = y ~ splines::ns(x, 3)) +
+  scale_fill_manual(values = c("red", "blue", "yellow")) +
+  scale_color_manual(values = c("red", "blue", "yellow")) + 
+  theme(panel.background = element_rect(fill = "gray70"), panel.grid = element_blank()) +   geom_vline(xintercept = c(PC2_Q25, PC2_Q50, PC2_Q75), linetype = 2) 
+
+
 
 
 
