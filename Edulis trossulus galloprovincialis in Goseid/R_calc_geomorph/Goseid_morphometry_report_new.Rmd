@@ -1,0 +1,401 @@
+---
+title: "Морфологические вариации мидий в условиях гибридизации"
+output: html_document
+---
+
+<style type="text/css">
+
+body{ /* Normal  */
+      font-size: 18px;
+  }
+td {  /* Table  */
+  font-size: 12px;
+}
+h1.title {
+  font-size: 30px;
+  color: DarkRed;
+}
+h1 { /* Header 1 */
+  font-size: 25px;
+  color: black;
+}
+h2 { /* Header 2 */
+    font-size: 20px;
+  color: black;
+}
+h3 { /* Header 3 */
+  font-size: 18px;
+  font-family: "Times New Roman", Times, serif;
+  color: black;
+}
+code.r{ /* Code block */
+    font-size: 18px;
+}
+pre { /* Code block - determines code spacing between lines */
+    font-size: 14px;
+}
+</style>
+
+
+
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+options(knitr.kable.NA = '')
+
+library(geomorph)
+library(ggplot2)
+library(dplyr)
+library(readxl)
+library(vegan)
+library(broom)
+library(cowplot)
+library(reshape2)
+
+
+
+theme_set(theme_bw())
+
+```
+
+```{r}
+
+
+reads <- function(path = "./Data/Lands/"){
+
+  files1 <- list.files(path)
+  
+  i = 1
+  data <- read.table(paste(path, files1[i], sep = ""))
+  
+  measure1 <- data.frame(ID = i, file = files1[i], data)
+  
+  for(i in 2:length(files1)) {
+    data <- read.table(paste(path, files1[i], sep = ""))
+    # print(i)
+    X <- data.frame(ID = i, file = files1[i], data) 
+    measure1 <- rbind(measure1, X)
+  } 
+  measure1
+}
+
+
+
+All <- reads()
+
+ID <- All %>% select(ID, file) %>% unique(.)
+
+
+ids <- read_xlsx("Data/Species_from_different_areas.xlsx", na = "NA") 
+ids$Tr <- as.numeric(ids$Tr)
+ids$Ed <- as.numeric(ids$Ed)
+ids$Ga <- as.numeric(ids$Ga)
+
+
+
+#################################################3
+# Геометрическая морфометрия
+#################################################
+
+
+# Удаляю те файлы, которые не имеют генетических оценок
+All <- All[All$file %in% ids$file, ]
+
+
+landmarks_included <- c(1:14) #абрис раковины и внутренние отпечатки
+
+
+myt_matr <- array(rep(NA, length(unique(All$ID))*length(landmarks_included)*2), dim = c(length(landmarks_included), 2, length(unique(All$ID))))
+
+
+for(i in 1:length(unique(All$file))){
+  id <- unique(All$file)[i]
+  d <- All[All$file == id , ]
+  d <- d[landmarks_included, ] #Отбор лэндмарков, описывающих внешний контур раковины
+  myt_matr[ , , i] <- as.matrix(d[  , c(3,4)])
+  
+}
+
+
+# Удаляем аномальную мидию
+
+myt_gpa <- gpagen(myt_matr[ , ,-51], print.progress = F)
+
+myt_gpa <- rotate.coords(myt_gpa, type = "rotateC")
+
+myt_gpa <- rotate.coords(myt_gpa, type = "rotateC")
+
+myt_gpa <- rotate.coords(myt_gpa, type = "flipX")
+
+
+
+
+```
+
+
+
+Целью данной части исследования был анализ морфологической вариации раковин мидий в условиях гибридизации. В качестве материала были использованы мидии, собранные в районе города Госейд (Gåseid, Восточная Норвегия), где были представлены мидии, имеющие генетические маркеры, диагносцирующие все три вида мидий комплекса "Mytilus edulis": *M.edulis* (Ed), *M.trossulus* (Tr) и *M.galloprovincialis* (Ga). В качестве референсных выборок были использованы мидии, собранные в регионах, где степень гибридизации с другими видами была минимальной. *M.trossulus* были собраны в районе г. Берген, Норвегия (далее *Tr_ref*), *M.edulis* в районе AR ??? (*Ed_ref*). Поскольку *M.galloprovincialis* широко распространился по всему миру, в качестве референсных были использованы мидии из трех локаций, расположенных за пределами нативного ареала вида (Средиземноморье): из района г. Циндао, Китай (*Ga_ref1*), из г. Порту, Португалия (*Ga_ref2*), из г. Виго, Атлантическое побережье Испании (*Ga_ref3*).        
+
+Анализ формы раковины был проведен в соответствии с методологией геометрической морфометрии. Раковины всех мидий (`r nrow(ids)` генотипированных особей) были отсканированы и на внутренней поверхности левой створки были нанесены 14 опорных точек (landmarks), которые позволили описать форму раковины и форму системы отпечатков мышц на внутренней поверхности створок (рис. 1). Для каждой отсканированной раковины были определены двумерные координаты опорных точек.  
+
+```{r, fig.cap="Рисунок 1. Расположение опорных точек, использованных для геометрической морфометрии раковин"}
+include_graphics("Figures/Landmark_illaustration.png", dpi = 200)
+
+```
+
+
+
+```{r}
+
+
+pca_myt_gpa <- gm.prcomp(myt_gpa$coords)
+
+
+PC_score_myt_gpa <- pca_myt_gpa$x
+
+
+PC_score_myt_gpa_df<-as.data.frame(PC_score_myt_gpa)
+
+# 
+PC_score_myt_gpa_df <- data.frame(PC_score_myt_gpa_df[, 1:2], Sp = ids$Sp[-51], Area = ids$Area[-51], Tr = ids$Tr[-51], Ed = ids$Ed[-51], Ga = ids$Ga[-51])
+
+# PC_score_myt_gpa_df <- data.frame(PC_score_myt_gpa_df[, 1:2], Sp = ids$Sp, Area = ids$Area)
+
+
+PC_score_myt_gpa_df$Area2 <- ifelse(PC_score_myt_gpa_df$Area == "Gaseid", "Gaseid", "Ref")
+
+
+
+PC_score_myt_gpa_df <- PC_score_myt_gpa_df[complete.cases(PC_score_myt_gpa_df), ]
+
+
+PC_score_myt_gpa_df$Sp3 <- NA 
+  
+PC_score_myt_gpa_df$Sp3 [PC_score_myt_gpa_df$Sp == "Ga"] <- "Ga"
+
+PC_score_myt_gpa_df$Sp3 [PC_score_myt_gpa_df$Sp == "Ed"] <- "Ed"
+
+PC_score_myt_gpa_df$Sp3 [PC_score_myt_gpa_df$Sp == "Tr"] <- "Tr"
+
+PC_score_myt_gpa_df$Sp3 [is.na(PC_score_myt_gpa_df$Sp3)]<- "H"
+
+
+
+
+PC_score_myt_gpa_df$Sp <- factor(PC_score_myt_gpa_df$Sp, levels = c("Tr", "Ed", "EdTr", "EdGaTr", "EdGa",  "GaTr", "Ga"))
+
+PC_score_myt_gpa_df$Sp3 <- factor(PC_score_myt_gpa_df$Sp3, levels = c("Tr", "Ed", "H", "Ga"))
+
+PC_score_myt_gpa_df_Gaseid <- PC_score_myt_gpa_df %>% filter(Area == "Gaseid")
+
+PC_score_myt_gpa_df_Ref <- PC_score_myt_gpa_df %>% filter(Area2 == "Ref")
+
+
+# Квартили по каждой из компоенент
+
+PC1_Q25 <- quantile(PC_score_myt_gpa_df$Comp1, probs = 0.25)
+PC1_Q50 <- quantile(PC_score_myt_gpa_df$Comp1, probs = 0.5)
+PC1_Q75 <- quantile(PC_score_myt_gpa_df$Comp1, probs = 0.75)
+
+PC2_Q25 <- quantile(PC_score_myt_gpa_df$Comp2, probs = 0.25)
+PC2_Q50 <- quantile(PC_score_myt_gpa_df$Comp2, probs = 0.5)
+PC2_Q75 <- quantile(PC_score_myt_gpa_df$Comp2, probs = 0.75)
+
+
+
+Pl_PCA <- 
+ggplot() + aes(y = Comp2, x = Comp1)+
+  geom_point(data = PC_score_myt_gpa_df_Ref, aes(fill = Sp3, shape = Sp3),  size = 4)  +   scale_shape_manual(values = c(21:25, 11)) +
+  scale_fill_manual(values = c("red", "blue", "yellow", "gray")) +
+  geom_point(data = PC_score_myt_gpa_df_Gaseid, shape = 24, size = 2, fill = "gray") +     theme_bw() +
+  theme(panel.grid = element_blank()) +
+  geom_hline(yintercept = c(PC2_Q25, PC2_Q50, PC2_Q75), linetype = 2) +
+  geom_vline(xintercept = c(PC1_Q25, PC1_Q50, PC1_Q75), linetype = 2) +
+  theme(legend.position = "bottom") + 
+  labs(shape = "Референсные генотипы")+
+  guides(fill = "none")
+
+
+## Доля дисперсии
+dd <-  gm.prcomp(myt_gpa$coords)
+PC1_prop <- round(dd$d[1]/sum(dd$d) * 100, 1) 
+
+PC2_prop <- round(dd$d[2]/sum(dd$d) * 100, 1) 
+
+
+```
+
+
+
+После прокрустова преобразования описанных систем опорных точек, был проведен анализ главных компонент (Рис. 2). Мидии из референсных выборок достаточно хорошо разделяются в морфопространстве первых двух главных компонент, которые описывают `r PC1_prop + PC2_prop`% изменчивости формы. 
+
+```{r, fig.cap="Рисунок 2. Ординация мидий в морфопространстве первых двух главных компонент. Мидии из зоны контакта в Гасейде показаны серыми треугольниками. Пунктирные линни отсекают границы квартилей каждой из компонент."}
+Pl_PCA
+
+```
+
+Первая главная компонента демонстрирует градиент формы раковины (Рис. 3) от мидий с более  выпуклым брюшным краем (вершиной приподнята к дорзальной поверхности), к "клювовидной" форме, у которой брюшной край слегка вогнутый, а вершина прижата к вентральной поверхности моллюска. Вторая компонента (Рис. 3) описывает вариации в форме и положении отпечатков мышц на внутренней поверхности.   
+
+
+
+```{r, fig.cap="Рисунок 3. Консенснусная форма раковины мидии (центральный рисунок) и формы, соответствующие минимальным и максимальным значениям двух главных компонент"}
+
+include_graphics("Figures/PCA_Shapes.jpg", dpi = 200)
+
+```
+
+
+Форма раковины референсных моллюсков, выраженная в терминах PC1, у  *Ed_ref* и, в меньшей степени,  *Tr_ref*, была очень изменчивой (Рис. 4).  В то же время,  форма раковин  *M.galloprovincialis* из всех трех референсных выборок была более однотипной (Рис. 4). Важно отметить, что форма раковин моллюсков в референсных выборках из Европы (*Tr_ref*, *Ed_ref*, *Ga_ref2* и *Ga_ref3*)  различается достаточно хорошо (Рис. 4): все *Tr_ref* находятся в пределх первого квартиля PC1; большинство  *Ga_ref2* и *Ga_ref3* сконцентроировано в области четвертого квартиля PC1; форма раковины *Ed_ref* занимает промежуточное положение. 
+
+
+```{r, fig.cap="Рисунок 4. Значения первой компоненты у моллюсков из референсных выборок. Прерывистые горизонтальные линии отсекают границы квартилей PC1."}
+PC_score_myt_gpa_df_Ref$Ref <- 
+  case_when(PC_score_myt_gpa_df_Ref$Area == "Ar" ~ "Ed_ref",
+            PC_score_myt_gpa_df_Ref$Area == "Bergen" ~ "Tr_ref",
+            PC_score_myt_gpa_df_Ref$Area == "Candao" ~ "Ga_ref1",
+            PC_score_myt_gpa_df_Ref$Area == "Porto" ~ "Ga_ref2",
+            PC_score_myt_gpa_df_Ref$Area == "Vigo" ~ "Ga_ref3")
+
+
+PC_score_myt_gpa_df_Ref$Ref <- factor(PC_score_myt_gpa_df_Ref$Ref, levels = c("Tr_ref", "Ed_ref", "Ga_ref1","Ga_ref2","Ga_ref3" )) 
+
+
+
+ggplot(PC_score_myt_gpa_df_Ref, aes(x = Ref, y = Comp1, fill = Sp3)) + 
+  geom_boxplot()  + 
+  theme(axis.text.x = element_text(angle = 0)) + 
+  scale_fill_manual(values = c("red", "blue", "yellow", "yellow", "yellow")) +
+  guides(fill = "none") +
+  labs(x = "Референсные генотипы", y = "Значения PC1") +
+  geom_hline(yintercept = c(PC1_Q25, PC1_Q50, PC1_Q75), linetype = 2)
+
+
+```
+
+
+    
+Изменчивость формы раковины в зоне контакта трех видов,Гасейд (треугольные точки на рис.3), была велика и соизмерима с изменчивостью формы из разных референсных выборок, собранных в географически удаленных друг от друга регионах. При этом можно проследить связь между формой раковины (PC1) и генотипом, выраженным величинами Structure score (Рис. 5). В области малых значений PC1 (минимальные значения) представлены мидии с доминированием аллелей Ed. Близкими к ним по форме оказываются и мидии, для которых PC1 также попадает в первый квартиль этой компоненты, но в их генотипах представлено больше аллелей Ga. В области высоких значений PC1 (четвертый квартиль) также представлены мидии с преобладанием аллелей Ga. Таким образом, мидии с относительно "чистыми"  генотипами Ga могут иметь две разные формы: часть мидий имеет форму близкую к форме референсных Ga из Европы (Четвертый квартиль PC1), а часть имеет сходство с референсными Ed (первый квартиль PC1). Гибриды имеют раковины более близкие к консенсусной форме (центральная фигура на Рис. 3), большинство гибридных мидий представлены в области второго и третьего квартилей PC1. Полученные результаты указывают на то, что гибридизация смещает форму раковины к ее усредненному значению. Однако смещение области, где представлены большинство гибридных особей в область положиетльных значений позволяет говорить, что форма раковины гибридов ближе к форме раковин европейских *M.galloprovincialis*, чем к форме европейских *M.trossulus* и *M.edulis*.       
+
+
+```{r, fig.cap="Рисунок 5. Связь значений PC1 и генотипов мидий, собранных в районе Гасейда. Каждая мидия представлена тремя точками, соответствющими вероятностям присутствия аллелей Tr, Ed и Ga. Линии отражают сглаживающие сплайны. Вертикальные прерывистые линии отражают границы квартилей PC1, как на Рис.2. "}
+
+PC_score_myt_gpa_df_Gaseid_long <- melt(PC_score_myt_gpa_df_Gaseid, id.vars = c("Comp1","Comp2","Sp","Area",  "Area2", "Sp3"), variable.name = "Species", value.name = "q_score")
+
+
+
+binomial_smooth <- function(...) {
+  geom_smooth(method = "glm", se = F,  method.args = list(family = "binomial"), ...)
+}
+
+ggplot(PC_score_myt_gpa_df_Gaseid_long, aes(x = Comp1, y = q_score, color = Species, fill = Species)) +
+  geom_point(shape = 21, size = 4, color = "black") +  
+  binomial_smooth(formula = y ~ splines::ns(x, 5)) +
+  scale_fill_manual(values = c("red", "blue", "yellow")) +
+  scale_color_manual(values = c("red", "blue", "yellow")) + 
+  theme(panel.background = element_rect(fill = "gray70"), panel.grid = element_blank()) +   geom_vline(xintercept = c(PC1_Q25, PC1_Q50, PC1_Q75), linetype = 2) + 
+  labs(x = "Shape PC1", y = "Structure score", fill =  "Алллели", color =  "Алллели")
+  
+
+```
+
+
+
+
+
+<!-- Традиционная морфометрия -->
+
+```{r}
+
+# Генетические маркеры и классические морфологические маркеры по  McDonald
+ids <- read_xlsx("Data/gen_markers.xlsx", na = "NA") 
+
+ids$Tr <- as.numeric(ids$Tr)
+
+
+ids <- ids[complete.cases(ids[,1:6]), ]
+
+
+
+# Датафрейм с генетическими данными и измерениями классическиз морфометрических признаков
+ids_morph <- merge(ids, data.frame(file = unique(All$file)))
+
+
+ids_morph_McDonald <- ids_morph %>% filter(complete.cases(ids_morph))
+
+
+ids_morph_McDonald_traits <- ids_morph_McDonald %>% select(9:17)%>% select( -a, -L)
+
+ids_morph_McDonald_traits <- log10(ids_morph_McDonald_traits) / log10(ids_morph_McDonald$L)
+
+
+
+mod_rda <- rda(ids_morph_McDonald_traits ~  Ga, data = ids_morph_McDonald)
+
+
+
+```
+
+
+
+
+Для того, чтобы проверить сохраняют ли моллюски в зоне контакта нескольких видов морфологические различия, выявленные в других регионах, мы провели анализ связи "классических" морфометрических характеристик, использованных ранее (McDonald et al., 1991), с генотипом мидии. В качестве маркера генотипа мы использовали Structure score, отражающие веротяность присутствия в генотипе аллелей Ga. У `r nrow(ids_morph_McDonald)` случайно отобранных мидий, собранных в Гасейде, были измерены 7 наиболее дифференцирующих признаков (Табл. 2). Размеры этих признаков были логарифмированы и отнесены к логарифму длины раковины, как это делалось в работе McDonald et al.(1991). Матрица полученных величин была подвергнута анализу избыточности (Redundancy analysis, RDA, многомерный аналог регрессионного анализа), в котором в качестве предиктора выступал генотип мидии (Structure-индекс Ga). Полученная единственна каноническая ось была статистически значимой (Табл. 1) и объясняла  17.6% общей изменчивости.         
+
+
+
+```{r}
+kable(tidy(anova(mod_rda, permutations = 99999)), caption = "Таблица 1. Результаты пермутационного анализа статистической значимости результатов RDA")
+
+```
+
+```{r}
+
+characters <- c(
+  "shell width",
+  "shell height",
+  "distance between umbo and posterior end of the ligament",
+  "distance between the anterior end of posterior retractor muscle scar and dorsal shell margin",
+  "length of posterior retractor muscle scar",
+  "length of hinge plate",
+  "length of anterior adductor muscle scar."
+)
+df <- data.frame(Term = rownames(scores(mod_rda)$species),
+                 Means = characters, 
+                 RDA1 =scores(mod_rda)$species[,1], row.names = NULL)
+
+kable(df, col.names = c("Признак","Расшифровка", "RDA1"), caption = "Таблица 2. Нагрузки изученных признаков по канонической оси (RDA1)")
+```
+
+
+Наиболее сильную корреляцию с канонической осью демонстрировали два показателя: hp(ширина зубной площадки) и lpr(длина заднего ретрактора). Первый показатель был отрицательно связан с вероятностью встретить аллели Ga, второй - положительно (Рис. 6).   
+
+
+
+```{r, fig.cap="Рисунок 6. Зависиомость величины морфологических показателей от генотипа мидии"}
+
+Pl_lpr <- qplot(ids_morph_McDonald$Ga, ids_morph_McDonald$lpr, size = 4) + guides(size = "none")  
+
+Pl_hp <- qplot(ids_morph_McDonald$Ga, ids_morph_McDonald$hp, size = 4) + guides(size = "none")
+
+Pl_am <- qplot(ids_morph_McDonald$Ga, ids_morph_McDonald$aam, size = 4) + guides(size = "none")
+
+Pl_lpr <- Pl_lpr + labs(x = "Ga Structure score", y = "lpr") 
+
+Pl_hp <- Pl_hp + labs(x = "Ga Structure score", y = "hp") 
+
+
+plot_grid(Pl_hp, Pl_lpr)
+```
+
+Полученные результаты совпадают с результатами, описанными в работе  McDonald et al.(1991). Таким образом, "классические" морфометрические показатели сохраняют устойчивую связь с генотипом мидий, сосуществующих в одном местообитании.
+
+
+
+На данном этапе исследвоания можно заключить, что морфология раковины, как в терминах формы, так и в терминах классических морфометрических отношений, закономерно варьирует в связи с генотипом мидии и потенциально может являться инструментом идентификации генотипов. Однако более детальные выводы о характере этой связи требуют дополнительного материала и более широкого охвата зон контактов между разными видами мидий. 
+
+
+
+
+
+
+
