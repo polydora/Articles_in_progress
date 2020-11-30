@@ -295,8 +295,8 @@ ggplot(PC_score_myt_gpa_df_Ref, aes(x = Sp3, y = Comp2, fill = Sp3)) + geom_boxp
 # PC_score_myt_gpa_df_Gaseid %>%  group_by(Quadr, Sp) %>% summarise(freq = n()) %>% ggplot(., aes(x = Sp, y = freq)) + geom_col() + facet_wrap(~Quadr)
 
 # 
-# PC_score_myt_gpa_df_Gaseid_long <- melt(PC_score_myt_gpa_df_Gaseid, id.vars = c("Comp1","Comp2","Sp","Area",  "Area2", "Sp3", "Quadr"), variable.name = "Species", value.name = "q_score")
-# 
+PC_score_myt_gpa_df_Gaseid_long <- melt(PC_score_myt_gpa_df_Gaseid, id.vars = c("Comp1","Comp2","Sp","Area",  "Area2", "Sp3", "Quadr"), variable.name = "Species", value.name = "q_score")
+
 # 
 # ggplot(PC_score_myt_gpa_df_Gaseid_long, aes(x = Species, y = q_score)) + geom_boxplot() + facet_wrap(~ Quadr) + geom_hline(yintercept = 0.5)
 # 
@@ -304,11 +304,11 @@ ggplot(PC_score_myt_gpa_df_Ref, aes(x = Sp3, y = Comp2, fill = Sp3)) + geom_boxp
 
 
 # Распределение квартилям первой главной компоненты
-
-PC1_Q25 <- quantile(PC_score_myt_gpa_df_Gaseid$Comp1, probs = 0.25)
-PC1_Q50 <- quantile(PC_score_myt_gpa_df_Gaseid$Comp1, probs = 0.5)
-PC1_Q75 <- quantile(PC_score_myt_gpa_df_Gaseid$Comp1, probs = 0.75)
-
+# 
+# PC1_Q25 <- quantile(PC_score_myt_gpa_df_Gaseid$Comp1, probs = 0.25)
+# PC1_Q50 <- quantile(PC_score_myt_gpa_df_Gaseid$Comp1, probs = 0.5)
+# PC1_Q75 <- quantile(PC_score_myt_gpa_df_Gaseid$Comp1, probs = 0.75)
+# 
 
 # PC_score_myt_gpa_df_Gaseid$Quant <-  
 #   case_when(PC_score_myt_gpa_df_Gaseid$Comp1 <= PC1_Q25 ~ "A",
