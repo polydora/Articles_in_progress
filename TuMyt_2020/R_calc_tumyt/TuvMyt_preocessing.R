@@ -54,6 +54,8 @@ plot(tuv_cca, display = c("cn", "site"))
 
 demogr_scores <- fortify(tuv_cca, scaling = "symmetric")
 
+write.table(demogr_scores, "CCA results.csv", sep = ";", row.names = FALSE )
+
 demogr_scores_site <- demogr_scores[demogr_scores$Score == "constraints", ] 
 demogr_scores_site$Transect <- tuv_predictors$Transect 
 demogr_scores_site$High <- -tuv_predictors$Depth 

@@ -158,7 +158,7 @@ PC_score_myt_gpa <- pca_myt_gpa$x
 PC_score_myt_gpa_df<-as.data.frame(PC_score_myt_gpa)
 
 # 
-PC_score_myt_gpa_df <- data.frame(PC_score_myt_gpa_df[, 1:2], Sp = ids$Sp[-51], Area = ids$Area[-51], Tr = ids$Tr[-51], Ed = ids$Ed[-51], Ga = ids$Ga[-51])
+PC_score_myt_gpa_df <- data.frame(PC_score_myt_gpa_df[, 1:2], Sp = ids$Sp[-51], Area = ids$Area[-51], Tr = ids$Tr[-51], Ed = ids$Ed[-51], Ga = ids$Ga[-51], Sex = ids$Sex[-51])
 
 # PC_score_myt_gpa_df <- data.frame(PC_score_myt_gpa_df[, 1:2], Sp = ids$Sp, Area = ids$Area)
 
@@ -167,7 +167,7 @@ PC_score_myt_gpa_df$Area2 <- ifelse(PC_score_myt_gpa_df$Area == "Gaseid", "Gasei
 
 
 
-PC_score_myt_gpa_df <- PC_score_myt_gpa_df[complete.cases(PC_score_myt_gpa_df), ]
+PC_score_myt_gpa_df <- PC_score_myt_gpa_df[!is.na(PC_score_myt_gpa_df$Sp), ]
 
 
 PC_score_myt_gpa_df$Sp3 <- NA 
@@ -183,16 +183,26 @@ PC_score_myt_gpa_df$Sp3 [is.na(PC_score_myt_gpa_df$Sp3)]<- "H"
 
 
 
-PC_score_myt_gpa_df$Sp <- factor(PC_score_myt_gpa_df$Sp, levels = c("Tr", "Ed", "EdTr", "EdGaTr", "EdGa",  "GaTr", "Ga"))
+PC_score_myt_gpa_df$Sp <- factor(PC_score_myt_gpa_df$Sp, levels = c("Tr", "Ed", "EdTr", "GaEdTr", "EdGa",  "GaTr", "Ga"))
 
 PC_score_myt_gpa_df$Sp3 <- factor(PC_score_myt_gpa_df$Sp3, levels = c("Tr", "Ed", "H", "Ga"))
 
-PC_score_myt_gpa_df_Gaseid <- PC_score_myt_gpa_df %>% filter(Area == "Gaseid")
+# Распределение мидий по квадрантам морфопространства
+# 
+
+PC_score_myt_gpa_df$Quadr <-
+  case_when(PC_score_myt_gpa_df$Comp1 >=0 & PC_score_myt_gpa_df$Comp2 >= 0 ~ "I",
+            PC_score_myt_gpa_df$Comp1 < 0 & PC_score_myt_gpa_df$Comp2 > 0 ~ "II",
+            PC_score_myt_gpa_df$Comp1 <= 0 & PC_score_myt_gpa_df$Comp2 <= 0 ~ "III",
+            PC_score_myt_gpa_df$Comp1 > 0 & PC_score_myt_gpa_df$Comp2 < 0 ~ "IV")
+
+
+PC_score_myt_gpa_df_Gaseid <- PC_score_myt_gpa_df %>% filter(Area2 == "Gaseid")
 
 PC_score_myt_gpa_df_Ref <- PC_score_myt_gpa_df %>% filter(Area2 == "Ref")
 
 
-# Квартили по каждой из компоенент
+# Квартили по каждой из компонент
 
 PC1_Q25 <- quantile(PC_score_myt_gpa_df$Comp1, probs = 0.25)
 PC1_Q50 <- quantile(PC_score_myt_gpa_df$Comp1, probs = 0.5)
@@ -204,13 +214,16 @@ PC2_Q75 <- quantile(PC_score_myt_gpa_df$Comp2, probs = 0.75)
 
 
 
+
+
+
 Pl_PCA <- 
 ggplot() + aes(y = Comp2, x = Comp1)+
   geom_point(data = PC_score_myt_gpa_df_Ref, aes(fill = Sp3, shape = Sp3),  size = 4)  +   scale_shape_manual(values = c(21:25, 11)) +
   scale_fill_manual(values = c("red", "blue", "yellow", "gray")) +
   geom_point(data = PC_score_myt_gpa_df_Gaseid, shape = 24, size = 2, fill = "gray") +     theme_bw() +
   theme(panel.grid = element_blank()) +
-  geom_hline(yintercept = c(PC2_Q25, PC2_Q50, PC2_Q75), linetype = 2) +
+  # geom_hline(yintercept = c(PC2_Q25, PC2_Q50, PC2_Q75), linetype = 2) +
   geom_vline(xintercept = c(PC1_Q25, PC1_Q50, PC1_Q75), linetype = 2) +
   theme(legend.position = "bottom") + 
   labs(shape = "Референсные генотипы")+
@@ -261,14 +274,15 @@ PC_score_myt_gpa_df_Ref$Ref <-
 PC_score_myt_gpa_df_Ref$Ref <- factor(PC_score_myt_gpa_df_Ref$Ref, levels = c("Tr_ref", "Ed_ref", "Ga_ref1","Ga_ref2","Ga_ref3" )) 
 
 
-
+Pl_PC1_Sp_Ref <- 
 ggplot(PC_score_myt_gpa_df_Ref, aes(x = Ref, y = Comp1, fill = Sp3)) + 
   geom_boxplot()  + 
   theme(axis.text.x = element_text(angle = 0)) + 
   scale_fill_manual(values = c("red", "blue", "yellow", "yellow", "yellow")) +
   guides(fill = "none") +
   labs(x = "Референсные генотипы", y = "Значения PC1") +
-  geom_hline(yintercept = c(PC1_Q25, PC1_Q50, PC1_Q75), linetype = 2)
+  geom_hline(yintercept = c(PC1_Q25, PC1_Q50, PC1_Q75), linetype = 2) + 
+  ylim(-0.2, 0.1)
 
 
 ```
@@ -280,22 +294,57 @@ ggplot(PC_score_myt_gpa_df_Ref, aes(x = Ref, y = Comp1, fill = Sp3)) +
 
 ```{r, fig.cap="Рисунок 5. Связь значений PC1 и генотипов мидий, собранных в районе Гасейда. Каждая мидия представлена тремя точками, соответствющими вероятностям присутствия аллелей Tr, Ed и Ga. Линии отражают сглаживающие сплайны. Вертикальные прерывистые линии отражают границы квартилей PC1, как на Рис.2. "}
 
-PC_score_myt_gpa_df_Gaseid_long <- melt(PC_score_myt_gpa_df_Gaseid, id.vars = c("Comp1","Comp2","Sp","Area",  "Area2", "Sp3"), variable.name = "Species", value.name = "q_score")
+# PC_score_myt_gpa_df_Gaseid$Comp1_Rank <- order(PC_score_myt_gpa_df_Gaseid$Comp1)
+
+# PC_score_myt_gpa_df_Gaseid_long <- melt(PC_score_myt_gpa_df_Gaseid, id.vars = c("Comp1","Comp2","Sp","Area",  "Area2", "Sp3", "Quadr"), variable.name = "Species", value.name = "q_score")
 
 
-
-binomial_smooth <- function(...) {
-  geom_smooth(method = "glm", se = F,  method.args = list(family = "binomial"), ...)
-}
-
-ggplot(PC_score_myt_gpa_df_Gaseid_long, aes(x = Comp1, y = q_score, color = Species, fill = Species)) +
-  geom_point(shape = 21, size = 4, color = "black") +  
-  binomial_smooth(formula = y ~ splines::ns(x, 5)) +
-  scale_fill_manual(values = c("red", "blue", "yellow")) +
-  scale_color_manual(values = c("red", "blue", "yellow")) + 
-  theme(panel.background = element_rect(fill = "gray70"), panel.grid = element_blank()) +   geom_vline(xintercept = c(PC1_Q25, PC1_Q50, PC1_Q75), linetype = 2) + 
-  labs(x = "Shape PC1", y = "Structure score", fill =  "Алллели", color =  "Алллели")
+Pl_PC1_Sp_Gaseid <-
+  ggplot(PC_score_myt_gpa_df_Gaseid, aes(x = Sp, y = Comp1, fill = Sp)) + 
+  geom_boxplot() +
+  guides(fill = "none") +
+  geom_hline(yintercept = c(PC1_Q25, PC1_Q50, PC1_Q75), linetype = 2) +
+  scale_fill_manual(values = c("blue", "gray", "gray", "gray", "gray", "yellow")) +
+  labs(x = "Генотипы в зоне контакта", y = "") +
+  ylim(-0.2, 0.1) 
   
+  # ggplot(PC_score_myt_gpa_df_Gaseid, aes(x = Sex, y = Comp2)) + 
+  # geom_boxplot() +
+  # guides(fill = "none") +
+  # geom_hline(yintercept = c(PC2_Q25, PC2_Q50, PC2_Q75), linetype = 2) +
+  # scale_fill_manual(values = c("blue", "gray", "gray", "gray", "gray", "yellow")) +
+  # labs(x = "Генотипы в зоне контакта", y = "") +
+  # ylim(-0.2, 0.1) 
+  # 
+
+# ggplot(PC_score_myt_gpa_df_Gaseid_long, aes(x = Species, y = q_score)) + geom_boxplot() + facet_wrap(~Quadr)
+
+
+# binomial_smooth <- function(...) {
+#   geom_smooth(method = "glm", se = F,  method.args = list(family = "binomial"), ...)
+# }
+# 
+# ggplot(PC_score_myt_gpa_df_Gaseid_long, aes(x = Comp1, y = q_score, color = Species, fill = Species)) +
+#   geom_point(shape = 21, size = 4, color = "black") +  
+#   binomial_smooth(formula = y ~ splines::ns(x, 5)) +
+#   scale_fill_manual(values = c("red", "blue", "yellow")) +
+#   scale_color_manual(values = c("red", "blue", "yellow")) + 
+#   theme(panel.background = element_rect(fill = "gray70"), panel.grid = element_blank()) +   geom_vline(xintercept = c(PC1_Q25, PC1_Q50, PC1_Q75), linetype = 2) + 
+#   labs(x = "Shape PC1", y = "Structure score", fill =  "Алллели", color =  "Алллели")
+  
+
+# ggplot(PC_score_myt_gpa_df_Gaseid_long, aes(x = Comp1_Rank, y = q_score, color = Species, fill = Species)) +
+#   geom_col(width = 1, color = "black") +
+#   scale_fill_manual(values = c("red", "blue", "yellow")) +
+#   scale_color_manual(values = c("red", "blue", "yellow")) + 
+#   theme(panel.background = element_rect(fill = "gray70"), panel.grid = element_blank()) +   geom_vline(xintercept = c(PC1_Q25, PC1_Q50, PC1_Q75), linetype = 2) + 
+#   labs(x = "Shape PC1", y = "Structure score", fill =  "Алллели", color =  "Алллели")
+
+
+
+qplot(x = PC_score_myt_gpa_df_Gaseid$Ga, y = PC_score_myt_gpa_df_Gaseid$Comp1)
+
+plot_grid(Pl_PC1_Sp_Ref, Pl_PC1_Sp_Gaseid)
 
 ```
 
@@ -308,17 +357,19 @@ ggplot(PC_score_myt_gpa_df_Gaseid_long, aes(x = Comp1, y = q_score, color = Spec
 ```{r}
 
 # Генетические маркеры и классические морфологические маркеры по  McDonald
-ids <- read_xlsx("Data/gen_markers.xlsx", na = "NA") 
+ids2 <- read_xlsx("Data/gen_markers.xlsx", na = "NA") 
 
-ids$Tr <- as.numeric(ids$Tr)
+ids2$Tr <- as.numeric(ids2$Tr)
+ids2$Ed <- as.numeric(ids2$Ed)
+ids2$Ga <- as.numeric(ids2$Ga)
 
 
-ids <- ids[complete.cases(ids[,1:6]), ]
+ids2 <- ids2[complete.cases(ids2[,1:6]), ]
 
 
 
 # Датафрейм с генетическими данными и измерениями классическиз морфометрических признаков
-ids_morph <- merge(ids, data.frame(file = unique(All$file)))
+ids_morph <- merge(ids2, data.frame(file = unique(All$file)))
 
 
 ids_morph_McDonald <- ids_morph %>% filter(complete.cases(ids_morph))
@@ -329,24 +380,46 @@ ids_morph_McDonald_traits <- ids_morph_McDonald %>% select(9:17)%>% select( -a, 
 ids_morph_McDonald_traits <- log10(ids_morph_McDonald_traits) / log10(ids_morph_McDonald$L)
 
 
+anova(mod_rda)
+# envfit(gen_dist, ids_morph_McDonald_traits)
 
-mod_rda <- rda(ids_morph_McDonald_traits ~  Ga, data = ids_morph_McDonald)
 
 
+gen_sp <- ids_morph_McDonald %>% select(Tr, Ed, Ga)
+
+mod_rda <- rda(ids_morph_McDonald_traits ~  log(Ga) , data = gen_sp)
+
+anova(mod_rda, permutations = 99999)
+
+scores(mod_rda)
+
+
+summary(M)
+
+# morph_dist <- vegdist(ids_morph_McDonald_traits, method = "euclidean")
+
+gen_dist <- vegdist((gen_sp), method = "euclidean")
+
+bio_env_gen_morph <- bioenv(gen_dist, ids_morph_McDonald_traits, metric = "euclidean")
+
+# summary(bio_env_gen_morph)
 
 ```
 
 
 
 
-Для того, чтобы проверить сохраняют ли моллюски в зоне контакта нескольких видов морфологические различия, выявленные в других регионах, мы провели анализ связи "классических" морфометрических характеристик, использованных ранее (McDonald et al., 1991), с генотипом мидии. В качестве маркера генотипа мы использовали Structure score, отражающие веротяность присутствия в генотипе аллелей Ga. У `r nrow(ids_morph_McDonald)` случайно отобранных мидий, собранных в Гасейде, были измерены 7 наиболее дифференцирующих признаков (Табл. 2). Размеры этих признаков были логарифмированы и отнесены к логарифму длины раковины, как это делалось в работе McDonald et al.(1991). Матрица полученных величин была подвергнута анализу избыточности (Redundancy analysis, RDA, многомерный аналог регрессионного анализа), в котором в качестве предиктора выступал генотип мидии (Structure-индекс Ga). Полученная единственна каноническая ось была статистически значимой (Табл. 1) и объясняла  17.6% общей изменчивости.         
+Для того, чтобы проверить сохраняют ли моллюски в зоне контакта нескольких видов морфологические различия, выявленные в других регионах, мы провели анализ связи "классических" морфометрических характеристик, использованных ранее (McDonald et al., 1991), с генотипом мидии.  
+
+
+В качестве маркера генотипа мы использовали Structure score, отражающие веротяность присутствия в генотипе аллелей Ga. У `r nrow(ids_morph_McDonald)` случайно отобранных мидий, собранных в Гасейде, были измерены 7 наиболее дифференцирующих признаков (Табл. 2). Размеры этих признаков были логарифмированы и отнесены к логарифму длины раковины, как это делалось в работе McDonald et al.(1991). Матрица полученных величин была подвергнута анализу избыточности (Redundancy analysis, RDA, многомерный аналог регрессионного анализа), в котором в качестве предиктора выступал генотип мидии (Structure-индекс Ga). Полученная единственна каноническая ось была статистически значимой (Табл. 1) и объясняла  17.6% общей изменчивости.         
 
 
 
-```{r}
-kable(tidy(anova(mod_rda, permutations = 99999)), caption = "Таблица 1. Результаты пермутационного анализа статистической значимости результатов RDA")
+<!-- ```{r} -->
+<!-- kable(tidy(anova(mod_rda, permutations = 99999)), caption = "Таблица 1. Результаты пермутационного анализа статистической значимости результатов RDA") -->
 
-```
+<!-- ``` -->
 
 ```{r}
 
@@ -374,20 +447,22 @@ kable(df, col.names = c("Признак","Расшифровка", "RDA1"), capt
 ```{r, fig.cap="Рисунок 6. Зависиомость величины морфологических показателей от генотипа мидии"}
 
 Pl_lpr <- qplot(ids_morph_McDonald$Ga, ids_morph_McDonald$lpr, size = 4) + guides(size = "none")  
-
+Pl_lig <- qplot(ids_morph_McDonald$Ga, ids_morph_McDonald$lig, size = 4) + guides(size = "none")  
 Pl_hp <- qplot(ids_morph_McDonald$Ga, ids_morph_McDonald$hp, size = 4) + guides(size = "none")
 
 Pl_am <- qplot(ids_morph_McDonald$Ga, ids_morph_McDonald$aam, size = 4) + guides(size = "none")
 
-Pl_lpr <- Pl_lpr + labs(x = "Ga Structure score", y = "lpr") 
 
-Pl_hp <- Pl_hp + labs(x = "Ga Structure score", y = "hp") 
+Pl_dpr <- qplot(ids_morph_McDonald$Ga, ids_morph_McDonald$dpr, size = 4) + guides(size = "none")
+
+Pl_pr <- Pl_lpr + labs(x = "Ga Structure score", y = "lpr") 
 
 
-plot_grid(Pl_hp, Pl_lpr)
+
+plot_grid
 ```
 
-Полученные результаты совпадают с результатами, описанными в работе  McDonald et al.(1991). Таким образом, "классические" морфометрические показатели сохраняют устойчивую связь с генотипом мидий, сосуществующих в одном местообитании.
+Полученные результаты совпадают с результатами, описанными в работе  M(Pl_hp, P)cDonald et al.(1991). Таким образом, "классические" морфометрические показатели сохраняют устойчивую связь с генотипом мидий, сосуществующих в одном местообитании.
 
 
 
