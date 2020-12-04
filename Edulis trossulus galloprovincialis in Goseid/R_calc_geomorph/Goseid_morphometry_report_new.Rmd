@@ -380,7 +380,7 @@ ids_morph_McDonald_traits <- ids_morph_McDonald %>% select(9:17)%>% select( -a, 
 ids_morph_McDonald_traits <- log10(ids_morph_McDonald_traits) / log10(ids_morph_McDonald$L)
 
 
-anova(mod_rda)
+# anova(mod_rda)
 # envfit(gen_dist, ids_morph_McDonald_traits)
 
 
@@ -455,11 +455,18 @@ Pl_am <- qplot(ids_morph_McDonald$Ga, ids_morph_McDonald$aam, size = 4) + guides
 
 Pl_dpr <- qplot(ids_morph_McDonald$Ga, ids_morph_McDonald$dpr, size = 4) + guides(size = "none")
 
-Pl_pr <- Pl_lpr + labs(x = "Ga Structure score", y = "lpr") 
+R_hp_Ga <- cor.test(log(gen_sp$Ga), ids_morph_McDonald_traits$hp)
+
+R_lig_Ga <- cor.test(log(gen_sp$Ga), ids_morph_McDonald_traits$lig)
+
+cor.test(log(gen_sp$Ga), ids_morph_McDonald_traits$hp)
+
+Pl_hp <- Pl_hp + labs(x = "Ga Structure score", y = "Относительный размер hp") + ggtitle(paste("r =", round(R_hp_Ga$estimate, 2), "(p=", round(R_hp_Ga$p.value, 3), ")" ))
 
 
+Pl_lig <- Pl_lig + labs(x = "Ga Structure score", y = "Относительный размер lig") +  ggtitle(paste("r =", round(R_lig_Ga$estimate, 2), "(p=", round(R_lig_Ga$p.value, 3), ")" ))
 
-plot_grid
+plot_grid (Pl_hp, Pl_lig)
 ```
 
 Полученные результаты совпадают с результатами, описанными в работе  M(Pl_hp, P)cDonald et al.(1991). Таким образом, "классические" морфометрические показатели сохраняют устойчивую связь с генотипом мидий, сосуществующих в одном местообитании.
