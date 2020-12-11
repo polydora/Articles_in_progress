@@ -1,0 +1,101 @@
+---
+title: ""
+author: ""
+date: ""
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+```
+
+```{r}
+library(mgcv)
+library(ggplot2)
+library(dplyr)
+library(broom)
+library(car)
+
+
+theme_set(theme_bw())
+
+kam <- read.table("Data/kambala.csv", sep = ",", header = T, dec = ".")
+kam$Orient <- kam$Sidedness
+# str(kam)
+kam$Outcome <- ifelse(kam$Orient == "Left", 1, 0)
+
+
+kam$Bay <- factor(kam$Bay, levels = c("Onega_Bay", "Dvina_Bay","Kandalaksha_Bay", "Mezen_Bay" ))
+
+```
+
+
+
+
+
+## Модель, описывающая связь  вероятности встретить левостороннюю рыбу, с размером и полом. 
+
+
+```{r}
+
+Mod <- glm(Outcome ~  L * Sex*Bay, data = kam, family = "binomial")
+
+```
+
+
+
+```{r, results='hide'}
+drop1(Mod, test = "Chi")
+Mod_2 <- update(Mod, . ~ . - L:Sex:Bay)
+
+drop1(Mod_2, test = "Chi")
+Mod_3 <- update(Mod_2, . ~ . - L:Sex)
+
+
+drop1(Mod_3, test = "Chi")
+Mod_4 <- update(Mod_3, . ~ . - Sex:Bay)
+
+drop1(Mod_4, test = "Chi")
+Mod_5 <- update(Mod_4, . ~ . - L:Bay)
+
+
+
+```
+
+
+```{r fig.cap="**Рисунок 3.** Зависимость вероятности встретить левостороннюю камбалу от размера у рыб в разных заливах Белого моря. Точками показаны частоты левосторонних особей в пределах раных размерных классов"}
+
+new_data <- kam %>% group_by(Bay, Sex) %>% do(data.frame(L = seq(min(.$L), max(.$L), length.out = 100) ))
+
+predicted <- predict(Mod_5, newdata = new_data, se.fit = T, type = "response")
+
+new_data$Predicted <- predicted$fit
+new_data$SE <- predicted$se.fit
+
+Left_prop <- kam %>% mutate(Size_class = ntile(x = L, n = 10)) %>% group_by(Bay, Sex, Size_class) %>% summarise(L_mean = mean(L), Left_prop = mean(Orient == "Left"))
+
+new_data$Sex <- factor(new_data$Sex, labels = c("Самки", "Самцы"))
+
+Left_prop$Sex <- factor(Left_prop$Sex, labels = c("Самки", "Самцы"))
+
+new_data$Bay <- factor(new_data$Bay, levels = c("Kandalaksha_Bay", "Onega_Bay", "Dvina_Bay", "Mezen_Bay" )) 
+
+
+
+
+
+
+ggplot(new_data, aes(x = L, y = Predicted)) + 
+  geom_line(aes(color = Sex), size = 1) +  
+  geom_ribbon(aes(ymin = Predicted - 1.96*SE, ymax = Predicted + 1.96*SE, fill = Sex), alpha = 0.5 ) + 
+  geom_point(data = Left_prop, aes(x = L_mean, y = Left_prop, fill = Sex), shape = 21, size = 2) + 
+  facet_wrap(~ Bay, ncol = 2) +
+  labs(x = "Длина, см", y = "Частота встречаемости реверсивных рыб", fill ="Пол", color = "Пол") +
+  scale_fill_manual(values = c("pink", "blue"))
+
+```
+
+
+
