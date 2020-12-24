@@ -1,0 +1,78 @@
+# Packages  ####
+library(reshape2)
+library(ggplot2)
+library(mgcv)
+library(dplyr)
+
+
+
+# Подготовка данных ####
+plankt_wide <- read.csv("data/Plankton_raw_tidy.csv", header = TRUE)
+vars <- read.csv("data/Plankton_raw_tidy_variables.csv", header = T)
+
+
+d <- (melt(plankt_wide, id.vars = c("Day", 	"Month", 	"Year", 	"Data"), variable.name = "Var_ID", value.name = "Abundance"))
+
+
+plankt <- merge(d, vars)
+
+## Среденвзвешанные значения, объединение слоев
+
+plankt_1 <- plankt[plankt$Level == "0-10", ]
+# nrow(plankt_1)
+
+plankt_2 <- plankt[plankt$Level == "10-25", ]
+# nrow(plankt_2)
+
+plankt_3 <- plankt[plankt$Level == "25-bottom", ]
+# nrow(plankt_3)
+
+
+
+plankt_mean <- plankt_1
+
+plankt_mean$Abund_mean <- (plankt_1$Abundance*10 + plankt_2$Abundance*15)/25
+
+
+plankt_mean <- plankt_mean[, -6]
+plankt_mean <- plankt_mean[, -8]
+
+
+
+plankt_mean$Date2 <- strptime(paste(plankt_mean$Day,"/", plankt_mean$Month, "/", plankt_mean$Year, sep = ""), format=("%d/%m/%Y"))
+
+
+
+plankt_mean$Days_from_year_start <-  as.numeric(round(difftime(plankt_mean$Date2, as.Date(Start_day))))
+
+
+
+abund_total <- plankt_mean %>% group_by(Day, Month, Year, Date2, Species) %>% summarise(N_total = sum(Abund_mean))
+
+Start_day <- strptime(paste(abund_total$Year,"/01/01", sep = ""), format=("%Y/%d/%m"))
+
+abund_total$DOY <- as.numeric(round(difftime(abund_total$Date2, as.Date(Start_day))))
+
+abund_total$LogN <- log(abund_total$N_total + 1)
+
+abund_total <- as.data.frame(abund_total)
+abund_total$Species <- factor(abund_total$Species)
+
+
+
+Mod_abund <- gam(LogN ~ s(DOY,Year, by = Species) + Species, data = abund_total)
+
+
+
+new_data <- expand.grid(Species = unique(abund_total$Species), DOY = 1:365, Year = seq(min(abund_total$Year), max(abund_total$Year), 1))
+
+new_data$Predicted <- predict(Mod_abund, newdata = new_data, type = "response")
+
+ggplot(new_data, aes(x = Year, y = DOY, color = Predicted)) + geom_tile() + facet_wrap(~Species, scales = "free_y") + scale_color_gradient(low = "yellow", high = "red") 
+
+
+
+
+
+
+

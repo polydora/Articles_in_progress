@@ -3,11 +3,13 @@ library(dplyr)
 library(ggplot2)
 library(lubridate)
 library(ggmap)
+library(tidyr)
 
+
+theme_set(theme_bw())
 
 # Калькулятор даты откладки яиц по данным водного теста
-
-df = wtest
+df =  read_excel("Data/water_test_calculator.xlsx")
 
 wt_calculator <- function(df){
   require(readxl)
@@ -42,6 +44,12 @@ wtest$Day <- as.numeric(wt_calculator(wtest))
 # Проверка соответствия названий данным по координатам
 
 islands <- read_excel("Data/Kandalaksha_Bay_Islands.xlsx")
+
+
+str(islands)
+
+
+islands$Lat <- as.numeric(islands$Lat)
 
 wtest %>% filter(!(wtest$Name %in% islands$Name)) %>% select(Name) %>% unique(.)
 
@@ -79,23 +87,69 @@ wtest_coord$DOY <- as.numeric(strftime(wtest_coord$Date_begin, format = "%j"))
 wtest_coord$Year <- year(wtest_coord$Date) 
 
 
-# Отклонение от многолетнего срденего значения 
+## Средение даты начала откладки яиц
 
 Total_median <- median(wtest_coord$DOY, na.rm = T)
+as.Date(Total_median, origin = "2020-01-01")
+
+
+
+
+
+# Отклонение от многолетнего срденего значения 
+
+
 
 wtest_coord$Anomalia <- wtest_coord$DOY - Total_median 
+
+nrow(wtest_coord)
 
 
 wtest_generalized <- wtest_coord %>% group_by(Name) %>% summarise(Anomalia = median(Anomalia, na.rm = T), Sd_DOY = sd(DOY, na.rm = T), DOY = median(DOY, na.rm = T),   Lat = mean(Lat), Long = mean(Long))
 
-
+nrow(wtest_generalized)
 
 
 
 load("Data/Kand_upper_map.RData")
 
-ggmap(Kand_map, darken=0, base_layer=ggplot(aes(x=Long, y=Lat), data=wtest_generalized)) + geom_point(aes(color = Anomalia), size = 4)  + scale_color_gradient(low = "white", high = "red") + labs(color = "Отклонение \nот многолетнего \nсреднего (дни)")
+ggmap(Kand_map, darken=0, base_layer=ggplot(aes(x=Long, y=Lat), data=wtest_generalized)) + geom_point(aes(color = Anomalia), size = 4)  + scale_color_gradient(low = "white", high = "red", breaks = c(-5, 0, 5, 10)) + labs(color = "Отклонение \nот многолетнего \nсреднего (дни)")
 
+
+
+# Даты начала откладки яиц на островах в разных регионах
+
+  
+# Отбираю острова, где всегда были наблюдения
+
+N_eggs_year <- wtest_coord %>% group_by(Name, Year) %>% summarize(N = n()) %>% spread(Year, N,  fill = 0) %>% as.data.frame() %>%  mutate(N_missed = rowSums(.==0), N_obs = (rowSums(.>0)-1) )
+
+island_const <- N_eggs_year$Name[N_eggs_year$N_missed == 0]
+
+
+wtest_short <- wtest_coord %>% filter(Name %in% island_const)
+
+wtest_short$Region <- factor(wtest_short$Region, levels = c("Северный архипелаг", "Лувеньгский архипелаг", "Незаповедная территория" ))
+
+
+
+
+
+# Расположение островов, где были постоянные наблюдения
+
+
+wtest_short_generalized <- wtest_short %>% group_by(Name) %>% summarise(Anomalia = median(Anomalia, na.rm = T), Sd_DOY = sd(DOY, na.rm = T), DOY = median(DOY, na.rm = T),   Lat = mean(Lat), Long = mean(Long))
+
+ggmap(Kand_map, darken=0, base_layer=ggplot(aes(x=Long, y=Lat), data=wtest_short_generalized)) + geom_point(aes(color = Anomalia), size = 4)  + scale_color_gradient(low = "white", high = "red", breaks = c(-5, 0, 5, 10)) + labs(color = "Отклонение \nот многолетнего \nсреднего (дни)")
+
+
+
+
+
+
+# Распределине сроков откладки яиц по регионам по материалам константных островов
+
+ggplot(wtest_short, aes(x = factor(Year), y = DOY)) + geom_boxplot(aes(fill = Region)) + facet_wrap(~Region) + guides(fill = "none") + labs(y = "День года", x = "Годы") + geom_hline(yintercept = Total_median, linetype = 2)
 
 
 
