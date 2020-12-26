@@ -65,21 +65,50 @@ library(broom)
 library(mgcv)
 
 
+myt <- read.table("data_salinity3.csv", header = T, sep = ",")
+# 
+# myt_overseas <- myt[myt$dataset == "overseas", ]
+# 
+# myt <- myt[myt$dataset != "overseas", ]
 
-myt <- read.table("data_salinity3.csv", header = T, sep = ";")
-
-myt <- myt[myt$dataset != "overseas", ]
+# str(myt)
 
 myt$Sp [myt$str > 0.5] <- "M.trossulus" #Лучше обозначать так!
 myt$Sp [myt$str <= 0.5] <- "M.edulis"
 myt$Sp <- factor(myt$Sp)
 
+
 # Оставляем только мидий, у которых есть оценка морфотипа
-myt2 <- myt[!is.na(myt$ind), ]
+myt2_all <- myt[!is.na(myt$ind), ]
 
 
 
+### Объединяем популяции в данных Сары #####
+# myt2_all$pop2 <- myt2_all$pop
+# 
+# myt2_all$pop[myt2_all$pop %in% c("CBCP", "CBSC")] <- "CB"
+# 
+# myt2_all$pop[myt2_all$pop %in% c("MDRE",   "MDRW")] <- "MDR"
 
+
+# Подразделяем данные на сабсеты
+
+myt2_all$Subset[myt2_all$sea == "barents" & myt2_all$sal_place == "fresh"] <- "WSBL" 
+myt2_all$Subset[myt2_all$sea == "barents" & myt2_all$sal_place == "normal"] <- "BH" 
+myt2_all$Subset[myt2_all$sea == "white" & myt2_all$sal_place == "normal"] <- "WSBL" 
+myt2_all$Subset[myt2_all$sea == "white" & myt2_all$sal_place == "fresh"] <- "WSBL" 
+
+myt2_all$Subset[myt2_all$sea == "Baltic"] <- "BALT" 
+myt2_all$Subset[myt2_all$sea == "GOM"] <- "GOM" 
+myt2_all$Subset[myt2_all$sea == "Norway"] <- "NORW" 
+myt2_all$Subset[myt2_all$sea == "Scotland"] <- "SCOT" 
+
+
+myt2_all$Subset <- factor(myt2_all$Subset, levels = c("WSBL", "BH", "NORW", "BALT", "SCOT", "GOM" ))
+
+
+
+myt2 <- myt2_all %>% filter(Subset %in% c("WSBL", "BH", "BALT", "GOM" ))
 
 # Вводим обозначения для морфотипов
 myt2$morph <- ifelse(myt2$ind == 1, "T_m", "E_m")
@@ -106,7 +135,9 @@ myt2 <- merge(myt2, freq_MT)
 
 theme_set(theme_bw())
 
-Pl_base <- ggplot(myt2, aes(x = freq_MT, y = str))  + facet_wrap(~facet) + scale_fill_gradient(low = "yellow", high = "red") + guides(fill = "none") + labs(x = "Prevalence (proportion of M.trossulus)", y = "Structure")
+Pl_base <- ggplot(myt2, aes(x = freq_MT, y = str)) + scale_fill_gradient(low = "yellow", high = "red") + guides(fill = "none") + labs(x = "Prevalence (proportion of M.trossulus)", y = "Structure") + facet_wrap(~Subset) 
+
+# + geom_density2d()
 
 
 Pl_base + geom_point(aes(fill = ind), shape = 21)
@@ -122,7 +153,7 @@ Pl_base + geom_point(aes(fill = ind), shape = 21, position = position_jitter(wid
 На этом графике удобно показать в каких частях этого двумерного поля у нас наблюдается максимальная концентрация точек.
 
 ```{r}
-Pl_base + geom_point(aes(fill = ind), shape = 21, position = position_jitter(width = 0.01)) + geom_density2d(n = 20)
+Pl_base + geom_point(aes(fill = ind), shape = 21, position = position_jitter(width = 0.01)) 
 ```
 
 Видим, что максимальное количество мидий (области в пределах изолиний) приходится на крайние значения Structure. Это проявление уже знакомой картинки, говорящей, что гибридов у нас мало (бимодальное распределение Structure). 
@@ -145,7 +176,7 @@ $s$ - двумерный сплайн, то есть поверхность, к�
 Вот информация, которая описывает данную модель
 
 ```{r echo = FALSE}
-mod_gam <- gam(ind ~ s(str, freq_MT, by = facet) + facet, data = myt2, family = "binomial")
+mod_gam <- gam(ind ~ s(str, freq_MT, by = Subset) + Subset, data = myt2, family = "binomial")
 
 summary(mod_gam)
 ```
@@ -157,12 +188,12 @@ summary(mod_gam)
 
 ```{r}
 
-new_data <-  myt2 %>% group_by(facet) %>% do(expand.grid(str = seq(min(.$str), max(.$str), length.out = 100), freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 100))) 
+new_data <-  myt2 %>% group_by(Subset) %>% do(expand.grid(str = seq(min(.$str), max(.$str), length.out = 100), freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 100))) 
 
 
 new_data$Predict_gam <- predict(mod_gam, newdata = new_data,type = "response" )
 
-ggplot(new_data, aes(x = freq_MT, y = str)) + geom_raster(aes(fill = Predict_gam)) + facet_wrap(~facet) + scale_fill_gradient(low = "yellow", high = "red") + geom_density2d(data = myt2, n = 20) + geom_point(data = myt2, aes(fill = ind), position = position_jitter(width = 0.01), shape = 21) + theme_bw() + labs(x = "Prevalence (proportion of M.trossulus)", y = "Structure", fill = "Вероятность \n встретить Т-морфотип")
+ggplot(new_data, aes(x = freq_MT, y = str)) + geom_raster(aes(fill = Predict_gam)) + facet_wrap(~Subset) + scale_fill_gradient(low = "yellow", high = "red") + geom_density2d(data = myt2, n = 20) + geom_point(data = myt2, aes(fill = ind), position = position_jitter(width = 0.01), shape = 21) + theme_bw() + labs(x = "Prevalence (proportion of M.trossulus)", y = "Structure", fill = "Вероятность \n встретить Т-морфотип")
   
   
 ```
@@ -173,7 +204,7 @@ ggplot(new_data, aes(x = freq_MT, y = str)) + geom_raster(aes(fill = Predict_gam
 Для наглядности, уберем точки с первичными данными, оставим лишь изолинии, отражающие места с максимальной концентрацией точек.
 
 ```{r}
-ggplot(new_data, aes(x = freq_MT, y = str)) + geom_raster(aes(fill = Predict_gam)) + facet_wrap(~facet) + scale_fill_gradient(low = "yellow", high = "red") + geom_density2d(data = myt2, n = 20)  + theme_bw() + labs(x = "Prevalence (proportion of M.trossulus)", y = "Structure", fill = "Вероятность \n встретить Т-морфотип")
+ggplot(new_data, aes(x = freq_MT, y = str)) + geom_raster(aes(fill = Predict_gam)) + facet_wrap(~Subset) + scale_fill_gradient(low = "yellow", high = "red") + geom_density2d(data = myt2, n = 20)  + theme_bw() + labs(x = "Prevalence (proportion of M.trossulus)", y = "Structure", fill = "Вероятность \n встретить Т-морфотип")
 ```
 
 Оставлю эту картинку без комментариев, но, по-моему, она очень говорящая. 
