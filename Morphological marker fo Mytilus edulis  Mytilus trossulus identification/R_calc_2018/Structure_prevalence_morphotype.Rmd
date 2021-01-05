@@ -176,7 +176,7 @@ $s$ - двумерный сплайн, то есть поверхность, к�
 Вот информация, которая описывает данную модель
 
 ```{r echo = FALSE}
-mod_gam <- gam(ind ~ s(str, freq_MT, by = Subset) + Subset, data = myt2, family = "binomial")
+mod_gam <- gam(ind ~ s(str, freq_MT, by = Subset, bs = "tp", k = 10) + Subset, data = myt2, family = "binomial")
 
 summary(mod_gam)
 ```
@@ -187,13 +187,17 @@ summary(mod_gam)
 Теперь визуализируем поведение этой  модели. 
 
 ```{r}
+# 
+# new_data <-  myt2 %>% group_by(Subset) %>% do(expand.grid(str = seq(min(.$str), max(.$str), length.out = 100), freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 100))) 
 
-new_data <-  myt2 %>% group_by(Subset) %>% do(expand.grid(str = seq(min(.$str), max(.$str), length.out = 100), freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 100))) 
+
+
+new_data <-  myt2 %>% group_by(Subset) %>% do(expand.grid(str = seq(0, 1, by = 0.1), freq_MT = seq(min(.$freq_MT), max(.$freq_MT) + 0.1, by = 0.1))) 
 
 
 new_data$Predict_gam <- predict(mod_gam, newdata = new_data,type = "response" )
 
-ggplot(new_data, aes(x = freq_MT, y = str)) + geom_raster(aes(fill = Predict_gam)) + facet_wrap(~Subset) + scale_fill_gradient(low = "yellow", high = "red") + geom_density2d(data = myt2, n = 20) + geom_point(data = myt2, aes(fill = ind), position = position_jitter(width = 0.01), shape = 21) + theme_bw() + labs(x = "Prevalence (proportion of M.trossulus)", y = "Structure", fill = "Вероятность \n встретить Т-морфотип")
+ggplot(new_data, aes(x = freq_MT, y = str)) + geom_raster(aes(fill = Predict_gam)) + facet_wrap(~Subset, ncol = 1) + scale_fill_gradient(low = "yellow", high = "red") + geom_point(data = myt2, aes(fill = ind), position = position_jitter(width = 0.01), shape = 21, alpha = 0.2) + theme_bw() + labs(x = "Prevalence (proportion of M.trossulus)", y = "Structure", fill = "Вероятность \n встретить Т-морфотип")
   
   
 ```
@@ -204,7 +208,7 @@ ggplot(new_data, aes(x = freq_MT, y = str)) + geom_raster(aes(fill = Predict_gam
 Для наглядности, уберем точки с первичными данными, оставим лишь изолинии, отражающие места с максимальной концентрацией точек.
 
 ```{r}
-ggplot(new_data, aes(x = freq_MT, y = str)) + geom_raster(aes(fill = Predict_gam)) + facet_wrap(~Subset) + scale_fill_gradient(low = "yellow", high = "red") + geom_density2d(data = myt2, n = 20)  + theme_bw() + labs(x = "Prevalence (proportion of M.trossulus)", y = "Structure", fill = "Вероятность \n встретить Т-морфотип")
+ggplot(new_data, aes(x = freq_MT, y = str)) + geom_raster(aes(fill = Predict_gam)) + facet_wrap(~Subset, ncol = 1) + scale_fill_gradient(low = "yellow", high = "red") + geom_density2d(data = myt2, n = 20)  + theme_bw() + labs(x = "Prevalence (proportion of M.trossulus)", y = "Structure", fill = "Вероятность \n встретить Т-морфотип")
 ```
 
 Оставлю эту картинку без комментариев, но, по-моему, она очень говорящая. 
