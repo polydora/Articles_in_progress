@@ -202,20 +202,20 @@ prop_T <- myt2 %>%  mutate(str_class = ntile(str, 5)) %>% group_by(Subset, str_c
 
 Pl_hist <- 
   ggplot(myt2, aes(x = str)) + 
-  geom_histogram(binwidth = 0.1, color = "black", aes(y=..count../sum(..count..), fill = morph)) + 
+  geom_histogram(binwidth = 0.1, color = "black", aes(fill = morph)) + 
   facet_wrap(~Subset, ncol = 1, scales = "free_y") + 
   scale_fill_manual(values = c("cornflowerblue", "red" )) + 
   theme_bw() +
   theme(panel.grid = element_blank()) + 
   guides(fill = "none") + 
-  labs(x = "Structure score", y = "Proportion") 
+  labs(x = "Structure score", y = "Count") 
 # +
 #   geom_point(data = prop_T, aes(x = str_mean, y = Prop_T))
 ```
 
 
 
-```{r fig.width=10, fig.height=10}
+```{r  fig.height=9, fig.width=9}
 library(cowplot)
 
 plot_grid(Pl_hist, Pl_mod_gam, ncol = 2, labels = c("a", "b"))
