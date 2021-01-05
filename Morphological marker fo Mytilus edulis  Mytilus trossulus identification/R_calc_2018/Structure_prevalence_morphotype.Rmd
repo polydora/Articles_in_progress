@@ -157,7 +157,7 @@ $$
 
 
 ```{r echo = FALSE}
-mod_gam <- gam(ind ~ s(freq_MT, str, by = Subset, k = 10) + Subset, data = myt2, family = "binomial")
+mod_gam <- gam(ind ~ s(str, freq_MT, by = Subset, bs = "tp", k = 10) + Subset, data = myt2, family = "binomial")
 
 # summary(mod_gam)
 ```
@@ -171,9 +171,8 @@ myt2_BALT <- myt2 %>% filter(Subset == "BALT")
 myt2_GOM <- myt2 %>% filter(Subset == "GOM")
 
 
-  
-new_data <-  myt2 %>% group_by(Subset) %>% do(expand.grid(str = seq(min(.$str), max(.$str), length.out = 20), freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 20))) 
 
+new_data <-  myt2 %>% group_by(Subset) %>% do(expand.grid(str = seq(min(.$str), max(.$str), length.out = 20), freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 20))) 
 
 new_data$Predict_gam <- predict(mod_gam, newdata = new_data, type = "response" )
 
@@ -192,8 +191,6 @@ Pl_mod_gam <-
   geom_point(data = myt2, aes(fill = ind), position = position_jitter(width = 0.01), shape = 21, size = 1) 
 
 
-  
-  
   
 ```
 
