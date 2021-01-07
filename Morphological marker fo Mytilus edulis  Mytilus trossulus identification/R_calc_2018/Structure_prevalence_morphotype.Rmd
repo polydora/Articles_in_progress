@@ -59,6 +59,8 @@ library(lmtest)
 library(broom)
 library(mgcv)
 
+theme_set(theme_bw())
+
 
 myt <- read.table("data_salinity3.csv", header = T, sep = ",")
 # 
@@ -103,21 +105,27 @@ myt2_all$Subset <- factor(myt2_all$Subset, levels = c("WSBL", "BH", "NORW", "BAL
 
 
 
-myt2 <- myt2_all %>% filter(Subset %in% c("WSBL", "BH", "BALT", "GOM" ))
-
-# Вводим обозначения для морфотипов
-myt2$morph <- ifelse(myt2$ind == 1, "T_m", "E_m")
-myt2$morph <- factor(myt2$morph)
+myt2_all$morph <- ifelse(myt2_all$ind == 1, "T_m", "E_m")
+myt2_all$morph <- factor(myt2_all$morph)
 
 
 
 # Бинарное обозначение видов
 
-myt2$Sp2 <- ifelse(myt2$Sp == "M.trossulus", 1, 0)
+myt2_all$Sp2 <- ifelse(myt2_all$Sp == "M.trossulus", 1, 0)
 
 
 #Correct identification
-myt2$congr <- ifelse((myt2$ind == 1 & myt2$Sp == "M.trossulus") | (myt2$ind == 0 & myt2$Sp == "M.edulis"), 1, 0   )
+myt2_all$congr <- ifelse((myt2_all$ind == 1 & myt2_all$Sp == "M.trossulus") | (myt2_all$ind == 0 & myt2_all$Sp == "M.edulis"), 1, 0   )
+
+
+
+
+
+
+myt2 <- myt2_all %>% filter(Subset %in% c("WSBL", "BH", "BALT", "GOM"))
+
+# Вводим обозначения для морфотипов
 
 
 
@@ -188,7 +196,8 @@ Pl_mod_gam <-
   geom_density_2d(data = myt2_BALT, color = "white")+
   geom_density_2d(data = myt2_GOM, color = "white", n = 5) +
   theme(panel.grid = element_blank())+ 
-  geom_point(data = myt2, aes(fill = ind), position = position_jitter(width = 0.01), shape = 21, size = 1) 
+  geom_point(data = myt2, aes(fill = ind), position = position_jitter(width = 0.01), shape = 21, size = 1) +
+  theme(legend.position = "left")
 
 
   
@@ -208,20 +217,111 @@ Pl_hist <-
   theme_bw() +
   theme(panel.grid = element_blank()) + 
   guides(fill = "none") + 
-  labs(x = "Structure score", y = "Count") 
+  labs(x = "Structure score", y = "Count")+ coord_flip()
 # +
 #   geom_point(data = prop_T, aes(x = str_mean, y = Prop_T))
+
+
+Pl_hist_2 <- 
+  ggplot(myt2_all[myt2_all$Subset %in% c("NORW", "SCOT"), ], aes(x = str)) + 
+  geom_histogram(binwidth = 0.1, color = "black", aes(fill = morph)) + 
+  facet_wrap(~Subset, ncol = 1, scales = "free_y") + 
+  scale_fill_manual(values = c("cornflowerblue", "red" )) + 
+  theme_bw() +
+  theme(panel.grid = element_blank()) + 
+  guides(fill = "none") + 
+  labs(x = "Structure score", y = "Count") + coord_flip()
+
+Pl_hist_3 <- ggplot(myt2_all[myt2_all$Subset %in% c("NORW", "SCOT"), ], aes(x = str)) + facet_wrap( ~ Subset, ncol = 1) + geom_blank() + theme(strip.background = element_blank(), panel.border = element_blank(), axis.text = element_blank(), strip.text = element_blank(), axis.ticks = element_blank(), panel.grid = element_blank(), axis.title = element_blank())
+
+# plot_grid(Pl_hist_3, Pl_hist_2, rel_widths = c(2, 1)) 
+
 ```
 
 
 
 ```{r  fig.height=9, fig.width=9}
 library(cowplot)
+library(patchwork)
 
-plot_grid(Pl_hist, Pl_mod_gam, ncol = 2, labels = c("a", "b"))
 
-  
+plot_grid(Pl_mod_gam, Pl_hist_3, Pl_hist, Pl_hist_2, ncol = 2, labels = c("a", "b"), rel_widths = c(2, 1))
+
+
+
+plot_grid(, Pl_hist_2, rel_widths = c(2, 1))
+
 
 
 ```
+
+
+Связь частоты Т-морфотипов у мидий классифицированных, как M.trossulus-like and M.edulis-like и частотами морфотипа у чистых M.edulis and M.trossulus (Structure <0.20 and >0.80)
+
+
+```{r}
+
+
+myt2_all$Sp_pure <- case_when(myt2_all$str >= 0.8 ~ "M.trossulus_pure",
+                              myt2_all$str <= 0.2 ~ "M.edulis_pure",
+                              myt2_all$str  > 0.2 & myt2_all$str < 0.8 ~  "hybrid" )
+
+Prop_T_pure <- myt2_all %>% group_by(Subset, pop, Sp_pure) %>% summarise(Prop_T = mean(ind))  
+
+Prop_T_pure2 <- dcast(Prop_T_pure, Subset + pop ~ Sp_pure, value.var = "Prop_T")
+
+
+Prop_T <- myt2_all %>% group_by(Subset, pop, Sp) %>% summarise(Prop_T = mean(ind))  
+
+Prop_T_2 <- dcast(Prop_T, Subset + pop ~ Sp, value.var = "Prop_T")
+
+
+
+
+
+Prop_T_like_pure <- merge(Prop_T_2, Prop_T_pure2)
+
+Prop_T_like_pure$Dev_trossulus <- Prop_T_like_pure$M.trossulus_pure / Prop_T_like_pure$M.trossulus 
+
+
+Prop_T_like_pure$Dev_edulis <- (Prop_T_like_pure$M.edulis_pure - Prop_T_like_pure$M.edulis)
+
+
+
+
+
+Prop_T_like_pure$Dev_trossulus <- (Prop_T_like_pure$M.trossulus_pure - Prop_T_like_pure$M.trossulus)
+
+# mean(Prop_T_like_pure$Dev_trossulus, na.rm = T)
+
+
+# ggplot(Prop_T_like_pure, aes(x = Subset, y = Dev_edulis)) + geom_boxplot() + geom_hline(yintercept = 1)
+
+# ggplot(Prop_T_like_pure, aes(x = Subset, y = Dev_trossulus)) + geom_boxplot() + geom_hline(yintercept = 1)
+
+# Prop_T_like_pure[order(Prop_T_like_pure$Delat_trossulus, decreasing = T),]
+
+
+
+
+
+Pl_edu <- ggplot(Prop_T_like_pure, aes(x = M.edulis, y = M.edulis_pure, color = Subset)) + geom_point(size = 4) + geom_abline() + labs(x = "q-value < 0.5", y = "q-value < 0.2") + ggtitle("M.edulis") 
+
+Pl_tros <- ggplot(Prop_T_like_pure, aes(x = M.trossulus, y = M.trossulus_pure, color = Subset)) + geom_point(size = 4) + geom_abline() + labs(x = "q-value > 0.5", y = "q-value > 0.8") + ggtitle("M.trossulus")
+
+
+# ggplot(Prop_T_like_pure, aes(x = M.trossulus, y = hybrid, color = Subset)) + geom_point(size = 4) + geom_abline() + labs(x = "q-value > 0.5", y = "q-value > 0.8")
+# 
+# ggplot(Prop_T_like_pure, aes(x = M.edulis, y = hybrid, color = Subset)) + geom_point(size = 4) + geom_abline() + labs(x = "q-value > 0.5", y = "q-value > 0.8")
+
+library(ggpubr)
+ggarrange(Pl_edu, Pl_tros, common.legend = T, legend = "bottom")
+
+
+
+
+
+```
+
+При проведении границы по q-value = 0.5 мы в среднем завышаем частоту T-морфотипа у M.edulis на `r round(abs(mean(Prop_T_like_pure$Dev_edulis, na.rm=T))*100)`%, а у M.trossulus занижаем на `r round(abs(mean(Prop_T_like_pure$Dev_trossulus, na.rm=T))*100)`
 
