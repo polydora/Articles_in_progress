@@ -249,7 +249,7 @@ plot_grid(Pl_mod_gam, Pl_hist_3, Pl_hist, Pl_hist_2, ncol = 2, labels = c("a", "
 
 
 
-plot_grid(, Pl_hist_2, rel_widths = c(2, 1))
+# plot_grid(, Pl_hist_2, rel_widths = c(2, 1))
 
 
 

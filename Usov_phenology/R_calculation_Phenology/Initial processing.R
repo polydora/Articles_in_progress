@@ -3,10 +3,7 @@
 # Packages  ####
 library(reshape2)
 library(ggplot2)
-<<<<<<< Updated upstream
 library(dplyr)
-=======
->>>>>>> Stashed changes
 
 
 # Подготовка данных ####
@@ -21,10 +18,6 @@ plankt <- merge(d, vars)
 
 
 
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
 # Первичный осмотр данных ####
 
 ggplot(plankt[plankt$Species == "Microsetella norvegica", ], aes(x = Abundance, y = 1:nrow(plankt[plankt$Species == "Microsetella norvegica", ]))) + geom_point()
@@ -33,13 +26,10 @@ ggplot(plankt[plankt$Species == "Microsetella norvegica", ], aes(x = Abundance, 
 plankt[plankt$Abundance > 10000 & !is.na(plankt$Abundance) & plankt$Species == "Microsetella norvegica",  ]
 
 
-<<<<<<< Updated upstream
-
-
 
 plankt$Date2 <- strptime(paste(plankt$Day,"/", plankt$Month, "/", plankt$Year, sep = ""), format=("%d/%m/%Y"))
 
-Start_day <- strptime(paste(plankt_mean$Year,"/01/01", sep = ""), format=("%Y/%d/%m"))
+Start_day <- strptime(paste(plankt$Year,"/01/01", sep = ""), format=("%Y/%d/%m"))
 
 
 plankt$Days_from_year_start <-  as.numeric(round(difftime(plankt$Date2, as.Date(Start_day))))
@@ -104,7 +94,6 @@ qplot(plankt_mean$Abund_mean, plankt_mean$Abundance)
 
 
 names(plankt_mean)
->>>>>>> Stashed changes
 
 # plankt_mean <- plankt_mean[, -6]
 
@@ -129,7 +118,6 @@ names(plankt_mean)
 Abundance <- read.csv("data/abundance.csv", header = TRUE) # Данные по обилию видов, усреденнные по всему столбу воды за март-сентябрь.
 
 
-<<<<<<< Updated upstream
 # ggplot(plankt_mean[plankt_mean$Stage == "Total" & plankt$Month %in% 6:9, ], aes(x = Year, y = (Abund_mean)))  + stat_summary(fun.data = "mean_cl_boot") + facet_wrap(~Species, scales = "free_y") + geom_smooth() 
 # 
 # colSums(is.na(plankt_mean[plankt_mean$Stage == "Total" & plankt$Month %in% 6:9, ]))
@@ -540,6 +528,29 @@ log_param_Pseudocalanus<- merge(log_param_Pseudocalanus, peaks(df = pseudocal), 
 log_param_Acartia <- merge(log_param_Acartia, peaks(df = acart), by="Year")
 log_param_Microsetella <- merge(log_param_Microsetella, peaks(df = microset), by="Year")
 log_param_Triconia <- merge(log_param_Triconia, peaks(df = tricon), by="Year")
+
+
+
+
+ggplot(log_param_Calanus, aes(x = Peak_Days_from_year_start, y = Days_perc_50 )) + geom_point() + geom_abline()
+
+ggplot(log_param_Centropages, aes(x = Peak_Days_from_year_start, y = Days_perc_50 )) + geom_point() + geom_abline()
+
+ggplot(log_param_Temora, aes(x = Peak_Days_from_year_start, y = Days_perc_50 )) + geom_point() + geom_abline()
+
+ggplot(log_param_Oithona, aes(x = Peak_Days_from_year_start, y = Days_perc_50 )) + geom_point() + geom_abline()
+
+ggplot(log_param_Pseudocalanus, aes(x = Peak_Days_from_year_start, y = Days_perc_50 )) + geom_point() + geom_abline()
+
+ggplot(log_param_Acartia, aes(x = Peak_Days_from_year_start, y = Days_perc_50 )) + geom_point() + geom_abline()
+
+ggplot(log_param_Microsetella, aes(x = Peak_Days_from_year_start, y = Days_perc_50 )) + geom_point() + geom_abline()
+
+ggplot(log_param_Triconia, aes(x = Peak_Days_from_year_start, y = Days_perc_50 )) + geom_point() + geom_abline()
+
+
+
+
 
 
 
