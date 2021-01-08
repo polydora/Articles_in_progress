@@ -220,6 +220,8 @@ library(cowplot)
 
 plot_grid(Pl_hist, Pl_mod_gam, ncol = 2, labels = c("a", "b"))
 
+
+
   
 
 
