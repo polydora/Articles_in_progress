@@ -273,13 +273,13 @@ Pl_ed <-
   ggplot(PT_pure_edulis_like, aes(x= Prop_T_Sp_like, y = Prop_T_Sp_pure, color = Subset)) + 
   geom_point(size = 4) + 
   geom_abline() +
-  labs(x = "P(T|edu)", y = "PT in putative M.edulis (q<0.2)", color = "Region")
+  labs(x = "P(T|edu)", y = "PT in putative purebred M.edulis (q<0.2)", color = "Region")
 
 Pl_tr <-
   ggplot(PT_pure_trssulus_like, aes(x= Prop_T_Sp_like, y = Prop_T_Sp_pure, color = Subset)) + 
   geom_point(size = 4) + 
   geom_abline() +
-  labs(x = "P(T|tros)", y = "PT in putative M.trossulus (q>0.8)", color = "Region")
+  labs(x = "P(T|tros)", y = "PT in putative purebred M.trossulus (q>0.8)", color = "Region")
 
 
 
