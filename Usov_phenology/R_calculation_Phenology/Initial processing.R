@@ -25,8 +25,6 @@ ggplot(plankt[plankt$Species == "Microsetella norvegica", ], aes(x = Abundance, 
 # Вопрос Это ошибка в набивке или реально так много.
 plankt[plankt$Abundance > 10000 & !is.na(plankt$Abundance) & plankt$Species == "Microsetella norvegica",  ]
 
-
-
 plankt$Date2 <- strptime(paste(plankt$Day,"/", plankt$Month, "/", plankt$Year, sep = ""), format=("%d/%m/%Y"))
 
 Start_day <- strptime(paste(plankt$Year,"/01/01", sep = ""), format=("%Y/%d/%m"))
@@ -71,7 +69,8 @@ plankt_total$N_weig_25 <- round((plankt_total$Abundance_0_10 * 10 + plankt_total
 
 
 # names(plankt_mean)
-=======
+
+
 ## Среденвзвешанные значения, объединение слоев
 
 plankt_1 <- plankt[plankt$Level == "0-10", ]
@@ -186,7 +185,9 @@ qplot(x = Abundance_summer_25$`Microsetella norvegica`, y = Abundance_summer$`Mi
 
 # write.table(Abundance_summer, "clipboard", sep = "\t", row.names = F)
 # write.table(Abundance_summer_25, "clipboard", sep = "\t", row.names = F)
-=======
+
+
+
 ggplot(plankt_mean[plankt_mean$Stage == "Total" & plankt$Month %in% 6:9, ], aes(x = Year, y = (Abund_mean)))  + stat_summary(fun.data = "mean_cl_boot") + facet_wrap(~Species, scales = "free_y") + geom_smooth() 
 
 colSums(is.na(plankt_mean[plankt_mean$Stage == "Total" & plankt$Month %in% 6:9, ]))
@@ -211,8 +212,6 @@ names(plankt_mean)
 
 
 
-
->>>>>>> Stashed changes
 
 
 ##разделяем датасет на части по видам
@@ -406,7 +405,7 @@ qplot(df_count_Total_tricon$Year,df_count_Total_tricon$Time )
 # Функция для вычисления параметров логистической кумуляты на выходе три парамтера логистической кривой
 
 log_param <- function(df, species = NULL){
-  df_param <- data.frame(Year = rep(NA, length(unique(df$Year))), Asym = NA, xmid = NA, scal = NA)
+  df_param <- data.frame(Year = rep(NA, length(unique(df$Year))), Asym = NA, xmid = NA, scal = NA, RSE = NA, df =NA)
   i <- 1
   for(year in unique(df$Year)){
     fit <- tryCatch(expr = nls(N_accum ~ SSlogis(Time, Asym, xmid, scal), data = df[df$Year == year, ]), error = function(e)NA)
@@ -418,6 +417,8 @@ log_param <- function(df, species = NULL){
       df_param$Asym[i] <-  coef(fit)[1]
       df_param$xmid[i] <- coef(fit)[2]
       df_param$scal[i] <- coef(fit)[3]
+      df_param$RSE[i] <- summary(fit)$sigma
+      df_param$df[i] <- summary(fit)$df
     }
     i <- i+1
   }
@@ -452,7 +453,6 @@ log_param_Triconia <- log_param(df = df_count_Total_tricon, species = "Triconia"
 
 
 
-<<<<<<< Updated upstream
 ## Смотрим есть ли зависимость между асимптотой кумулятивной крвой (максимальное количество особей отмеченных в данном году) и датой начала сезона
 
 
@@ -464,11 +464,6 @@ ggplot(log_param_Oithona, aes(x = Days_perc_15, y = log(Asym) )) + geom_point()+
 ggplot(log_param_Pseudocalanus, aes(x = Days_perc_15, y = log(Asym) )) + geom_point()+ geom_smooth(method = "lm")
 ggplot(log_param_Acartia, aes(x = Days_perc_15, y = log(Asym) )) + geom_point() + geom_smooth(method = "lm")
 ggplot(log_param_Microsetella, aes(x = Days_perc_15, y = log(Asym) )) + geom_point() + geom_smooth(method = "lm")
-
-=======
->>>>>>> Stashed changes
-
-
 
 
 
@@ -501,11 +496,7 @@ cum_param <- function(df, species = NULL){
 
 cum_param(df = df_count_Total_calanus, species = "Calanus")
 
-<<<<<<< Updated upstream
-=======
 
-
->>>>>>> Stashed changes
 ##Даты пиков численности видов
 
 peaks <- function(df, species = NULL){
@@ -531,31 +522,165 @@ log_param_Triconia <- merge(log_param_Triconia, peaks(df = tricon), by="Year")
 
 
 
+log_param_all_species <- rbind(log_param_Calanus, log_param_Centropages, log_param_Temora, log_param_Oithona, log_param_Pseudocalanus, log_param_Acartia, log_param_Microsetella, log_param_Triconia)
 
-ggplot(log_param_Calanus, aes(x = Peak_Days_from_year_start, y = Days_perc_50 )) + geom_point() + geom_abline()
 
-ggplot(log_param_Centropages, aes(x = Peak_Days_from_year_start, y = Days_perc_50 )) + geom_point() + geom_abline()
 
-ggplot(log_param_Temora, aes(x = Peak_Days_from_year_start, y = Days_perc_50 )) + geom_point() + geom_abline()
 
-ggplot(log_param_Oithona, aes(x = Peak_Days_from_year_start, y = Days_perc_50 )) + geom_point() + geom_abline()
+# write.table(log_param_Calanus, "clipboard", sep = "\t", row.names = FALSE)
 
-ggplot(log_param_Pseudocalanus, aes(x = Peak_Days_from_year_start, y = Days_perc_50 )) + geom_point() + geom_abline()
+# write.table(log_param_Calanus, "clipboard", sep = "\t", row.names = FALSE)
 
-ggplot(log_param_Acartia, aes(x = Peak_Days_from_year_start, y = Days_perc_50 )) + geom_point() + geom_abline()
 
-ggplot(log_param_Microsetella, aes(x = Peak_Days_from_year_start, y = Days_perc_50 )) + geom_point() + geom_abline()
-
-ggplot(log_param_Triconia, aes(x = Peak_Days_from_year_start, y = Days_perc_50 )) + geom_point() + geom_abline()
+# Функция для рисования кумулят
 
 
 
 
 
 
+plot_cum <- function(df =df_count_Total_calanus,  year = 1961){
+  library(ggplot2)
+  fit <- tryCatch(expr = nls(N_accum ~ SSlogis(Time, Asym, xmid, scal), data = df[df$Year == year, ]), error = function(e)NA)
+  
+  Asym <- coef(fit)[1]
+  xmid <- coef(fit)[2]
+  scal <- coef(fit)[3]
+  
+  
+  perc_15 <- xmid - log(Asym/(0.15*Asym) - 1)*scal 
+  perc_50 <- xmid - log(Asym/(0.5*Asym) - 1)*scal 
+  perc_85 <- xmid - log(Asym/(0.85*Asym) - 1)*scal
+  
+  
+  Time_perc_15 <- as.POSIXct(perc_15, origin = "1970-01-01", tz = "UTC")
+  Time_perc_50 <- as.POSIXct(perc_50, origin = "1970-01-01", tz = "UTC") 
+  Time_perc_85 <- as.POSIXct(perc_85, origin = "1970-01-01", tz = "UTC") 
+  
+  Start_day <- as.POSIXct(paste(year,"-01-01", sep = ""), tz = "UTC") 
+  Days_perc_15 <- as.numeric(round(difftime(Time_perc_15, as.Date(Start_day))))
+  Days_perc_50 <- as.numeric(round(difftime(Time_perc_50, as.Date(Start_day))))
+  Days_perc_85 <- as.numeric(round(difftime( Time_perc_85, as.Date(Start_day))))
+  
+    
+  if(is.na(fit[1])){
+    Pl <- ggplot(df[df$Year == year, ], aes(x = Time2, y = N_accum))  + scale_x_datetime(date_breaks = "4 week", date_labels = "%d-%m")+ geom_point(size = 2, shape = 21, fill = "gray")
+    
+  }
+  else{
+    df_predict <- data.frame(Date2 = seq(as.Date(paste(year,"-01-01", sep = "")), as.Date(paste(year,"-12-20", sep = "")), by="days"))
+    df_predict$Time2 <- as.POSIXct(df_predict$Date2)
+    df_predict$Time <- as.numeric(df_predict$Time2) 
+    df_predict$predict <- predict(fit, newdata = df_predict)
+    
+    
+    Pl <- ggplot(df[df$Year == year, ], aes(x = Time2, y = N_accum))  + geom_line(data = df_predict, aes(y = predict), size = 2) + scale_x_datetime(date_breaks = "6 week", date_labels = "%d-%m")+ geom_point(size = 2, shape = 21, fill = "gray")
+    
+    Pl <- Pl + 
+      geom_segment(aes(x= Time_perc_50, xend = Time_perc_50, yend = 0, y = predict(fit, newdata = data.frame(Time = perc_50))[1]), arrow = arrow(type = "closed", angle = 10), color = "gray") + 
+      geom_segment(aes(x= Time_perc_15, xend = Time_perc_15, yend = 0, y = predict(fit, newdata = data.frame(Time = perc_15))[1]), arrow = arrow(type = "closed", angle = 10), color = "gray90")+ 
+      geom_segment(aes(x= Time_perc_85, xend = Time_perc_85, yend = 0, y = predict(fit, newdata = data.frame(Time = perc_85))[1]), arrow = arrow(type = "closed", angle = 10), color = "gray10")
+  }
+  
+  Pl
+}
 
-<<<<<<< Updated upstream
-write.table(log_param_Calanus, "clipboard", sep = "\t", row.names = FALSE)
+
+
+
+
+
+# cum <- df_count_Total_calanus$N_accum[df_count_Total_calanus$Year == year]
+# 
+# plot_cum(year = year, df = df_count_Total_calanus) + geom_hline(yintercept = mean(cum)) + geom_hline(yintercept = max(cum)/2, color = "blue") + geom_line(aes())
+
+
+## Выбираем логистические регрессии с максимальной, среденей и минимальной Residual Standard Error
+
+log_param_all_species %>% filter(round(RSE) == round(max(RSE, na.rm = T)))
+
+
+(Pl_max_RSE <- plot_cum(year = 1989, df = df_count_Total_oit) + geom_line(color = "gray") + theme_bw() + ggtitle("Max RSE. Oithona, 1989") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))  
+
+
+log_param_all_species %>% filter(round(RSE) == round(min(RSE, na.rm = T)))
+
+
+Pl_min_RSE <- plot_cum(year = 1999, df = df_count_Total_calanus) + geom_line(color = "gray") + theme_bw()+ ggtitle("Min RSE. Calanus, 1999") + labs(x = "Date", y = "Abundance" )  + theme(panel.grid = element_blank())
+  
+
+
+log_param_all_species %>% filter(round(RSE) == round(median(RSE, na.rm = T)))
+
+Pl_median_RSE <- plot_cum(year = 1977, df = df_count_Total_temor) + geom_line(color = "gray") + theme_bw()+ ggtitle("Medium RSE. Temora, 1977")  + labs(x = "Date", y = "Abundance" )+ theme(panel.grid = element_blank())
+  
+library(cowplot)
+
+Pl_logistic <- plot_grid(Pl_max_RSE, Pl_median_RSE, Pl_min_RSE, ncol = 1, align = "v")
+
+
+
+
+
+
+
+
+######### Анализ качества регрессионных логистических моделей.++++++++++++++++++++
+## Для оценки goodness of feet логистических моделей сравнивали соответствие Days_perc_50 и Peak_Days_from_year_start
+
+
+
+log_param_all_species$Species <- factor(log_param_all_species$Species) 
+
+log_param_all_species$Peak_Dif <- with(log_param_all_species, Days_perc_50 - Peak_Days_from_year_start)
+
+
+
+# РАспределение RSE от логистической кривой, описывающей кумуляту у видов
+ggplot(log_param_all_species, aes(x = Species, y = RSE)) + geom_boxplot() + geom_hline(yintercept = 0)
+
+ggplot(log_param_all_species, aes(x = as.numeric(Year), y = RSE)) + geom_point() +facet_wrap(~Species) + geom_smooth()
+
+
+log_param_all_species %>% filter(RSE == max(RSE, na.rm = T))
+
+
+
+
+# Распределение разниц в днях между Days_perc_50 и Peak_Days_from_year_start 
+Plot_diff <- ggplot(log_param_all_species, aes(x = Species, y = Peak_Dif)) + geom_boxplot() + geom_hline(yintercept = 0) + theme_bw() + labs(y = "Difference Middle and Peak") + theme(axis.text.x = element_text(angle = 90))
+
+
+
+
+ggplot(log_param_all_species, aes(x = Peak_Dif)) + geom_histogram() + geom_vline(xintercept = 0) + facet_wrap(~Species)
+
+
+
+
+# Комбинированная картинка с примерами логистических аппроксимаций и разницей между датой точки перегиба логистической кривой и датой наблюдаемого пика
+
+plot_grid(Pl_logistic, Plot_diff, labels = c("A", "B"))
+
+
+
+ggplot(log_param_all_species, aes(x = Days_perc_50, y = Peak_Days_from_year_start, color = Species)) + geom_point() + geom_smooth(method = "lm") + geom_abline() + facet_wrap(~Species)
+
+# detach(reshape2)
+
+library(dplyr)
+log_param_all_species %>% group_by(Species) %>% summarise(Median_Peak_Dif = median(Peak_Dif, na.rm = T)) 
+
+log_param_all_species %>% group_by(Species) %>%   summarise(cor(Peak_Days_from_year_start, Days_perc_50, use = "pairwise.complete.obs", method = "spearman"))
+
+
+df_count_Total_acart %>% group_by(Year) %>% summarize(n())
+
+ggplot(log_param_all_species, aes(x = as.numeric(Year), y = Peak_Dif)) + geom_point() + geom_hline(yintercept = 0) + geom_smooth()
+
+
+ggplot(log_param_all_species, aes(x = as.numeric(Year), y = Peak_Dif)) + geom_point() + geom_hline(yintercept = 0) + geom_smooth() + facet_wrap(~Species)
+
 
 
 
@@ -568,41 +693,16 @@ ggplot(log_param_Acartia, aes(x = Peak_Days_from_year_start, y = log(Asym) )) + 
 ggplot(log_param_Microsetella, aes(x = Peak_Days_from_year_start, y = log(Asym) )) + geom_point() + geom_smooth(method = "lm")
 
 
-=======
-
-write.table(log_param_Calanus, "clipboard", sep = "\t", row.names = FALSE)
->>>>>>> Stashed changes
-
-
-# Функция для рисования кумулят
-
-plot_cum <- function(df =df_count_Total_calanus,  year = 1961){
-  library(ggplot2)
-  fit <- tryCatch(expr = nls(N_accum ~ SSlogis(Time, Asym, xmid, scal), data = df[df$Year == year, ]), error = function(e)NA)
-  
-  if(is.na(fit[1])){
-    Pl <- ggplot(df[df$Year == year, ], aes(x = Time2, y = N_accum)) + geom_point() + scale_x_datetime(date_breaks = "4 week", date_labels = "%d-%m")
-    
-  }
-  else{
-    predict <- predict(fit, newdata = df[df$Year == year, ])
-    Pl <- ggplot(df[df$Year == year, ], aes(x = Time2, y = N_accum)) + geom_point() + geom_line(aes(y = predict)) + scale_x_datetime(date_breaks = "4 week", date_labels = "%d-%m")
-    
-  }
-  
-  Pl
-}
 
 
 
-# cum <- df_count_Total_calanus$N_accum[df_count_Total_calanus$Year == year]
-# 
-# plot_cum(year = year, df = df_count_Total_calanus) + geom_hline(yintercept = mean(cum)) + geom_hline(yintercept = max(cum)/2, color = "blue") + geom_line(aes())
 
 
 
-year <- 2015
-plot_cum(year = year, df = df_count_Total_calanus) + geom_line(color = "gray")
+
+
+
+
 
 
 ## Функция для поиска дат макисмально близких к опорным ключевым событиям в фенологии (начало появления, конец пребывания) для тех случаев, когда кумулята не выходит на плато.#######

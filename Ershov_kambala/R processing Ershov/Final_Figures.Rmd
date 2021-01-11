@@ -1,0 +1,232 @@
+---
+title: ""
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+```
+
+```{r}
+library(mgcv)
+library(ggplot2)
+library(dplyr)
+library(broom)
+library(car)
+library(reshape2)
+
+options(knitr.kable.NA = '')
+
+
+
+
+# Функция, задающая нумерацию рисунков
+
+figRef <- local({
+    tag <- numeric()
+    created <- logical()
+    used <- logical()
+    function(label, caption, prefix = options("figcap.prefix"), 
+        sep = options("figcap.sep"), prefix.highlight = options("figcap.prefix.highlight")) {
+        i <- which(names(tag) == label)
+        if (length(i) == 0) {
+            i <- length(tag) + 1
+            tag <<- c(tag, i)
+            names(tag)[length(tag)] <<- label
+            used <<- c(used, FALSE)
+            names(used)[length(used)] <<- label
+            created <<- c(created, FALSE)
+            names(created)[length(created)] <<- label
+        }
+        if (!missing(caption)) {
+            created[label] <<- TRUE
+            paste0(prefix.highlight, prefix, " ", i, sep, prefix.highlight, 
+                " ", caption)
+        } else {
+            used[label] <<- TRUE
+            paste(prefix, tag[label])
+        }
+    }
+})
+
+options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**")
+
+
+
+theme_set(theme_bw())
+
+age_all <- read.table("Data/age_Onega.csv", sep = ",", header = T, dec = ".")
+
+age <- age_all %>% filter(Age %in% 2:7)
+
+# age_old <- age_all %>% filter(Age > 7)
+# 
+# age_old <- age_old %>% group_by(Sex) %>% filter(Right + Left >0) %>% summarise(Age = mean(Age), Right = sum(Right), Left  = sum(Left))
+# 
+# age <- rbind(age, age_old)
+
+```
+
+
+
+
+
+
+```{r}
+library(ggmap)
+library(mapproj)
+library(maps)
+
+library(rgeos) #этот пакет содержит какую-то хрень, которая позволяет обойти проблему пр чтении фалов средсвами maptools. 
+#Att! Этот пакет должен быть загружен до maptools
+
+library(mapdata)
+library(maptools) # Rgshhs
+library(PBSmapping)
+library(gridExtra)
+library(grid)
+library(ggrepel)
+
+
+theme_set(theme_bw() + theme(legend.key = element_blank()))
+
+df_europ <- read.csv("Data/Europe_polygon.csv", header = T)
+
+
+# Задаем пределы координат
+
+Full_x <- c(-10, 45)
+Full_y <- c(49, 72)
+
+gg_full <- ggplot(df_europ, aes(x=long, y=lat, group=group)) +
+  geom_polygon(fill = "gray95", colour = "gray60") + 
+  coord_map(xlim = Full_x, ylim = Full_y) + 
+  theme_bw() +  
+  theme(plot.background = element_rect(fill = "white"), panel.grid = element_blank()) +
+  labs(x = "Longitude", y = "Latitude")
+
+
+```
+
+
+
+
+```{r,  fig.cap= figRef("Left_map", ""), fig.height=5}
+
+left_prop <- read.csv("Data/point_proportion.csv", header = T)
+point_coord <- read.csv("Data/point_coordinates.csv", header = T)
+point_n <- read.csv("Data/point_sample_size.csv", header = T)
+
+
+
+point_coord$Lat <- point_coord$Lat + point_coord$Lat_m / 60 
+point_coord$Long <- point_coord$Long + point_coord$Long_m / 60
+
+points <- data.frame(Point = 1:nrow(left_prop), left_prop, Lat = point_coord$Lat, Long = point_coord$Long)
+
+Pl_revers <-
+  gg_full + 
+  geom_point(data = points, aes(x = Long, y = Lat, size = Left_prop, group = 1, fill = Left_prop), shape = 21) + 
+  scale_size_continuous(breaks = seq(0, 50, 5)) + 
+  scale_fill_gradient(low = "white", high = "black")+
+  geom_text_repel(data = points, aes(x = Long, y = Lat, group = 1, label = 1:nrow(points)), force = 3, box.padding = 0.5) + 
+  labs(size = "Proportion of Reverse", fill = "Proportion, %") +
+  theme(legend.position = c(0.15, 0.81)) +
+  guides(size = "none")
+
+
+
+
+ ggsave(plot = Pl_revers, filename = "Map_of_reverse_distribution.pdf")
+ 
+ ggsave(plot = Pl_revers, filename = "Map_of_reverse_distribution.tiff")  
+
+ ggsave(plot = Pl_revers, filename = "Map_of_reverse_distribution.png")  
+
+Pl_revers
+
+```
+
+<br>
+<br>
+
+<!-- ```{r} -->
+<!-- points_print <- points[ ,1:4] -->
+<!-- points_print <- cbind(points_print, point_n)  -->
+
+<!-- points_print$Left_Right <- paste(points_print$Left, "/", 100-points_print$Left, sep = "") -->
+
+<!-- points_print<- cbind(points_print, point_coord) -->
+
+<!-- points_print$Point_number <- 1:nrow(points_print) -->
+
+<!-- points_print <- points_print %>% select(Point_number, Site, n, Left_Right,  Lat, Long, Source )  -->
+
+
+<!-- kable(points_print, caption = "**Таблица +**. Доля (%) реверсивных рыб в разных участках ареала.", col.names = c("№", "Site", "Sample Size", "Proportion Left/Right ", "Lat", "Long", "Source") ) -->
+<!-- ``` -->
+
+
+
+
+```{r}
+kam <- read.table("Data/kambala.csv", sep = ",", header = T, dec = ".")
+
+# str(kam)
+kam$Outcome <- ifelse(kam$Sidedness == "Left", 1, 0)
+
+kam$Bay <- factor(kam$Bay, levels = c("Kandalaksha_Bay", "Onega_Bay", "Dvina_Bay", "Mezen_Bay" ), labels = c("Kandalaksha Bay", "Onega Bay", "Dvina Bay", "Mezen Bay" ))
+
+
+
+frq_Orient <- kam %>% group_by(Bay) %>% summarise(Left = sum(Sidedness == "Left"), Right = sum(Sidedness == "Right"))
+  
+# Добавляем то, что не было измерено в Кандалакшском заливе
+frq_Orient[frq_Orient$Bay == "Kandalaksha Bay", 2:3] <- frq_Orient[frq_Orient$Bay == "Kandalaksha Bay", 2:3] + c(37, 132)
+  
+frq_Orient2 <- frq_Orient %>% mutate(Left_prop = Left/(Left + Right), Right_prop = Right/(Left + Right)) %>% select(Bay, Left_prop, Right_prop) %>% melt()
+  
+frq_Orient2$perc_value <- round(frq_Orient2$value*100,1)
+
+# library(ggpubr)
+# 
+# ggpie(data = frq_Orient2, x = "perc_value", label = "lab", lab.pos = c("out" ), lab.adjust = 0,
+#   lab.font = c(4, "bold", "black"), font.family = "",
+#   color = "black", fill = "white", palette = NULL, size = NULL,
+#   ggtheme = theme_pubr()) +  facet_grid(~Bay)
+# 
+# 
+
+frq_Orient2$lab <- ifelse(frq_Orient2$variable == "Left_prop", paste(frq_Orient2$perc_value), " ")
+
+frq_Orient2$lab <- c("28.3", "26.0",   "5.2",  "3.3",  " ",    " ",    " ",    " "  )
+
+frq_Orient3 <- frq_Orient2 %>% group_by(Bay) %>% mutate(position = cumsum(value) - 0.5*value)
+
+frq_Orient3$position_y <- frq_Orient3$position + c(-0.1, -0.09, 0.05, 0.05, 0,0,0,0)
+
+
+# library(ggrepel)
+Pl_pay_charts <-
+  ggplot(frq_Orient3, aes(x ="", y = value, fill = variable)) + 
+  geom_bar(stat= "identity", width=1, color = "black") + 
+  coord_polar("y", start=0)  + 
+  facet_wrap(~ Bay)+
+  scale_fill_manual(values = c("gray10", "gray80")) +
+  theme(axis.text = element_blank(), panel.grid = element_blank(), panel.border = element_blank(), axis.title = element_blank(), strip.background = element_blank(), strip.text = element_text(size = 15))+ 
+  guides(fill="none") + 
+  geom_text(aes(label = lab, y = position_y), position = position_dodge(width = -1))
+
+ ggsave(plot = Pl_pay_charts, filename = "Pay_charts_with_left_proportion.pdf")
+ 
+ ggsave(plot = Pl_pay_charts, filename = "Pay_charts_with_left_proportion.tiff")  
+
+ ggsave(plot = Pl_pay_charts, filename = "Pay_charts_with_left_proportion.png")  
+  
+Pl_pay_charts
+```
+
+
+
