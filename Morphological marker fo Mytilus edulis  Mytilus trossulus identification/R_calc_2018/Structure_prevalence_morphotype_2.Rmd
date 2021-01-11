@@ -46,10 +46,16 @@ pre { /* Code block - determines code spacing between lines */
 
 
 ```{r}
+library(lme4)
 library(ggplot2)
 library(reshape2)
+library(sjstats)
 library(dplyr)
+library(car)
 library(doBy)
+library(pROC)
+library(betareg)
+library(lmtest)
 library(broom)
 library(mgcv)
 
@@ -93,15 +99,15 @@ myt2_all$Subset[myt2_all$sea == "Norway"] <- "NORW"
 myt2_all$Subset[myt2_all$sea == "Scotland"] <- "SCOT" 
 
 
-myt2_all$Subset <- factor(myt2_all$Subset, levels = c("WSBL", "BH",  "BALT", "GOM", "NORW", "SCOT" ))
-
-# Вводим обозначения для морфотипов
-myt2_all$morph <- ifelse(myt2_all$ind == 1, "T_m", "E_m")
-myt2_all$morph <- factor(myt2_all$morph)
+myt2_all$Subset <- factor(myt2_all$Subset, levels = c("WSBL", "BH", "NORW", "BALT", "SCOT", "GOM" ))
 
 
 
 myt2 <- myt2_all %>% filter(Subset %in% c("WSBL", "BH", "BALT", "GOM" ))
+
+# Вводим обозначения для морфотипов
+myt2$morph <- ifelse(myt2$ind == 1, "T_m", "E_m")
+myt2$morph <- factor(myt2$morph)
 
 
 
@@ -166,85 +172,7 @@ myt2_GOM <- myt2 %>% filter(Subset == "GOM")
 
 
 
-new_data_WSBL <-  myt2 %>% group_by(Subset) %>% do(expand.grid(str = seq(min(.$str), max(.$str), length.out = 20), freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 20))) %>% filter(Subset == "WSBL") 
-
-new_data_WSBL$Predict_gam <- predict(mod_gam, newdata = new_data_WSBL, type = "response" )
-
-Pl_mod_gam_WSBL <-
-  ggplot(new_data_WSBL, aes(x = freq_MT, y = str)) + 
-  geom_raster(aes(fill = Predict_gam)) + 
-  scale_fill_gradient(low = "cornflowerblue", high = "red") +
-  theme_bw() + 
-  labs(x = "", y = "", fill = "") +
-  geom_density_2d(data = myt2_WSBL, color = "white")+
-  theme(panel.grid = element_blank()) + 
-  xlim(0,1)
-
-Pl_mod_gam_WSBL <- Pl_mod_gam_WSBL + geom_point(data = myt2_WSBL,  position = position_jitter(width = 0.01), shape = 21, size = 1) 
-
-
-
-
-new_data_BH <-  myt2 %>% group_by(Subset) %>% do(expand.grid(str = seq(min(.$str), max(.$str), length.out = 20), freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 20))) %>% filter(Subset == "BH") 
-
-new_data_BH$Predict_gam <- predict(mod_gam, newdata = new_data_BH, type = "response" )
-
-Pl_mod_gam_BH <-
-  ggplot(new_data_BH, aes(x = freq_MT, y = str)) + 
-  geom_raster(aes(fill = Predict_gam)) + 
-  scale_fill_gradient(low = "cornflowerblue", high = "red") +
-  theme_bw() + 
-  labs(x = "", y = "", fill = "") +
-  geom_density_2d(data = myt2_BH, color = "white")+
-  theme(panel.grid = element_blank()) + 
-  xlim(0,1)
-
-Pl_mod_gam_BH <- Pl_mod_gam_BH +  geom_point(data = myt2_BH, position = position_jitter(width = 0.01), shape = 21, size = 1) 
-
-
-
-new_data_BALT <-  myt2 %>% group_by(Subset) %>% do(expand.grid(str = seq(min(.$str), max(.$str), length.out = 20), freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 20))) %>% filter(Subset == "BALT") 
-
-new_data_BALT$Predict_gam <- predict(mod_gam, newdata = new_data_BALT, type = "response" )
-
-Pl_mod_gam_BALT <-
-  ggplot(new_data_BALT, aes(x = freq_MT, y = str)) + 
-  geom_raster(aes(fill = Predict_gam)) + 
-  scale_fill_gradient(low = "cornflowerblue", high = "red") +
-  theme_bw() + 
-  labs(x = "", y = "", fill = "") +
-  geom_density_2d(data = myt2_BALT, color = "white")+
-  theme(panel.grid = element_blank()) + 
-  xlim(0,1)
-
-Pl_mod_gam_BALT <- Pl_mod_gam_BALT + geom_point(data = myt2_BALT, position = position_jitter(width = 0.01), shape = 21, size = 1) 
-
-
-
-new_data_GOM <-  myt2 %>% group_by(Subset) %>% do(expand.grid(str = seq(min(.$str), max(.$str), length.out = 20), freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 20))) %>% filter(Subset == "GOM") 
-
-new_data_GOM$Predict_gam <- predict(mod_gam, newdata = new_data_GOM, type = "response" )
-
-Pl_mod_gam_GOM <-
-  ggplot(new_data_GOM, aes(x = freq_MT, y = str)) + 
-  geom_raster(aes(fill = Predict_gam)) + 
-  scale_fill_gradient(low = "cornflowerblue", high = "red") +
-  theme_bw() + 
-  labs(x = "", y = "", fill = "") +
-  geom_density_2d(data = myt2_GOM, color = "white", n = 15)+
-  theme(panel.grid = element_blank()) + 
-  xlim(0,1)
-
-Pl_mod_gam_GOM <- Pl_mod_gam_GOM + geom_point(data = myt2_GOM,  position = position_jitter(width = 0.01), shape = 21, size = 1) 
-
-
-Pl_empty <- ggplot() + theme(panel.border = element_blank()) 
-
-
-
-
-new_data <-  myt2 %>% group_by(Subset) %>% do(expand.grid(str = seq(min(.$str), max(.$str), length.out = 20), freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 20)))
-
+new_data <-  myt2 %>% group_by(Subset) %>% do(expand.grid(str = seq(min(.$str), max(.$str), length.out = 20), freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 20))) 
 
 new_data$Predict_gam <- predict(mod_gam, newdata = new_data, type = "response" )
 
@@ -259,15 +187,8 @@ Pl_mod_gam <-
   geom_density_2d(data = myt2_BH, color = "white")+
   geom_density_2d(data = myt2_BALT, color = "white")+
   geom_density_2d(data = myt2_GOM, color = "white", n = 5) +
-  theme(panel.grid = element_blank())
-# + 
-#   geom_point(data = myt2, aes(fill = ind), position = position_jitter(width = 0.01), shape = 21, size = 1) 
-
-  
-
-library(ggpubr)
-
-Pl_mod_gam_all <- ggarrange(Pl_mod_gam_WSBL, Pl_mod_gam_BH, Pl_mod_gam_BALT, Pl_mod_gam_GOM, ncol = 1)
+  theme(panel.grid = element_blank())+ 
+  geom_point(data = myt2, aes(fill = ind), position = position_jitter(width = 0.01), shape = 21, size = 1) 
 
 
   
@@ -275,21 +196,21 @@ Pl_mod_gam_all <- ggarrange(Pl_mod_gam_WSBL, Pl_mod_gam_BH, Pl_mod_gam_BALT, Pl_
 
 ```{r}
 
-# prop_T <- myt2 %>%  mutate(str_class = ntile(str, 5)) %>% group_by(Subset, str_class) %>% summarise(str_mean = mean(str), Prop_T = mean(ind))
+prop_T <- myt2 %>%  mutate(str_class = ntile(str, 5)) %>% group_by(Subset, str_class) %>% summarise(str_mean = mean(str), Prop_T = mean(ind))
 
 
 
 Pl_hist <- 
-  ggplot(myt2_all, aes(x = str)) + 
+  ggplot(myt2, aes(x = str)) + 
   geom_histogram(binwidth = 0.1, color = "black", aes(fill = morph)) + 
   facet_wrap(~Subset, ncol = 1, scales = "free_y") + 
   scale_fill_manual(values = c("cornflowerblue", "red" )) + 
   theme_bw() +
   theme(panel.grid = element_blank()) + 
   guides(fill = "none") + 
-  labs(x = "Structure score", y = "Count") + 
-  coord_flip()
-  
+  labs(x = "Structure score", y = "Count") 
+# +
+#   geom_point(data = prop_T, aes(x = str_mean, y = Prop_T))
 ```
 
 
@@ -297,7 +218,7 @@ Pl_hist <-
 ```{r  fig.height=9, fig.width=9}
 library(cowplot)
 
-plot_grid(Pl_hist, Pl_mod_gam_all, ncol = 2, labels = c("A", "B"), rel_heights = c(2,1))
+plot_grid(Pl_hist, Pl_mod_gam, ncol = 2, labels = c("a", "b"))
 
 
 
