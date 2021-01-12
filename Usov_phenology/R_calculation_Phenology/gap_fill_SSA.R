@@ -82,6 +82,7 @@ reconst$Type <- "Reconstructed"
 ncol(obs)
 ncol(reconst)
 
+
 names(reconst) <- names(obs)
 
 obs_reconst <- obs
@@ -92,6 +93,46 @@ obs_reconst[is.na(obs)] <- reconst[is.na(obs)]
 write.csv(obs_reconst, "data/env_gap_filled.csv")
 
 
+# Изучаем поведение функци reconst() на симулированных данных
+
+library(dplyr)
+
+N_na <- sum(is.na(obs))
+
+
+
+ggNAadd = function(data, amount, plot=F){
+  temp <- data
+  amount2 <- ifelse(amount<1, round(prod(dim(data))*amount), amount)
+  if (amount2 >= prod(dim(data))) stop("exceeded data size")
+  for (i in 1:amount2) temp[sample.int(nrow(temp), 1), sample.int(ncol(temp), 1)] <- NA
+  if (plot) print(ggNA(temp))
+  return(temp)
+}
+
+
+
+
+
+
+library(reshape2)
+library(dplyr)
+
+df <- obs_reconst %>% select(-c(Type)) 
+
+df <- as.data.frame(sapply(df, as.numeric))
+  
+df2 <- ggNAadd(df, N_na)
+
+sum(is.na(df2))
+
+reconst <- as.data.frame(matrix(rep(NA, ncol(df2)*nrow(df2)), ncol =  ncol(df2)))
+
+for(j in 1:ncol(df2)) reconst[, j] <- gap(df2[, j], L = 5, comp = 1)
+
+diff <- (df) - (reconst)
+
+melt(diff) %>% filter(value !=0) %>% nrow() %>% hist(.$value)
 
 #####################################
 # Лечим датасет с фенологией Calanus
