@@ -93,46 +93,82 @@ obs_reconst[is.na(obs)] <- reconst[is.na(obs)]
 write.csv(obs_reconst, "data/env_gap_filled.csv")
 
 
-# Изучаем поведение функци reconst() на симулированных данных
+# Изучаем поведение функци gapfill() на симулированных данных
 
 library(dplyr)
 
+
+
 N_na <- sum(is.na(obs))
 
+df = obs_reconst %>% select(-Type)  
+
+df <- as.data.frame(sapply(df, as.numeric))
+
+str(df)
 
 
-ggNAadd = function(data, amount, plot=F){
-  temp <- data
-  amount2 <- ifelse(amount<1, round(prod(dim(data))*amount), amount)
-  if (amount2 >= prod(dim(data))) stop("exceeded data size")
-  for (i in 1:amount2) temp[sample.int(nrow(temp), 1), sample.int(ncol(temp), 1)] <- NA
-  if (plot) print(ggNA(temp))
-  return(temp)
+gap <- function(x, L = 5, comp = 1:3) {
+  library(Rssa)
+  s <- ssa(x, L = L)
+  # Fill in gaps using the trend and 2 periodicty components
+  g <- gapfill(s, groups = list(comp))
+  g
+  
 }
 
 
 
-
-
-
-library(reshape2)
-library(dplyr)
-
-df <- obs_reconst %>% select(-c(Type)) 
-
-df <- as.data.frame(sapply(df, as.numeric))
+Na_add <- function(df, N_na){
+  library(reshape2)
+  position = sample(nrow(df)*ncol(df), N_na)
+  df_melt <- melt(df)
+  df_melt$value[position] <- NA
+  df_wide <- dcast(df_melt, formula = 1:61 ~ variable,value.var ="value")
+  df_wide <- df_wide[ ,-1]
+  output <- list(df = df_wide, position = position)
   
-df2 <- ggNAadd(df, N_na)
+}
 
-sum(is.na(df2))
+N_simulation = 1000
 
-reconst <- as.data.frame(matrix(rep(NA, ncol(df2)*nrow(df2)), ncol =  ncol(df2)))
+result <- data.frame(Var = NA, Delta = NA)
 
-for(j in 1:ncol(df2)) reconst[, j] <- gap(df2[, j], L = 5, comp = 1)
+for(i in 1:N_simulation){
+  output <- Na_add(df, N_na)
+  
+  df2 <- output$df
+  position <- output$position
+  
+  reconst <- as.data.frame(matrix(rep(NA, ncol(df2)*nrow(df2)), ncol =  ncol(df2)))
+  
+  for(j in 1:ncol(df2)) {
+    if(sum(is.na(df2[, j])) != 0) 
+      reconst[, j] <- gap(df2[, j], L = 5, comp = 1)
+    else
+      reconst[, j] <- df2[, j]
+  }
+  
+  diff <- data.frame(Var = melt(df2)[position, 1], Delta = melt(df)[position,2] - melt(reconst)[position, 2])
 
-diff <- (df) - (reconst)
+  result <- rbind(result, diff) 
+  
+  print(i)
+  
+}
 
-melt(diff) %>% filter(value !=0) %>% nrow() %>% hist(.$value)
+
+
+result2 <- result %>% group_by(Var) %>% mutate(Scaled_value = scale(Delta)) %>% filter(!is.na(Var))
+
+# доля оутлауров предсказаний
+sum(abs(result2$Scaled_value) > 3) / nrow(result2)  
+
+ggplot(result2 , aes(x = Var, y = Scaled_value)) + geom_boxplot() + geom_hline(yintercept = c(-3, 3), linetype = 2) + geom_hline(yintercept = 0, color = "blue") + theme_bw()+ theme(axis.text.x = element_text(angle = 90)) + labs(x = "Environment parameter", y ="Scaled deviaton from real values")
+
+
+result2 %>% group_by(Var) %>% summarise(Median_Delta = round(median(Delta), 1)) %>% as.data.frame()
+
 
 #####################################
 # Лечим датасет с фенологией Calanus

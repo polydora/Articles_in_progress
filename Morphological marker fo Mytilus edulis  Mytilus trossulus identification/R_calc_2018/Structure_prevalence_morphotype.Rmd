@@ -297,7 +297,7 @@ Pl_hist <-
 ```{r  fig.height=9, fig.width=9}
 library(cowplot)
 
-plot_grid(Pl_hist, Pl_mod_gam_all, ncol = 2, labels = c("A", "B"), rel_heights = c(2,1))
+plot_grid(Pl_hist, Pl_mod_gam, ncol = 2, labels = c("A", "B"), rel_heights = c(2,1))
 
 
 

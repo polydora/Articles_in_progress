@@ -288,3 +288,32 @@ library(ggpubr)
 ggarrange(Pl_ed, Pl_tr, labels = c("A", "B"), ncol = 2, common.legend = T, legend = "bottom" )
 ```
 
+
+
+
+```{r}
+myt2_all %>% group_by(sea, Sp) %>% summarise(Prop_T = mean(ind)*100)
+
+
+PT_sp_like <- myt2_all %>% group_by(Subset, Sp) %>% summarise(Prop_T_Sp_like = mean(ind == 1))
+
+myt2_all$Sp_pure <- case_when(myt2_all$str >= 0.8 ~ "M.trossulus",
+                              myt2_all$str <= 0.2 ~ "M.edulis",
+                              myt2_all$str > 0.2 & myt2_all$str < 0.8 ~ "hybrid")
+
+
+PT_sp_pure <- myt2_all %>% group_by(Subset,  Sp_pure) %>% summarise(Prop_T_Sp_pure = mean(ind == 1)) %>%  filter(Sp_pure != "hybrid")
+
+names(PT_sp_pure)[2] <- "Sp"
+
+
+
+PT_pure_like <- merge(PT_sp_like, PT_sp_pure)
+
+
+PT_pure_edulis_like <- PT_pure_like %>% filter(Sp == "M.edulis")
+PT_pure_trssulus_like <- PT_pure_like %>% filter(Sp == "M.trossulus")
+
+data.frame(Set = PT_pure_edulis_like$Subset,  PT_edu = round(PT_pure_edulis_like$Prop_T_Sp_like, 2), PT_pure_edu = round(PT_pure_edulis_like$Prop_T_Sp_pure, 2), PT_tros = round(PT_pure_trssulus_like$Prop_T_Sp_like, 2), PT_pure_tros = round(PT_pure_trssulus_like$Prop_T_Sp_pure, 2))
+```
+
