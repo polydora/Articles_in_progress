@@ -107,6 +107,16 @@ myt2_all$Subset <- factor(myt2_all$Subset, levels = c("WSBL", "BH", "BALT", "GOM
 
 
 
+# Частота M.trossulus в популяции, вычисленная как срденее значение structure
+
+freq_MT <- summaryBy( str ~ pop, data = myt2_all)
+names(freq_MT) <- c("pop", "freq_MT")
+
+myt2_all <- merge(myt2_all, freq_MT)
+
+
+
+
 myt2 <- myt2_all %>% filter(Subset %in% c("WSBL", "BH", "BALT", "GOM" ))
 
 
@@ -121,12 +131,6 @@ myt2$congr <- ifelse((myt2$ind == 1 & myt2$Sp == "M.trossulus") | (myt2$ind == 0
 
 
 
-# Частота M.trossulus в популяции, вычисленная как срденее значение structure
-
-freq_MT <- summaryBy( str ~ pop, data = myt2)
-names(freq_MT) <- c("pop", "freq_MT")
-
-myt2 <- merge(myt2, freq_MT)
 
 theme_set(theme_bw())
 
@@ -203,7 +207,7 @@ Pl_empty <- ggplot() + theme(panel.border = element_blank())
 
 Pl_hist <- 
   ggplot(myt2, aes(x = str)) + 
-  geom_histogram(binwidth = 0.1, color = "black", aes(fill = morph)) + 
+  geom_histogram(bins = 10, color = "black", aes(fill = morph)) + 
   facet_wrap(~Subset, ncol = 1, scales = "free_x") + 
   scale_fill_manual(values = c("cornflowerblue", "red" )) + 
   theme_bw() +
@@ -218,7 +222,7 @@ myt3 <- myt2_all %>% filter(Subset %in% c("NORW", "SCOT"))
 
 Pl_hist_2 <- 
   ggplot(myt3, aes(x = str)) + 
-  geom_histogram(binwidth = 0.1, color = "black", aes(fill = morph)) + 
+  geom_histogram(bins = 10, color = "black", aes(fill = morph)) + 
   facet_wrap(~Subset, ncol = 1, scales = "free_x") + 
   scale_fill_manual(values = c("cornflowerblue", "red" )) + 
   theme_bw() +
@@ -240,9 +244,22 @@ library(patchwork)
 
 # Pl_hist + (Pl_mod_gam/ Pl_empty)
 
+
+
+Pl_no_gam <- ggplot(myt3, aes(x = freq_MT, y = str)) +
+  facet_wrap(~Subset, ncol = 1) + 
+  scale_fill_gradient(low = "cornflowerblue", high = "red") +
+  theme_bw() + 
+  labs(x = "Prevalence (proportion of M.trossulus)", y = "Structure score", fill = "Probability of\nТ-morphotype \npresence") +
+  geom_density_2d(data = myt3, color = "black") +
+  theme(panel.grid = element_blank()) + 
+  geom_point(aes(fill = ind), position = position_jitter(width = 0.01), shape = 21, size = 1) +
+  xlim(0,1)
+
+
 plot_grid(Pl_hist, Pl_mod_gam, ncol = 2, labels = c("A", "B"), rel_widths = c(0.5, 1), align = "hv")
 
-plot_grid(Pl_hist_2, Pl_empty,Pl_empty, Pl_empty, ncol = 2,  rel_widths = c(0.5, 1))
+plot_grid(Pl_hist_2, Pl_no_gam,Pl_empty, Pl_empty, ncol = 2, rel_widths = c(0.5, 1), align = "hv")
 
 
 ```
