@@ -137,15 +137,52 @@ Pl_revers <-
   guides(size = "none")
 
 
-
-
- ggsave(plot = Pl_revers, filename = "Map_of_reverse_distribution.pdf")
+ggsave(plot = Pl_revers, filename = "Map_of_reverse_distribution.pdf")
  
  ggsave(plot = Pl_revers, filename = "Map_of_reverse_distribution.tiff")  
 
  ggsave(plot = Pl_revers, filename = "Map_of_reverse_distribution.png")  
 
 Pl_revers
+
+ws_points <- read.table("Data/White_sea_points.csv", sep = ",", header = T)
+
+ws_points$lat <- with(ws_points, N + N_m/100)
+ws_points$long <- with(ws_points, E + E_m/100)
+
+
+df_white_sea <- read.table("Data/ggWhite_Sea.csv", sep = ",", header = TRUE)
+
+White_x <- c(min(df_white_sea$long), max(df_white_sea$long))
+White_y <- c(min(df_white_sea$lat), max(df_white_sea$lat))
+
+
+
+
+gg_white <- ggplot(df_white_sea, aes(x=long, y=lat, group=group)) +
+  geom_polygon(fill = "gray95", colour = "gray60") + 
+  coord_map(xlim = White_x, ylim = White_y) + 
+  theme_bw() +  
+  theme(plot.background = element_rect(fill = "white"), panel.grid = element_blank()) +
+  labs(x = "Longitude", y = "Latitude") +
+  geom_point(data = ws_points, aes(group = 1), size = 4) 
+
+
+
+Pl_White_sea <- 
+gg_white + 
+  geom_point(data = ws_points, aes(group = 1), size = 4) + 
+  geom_text(aes(x = 36, y = 66.8, group = 1, label = "Kandalaksha Bay")) + 
+  geom_text(aes(x = 33.5, y = 64.5, group = 1, label = "Onega Bay")) + 
+  geom_text(aes(x = 41.5, y = 65, group = 1, label = "Dvina Bay"))+ 
+  geom_text(aes(x = 42, y = 66.2, group = 1, label = "Mezen Bay")) +
+  geom_text_repel(data = ws_points, aes(label = Site, group = 1), box.padding = 1.2,force = 0.5, size = 3)
+ 
+
+
+
+
+
 
 ```
 
@@ -208,6 +245,9 @@ frq_Orient3 <- frq_Orient2 %>% group_by(Bay) %>% mutate(position = cumsum(value)
 frq_Orient3$position_y <- frq_Orient3$position + c(-0.1, -0.09, 0.05, 0.05, 0,0,0,0)
 
 
+# str(frq_Orient3)
+frq_Orient3$Bay <- factor(frq_Orient3$Bay, levels = c( "Kandalaksha Bay", "Mezen Bay", "Onega Bay", "Dvina Bay"))
+
 # library(ggrepel)
 Pl_pay_charts <-
   ggplot(frq_Orient3, aes(x ="", y = value, fill = variable)) + 
@@ -219,11 +259,24 @@ Pl_pay_charts <-
   guides(fill="none") + 
   geom_text(aes(label = lab, y = position_y), position = position_dodge(width = -1))
 
- ggsave(plot = Pl_pay_charts, filename = "Pay_charts_with_left_proportion.pdf")
- 
- ggsave(plot = Pl_pay_charts, filename = "Pay_charts_with_left_proportion.tiff")  
 
- ggsave(plot = Pl_pay_charts, filename = "Pay_charts_with_left_proportion.png")  
+
+library(cowplot)
+Pl_pay_charts_map <- plot_grid(gg_white, Pl_pay_charts, rel_widths = c(1, 0.8))
+
+
+
+
+
+
+ ggsave(plot = Pl_pay_charts_map, filename = "Pie_charts_with_left_proportion.pdf")
+ 
+ ggsave(plot = Pl_pay_charts_map, filename = "Pie_charts_with_left_proportion.tiff")  
+
+ ggsave(plot = Pl_pay_charts_map, filename = "Pie_charts_with_left_proportion.png")  
+
+
+ ggsave(plot = Pl_pay_charts_map, filename = "Pie_charts_with_left_proportion.eps")
   
 Pl_pay_charts
 ```

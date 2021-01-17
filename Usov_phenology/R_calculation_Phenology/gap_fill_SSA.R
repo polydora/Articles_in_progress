@@ -93,15 +93,37 @@ obs_reconst[is.na(obs)] <- reconst[is.na(obs)]
 write.csv(obs_reconst, "data/env_gap_filled.csv")
 
 
+
+##################################################
 # Изучаем поведение функци gapfill() на симулированных данных
+
+env <- read.csv("data/env_gap_filled_short.csv", header = TRUE)  #Данные по средовым показателям
+
+
+column_name <- c("Year", "TPD", "SpSD", "SuSD", "SuFD", "ICD", "SuSDPY",  "SuDur","SuDurPY", "SuFDPY",     "SpT", "SuT", "SpTPY", "SuTPY", "NAO", "NAOPY", "AOI", "AOIPY"  )
+
+
+names(env) <- column_name 
+
+
+env_obs <- env %>% select(TPD, SpSD, SuSD, SuFD, ICD)
+
+
+
+
 
 library(dplyr)
 
+nrow(env_obs)*ncol(env_obs)
+
+N_na <- sum(env_obs %% 1 !=0)
 
 
-N_na <- sum(is.na(obs))
+N_na/(nrow(env_obs)*ncol(env_obs))
 
-df = obs_reconst %>% select(-Type)  
+df = env_obs  
+
+write.table(df, "clipboard", sep = "\t")
 
 df <- as.data.frame(sapply(df, as.numeric))
 
@@ -124,15 +146,15 @@ Na_add <- function(df, N_na){
   position = sample(nrow(df)*ncol(df), N_na)
   df_melt <- melt(df)
   df_melt$value[position] <- NA
-  df_wide <- dcast(df_melt, formula = 1:61 ~ variable,value.var ="value")
+  df_wide <- dcast(df_melt, formula = 1:nrow(df) ~ variable,value.var ="value")
   df_wide <- df_wide[ ,-1]
   output <- list(df = df_wide, position = position)
   
 }
 
-N_simulation = 1000
+N_simulation = 10000
 
-result <- data.frame(Var = NA, Delta = NA)
+result <- data.frame(Var = NA, Year = NA, Delta = NA)
 
 for(i in 1:N_simulation){
   output <- Na_add(df, N_na)
@@ -149,7 +171,7 @@ for(i in 1:N_simulation){
       reconst[, j] <- df2[, j]
   }
   
-  diff <- data.frame(Var = melt(df2)[position, 1], Delta = melt(df)[position,2] - melt(reconst)[position, 2])
+  diff <- data.frame(Var = melt(df2)[position, 1], Year = rep(env$Year, nrow(df2)*ncol(df2))[position],  Delta = melt(df)[position,2] - melt(reconst)[position, 2])
 
   result <- rbind(result, diff) 
   
@@ -164,10 +186,15 @@ result2 <- result %>% group_by(Var) %>% mutate(Scaled_value = scale(Delta)) %>% 
 # доля оутлауров предсказаний
 sum(abs(result2$Scaled_value) > 3) / nrow(result2)  
 
-ggplot(result2 , aes(x = Var, y = Scaled_value)) + geom_boxplot() + geom_hline(yintercept = c(-3, 3), linetype = 2) + geom_hline(yintercept = 0, color = "blue") + theme_bw()+ theme(axis.text.x = element_text(angle = 90)) + labs(x = "Environment parameter", y ="Scaled deviaton from real values")
+ggplot(result2 , aes(x = Var, y = Delta)) + geom_boxplot()  + geom_hline(yintercept = 0, color = "blue") + theme_bw()+ theme(axis.text.x = element_text(angle = 90)) + labs(x = "Environmental phenological event", y ="Deviaton reconstructed from observed values")
+
+result2$Var <- factor(result2$Var)
+
+result2 %>% filter(Var == "SuFD") %>% summarise(Med_Delta = median(Delta))
+
+ggplot(result2 , aes(x = Year, y = Delta)) + geom_point(size = 0.1)  + facet_wrap(~Var) + geom_hline(yintercept = 0, color = "blue") + geom_smooth(method = "lm") + theme_bw()+ theme(axis.text.x = element_text(angle = 90)) + labs(x = "Year", y ="Deviaton reconstructed from observed values")
 
 
-result2 %>% group_by(Var) %>% summarise(Median_Delta = round(median(Delta), 1)) %>% as.data.frame()
 
 
 #####################################

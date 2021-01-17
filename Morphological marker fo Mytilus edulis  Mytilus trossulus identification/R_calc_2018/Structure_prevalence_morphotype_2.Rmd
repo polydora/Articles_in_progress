@@ -163,7 +163,16 @@ $$
 ```{r echo = FALSE}
 mod_gam <- gam(ind ~ s(str, freq_MT, by = Subset, bs = "tp", k = 10) + Subset, data = myt2, family = "binomial")
 
-# summary(mod_gam)
+# 
+library(broom)
+
+mod_gam_res <- tidy(mod_gam, parametric = F)
+
+mod_gam_res[, 2:4] <- round(mod_gam_res[, 2:4], 1)
+mod_gam_res[, 5] <- round(mod_gam_res[, 5], 4)
+
+write.table(mod_gam_res, "clipboard", sep = "\t", dec = ",")
+
 ```
 
 

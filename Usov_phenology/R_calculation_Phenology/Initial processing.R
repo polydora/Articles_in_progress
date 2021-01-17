@@ -300,6 +300,7 @@ tricon <- tricon[!is.na(tricon$Year), ]
 
 
 
+
 ## Строим накопленную сумму для каждого вида 
 library (plyr)
 
@@ -582,6 +583,7 @@ plot_cum <- function(df =df_count_Total_calanus,  year = 1961){
       geom_segment(aes(x= Time_perc_85, xend = Time_perc_85, yend = 0, y = predict(fit, newdata = data.frame(Time = perc_85))[1]), arrow = arrow(type = "closed", angle = 10, length = unit(0.1, "inches")), color = "gray10")
   }
   
+  Pl <- Pl + scale_x_datetime(date_labels = "%m-%d")
   Pl
 }
 
@@ -595,26 +597,72 @@ plot_cum <- function(df =df_count_Total_calanus,  year = 1961){
 # plot_cum(year = year, df = df_count_Total_calanus) + geom_hline(yintercept = mean(cum)) + geom_hline(yintercept = max(cum)/2, color = "blue") + geom_line(aes())
 
 
+
+###### +++++ Пример динамики численности для электронного приложения +++++++
+
+library(dplyr)
+acart_example <- acart %>% filter(Year == 1964) 
+acart_example$Date3 <- as.POSIXct(acart_example$Date2)
+acart_example_Peak <- acart_example %>% filter(Abundance == max(Abundance)) %>% select(Abundance, Date3)
+
+Pl_acart_example <-
+  ggplot(acart_example, aes(x = Date3, y = Abundance)) + 
+  geom_line(size = 1) +
+  theme_bw() +
+  scale_x_datetime(date_labels = "%m-%d") +
+  labs(x = "Date", y = "Abundance") +
+  geom_segment(data = acart_example_Peak, aes(x = Date3, xend = Date3, y = Abundance, yend = 0), arrow = arrow(type = "closed", angle = 10, length = unit(0.1, "inches")), linetype = 2)+ 
+  theme(panel.grid = element_blank())
+
+
+###### +++++ Пример кумуляты для электронного приложения +++++++
+
+cum_example <- df_count_Total_acart %>% filter(Year == 1964)
+
+Pl_acart_accum_example <- 
+ggplot(cum_example, aes(x = Time2, y = N_accum) )  + 
+  geom_line(color = "gray") +  geom_point(size = 2, shape = 21, fill = "gray")+
+  scale_x_datetime(date_labels = "%m-%d")+
+  labs(x = "Date", y = "Accumulated abundance") + 
+  theme_bw()+ 
+  theme(panel.grid = element_blank())
+
+
+Pl_acart_logist_example <- 
+  plot_cum(year = 1964, df = df_count_Total_acart) + 
+  geom_line(color = "gray") + 
+  theme_bw() + 
+  labs(x = "Date", y = "Accumulated abundance" ) + 
+  theme(panel.grid = element_blank())
+
+
+
+
+library(cowplot)
+
+plot_grid(Pl_acart_example, Pl_acart_accum_example, Pl_acart_logist_example, nrow = 1, labels = c("A", "B", "C"))
+
+
 ## Выбираем логистические регрессии с максимальной, среденей и минимальной Residual Standard Error
 
-log_param_all_species %>% group_by(Species) %>%  filter(round(RSE) == round(max(RSE, na.rm = T))) %>% summarise(Species = Species, Year_max_RSE = Year)
+log_param_all_species %>% group_by(Species) %>%  filter(round(RSE) == round(max(RSE, na.rm = T))) %>% summarise(Species = Species, Year_max_RSE = Year, RSE = round(RSE,1)) 
 
 
-(Pl_max_RSE_Calanus <- plot_cum(year = 2017, df = df_count_Total_calanus) + geom_line(color = "gray") + theme_bw() + ggtitle("Calanus, 2017") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))  
+(Pl_max_RSE_Calanus <- plot_cum(year = 2017, df = df_count_Total_calanus) + geom_line(color = "gray") + theme_bw() + ggtitle("Calanus, 2017, RSE = 195.2") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank())) + theme(title = element_text(size = 3))  
 
 
-(Pl_max_RSE_Centropages <- plot_cum(year = 1978, df = df_count_Total_centrop) + geom_line(color = "gray") + theme_bw() + ggtitle("Centropages, 1978") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))  
+(Pl_max_RSE_Centropages <- plot_cum(year = 1978, df = df_count_Total_centrop) + geom_line(color = "gray") + theme_bw() + ggtitle("Centropages, 1978, RSE = 191.5") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))   + theme(title = element_text(size = 3))  
 
 
-(Pl_max_RSE_Temora <- plot_cum(year = 2012, df = df_count_Total_temor) + geom_line(color = "gray") + theme_bw() + ggtitle("Temora, 2012") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))  
+(Pl_max_RSE_Temora <- plot_cum(year = 2012, df = df_count_Total_temor) + geom_line(color = "gray") + theme_bw() + ggtitle("Temora, 2012, RSE = 487.3") + labs(x = "Date", y = "Abundance") + theme(panel.grid = element_blank()))   + theme(title = element_text(size = 3))  
 
-(Pl_max_RSE_Oithona <- plot_cum(year = 1989, df = df_count_Total_oit) + geom_line(color = "gray") + theme_bw() + ggtitle("Oithona, 1989") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))  
+(Pl_max_RSE_Oithona <- plot_cum(year = 1989, df = df_count_Total_oit) + geom_line(color = "gray") + theme_bw() + ggtitle("Oithona, 1989, RSE =3120.2") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))   + theme(title = element_text(size = 3))  
 
-(Pl_max_RSE_Pseudocalanus <- plot_cum(year = 1997, df = df_count_Total_pseudocal) + geom_line(color = "gray") + theme_bw() + ggtitle("Pseudocalanus, 1997") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))  
+(Pl_max_RSE_Pseudocalanus <- plot_cum(year = 1997, df = df_count_Total_pseudocal) + geom_line(color = "gray") + theme_bw() + ggtitle("Pseudocalanus, 1997, RSE = 719.3") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))   + theme(title = element_text(size = 3))  
 
-(Pl_max_RSE_Acartia <- plot_cum(year = 2017, df = df_count_Total_acart) + geom_line(color = "gray") + theme_bw() + ggtitle("Acartia, 2017") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))  
+(Pl_max_RSE_Acartia <- plot_cum(year = 2017, df = df_count_Total_acart) + geom_line(color = "gray") + theme_bw() + ggtitle("Acartia, 2017, RSE = 414.9") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))   + theme(title = element_text(size = 3))  
 
-(Pl_max_RSE_Microsetella <- plot_cum(year = 2014, df = df_count_Total_microset) + geom_line(color = "gray") + theme_bw() + ggtitle("Microsetella, 2014") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))  
+(Pl_max_RSE_Microsetella <- plot_cum(year = 2014, df = df_count_Total_microset) + geom_line(color = "gray") + theme_bw() + ggtitle("Microsetella, 2014, RSE = 775.6") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))  + theme(title = element_text(size = 3))   
 
 
 
@@ -628,31 +676,31 @@ Pl_logistic_worst <- plot_grid(Pl_max_RSE_Pseudocalanus,
                                Pl_max_RSE_Centropages,
                                Pl_max_RSE_Acartia,
                                Pl_max_RSE_Temora,
-                               ncol = 3, align = "v")
+                               ncol = 3, align = "v" )
 
 
 
 
 
-log_param_all_species %>% group_by(Species) %>%  filter(round(RSE) == round(min(RSE, na.rm = T))) %>% summarise(Species = Species, Year_min_RSE = Year)
+log_param_all_species %>% group_by(Species) %>%  filter(round(RSE) == round(min(RSE, na.rm = T))) %>% summarise(Species = Species, Year_min_RSE = Year, RSE = round(RSE,1))
 
 
 
-(Pl_min_RSE_Calanus <- plot_cum(year = 1999, df = df_count_Total_calanus) + geom_line(color = "gray") + theme_bw() + ggtitle("Calanus, 1999") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))  
+(Pl_min_RSE_Calanus <- plot_cum(year = 1999, df = df_count_Total_calanus) + geom_line(color = "gray") + theme_bw() + ggtitle("Calanus, 1999, RSE = 0.5") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))   + theme(title = element_text(size = 3))
 
 
-(Pl_min_RSE_Centropages <- plot_cum(year = 1982, df = df_count_Total_centrop) + geom_line(color = "gray") + theme_bw() + ggtitle("Centropages, 1982") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))  
+(Pl_min_RSE_Centropages <- plot_cum(year = 1982, df = df_count_Total_centrop) + geom_line(color = "gray") + theme_bw() + ggtitle("Centropages, 1982, RSE = 1.3") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))   + theme(title = element_text(size = 3))
 
 
-(Pl_min_RSE_Temora <- plot_cum(year = 2010, df = df_count_Total_temor) + geom_line(color = "gray") + theme_bw() + ggtitle("Temora, 2010") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))  
+(Pl_min_RSE_Temora <- plot_cum(year = 2010, df = df_count_Total_temor) + geom_line(color = "gray") + theme_bw() + ggtitle("Temora, 2010, RSE = 16.3") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))   + theme(title = element_text(size = 3))
 
-(Pl_min_RSE_Oithona <- plot_cum(year = 1991, df = df_count_Total_oit) + geom_line(color = "gray") + theme_bw() + ggtitle("Oithona, 1991") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))  
+(Pl_min_RSE_Oithona <- plot_cum(year = 1991, df = df_count_Total_oit) + geom_line(color = "gray") + theme_bw() + ggtitle("Oithona, 1991, RSE = 215.4") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))  + theme(title = element_text(size = 3)) 
 
-(Pl_min_RSE_Pseudocalanus <- plot_cum(year = 2015, df = df_count_Total_pseudocal) + geom_line(color = "gray") + theme_bw() + ggtitle("Pseudocalanus, 2015") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))  
+(Pl_min_RSE_Pseudocalanus <- plot_cum(year = 2015, df = df_count_Total_pseudocal) + geom_line(color = "gray") + theme_bw() + ggtitle("Pseudocalanus, 2015, RSE = 24.1") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))   + theme(title = element_text(size = 3))
 
-(Pl_min_RSE_Acartia <- plot_cum(year = 2005, df = df_count_Total_acart) + geom_line(color = "gray") + theme_bw() + ggtitle("Acartia, 2005") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))  
+(Pl_min_RSE_Acartia <- plot_cum(year = 2005, df = df_count_Total_acart) + geom_line(color = "gray") + theme_bw() + ggtitle("Acartia, 2005, RSE = 1.0") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))   + theme(title = element_text(size = 3))
 
-(Pl_min_RSE_Microsetella <- plot_cum(year = 1969, df = df_count_Total_microset) + geom_line(color = "gray") + theme_bw() + ggtitle("Microsetella, 1969") + labs(x = "Date", y = "Abundance" ) + theme(panel.grid = element_blank()))  
+(Pl_min_RSE_Microsetella <- plot_cum(year = 1969, df = df_count_Total_microset) + geom_line(color = "gray") + theme_bw() + ggtitle("Microsetella, 1969, RSE = 11.6") + labs(x = "Date", y = "Accumulated abundance" ) + theme(panel.grid = element_blank()))  + theme(title = element_text(size = 3)) 
 
 
 
@@ -695,8 +743,17 @@ log_param_all_species %>% filter(RSE == max(RSE, na.rm = T))
 
 
 
-# Распределение разниц в днях между Days_perc_50 и Peak_Days_from_year_start 
-Plot_diff <- ggplot(log_param_all_species, aes(x = Species, y = Peak_Dif)) + geom_boxplot() + geom_hline(yintercept = 0) + theme_bw() + labs(y = "Difference Middle and Peak") + theme(axis.text.x = element_text(angle = 90))
+# Распределение разниц в днях между Days_perc_50 и Peak_Days_from_year_start
+
+
+
+Plot_diff <- ggplot(log_param_all_species %>% filter(Species != "Triconia"), 
+                    aes(x = Species, y = Peak_Dif)) + 
+  geom_boxplot() + 
+  geom_hline(yintercept = 0) + 
+  theme_bw() + 
+  labs(y = "Difference between \nMiddle-of-season and Peak") + 
+  theme(axis.text.x = element_text(angle = 90), panel.grid = element_blank())
 
 
 
