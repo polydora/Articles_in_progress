@@ -105,6 +105,7 @@ column_name <- c("Year", "TPD", "SpSD", "SuSD", "SuFD", "ICD", "SuSDPY",  "SuDur
 
 names(env) <- column_name 
 
+library(dplyr)
 
 env_obs <- env %>% select(TPD, SpSD, SuSD, SuFD, ICD)
 
@@ -112,7 +113,6 @@ env_obs <- env %>% select(TPD, SpSD, SuSD, SuFD, ICD)
 
 
 
-library(dplyr)
 
 nrow(env_obs)*ncol(env_obs)
 
