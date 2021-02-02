@@ -14,7 +14,7 @@
    viewBox="0 0 210 297"
    version="1.1"
    id="svg8"
-   inkscape:version="0.92.2 (5c3e80d, 2017-08-06)"
+   inkscape:version="0.92.1 r15371"
    sodipodi:docname="Fig_3.svg">
   <defs
      id="defs2">
@@ -766,27 +766,22 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.7"
-     inkscape:cx="167.35093"
-     inkscape:cy="624.97071"
+     inkscape:cx="214.94875"
+     inkscape:cy="742.66198"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="false"
      showguides="true"
      inkscape:guide-bbox="true"
      inkscape:window-width="1920"
-     inkscape:window-height="1000"
-     inkscape:window-x="-11"
-     inkscape:window-y="-11"
+     inkscape:window-height="1013"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
      inkscape:window-maximized="1">
     <sodipodi:guide
        position="112.2532,266.20045"
        orientation="0,1"
        id="guide2350"
-       inkscape:locked="false" />
-    <sodipodi:guide
-       position="126.66927,202.87873"
-       orientation="0,1"
-       id="guide2352"
        inkscape:locked="false" />
     <sodipodi:guide
        position="120.38541,252.67709"
@@ -797,6 +792,36 @@
        position="-41.694045,85.526251"
        orientation="0,1"
        id="guide2343"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="-88.446429,351.13988"
+       orientation="0,1"
+       id="guide1471"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="-80.886905,317.87798"
+       orientation="0,1"
+       id="guide1473"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="-95.627976,330.72917"
+       orientation="0,1"
+       id="guide1475"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="101.73426,153.54634"
+       orientation="1,0"
+       id="guide1541"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="101.73426,148.35566"
+       orientation="1,0"
+       id="guide1543"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="99.785712,165.84075"
+       orientation="1,0"
+       id="guide1545"
        inkscape:locked="false" />
   </sodipodi:namedview>
   <metadata
@@ -3094,5 +3119,85 @@
          id="rect2345"
          style="opacity:0.01000001;fill:#e3dbdb;fill-opacity:1;stroke:#00f500;stroke-width:0.28837499;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
     </g>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.26499999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:0.795, 0.265;stroke-dashoffset:0;stroke-opacity:1"
+       d="M 101.73426,143.45366 H 248.47563"
+       id="path662"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.26499999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:0.79500001, 0.265;stroke-dashoffset:0;stroke-opacity:1"
+       d="M 101.76173,134.76739 H 248.5031"
+       id="path662-2"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.26499999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:0.79500002, 0.265;stroke-dashoffset:0;stroke-opacity:1"
+       d="M 101.7263,131.15925 H 248.46767"
+       id="path662-2-2"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.26499999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:0.79500002, 0.265;stroke-dashoffset:0;stroke-opacity:1"
+       d="M 101.74992,112.04948 H 248.49129"
+       id="path662-2-5"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.26499999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:0.79500002, 0.265;stroke-dashoffset:0;stroke-opacity:1"
+       d="M 101.86363,85.322531 H 248.60501"
+       id="path662-2-6"
+       inkscape:connector-curvature="0" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:3.52777767px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="92.168877"
+       y="135.76393"
+       id="text1521"><tspan
+         sodipodi:role="line"
+         id="tspan1519"
+         x="92.168877"
+         y="135.76393"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.82222223px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;writing-mode:lr-tb;text-anchor:start;stroke-width:0.26458332">SpSD</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:3.52777767px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="92.134544"
+       y="132.05984"
+       id="text1521-6"><tspan
+         sodipodi:role="line"
+         id="tspan1519-2"
+         x="92.134544"
+         y="132.05984"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.82222223px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;writing-mode:lr-tb;text-anchor:start;stroke-width:0.26458332">SuSD</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:3.52777767px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="94.037842"
+       y="113.19534"
+       id="text1521-6-5"><tspan
+         sodipodi:role="line"
+         id="tspan1519-2-3"
+         x="94.037842"
+         y="113.19534"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.82222223px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;writing-mode:lr-tb;text-anchor:start;stroke-width:0.26458332">TPD</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:3.52777767px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="92.492851"
+       y="86.455795"
+       id="text1521-6-7"><tspan
+         sodipodi:role="line"
+         id="tspan1519-2-2"
+         x="92.492851"
+         y="86.455795"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.82222223px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;writing-mode:lr-tb;text-anchor:start;stroke-width:0.26458332">SuFD</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:3.52777767px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="94.583199"
+       y="144.36783"
+       id="text1521-6-56"><tspan
+         sodipodi:role="line"
+         id="tspan1519-2-9"
+         x="94.583199"
+         y="144.36783"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.82222223px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;writing-mode:lr-tb;text-anchor:start;stroke-width:0.26458332">ICD</tspan></text>
   </g>
 </svg>

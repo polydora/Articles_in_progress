@@ -1412,15 +1412,15 @@ new_data_ptros_1_model_8$CI <- logit_back(1.96 *new_data_ptros_1_model_8$SE_eta)
 
 
 
-grid.arrange(Pl_mod1_with_initial_data_no_test ,
+Pl_WSBLBH <- grid.arrange(Pl_mod1_with_initial_data_no_test ,
              Pl_mod2_with_initial_data_no_test + theme(strip.text = element_blank()),
              Pl_mod4_with_initial_data_no_test + theme(strip.text = element_blank()) ,
              ncol = 1)
 
-
+ggsave("Pl_WSBLBH.tiff", Pl_WSBLBH, dpi = 600)
 ```
 
-Figure 2. 
+Figure 3. 
 
 
 
@@ -2048,13 +2048,17 @@ Pl_mod7_with_initial_data_teor_calc1 <- Pl_mod7_with_initial_data  +
 <br>
 
 ```{r, fig.height=9}
-Pl <- grid.arrange(Pl_mod7_with_initial_data_teor_calc1, Pl_mod8_with_initial_data,  Pl_mod6_with_initial_data_teor_calc2, ncol =3) 
+library(cowplot)
+Pl <- plot_grid(Pl_mod7_with_initial_data_teor_calc1 + theme(axis.text.y = element_text(size = 6)),
+                Pl_mod8_with_initial_data+ theme(axis.text.y = element_text(size = 6)),  
+                Pl_mod6_with_initial_data_teor_calc2+ theme(axis.text.y = element_text(size = 6)), 
+                ncol =3, labels = c("A", "B", "C" )) 
 
-ggsave("plot.tiff", plot = Pl )
+ggsave("Plot_all_contact_zones.tiff", plot = Pl, dpi = 600 )
 ```
 
 
-Figure 3.
+Figure 4.
 
 
 
@@ -2230,7 +2234,7 @@ Pl_teor_empir_Mod_6_add <- Pl_teor_empir_Mod_6 + geom_hline(yintercept = Goodnes
 
 Pl <- grid.arrange( Pl_teor_empir_Mod_7_add, Pl_teor_empir_Mod_6_add, ncol = 2)
 
-ggsave("plot2.tiff", plot = Pl)
+ggsave("plot2.tiff", plot = Pl, dpi = 600)
 ```
 
 Figure 4.
@@ -2334,15 +2338,20 @@ fmt_dcimals <- function(decimals=0){
 Pl_hist_1 <-
   ggplot(myt2_all, aes(x = str)) + 
   geom_histogram(bins = 10, color = "black", aes(y = ..count.., fill = morph)) + 
-  facet_wrap(~Subset, ncol = 2, scales = "free_y") + 
+  facet_wrap(~Subset, ncol = 2, scales = "free_y", strip.position="right") + 
   scale_fill_manual(values = c("cornflowerblue", "red" )) + 
   theme_bw() +
   theme(panel.grid = element_blank()) + 
   labs(x = "Structure score", y = "Number of mussels", fill = "") +
   scale_y_continuous(labels = fmt_dcimals(3)) +
-  theme(legend.position =  c(0.8, 0.1), legend.key.size = unit(2,"line"))
+  theme(legend.position =  c(0.8, 0.1), legend.key.size = unit(1,"line"))
+
 
 Pl_hist_1
+
+ggsave("Pl_hist_1.tiff", Pl_hist_1, width = 4,dpi = 400)
+
+
 
 ```
 
