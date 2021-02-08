@@ -1,105 +1,437 @@
 ---
-title: "Сообщества гидробионтов Обской губы"
-author: "Вадим Хайтов"
-date: "30 01 2021"
+title: "Факторы среды и сообщества планктона Обской губы"
+author: ""
+date: ""
 output: html_document
 ---
 
+
+
+
+
+
 ```{r setup, include=FALSE}
 library(knitr)
-opts_chunk$set(echo = FALSE)
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+
 ```
 
-В настоящий аналииз основан на том материале, который есть (использованы данные со станций О1-О45). 
 
-Остро не хватает 
+<style type="text/css">
 
-1. Географических координат станций.   
-2. Цифровых данных по солености (видимо, взятых из модели, результаты которой пока есть только в виде картинок).   
-3. Любых других данных по абиотическим параметрам, привязанным к станциям. 
-
+body{ /* Normal  */
+      font-size: 18px;
+  }
+td {  /* Table  */
+  font-size: 14px;
+}
+h1.title {
+  font-size: 38px;
+  color: DarkRed;
+}
+h1 { /* Header 1 */
+  font-size: 28px;
+  color: DarkBlue;
+}
+h2 { /* Header 2 */
+    font-size: 22px;
+  color: DarkBlue;
+}
+h3 { /* Header 3 */
+  font-size: 18px;
+  font-family: "Times New Roman", Times, serif;
+  color: DarkBlue;
+}
+code.r{ /* Code block */
+    font-size: 12px;
+}
+pre { /* Code block - determines code spacing between lines */
+    font-size: 14px;
+}
+</style>
 
 
 
 
 ```{r}
+# Packages ######################
+library(ggmap)
+library(mapproj)
+library(maps)
+
+library(rgeos) 
+
+library(mapdata)
+library(maptools) # Rgshhs
+library(PBSmapping)
+
 library(readxl)
-library(vegan)
 library(dplyr)
+library(cowplot)
+library(mgcv)
+library(reshape2)
+
+library(png)
+
+library(vegan)
+
+theme_set(theme_bw())
+```
+
+
+
+```{r}
+
+# Data reading ####################
+
+Ob_df <- read.csv("Data/Obskaya_bay_map.csv") # Map poligones
+
+# All Station position
+stations <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Station parameters", na = "NA")
+
+# Stations with biological samples
+stat_full <- stations %>% filter(Exclude == 0)
+
+stat_full <- as.data.frame(stat_full)
+
+# Data on organic matter from the file "Содержание органического вещества в ДО.docx"
+
+org <- read.csv("Data/Organic matter_2020.csv")
+
+org <- org[org$Station %in% stat_full$Station, ]
+
+# Data on Granulmetric from the file "Грансостав ДО.docx"
+
+granul <- read_excel("Data/Granulometry_2020.xlsx",  na = "NA")
+
+
+granul$Small <- with(granul, F_0.002 + `F_0.01-0.002` + `F_0.05-0.01`)              
+
+granul$Big <- rowSums(granul[ ,8:15]  )
+
+
+granul$Season <- factor(granul$Season)
+
+
+# Chlorophyll a 
+
+chlor <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Chlorophyll august 2020", na = "NA")
+
+
+# Biogenes
+
+biogen <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Biogenes_August", na = "NA")
+
+biogen_full <- biogen %>% filter(Exclude == 0) %>% select(-Exclude)
+
+biogen_full_melt <- melt(biogen_full, id.vars = c("Station", "Layer"))
+
+biogen_full_2 <- dcast(biogen_full_melt, Station ~ Layer + variable )
+
+
+
+# Zooplancton
+
+zoopl_long <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Zooplancton_long", na = "NA")
+
+zoopl <- dcast(zoopl_long %>%select(-B), Station ~ Taxa) 
+
+zoopl[is.na(zoopl)] <- 0
+
+zoopl$Station_ID <- as.numeric(gsub("O","", zoopl$Station))
+
+zoopl <- zoopl[order(zoopl$Station_ID), ] %>% select(-Station_ID)
+
+
+```
+
+
+
+```{r}
+
+# Функция, задающая нумерацию рисунков
+
+figRef <- local({
+    tag <- numeric()
+    created <- logical()
+    used <- logical()
+    function(label, caption, prefix = options("figcap.prefix"), 
+        sep = options("figcap.sep"), prefix.highlight = options("figcap.prefix.highlight")) {
+        i <- which(names(tag) == label)
+        if (length(i) == 0) {
+            i <- length(tag) + 1
+            tag <<- c(tag, i)
+            names(tag)[length(tag)] <<- label
+            used <<- c(used, FALSE)
+            names(used)[length(used)] <<- label
+            created <<- c(created, FALSE)
+            names(created)[length(created)] <<- label
+        }
+        if (!missing(caption)) {
+            created[label] <<- TRUE
+            paste0(prefix.highlight, prefix, " ", i, sep, prefix.highlight, 
+                " ", caption)
+        } else {
+            used[label] <<- TRUE
+            paste(prefix, tag[label])
+        }
+    }
+})
+
+options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**")
+
+
+```
+
+
+# Факторы среды
+
+В данной версии анализа использованы материалы сборов августа 2020 г.
+
+## Обозначения переменных
+
+Принятые в анализе обозначения переменных среды приведены в таблице 1. 
+
+```{r}
+vars <- read_excel("Data/Variables.xlsx")
+kable(vars,caption = "Таблица 1. Обозначения переменных", col.names = c("**Переменная**", "**Содержание**"))
+```
+
+
+## Подготовка данных
+
+
+```{r}
+# Подготовка таблицы предикторов ####################################
+predictors <- stat_full %>% select(Station, Lat, Long,  Depth_aug_20, Transparency_aug_20, Surface_Salinity_Aug_20, Bottom_Salinity_Aug_20, Surface_Turbidity_Aug_20, Bottom_Turbidity_Aug_20, Surface_Susp_Aug_20, Interm_Susp_Aug_20, Bottom_Susp_Aug_20)
+
+
+chlor_surface <- chlor %>% filter(Layer == "Surface") %>% select(Station, Chla) %>% rename(Chla_surface = Chla)
+
+
+chlor_intermed <- chlor %>% filter(Layer == "Intermediate") %>% select(Station, Chla) %>% rename(Chla_intermed = Chla)
+
+chlor_bottom <- chlor %>% filter(Layer == "Bottom") %>% select(Station, Chla) %>% rename(Chla_bottom = Chla)
+
+
+
+predictors2 <- merge(predictors, chlor_surface, all.x = T)
+
+predictors3 <- merge(predictors2, chlor_intermed, all.x = T)
+
+predictors4 <- merge(predictors3, chlor_bottom, all.x = T)
+
+
+predictors5 <- merge(predictors4, org %>% select(Station, Org_Aug_20), all.x = T)
+
+
+predictors6 <- merge(predictors5, granul %>% filter(Season == "August") %>% select(Station, Small, Big) %>% rename(Fine_particles = Small, Coarce_particles = Big), all.x =T)
+
+
+predictors7 <- merge(predictors6, biogen_full_2, all.x = T)
+
+
+# # All variables from intermediate layer will be excluded from analysis 
+# 
+# predictors8 <- predictors7 %>% select(-c(Interm_Susp_Aug_20, Chla_intermed, Intermediate_Color, Intermediate_O2, Intermediate_pH,  Intermediate_Amon_N, Intermediate_Nitrit_N, Intermediate_Nitrat_N, Intermediate_Total_N, Intermediate_Mineral_P, Intermediate_Toal_P, Intermediate_Si, Intermediate_Organic_N, Intermediate_Organic_P))
+
+predictors8 <- predictors7
+
+# Variable names cleaning
+
+var_names <- names(predictors8)
+
+var_names <- gsub("Bottom", "Bot", var_names)
+
+var_names <- gsub("Surface", "Surf", var_names)
+
+var_names <- gsub("Intermediate", "Int", var_names)
+
+var_names <- gsub("_aug_20", "", var_names)
+
+var_names <- gsub("_Aug_20", "", var_names)
+
+
+names(predictors8) <- var_names
+
+complete_stations <- nrow(predictors8[complete.cases(predictors8),])
+
+NA_present <- predictors8 %>% summarise_all(funs(sum(is.na(.)))) %>% t() %>% as.data.frame()%>% mutate(Param = row.names(.))
+
+library(imputeTS)
+predictors9 <- na_mean(predictors8)
+
+predictors9$Station_ID <- as.numeric(gsub("O","", predictors9$Station))
+
+predictors10 <- predictors9[order(predictors9$Station_ID), ] %>% select(-Station_ID)
+
+
+```
+
+
+В нескольких переменных были отмечены неизмеренные значения (Табл.2). Поскольку дальнейший анализ чувствителен к пропущенным значениям, пропуски были заполнены средними значениями.
+
+**NB!** Возможны более тонкие способы заполнения пропусков (предсказания на основе регрессионных моделей или Singular Spectral Analysis). Однако для их использования необходимо обсудить целесообразность применения этих методов.  Еще одно возможное решение - это удаление из анализа материала станций, в которых были отмечены пропуски. В этом случае придется удалить `r nrow(predictors10) - complete_stations` станций.  
+
+```{r}
+kable(data.frame(Var = NA_present$Param, na.count = NA_present$V1) %>% filter(na.count >0),
+      caption = "Таблица 2. Количество пропущенных значений для разных переменных",
+      col.names = c("Переменная", "Количество станций, на которых отсутствуют измерения")) 
+```
+
+
+```{r}
+maps <- list.files("d:/Text/Article/Articles_in_progress/Obskaya bay/Исходные материалы/Карты распределения параметров/")
+```
+
+Ниже приводятся карты, отражающие пространственное распределение параметров, которые дополняют карты, приведенные в следующих файлах: `r maps` 
+
+
+![`r figRef("depth", "Глубина в районе проведения работ.")`](figures/depth.png)
+ 
+
+![`r figRef("sal", "Соленость в районе проведения работ.")`](figures/salinity.png)
+
+## Гранулометрический состав грунта
+
+Для более компактного описания гранулометрического состава донного осадка был проведен анализ главных компонент. Анализ был основан на матрице долей `r ncol(granul)-4`фракций грунта, выделенных на основе размера частиц. Результаты анализа отражает `r figRef("granul_pca")`.
+
+
+```{r}
+granul_pca <- rda(granul %>% filter(Season == "August") %>% select(-c(Station, Long, Lat, Season), -c(Big, Small)))
+
+importance_PC1 <- summary(granul_pca)$cont$importance[3,1]
+
+```
+
+Первая главная компонента описывает значительную часть варьирования исходных переменных (`r round(importance_PC1 *100, 1)`% суммарной дисперсии). Наиболее высокие положительные значения нагрузок по PC1 приходятся на самые мелкие фракции грунта (диаметр частиц менее 0.05 мм), а наибольшие отрицательные нагрузки по этой компоненте имеют фракции более крупные фракции. В связи с этим можно разделить все фракции грунта на две группы: *мелкие фракции* (диаметр частиц меньше 0.05 мм) и *крупные фракции* (размер частиц более 0.05 мм). Пространственное распределение двух обобщенных фракций демонстрируют карты, приведенные на `r figRef("granul")`. 
+
+
+```{r, fig.cap = figRef("granul_pca", "Ординация проб в осях первых двух главных компонент и нагрузки переменных, использованных в анализе главных компонент матрицы гранулометрического состава")}
 library(ggvegan)
+autoplot(granul_pca) + guides(shape = "none", color = "none")
+```
 
 
-# Read data
-
-bent <- read_excel("Data/Obskaya_bay.xlsx", sheet = "Benthos", col_types = "guess")
-
-planct <- read_excel("Data/Obskaya_bay.xlsx", sheet = "Plancton", col_types = "guess", na = "NA")
-
-phyt_planct <- read_excel("Data/Obskaya_bay.xlsx", sheet = "Phytoplancton abundance", col_types = "guess")
+![`r figRef("granul", "Распределение крупных (A) и мелких (B) фракций грунта в акватории Обской губы.")`](figures/granulometric.png)
 
 
-phyt_planct_present <- read_excel("Data/Obskaya_bay.xlsx", sheet = "Phytoplancton species presence", col_types = "guess")
+# Сообщества зоопланктона
 
-phyt_planct_present[is.na(phyt_planct_present)] <- 0
+```{r}
+
+env_zoopl <- predictors10 %>% filter(Station %in% zoopl$Station) #%>% select(-c(Station, Lat, Long))
+
+row.names(env_zoopl) <- env_zoopl$Station
+
+zoopl_CCA <- cca(zoopl[, -1] ~ ., data =  env_zoopl%>% select(-c(Station, Lat, Long)))
+
+zoopl_cca_0 <- cca(zoopl[, -1] ~ 1, data =  env_zoopl%>% select(-c(Station, Lat, Long)))
 
 
-env <-  read_excel("Data/Obskaya_bay.xlsx", sheet = "Environment", col_types = "guess")
+zoopl_cca_reduced_forw <- ordistep(zoopl_cca_0, scope = formula(zoopl_CCA), direction = "forward", trace = FALSE)
+
+CCA1_importance <- round(summary(zoopl_cca_reduced_forw)$cont$ importance [2, 1] * 100, 1)
+CCA2_importance <- round(summary(zoopl_cca_reduced_forw)$cont$ importance [2, 2] * 100, 1)
+CCA3_importance <- round(summary(zoopl_cca_reduced_forw)$cont$ importance [2, 3] * 100, 1)
 
 ```
 
 
-
-## Бентосные сообщества
-
-```{r}
-
-phyt_planct_station <-  phyt_planct %>% filter(Type == "Abundance") %>%  group_by(Station) %>% summarise_all(mean) %>% select(-c(Horizont,  Type))
+Для анализа связи сообщества зоопланктона с изученными параметрами среды был использован канонический корреспондентный анализ (Canonical Correspondence Analysis, CCA). Для построения оптимальной модели CCA был использован алгоритм пошагового подбора предикторов (forward selection).  Финальная модель, полученная в результате анализа, включала `r ncol(model.matrix(zoopl_cca_reduced_forw))` параметров среды. Характер связи с ними демонстрирует `r figRef("zoopl_cca")`. 
 
 
-predictors <- merge(env %>% select(Station, Depth), phyt_planct_station)
+```{r, fig.cap = figRef("zoopl_cca", "Ординация проб в канонических корреспондентных осях")}
 
-
-```
-
-
-
-```{r}
-# Data prepapration
-
-bent_N <- bent %>% filter(Type == "Abundance") %>% select(-Type) 
-row.names(bent_N) <- bent_N$Station
-
-totals <- bent_N %>% select(-Station) %>%  rowwise() %>% mutate(Total_N = sum())
-
-
-predictors2 <- merge(predictors, bent_N)[ ,1:10 ]
-
-bent_N <- merge(predictors, bent_N) %>% select(-c(2:10))
-
-
-# Remove station with zero benthos abundance
-
-Total_N <- bent_N %>% select(-Station) %>% rowSums()
-
-bent_N2 <- bent_N %>% filter(Total_N>0)
-
-predictors3 <- predictors2 %>% filter(Total_N>0)
-
-
+Pl_CCC1_CCA2 <- autoplot(zoopl_cca_reduced_forw, display = c("sites", "bp")) + guides(shape = "none", color = "none")
 
 ```
 
 
 ```{r}
-# Ordination in CA 
+cca_results <- fortify(zoopl_cca_reduced_forw)
+
+CCA_scores_biplot <- cca_results %>% filter(Score == "biplot")
+
+CCA1_negative <- CCA_scores_biplot[order(CCA_scores_biplot$CCA1), ]$Label[2:5] 
+CCA1_positive <- CCA_scores_biplot[order(CCA_scores_biplot$CCA1, decreasing = T), ]$Label[1:7] 
 
 
-bent_ca <- cca((bent_N2[, -1]))
-
-bent_pca.ef <- envfit(bent_ca ~ Cyanophyta +  Bacillariophyta + Chrysophyta + Euglenophyta, data = predictors3[, -1])
-
-plot(bent_ca)
-plot(bent_pca.ef)
 ```
 
+
+
+Статистическую значимость имели только три первые корресподнетные оси, которые описывают `r c(CCA1_importance, CCA2_importance, CCA3_importance)`% суммарной изменчивости, соответственно. Согласно полученным результатам, первая корреспондентная ось имеет высокую отрицательную корреляцию с поверхностной соленостью (*Surf_Salinity*) и может трактоваться, как отражение влияния притока морской воды. С этой осью аналогично коррелируют следующие параметры среды: `r   CCA1_negative`. Таким образом, отрицательным значениям CCA1 соответствуют воды морского происхождения, с высокой прозрачностью, низкой кислотностью (высокие значения pH) и богатые кислородом.  Положительную корреляцию с первой канонической осью демонстрируют следующие параметры среды: `r   CCA1_positive`. Эти параметры имеют высокие значения  водных массах речного происхождения. Это более мутные, богатые азотом и фосфором воды. Пространственное распределение значений CCA1 демонстрирует `r figRef("map_cca1")`. Ожидаемо отрицательные значения ССА1, соответствующие морским сообществам зоопланктона, приурочены к устью Обской губы. Следует отметить, что в распределении сообществ, описанных в терминах ССА1 (`r figRef("map_cca1")`), заметна некоторая пятнистость, что можно объяснить перемещением водных масс в результате взаимодействия речного и приливно-отливного течений.       
+
+
+![`r figRef("map_cca1", "Распределние сообществ зоопланктона, охараткеризованных значениям первой корреспондентной оси, демонстрирующей связи с параметрами водных масс морского и речного происхождения")`](figures/zoopl_CCA1_gam.png)
+
+
+```{r}
+CCA_scores_species <- cca_results %>% filter(Score == "species")
+
+Q1_CCA1_species <- quantile(CCA_scores_species$CCA1, probs = 0.25)
+
+Q3_CCA1_species <- quantile(CCA_scores_species$CCA1, probs = 0.75)
+
+species_CCA1_negative <- CCA_scores_species %>% filter(CCA1 <= Q1_CCA1_species) %>% select(Label)
+
+species_CCA1_negative$Label <- gsub("_", " ", species_CCA1_negative$Label)
+
+species_CCA1_positive <- CCA_scores_species %>% filter(CCA1 >= Q3_CCA1_species) %>% select(Label)
+
+species_CCA1_positive$Label <- gsub("_", " ", species_CCA1_positive$Label)
+
+
+```
+
+К числу видов, представленных в водной массе морского происхождения относятся:
+
+```{r}
+kable(species_CCA1_negative, col.names = "Таксоны", align = "l")
+
+```
+
+
+К числу видов, представленных в водной массе речного происхождения относятся:
+
+```{r}
+kable(species_CCA1_negative, col.names = "Таксоны", align = "l")
+
+```
+
+
+
+
+
+Вторая каноническая ось связана с концентрацией кремния: чем выше значения CCA2, тем больше концентрация этого элемента как в поверхностном, так и в придонном, и промежуточном слое воды. Сообщества зоопланктона, приуроченные к участкам с высокой концентрацией кремния, представлены на стыке между водными массами устья губы и верховий реки (`r figRef("map_cca2")`).     
+
+
+![`r figRef("map_cca2", "Распределние сообществ зоопланктона, охараткеризованных значениям второй корреспондентной оси, демонстрирующей связи с концентрацией кремния")`](figures/zoopl_CCA2_gam.png)
+
+
+К числу видов, характерных для таких, промежуточных, сообществ относятся:
+
+```{r}
+Q3_CCA2_species <- quantile(CCA_scores_species$CCA2, probs = 0.75)
+
+Q1_CCA2_species <- quantile(CCA_scores_species$CCA2, probs = 0.25)
+
+
+species_CCA2_positive <- CCA_scores_species %>% filter(CCA2 >= Q3_CCA2_species) %>% select(Label)
+
+
+species_CCA2_positive$Label <- gsub("_", " ", species_CCA2_positive$Label)
+
+#Убираем виды, из других групп
+
+Species_Si_associated <- species_CCA2_positive$Label[!((species_CCA2_positive$Label %in% species_CCA1_negative$Label) | (species_CCA2_positive$Label %in% species_CCA1_positive$Label))]
+
+```
+
+
+```{r}
+kable(Species_Si_associated, col.names = "Таксоны")
+```
 
