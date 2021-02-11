@@ -71,10 +71,14 @@ library(dplyr)
 library(cowplot)
 library(mgcv)
 library(reshape2)
+library(ggplot2)
+library(ggrepel)
 
 library(png)
 
 library(vegan)
+
+library(broom)
 
 theme_set(theme_bw())
 ```
@@ -142,6 +146,38 @@ zoopl[is.na(zoopl)] <- 0
 zoopl$Station_ID <- as.numeric(gsub("O","", zoopl$Station))
 
 zoopl <- zoopl[order(zoopl$Station_ID), ] %>% select(-Station_ID)
+
+
+# Ship activity and Sattelite data on suspended matter and distances to dumping
+
+# ships <- read.table("Data/Stations_tsm_ships.shp.txt", header = T, sep = "\t")
+# write.table(ships, "clipboard", sep = "\t")
+
+ships <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Ship_activity")
+
+ships <- ships %>% filter(Exclude != 1) %>% select(Station, Ships, Distance_Dump, Distance_to_Drag)
+
+ships2 <- merge(stat_full %>% select(Station, Lat, Long), ships)
+
+ships2$Station_ID <- as.numeric(gsub("O","", ships2$Station))
+
+ships2 <- ships2[order(ships2$Station_ID), ] %>% select(-Station_ID)
+
+
+# nrow(ships2)
+
+
+# All chlorophyll
+chlorophyll <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Chlorophyll august 2020")
+
+# Suspensed matter
+
+suspensed_metter_by_layers <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Suspensed matters August", na = "NA")
+
+# Phytoplancton high level taxa
+
+phytoplancton_taxa <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Phytoplancton Taxa")
+
 
 
 ```
@@ -236,8 +272,9 @@ predictors7 <- merge(predictors6, biogen_full_2, all.x = T)
 # 
 # predictors8 <- predictors7 %>% select(-c(Interm_Susp_Aug_20, Chla_intermed, Intermediate_Color, Intermediate_O2, Intermediate_pH,  Intermediate_Amon_N, Intermediate_Nitrit_N, Intermediate_Nitrat_N, Intermediate_Total_N, Intermediate_Mineral_P, Intermediate_Toal_P, Intermediate_Si, Intermediate_Organic_N, Intermediate_Organic_P))
 
-predictors8 <- predictors7
+predictors8 <- merge(predictors7, ships2 %>% select(Station, Ships, Distance_Dump, Distance_to_Drag, ))
 
+# nrow(ships2)
 # Variable names cleaning
 
 var_names <- names(predictors8)
@@ -266,7 +303,7 @@ predictors9$Station_ID <- as.numeric(gsub("O","", predictors9$Station))
 
 predictors10 <- predictors9[order(predictors9$Station_ID), ] %>% select(-Station_ID)
 
-
+# nrow(predictors10)
 ```
 
 
@@ -317,13 +354,96 @@ autoplot(granul_pca) + guides(shape = "none", color = "none")
 ![`r figRef("granul", "Распределение крупных (A) и мелких (B) фракций грунта в акватории Обской губы.")`](figures/granulometric.png)
 
 
+# Судовая нагрузка
+
+*NB! Методика получения судовой нагрузки пока мне непонятна.*
+
+Оценка судовой нагрузки в каждой из точек проводилась по спутниковым снимкам.
+
+```{r, fig.cap = figRef("ships", "Распределение оценок судовой нагрузки для каждой станции. Отражены значения логарифма оценки")}
+
+
+theme_set(theme_bw())
+
+# Coordinate limites 
+# Ob_x <- c(71, 79)
+
+Ob_x <- c(71, 75)
+Ob_y <- c(70, 73.2)
+
+# Sabetta
+Sabetta_y <- 71.235220
+Sabetta_x <- 72.126754
+
+# Terminal
+
+Terminal_y <- 71.010886
+Terminal_x <- 73.793525
+
+
+
+Pl_Obskaya_bay <- 
+ggplot(Ob_df, aes(x=long, y=lat, group=group)) +
+  geom_polygon(fill = "gray90", colour = "gray20") + 
+  coord_map(xlim = Ob_x, ylim = Ob_y) + 
+  theme_bw() +  
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
+  theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+  theme(axis.ticks = element_blank()) +
+  geom_point(aes(x = Sabetta_x, y = Sabetta_y), size = 3, shape = 21, fill = "red") + 
+  geom_point(aes(x = Terminal_x, y = Terminal_y), size = 3, shape = 22, fill = "yellow") 
+
+
+
+# Ships activity ###################
+
+Pl_Obskaya_bay + 
+  geom_point(data = ships2, aes(x = Long, y = Lat, size = log(Ships+1), group = 1, color = log(Ships+1)))+
+  labs(size = "Ship activity") + 
+  guides(color = "none") +
+  scale_color_gradient(low = "white", high = "black")
+  
+
+```
+
+
+# Факторы, определяющие количество взвеси
+
+```{r}
+
+
+Suspended_matter <- predictors10 %>% select(Station, Lat, Long, Surf_Susp, Interm_Susp, Bot_Susp,Ships, Distance_Dump, Distance_to_Drag) %>% mutate(Susp = Surf_Susp + Interm_Susp + Bot_Susp)
+
+
+Mod_susp_gam <- gam(log(Susp) ~ s(Lat, Long)  + Ships + Distance_Dump + Distance_to_Drag, data = Suspended_matter) 
+
+kable(tidy(Mod_susp_gam, parametric = T, conf.int = FALSE))
+
+# summary(Mod_susp)
+
+# tidy(Mod_susp_gam, parametric = F, conf.int = FALSE, conf.level = 0.95)
+
+```
+
+
+
+
+
 # Сообщества зоопланктона
+
+
+
 
 ```{r}
 
 env_zoopl <- predictors10 %>% filter(Station %in% zoopl$Station) #%>% select(-c(Station, Lat, Long))
 
-row.names(env_zoopl) <- env_zoopl$Station
+# nrow(env_zoopl)
+
+row.names(env_zoopl) <- env_zoopl$Station #Планктон был проанализирован не на всех станциях
+
+row.names(zoopl) <- zoopl$Station
+
 
 zoopl_CCA <- cca(zoopl[, -1] ~ ., data =  env_zoopl%>% select(-c(Station, Lat, Long)))
 
@@ -331,6 +451,13 @@ zoopl_cca_0 <- cca(zoopl[, -1] ~ 1, data =  env_zoopl%>% select(-c(Station, Lat,
 
 
 zoopl_cca_reduced_forw <- ordistep(zoopl_cca_0, scope = formula(zoopl_CCA), direction = "forward", trace = FALSE)
+# 
+# zoopl_cca_reduced_backw <- ordistep(zoopl_CCA, scope = zoopl_cca_0, direction = "backward", trace = T)
+# 
+# 
+# plot(zoopl_cca_reduced_forw)
+# 
+# anova(zoopl_cca_reduced_forw, by = "margin")
 
 CCA1_importance <- round(summary(zoopl_cca_reduced_forw)$cont$ importance [2, 1] * 100, 1)
 CCA2_importance <- round(summary(zoopl_cca_reduced_forw)$cont$ importance [2, 2] * 100, 1)
@@ -339,30 +466,59 @@ CCA3_importance <- round(summary(zoopl_cca_reduced_forw)$cont$ importance [2, 3]
 ```
 
 
-Для анализа связи сообщества зоопланктона с изученными параметрами среды был использован канонический корреспондентный анализ (Canonical Correspondence Analysis, CCA). Для построения оптимальной модели CCA был использован алгоритм пошагового подбора предикторов (forward selection).  Финальная модель, полученная в результате анализа, включала `r ncol(model.matrix(zoopl_cca_reduced_forw))` параметров среды. Характер связи с ними демонстрирует `r figRef("zoopl_cca")`. 
+Для анализа связи сообщества зоопланктона с изученными параметрами среды был использован канонический корреспондентный анализ (Canonical Correspondence Analysis, CCA). Для построения оптимальной модели CCA был использован алгоритм пошагового подбора предикторов (forward selection).  Финальная модель, полученная в результате анализа, включала `r ncol(model.matrix(zoopl_cca_reduced_forw))` параметров среды. Характер связи с ними демонстрирует `r figRef("zoopl_cca12")`. 
 
 
-```{r, fig.cap = figRef("zoopl_cca", "Ординация проб в канонических корреспондентных осях")}
+```{r, fig.cap = figRef("zoopl_cca12", "Ординация проб в первой и второй канонических корреспондентных осях")}
 
-Pl_CCC1_CCA2 <- autoplot(zoopl_cca_reduced_forw, display = c("sites", "bp")) + guides(shape = "none", color = "none")
+cca_results <- fortify(zoopl_cca_reduced_forw, scaling = "sites")
 
-```
-
-
-```{r}
-cca_results <- fortify(zoopl_cca_reduced_forw)
+CCA_scores_sites <- cca_results %>% filter(Score == "sites")
 
 CCA_scores_biplot <- cca_results %>% filter(Score == "biplot")
 
-CCA1_negative <- CCA_scores_biplot[order(CCA_scores_biplot$CCA1), ]$Label[2:5] 
-CCA1_positive <- CCA_scores_biplot[order(CCA_scores_biplot$CCA1, decreasing = T), ]$Label[1:7] 
+Suspended_matter2 <- Suspended_matter %>% filter(Station %in% zoopl$Station)
 
+# nrow(Suspended_matter2)
+
+Pl_CCC1_CCA2 <- 
+  ggplot(CCA_scores_sites, aes(x = CCA1, CCA2)) + 
+  geom_point(color = "gray") + 
+  geom_segment(data = CCA_scores_biplot, aes(x = 0, y = 0, xend = CCA1, yend = CCA2), color = "blue", arrow = arrow(type = "closed", angle = 5, length = unit(0.1, "inches"))) + 
+  geom_text_repel(data = CCA_scores_biplot, aes(x = CCA1, y = CCA2, label = Label))
+
+
+Pl_CCC1_CCA2 
+```
+
+
+
+<!-- ```{r, fig.cap = figRef("zoopl_cca13", "Ординация проб первой и третьей канонических корреспондентных осях")} -->
+
+<!-- Pl_CCC1_CCA3 <- autoplot(zoopl_cca_reduced_forw, display = c("sites", "bp"), axes = c(1,3)) + guides(shape = "none", color = "none") -->
+
+<!-- ``` -->
+
+
+
+
+
+```{r}
+
+
+CCA1_negative <- CCA_scores_biplot[order(CCA_scores_biplot$CCA1), ]$Label[1:5] 
+CCA1_positive <- CCA_scores_biplot[order(CCA_scores_biplot$CCA1, decreasing = T), ]$Label[1:5] 
+
+# anova(zoopl_cca_reduced_forw, by = "axis")
 
 ```
 
 
 
-Статистическую значимость имели только три первые корресподнетные оси, которые описывают `r c(CCA1_importance, CCA2_importance, CCA3_importance)`% суммарной изменчивости, соответственно. Согласно полученным результатам, первая корреспондентная ось имеет высокую отрицательную корреляцию с поверхностной соленостью (*Surf_Salinity*) и может трактоваться, как отражение влияния притока морской воды. С этой осью аналогично коррелируют следующие параметры среды: `r   CCA1_negative`. Таким образом, отрицательным значениям CCA1 соответствуют воды морского происхождения, с высокой прозрачностью, низкой кислотностью (высокие значения pH) и богатые кислородом.  Положительную корреляцию с первой канонической осью демонстрируют следующие параметры среды: `r   CCA1_positive`. Эти параметры имеют высокие значения  водных массах речного происхождения. Это более мутные, богатые азотом и фосфором воды. Пространственное распределение значений CCA1 демонстрирует `r figRef("map_cca1")`. Ожидаемо отрицательные значения ССА1, соответствующие морским сообществам зоопланктона, приурочены к устью Обской губы. Следует отметить, что в распределении сообществ, описанных в терминах ССА1 (`r figRef("map_cca1")`), заметна некоторая пятнистость, что можно объяснить перемещением водных масс в результате взаимодействия речного и приливно-отливного течений.       
+Статистическую значимость имели только три первые корресподнетные оси, которые описывают `r c(CCA1_importance, CCA2_importance, CCA3_importance)`% суммарной изменчивости, соответственно. Согласно полученным результатам, первая корреспондентная ось имеет высокую корреляцию c `r   CCA1_positive`. Высокие положительные значения первой канонической оси могут трактоваться как отражение влияния притока морской воды. Водная масса морского происхождения характеризуется высокой прозрачностью и низкой кислотностью (высокие значения pH). Высокую отрицательную корреляцию с первой канонической осью демонстрируют следующие параметры среды: `r   CCA1_negative`. Эти параметры имеют высокие значения  водных массах речного происхождения. Это более мутные, с бльшим количеством взвеси, богатые азотом и фосфором воды.  
+
+
+Пространственное распределение значений CCA1 демонстрирует `r figRef("map_cca1")`. Ожидаемо положительные значения ССА1, соответствующие морским сообществам зоопланктона, приурочены к устью Обской губы. Следует отметить, что в распределении сообществ, описанных в терминах ССА1 (`r figRef("map_cca1")`), заметна некоторая пятнистость, что можно объяснить перемещением водных масс в результате взаимодействия речного и приливно-отливного течений.       
 
 
 ![`r figRef("map_cca1", "Распределние сообществ зоопланктона, охараткеризованных значениям первой корреспондентной оси, демонстрирующей связи с параметрами водных масс морского и речного происхождения")`](figures/zoopl_CCA1_gam.png)
@@ -386,22 +542,22 @@ species_CCA1_positive$Label <- gsub("_", " ", species_CCA1_positive$Label)
 
 ```
 
-К числу видов, представленных в водной массе морского происхождения относятся:
+К числу видов, характерных для водной массы морского происхождения относятся:
+
+```{r}
+kable(species_CCA1_positive, col.names = "Таксоны", align = "l")
+
+```
+
+*Замечание: Приведены только таксоны имеющие нагрузки по CCA1, превышающие значение третьего квартиля.*
+
+
+К числу видов, характерных для  водной массы речного происхождения относятся:
 
 ```{r}
 kable(species_CCA1_negative, col.names = "Таксоны", align = "l")
 
 ```
-
-
-К числу видов, представленных в водной массе речного происхождения относятся:
-
-```{r}
-kable(species_CCA1_negative, col.names = "Таксоны", align = "l")
-
-```
-
-
 
 
 
@@ -434,4 +590,83 @@ Species_Si_associated <- species_CCA2_positive$Label[!((species_CCA2_positive$La
 ```{r}
 kable(Species_Si_associated, col.names = "Таксоны")
 ```
+
+
+
+# Связь концентрации фитопигментов с техногенными факторами 
+
+Если техногенные факторы оказывают влияние на экосистему акватории Обской губы, то наиболее сильное влияние будет наблюдаться если к воздействию будут чувствительны нижние трофические уровни.Концентрация фитопигментов в воде может рассматриваться как приблизительная оценка интенсивности функционирования планктонных продуцентов. Для выявления связи этих характеристик с воздействием  техногенных факторов, был использован анализ избыточности (Redundancy analysis, RDA). В качестве потенциальных техногенных факторов были рассмотрены  *концентрация взвешенных частиц* (Suspensed_matter), *интенсивность корабельной нагрузки* (Ships), *влияние дноуглубительных работ* и *отвала грунта* (в качестве приблизительной оценки влияния этих факторов рассматривалось расстояние до точек отвала, Distance_Dump,  и расстояние до точек дноуглубления, Distance_to_Drag). В полученной модели RDA первые две канонические оси были статистически значимыми (Табл. 3). Статистически значимое влияние на изучаемые величины оказывали  Интенсивность корабельной нагрузки (Ships), количество взвешенного вещества (Suspended_matter) и расстояние до точек отвала грунта (Distance_Dump). Ординацию параметров фитопигментного состава в первых двух канонических осях демонстрирует (`r figRef("pigm_rda")`). При этом сонаправленное воздействие оказывают с одной стороны концентрация взвешенных частиц и  интенсивность корабельной нагрузки (отрицательная связь с RDA1), а с другой стороны - Расстояния до точек отвала и дноуглубления (положительная связь с RDA2).  
+
+```{r, fig.cap = figRef("pigm_rda", "Ординация характеристик пигментного состава в канонических осях RDA") }
+
+dd <- merge(suspensed_metter_by_layers, predictors8 %>% select(Station, Ships, Distance_Dump, Distance_to_Drag), all.x = T) %>% filter(Exclude !=1) %>% select(-Exclude)
+
+chlorophyll_susp <- merge(chlorophyll, dd, all.x = T) 
+
+all_pigments <- chlorophyll_susp %>% select(Chla, Phaeophytin, Chlb,	ChlC1C2,	Carotinoid,	Pigm_index) 
+
+all_technogen <- chlorophyll_susp %>% select(Ships,Suspended_matter, Distance_Dump, Distance_to_Drag, Measurements_Depth)
+
+
+pigments_rda <- rda(log(all_pigments + 1) ~ ., data = all_technogen)
+
+# vif.cca(pigments_rda)
+plot(pigments_rda, display = c("species", "cn"))
+
+
+# 
+# Mod_Chla <- gam(ChlC1C2 ~ s(Lat, Long) + Measurements_Depth  + Suspensed_matter + Ships + Distance_Dump + Distance_to_Drag, data = chlorophyll_susp)
+# 
+# summary(Mod_Chla)
+
+```
+
+
+
+```{r}
+kable(tidy(anova(pigments_rda, by = "axis", permutations = 9999)), caption = "Таблица 3. Результаты пермутационной оценки (9999 пермутаций) статистической значимости каноанических осей RDA")
+```
+
+
+
+
+
+```{r}
+kable(tidy(anova(pigments_rda, by = "margin", permutations = 9999)), caption = "Таблица 4. Результаты пермутационной оценки (9999 пермутаций) статистической значимости влияние отдельных предикторов в модели RDA")
+```
+
+
+Заметную связь с концентрацией взвешенных частиц и корабельной нагрузкой  демонстрирует хлорофилл *B* и хлорофилл *С1+С2*. Чем выше концентрация взвешенных частиц, тем выше концентрация этих пигментов (`r figRef("scatterplots")`).  
+
+
+
+
+```{r, fig.cap=figRef("scatterplots", "Зависимость концентрации фитопигментов от параметров техногенной нагрузки. Приведены аппрокимирующие LOESS регрессии.")}
+
+
+Pl_susp_Chlb <- ggplot(chlorophyll_susp, aes(x = Suspended_matter, y = Chlb)) + geom_point() + geom_smooth() + labs(x = "Концентрация взвешенных частиц (мг/л)", y = "Концентрация Хлорофилла В")
+
+Pl_susp_ChlC1C2 <- ggplot(chlorophyll_susp, aes(x = Suspended_matter, y = ChlC1C2)) + geom_point() + geom_smooth() + labs(x = "Концентрация взвешенных частиц (мг/л)", y = "Концентрация Хлорофилла С1+С2")
+
+Pl_susp_Chla <- ggplot(chlorophyll_susp, aes(x = Suspended_matter, y = Chla)) + geom_point() + geom_smooth() + labs(x = "Концентрация взвешенных частиц (мг/л)", y = "Концентрация Хлорофилла А")
+
+
+Pl_Dist_Dump_Phaeph <- ggplot(chlorophyll_susp, aes(x = Distance_Dump, y = Phaeophytin)) + geom_point() + geom_smooth() + labs(x = "Расстояние до точки отвала", y = "Концентрация Феофитина")
+
+
+
+plot_grid(Pl_susp_Chlb , Pl_susp_ChlC1C2, Pl_susp_Chla,  Pl_Dist_Dump_Phaeph)
+```
+
+
+Положительную корреляцию фитопигментов с концентрацией взвешенных частиц можно объяснить двумя способами.
+
+1. Повышенная концентрация взвешенных частиц может коррелировать с прочими источниками антропогенного воздействия, повшающими концентрацию биогенов, что и стимулирует размножение продуцентов. 
+
+2. Взвешенные частицы могут быть субстратом, адсорбирующим фотосинтезирующих протист и прокариот. 
+
+*NB! Поверхностное гугление говорит о том, что хлорофилл B более важен при недостатке света. Хлофилл C1, кажется, характерен для диатомовых. А диатомовые это кремний. А кремний у нас дал сигнал на связи с зоопланктоном.* Нужна консультация специалиста! 
+
+
+*Нужно сделать общий анализ всех характеристик фитопланктона и фитопигментов, как зависимой атрицы и техногенных факторов + биогены. Пока думаю, как это посчитать.* 
 

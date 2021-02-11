@@ -122,6 +122,20 @@ zoopl <- zoopl[order(zoopl$Station_ID), ] %>% select(-Station_ID)
 
 
 
+# Ship activity and Sattelite data on suspended matter and distances to dumping
+
+# ships <- read.table("Data/Stations_tsm_ships.shp.txt", header = T, sep = "\t")
+# write.table(ships, "clipboard", sep = "\t")
+
+ships <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Ship_activity")
+
+ships <- ships %>% filter(Exclude != 1) %>% select(Station, Ships, Distance_Dump, Distance_to_Drag)
+
+ships2 <- merge(stat_full %>% select(Station, Lat, Long), ships)
+
+ships2$Station_ID <- as.numeric(gsub("O","", ships2$Station))
+
+ships2 <- ships2[order(ships2$Station_ID), ] %>% select(-Station_ID)
 
 
 # Basic map layer####################
@@ -206,6 +220,17 @@ ggsave("figures/stations.png", Pl_all_stat, dpi = 600)
 # Ob_y <- c(70, 73.2)
 
 grid_data <- expand.grid(Lat = seq(from = 70, to =72.9, length.out = 100), Long =  seq(from = 71, to =75.2 , length.out = 100))
+
+
+# Ships activity ###################
+
+Pl_Obskaya_bay + geom_point(data = ships2, aes(x = Long, y = Lat, size = log(Ships+1), group = 1))
+
+
+# Dumping distance ###################
+
+Pl_Obskaya_bay + geom_point(data = ships2, aes(x = Long, y = Lat, size = Distance_to_Drag, group = 1))
+Pl_Obskaya_bay + geom_point(data = ships2, aes(x = Long, y = Lat, size = Distance_Dump, group = 1))
 
 
 
@@ -586,8 +611,10 @@ ggsave("figures/granulometric.png", plot_grid(Pl_granul_large, Pl_granul_small, 
 ###########################################################
 # Predictors ##############################################
 
+# Подготовка таблицы предикторов ####################################
 predictors <- stat_full %>% select(Station, Lat, Long,  Depth_aug_20, Transparency_aug_20, Surface_Salinity_Aug_20, Bottom_Salinity_Aug_20, Surface_Turbidity_Aug_20, Bottom_Turbidity_Aug_20, Surface_Susp_Aug_20, Interm_Susp_Aug_20, Bottom_Susp_Aug_20)
 
+# nrow(predictors)
 
 chlor_surface <- chlor %>% filter(Layer == "Surface") %>% select(Station, Chla) %>% rename(Chla_surface = Chla)
 
@@ -613,12 +640,17 @@ predictors6 <- merge(predictors5, granul %>% filter(Season == "August") %>% sele
 
 predictors7 <- merge(predictors6, biogen_full_2, all.x = T)
 
+# nrow(predictors7)
 
 # # All variables from intermediate layer will be excluded from analysis 
 # 
 # predictors8 <- predictors7 %>% select(-c(Interm_Susp_Aug_20, Chla_intermed, Intermediate_Color, Intermediate_O2, Intermediate_pH,  Intermediate_Amon_N, Intermediate_Nitrit_N, Intermediate_Nitrat_N, Intermediate_Total_N, Intermediate_Mineral_P, Intermediate_Toal_P, Intermediate_Si, Intermediate_Organic_N, Intermediate_Organic_P))
 
-predictors8 <- predictors7
+predictors8 <- merge(predictors7, ships2 %>% select(Station, Ships, Distance_Dump, Distance_to_Drag), all.x = TRUE)
+
+# nrow(predictors8)
+
+
 
 # Variable names cleaning
 
@@ -789,7 +821,7 @@ zoopl_CCA_scores2 <- cbind(zoopl_CCA_scores[order(zoopl_CCA_scores$Station_ID), 
 
 
 
-# Map of Zooplancton  CCA distributions
+# Map of Zooplancton  CCA distributions by interpolation
 
 gginterp <- function(x, y, envir, nx, ny){
   # функция интерполирует значения переменных среды
@@ -845,7 +877,7 @@ Pl_zoopl_CCA3 <- Obskaya_bay_cover(Pl_zoopl_CCA3) +
 
 
 
-# Визуализация на карте
+# Визуализация на картес помощью GAM
 
 fit_zoopl_CCA1 <- gam(formula = CCA1  ~ s(Long, Lat, bs = "tp"), data = zoopl_CCA_scores2, family = gaussian)
 
@@ -883,6 +915,7 @@ ggsave("figures/zoopl_CCA2_gam.png", Pl_zoopl_CCA2, dpi = 600)
 
 
 ######################
+
 fit_zoopl_CCA3 <- gam(formula = CCA3  ~ s(Long, Lat, bs = "tp"), data = zoopl_CCA_scores2, family = gaussian)
 
 zoopl_CCA3_pred <- predict(fit_zoopl_CCA3, newdata = grid_data, type = "response")
@@ -898,6 +931,19 @@ Pl_zoopl_CCA3 <- Obskaya_bay_cover(Pl_zoopl_CCA3)
 
 
 ggsave("figures/zoopl_CCA3_gam.png", Pl_zoopl_CCA3, dpi = 600)
+
+
+
+# # BioEnv ##########################
+# 
+# library(parallel)
+# 
+# bioenv(zoopl[, -1], env_zoopl %>% select(-c(Station, Lat, Long)), trace = TRUE, parallel = 4, upto = 3)
+# 
+# 
+
+
+
 
 
 

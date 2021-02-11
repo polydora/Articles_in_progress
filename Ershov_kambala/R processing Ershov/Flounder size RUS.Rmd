@@ -60,40 +60,81 @@ Mod_4 <- update(Mod_3, . ~ . - Sex:Bay)
 drop1(Mod_4, test = "Chi")
 Mod_5 <- update(Mod_4, . ~ . - L:Bay)
 
+drop1(Mod_5, test = "Chi")
 
+Mod_6 <- update(Mod_5, . ~ . - Sex)
 
 ```
 
 
+
+```{r}
+kable(tidy(Mod_6))
+
+```
+
+
+
+
 ```{r fig.cap="**Рисунок 3.** Зависимость вероятности встретить левостороннюю камбалу от размера у рыб в разных заливах Белого моря. Точками показаны частоты левосторонних особей в пределах раных размерных классов"}
+# 
+# new_data <- kam %>% group_by(Bay, Sex) %>% do(data.frame(L = seq(min(.$L), max(.$L), length.out = 100) ))
+# 
+# predicted <- predict(Mod_6, newdata = new_data, se.fit = T, type = "response")
+# 
+# new_data$Predicted <- predicted$fit
+# new_data$SE <- predicted$se.fit
+# 
+# Left_prop <- kam %>% mutate(Size_class = ntile(x = L, n = 5)) %>% group_by(Bay, Sex, Size_class) %>% summarise(L_mean = mean(L), Left_prop = mean(Orient == "Left"))
+# 
+# new_data$Sex <- factor(new_data$Sex, labels = c("Самки", "Самцы"))
+# 
+# Left_prop$Sex <- factor(Left_prop$Sex, labels = c("Самки", "Самцы"))
+# 
+# new_data$Bay <- factor(new_data$Bay, levels = c("Kandalaksha_Bay", "Onega_Bay", "Dvina_Bay", "Mezen_Bay" )) 
+# 
+# 
+# 
+# 
+# 
+# 
+# ggplot(new_data, aes(x = L, y = Predicted)) + 
+#   geom_line(aes(color = Sex), size = 1) +  
+#   geom_ribbon(aes(ymin = Predicted - 1.96*SE, ymax = Predicted + 1.96*SE, fill = Sex), alpha = 0.5 ) + 
+#   geom_point(data = Left_prop, aes(x = L_mean, y = Left_prop, fill = Sex), shape = 21, size = 2) + 
+#   facet_wrap(~ Bay, ncol = 2, scales = "free_y") +
+#   labs(x = "Длина, см", y = "Частота встречаемости реверсивных рыб", fill ="Пол", color = "Пол") +
+#   scale_fill_manual(values = c("pink", "blue"))
 
-new_data <- kam %>% group_by(Bay, Sex) %>% do(data.frame(L = seq(min(.$L), max(.$L), length.out = 100) ))
 
-predicted <- predict(Mod_5, newdata = new_data, se.fit = T, type = "response")
+
+
+
+new_data <- kam %>% group_by(Bay) %>% do(data.frame(L = seq(min(.$L), max(.$L), length.out = 100) ))
+
+predicted <- predict(Mod_6, newdata = new_data, se.fit = T, type = "response")
 
 new_data$Predicted <- predicted$fit
 new_data$SE <- predicted$se.fit
 
-Left_prop <- kam %>% mutate(Size_class = ntile(x = L, n = 10)) %>% group_by(Bay, Sex, Size_class) %>% summarise(L_mean = mean(L), Left_prop = mean(Orient == "Left"))
+Left_prop <- kam %>% group_by(Bay) %>% do(data.frame(L = .$L, Orient = .$Orient, Size_class = ntile(x = .$L, n = 10))) %>% group_by(Bay,Size_class) %>% summarise(L_mean = mean(L), Left_prop = mean(Orient == "Left"))
 
-new_data$Sex <- factor(new_data$Sex, labels = c("Самки", "Самцы"))
-
-Left_prop$Sex <- factor(Left_prop$Sex, labels = c("Самки", "Самцы"))
-
-new_data$Bay <- factor(new_data$Bay, levels = c("Kandalaksha_Bay", "Onega_Bay", "Dvina_Bay", "Mezen_Bay" )) 
-
+  
+  
 
 
 
 
 
 ggplot(new_data, aes(x = L, y = Predicted)) + 
-  geom_line(aes(color = Sex), size = 1) +  
-  geom_ribbon(aes(ymin = Predicted - 1.96*SE, ymax = Predicted + 1.96*SE, fill = Sex), alpha = 0.5 ) + 
-  geom_point(data = Left_prop, aes(x = L_mean, y = Left_prop, fill = Sex), shape = 21, size = 2) + 
-  facet_wrap(~ Bay, ncol = 2) +
+  geom_line( size = 1) +  
+  geom_ribbon(aes(ymin = Predicted - 1.96*SE, ymax = Predicted + 1.96*SE), alpha = 0.5 ) + 
+  geom_point(data = Left_prop, aes(x = L_mean, y = Left_prop), shape = 21, size = 2, fill = "gray") + 
+  facet_wrap(~ Bay, ncol = 2, scales = "free_y") +
   labs(x = "Длина, см", y = "Частота встречаемости реверсивных рыб", fill ="Пол", color = "Пол") +
   scale_fill_manual(values = c("pink", "blue"))
+
+
 
 ```
 
