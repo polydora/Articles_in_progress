@@ -1,0 +1,592 @@
+---
+title: "Сообщество фитопланктона Обской губы"
+author: ""
+date: ""
+output: html_document
+---
+
+
+
+
+
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+
+```
+
+
+<style type="text/css">
+
+body{ /* Normal  */
+      font-size: 18px;
+  }
+td {  /* Table  */
+  font-size: 14px;
+}
+h1.title {
+  font-size: 38px;
+  color: DarkRed;
+}
+h1 { /* Header 1 */
+  font-size: 28px;
+  color: DarkBlue;
+}
+h2 { /* Header 2 */
+    font-size: 22px;
+  color: DarkBlue;
+}
+h3 { /* Header 3 */
+  font-size: 18px;
+  font-family: "Times New Roman", Times, serif;
+  color: DarkBlue;
+}
+code.r{ /* Code block */
+    font-size: 12px;
+}
+pre { /* Code block - determines code spacing between lines */
+    font-size: 14px;
+}
+</style>
+
+
+
+
+```{r}
+# Packages ######################
+library(ggmap)
+library(mapproj)
+library(maps)
+
+library(rgeos) 
+
+library(mapdata)
+library(maptools) # Rgshhs
+library(PBSmapping)
+
+library(readxl)
+library(dplyr)
+library(cowplot)
+library(mgcv)
+library(reshape2)
+library(ggplot2)
+library(ggrepel)
+
+library(png)
+
+library(vegan)
+
+library(broom)
+
+library(ggvegan)
+
+theme_set(theme_bw())
+```
+
+
+
+```{r}
+
+# Data reading ####################
+
+Ob_df <- read.csv("Data/Obskaya_bay_map.csv") # Map poligones
+
+# All Station position
+stations <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Station parameters", na = "NA")
+
+# Stations with biological samples
+stat_full <- stations %>% filter(Exclude == 0)
+
+stat_full <- as.data.frame(stat_full)
+
+# Data on organic matter from the file "Содержание органического вещества в ДО.docx"
+
+org <- read.csv("Data/Organic matter_2020.csv")
+
+org <- org[org$Station %in% stat_full$Station, ]
+
+# Data on Granulmetric from the file "Грансостав ДО.docx"
+
+granul <- read_excel("Data/Granulometry_2020.xlsx",  na = "NA")
+
+
+granul$Small <- with(granul, F_0.002 + `F_0.01-0.002` + `F_0.05-0.01`)              
+
+granul$Big <- rowSums(granul[ ,8:15]  )
+
+
+granul$Season <- factor(granul$Season)
+
+
+# Chlorophyll a 
+
+chlor <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Chlorophyll august 2020", na = "NA")
+
+
+# Biogenes
+
+biogen <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Biogenes_August", na = "NA")
+
+biogen_full <- biogen %>% filter(Exclude == 0) %>% select(-Exclude)
+
+biogen_full_melt <- melt(biogen_full, id.vars = c("Station", "Layer"))
+
+biogen_full_2 <- dcast(biogen_full_melt, Station ~ Layer + variable )
+
+
+
+# Zooplancton
+
+zoopl_long <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Zooplancton_long", na = "NA")
+
+zoopl <- dcast(zoopl_long %>%select(-B), Station ~ Taxa) 
+
+zoopl[is.na(zoopl)] <- 0
+
+zoopl$Station_ID <- as.numeric(gsub("O","", zoopl$Station))
+
+zoopl <- zoopl[order(zoopl$Station_ID), ] %>% select(-Station_ID)
+
+
+# Ship activity and Sattelite data on suspended matter and distances to dumping
+
+# ships <- read.table("Data/Stations_tsm_ships.shp.txt", header = T, sep = "\t")
+# write.table(ships, "clipboard", sep = "\t")
+
+ships <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Ship_activity")
+
+ships <- ships %>% filter(Exclude != 1) %>% select(Station, Ships, Distance_Dump, Distance_to_Drag)
+
+ships2 <- merge(stat_full %>% select(Station, Lat, Long), ships)
+
+ships2$Station_ID <- as.numeric(gsub("O","", ships2$Station))
+
+ships2 <- ships2[order(ships2$Station_ID), ] %>% select(-Station_ID)
+
+
+# nrow(ships2)
+
+
+# All chlorophyll
+chlorophyll <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Chlorophyll august 2020")
+
+# Suspensed matter
+
+suspensed_metter_by_layers <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Suspensed matters August", na = "NA")
+
+suspensed_metter_by_layers <- suspensed_metter_by_layers %>% filter(Exclude !=1) %>% select(-Exclude)  
+
+
+
+# Phytoplancton Species
+
+phytopl_long <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Phytoplancton Species long")
+
+
+
+
+
+```
+
+
+
+```{r}
+
+# Функция, задающая нумерацию рисунков
+
+figRef <- local({
+    tag <- numeric()
+    created <- logical()
+    used <- logical()
+    function(label, caption, prefix = options("figcap.prefix"), 
+        sep = options("figcap.sep"), prefix.highlight = options("figcap.prefix.highlight")) {
+        i <- which(names(tag) == label)
+        if (length(i) == 0) {
+            i <- length(tag) + 1
+            tag <<- c(tag, i)
+            names(tag)[length(tag)] <<- label
+            used <<- c(used, FALSE)
+            names(used)[length(used)] <<- label
+            created <<- c(created, FALSE)
+            names(created)[length(created)] <<- label
+        }
+        if (!missing(caption)) {
+            created[label] <<- TRUE
+            paste0(prefix.highlight, prefix, " ", i, sep, prefix.highlight, 
+                " ", caption)
+        } else {
+            used[label] <<- TRUE
+            paste(prefix, tag[label])
+        }
+    }
+})
+
+options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**")
+
+
+```
+
+
+
+## Подготовка данных
+
+
+```{r}
+# Подготовка таблицы предикторов ####################################
+predictors <- stat_full %>% select(Station, Lat, Long,  Depth_aug_20, Transparency_aug_20, Surface_Salinity_Aug_20, Bottom_Salinity_Aug_20, Surface_Turbidity_Aug_20, Bottom_Turbidity_Aug_20, Surface_Susp_Aug_20, Interm_Susp_Aug_20, Bottom_Susp_Aug_20)
+
+
+chlor_surface <- chlor %>% filter(Layer == "Surface") %>% select(Station, Chla) %>% rename(Chla_surface = Chla)
+
+
+chlor_intermed <- chlor %>% filter(Layer == "Intermediate") %>% select(Station, Chla) %>% rename(Chla_intermed = Chla)
+
+chlor_bottom <- chlor %>% filter(Layer == "Bottom") %>% select(Station, Chla) %>% rename(Chla_bottom = Chla)
+
+
+
+predictors2 <- merge(predictors, chlor_surface, all.x = T)
+
+predictors3 <- merge(predictors2, chlor_intermed, all.x = T)
+
+predictors4 <- merge(predictors3, chlor_bottom, all.x = T)
+
+
+predictors5 <- merge(predictors4, org %>% select(Station, Org_Aug_20), all.x = T)
+
+
+predictors6 <- merge(predictors5, granul %>% filter(Season == "August") %>% select(Station, Small, Big) %>% rename(Fine_particles = Small, Coarce_particles = Big), all.x =T)
+
+
+predictors7 <- merge(predictors6, biogen_full_2, all.x = T)
+
+
+# # All variables from intermediate layer will be excluded from analysis 
+# 
+# predictors8 <- predictors7 %>% select(-c(Interm_Susp_Aug_20, Chla_intermed, Intermediate_Color, Intermediate_O2, Intermediate_pH,  Intermediate_Amon_N, Intermediate_Nitrit_N, Intermediate_Nitrat_N, Intermediate_Total_N, Intermediate_Mineral_P, Intermediate_Toal_P, Intermediate_Si, Intermediate_Organic_N, Intermediate_Organic_P))
+
+predictors8 <- merge(predictors7, ships2 %>% select(Station, Ships, Distance_Dump, Distance_to_Drag, ))
+
+# nrow(ships2)
+# Variable names cleaning
+
+var_names <- names(predictors8)
+
+var_names <- gsub("Bottom", "Bot", var_names)
+
+var_names <- gsub("Surface", "Surf", var_names)
+
+var_names <- gsub("Intermediate", "Int", var_names)
+
+var_names <- gsub("_aug_20", "", var_names)
+
+var_names <- gsub("_Aug_20", "", var_names)
+
+
+names(predictors8) <- var_names
+
+complete_stations <- nrow(predictors8[complete.cases(predictors8),])
+
+NA_present <- predictors8 %>% summarise_all(funs(sum(is.na(.)))) %>% t() %>% as.data.frame()%>% mutate(Param = row.names(.))
+
+library(imputeTS)
+predictors9 <- na_mean(predictors8)
+
+predictors9$Station_ID <- as.numeric(gsub("O","", predictors9$Station))
+
+predictors10 <- predictors9[order(predictors9$Station_ID), ] %>% select(-Station_ID)
+
+# nrow(predictors10)
+```
+
+
+```{r}
+vars <- read_excel("Data/Variables.xlsx")
+kable(vars,caption = "Таблица 1. Обозначения переменных", col.names = c("**Переменная**", "**Содержание**"))
+```
+
+
+
+```{r}
+# Рабочая таблица по фитопланктону
+phytopl_long2 <- phytopl_long %>% select(-Taxa_2) %>% group_by(Station, Taxa_1) %>% summarize(N = mean(N, na.rm = T))
+
+
+phytopl_wide <- dcast(phytopl_long2, Station  ~ Taxa_1, sum) 
+
+
+
+biogen_full_wide <- dcast(biogen_full_melt, Station  ~ variable, mean)
+
+
+phyt_biogen <- merge(phytopl_wide, biogen_full_wide, all.x = T)
+
+# nrow(phyt_biogen)
+
+suspensed_metter <- suspensed_metter_by_layers %>% group_by(Station) %>% summarise(Suspended_matter = mean(Suspended_matter , na.rm = T)) 
+
+phyt_biogen_susp <- merge(phyt_biogen, suspensed_metter, all.x = T)
+
+
+phyt_biogen_susp_ship <- merge(phyt_biogen_susp, ships, all.x = T)
+
+phytopl_pred <- predictors10 %>% select(Station, Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity)
+
+phyt_biogen_susp_ship_pred <- merge(phyt_biogen_susp_ship, phytopl_pred, all.x = T)
+
+
+
+phytopl_bio <- phyt_biogen_susp_ship_pred %>% select(-c(Color, O2,pH, Amon_N, Nitrit_N, Nitrat_N, Total_N, Mineral_P, Total_P, Si, Organic_N, Organic_P, Suspended_matter, Ships, Distance_Dump, Distance_to_Drag, Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity))
+
+
+phytopl_env <- phyt_biogen_susp_ship_pred %>% select(c(Station,  Color, O2,pH, Amon_N, Nitrit_N, Nitrat_N, Total_N, Mineral_P, Total_P, Si, Organic_N, Organic_P, Suspended_matter, Ships, Distance_Dump, Distance_to_Drag, Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity))
+
+
+```
+
+
+
+
+
+
+
+# Связь сообщества фитопланктона с параметрами среды
+
+При рассмотрении всего сообщества фитопланктона, включающего `r length(unique(phytopl_long2$Taxa_1))` вида, был проведен канонический корреспонтдентный анализ (ССА). В анализе данные по отдельным горизонтам глубины (поверхностный, средний и придонный) были объединены. В качестве предикторов в анализ на первом его этапе были включены следующие переменные :`r names(phytopl_env)[-1]` (см. Табл.1). Результаты анализа демонстрирует (`r figRef("phytopl_cca_full")`). 
+
+
+
+```{r}
+phyt_cca_full <- cca(phytopl_bio[,-c(1:2)] ~ . - Organic_N, data = phytopl_env[,-c(1:2)])
+
+# plot(phyt_cca_full)
+
+# vif.cca(phyt_cca_full)
+
+phyt_cca_0 <- cca(phytopl_bio[,-c(1:2)] ~ 1, data = phytopl_env[,-c(1:2)])
+
+
+
+phyt_cca_reduced_forw <- ordistep(phyt_cca_0, scope = formula(phyt_cca_full), direction = "forward", Pin = 0.1, Pout = 0.1, trace = F)
+  
+# plot(phyt_cca_reduced_forw)
+  
+
+# plot(phyt_cca_reduced_forw, display = c("sites", "cn"), choice = c(1, 2))
+
+# anova(phyt_cca_reduced_forw, by = "margin")
+# 
+# 
+# anova(phyt_cca_reduced_backw, by = "axis")
+
+
+CCA1_importance <- round(summary(phyt_cca_reduced_forw)$cont$ importance [2, 1] * 100, 1)
+CCA2_importance <- round(summary(phyt_cca_reduced_forw)$cont$ importance [2, 2] * 100, 1)
+CCA3_importance <- round(summary(phyt_cca_reduced_forw)$cont$ importance [2, 3] * 100, 1)
+
+
+phyt_cca_scores <- fortify(phyt_cca_reduced_forw)
+
+phyt_cca_species_score <- phyt_cca_scores %>% filter(Score == "species")
+
+phyt_cca_sites_score <- phyt_cca_scores %>% filter(Score == "sites")
+
+phyt_cca_biplot_score <- phyt_cca_scores %>% filter(Score == "biplot")
+
+```
+
+
+
+```{r, fig.cap = figRef("phytopl_cca_full", "Ординация проб в первой и второй канонических корреспондентных осях, описывающих связи сообщества фитопланктона с парамтерами среды")}
+plot(phyt_cca_full, display = c("sites", "cn"))
+```
+
+
+Для выявления наиболее значимых предикторов был проведен подбор оптимальной модели в соответствии с алгоритмом прямого пошагового подбора (forward selection). В результате анализа была получена сокращенная модель CCA (`r figRef("phytopl_cca_red")`), которая включала всего три ключевых параметра среды:  соленость (поверхностная и придонная) и концентрация кислорода. Все упомянутые предикторы оказывали статистически значимое воздействие на ординацию.  Первая каноническая ось, описывающая `r CCA1_importance`% общей изменчивости, связана с соленостью. Вторую каноническую ось, описывающую лишь `r CCA2_importance`% общей изменчивости, можно отчасти связать с концентрацией растворенного кислорода.  
+
+
+
+```{r, fig.cap = figRef("phytopl_cca_full", "Ординация проб в первой и второй канонических корреспондентных осях (полная модель), описывающих связи сообщества фитопланктона с параметрами среды")}
+plot(phyt_cca_full, display = c("sites", "cn"))
+```
+
+
+```{r, fig.cap = figRef("phytopl_cca_red", "Ординация проб в первой и второй канонических корреспондентных осях (сокращенная модель), описывающих связи сообщества фитопланктона с параметрами среды")}
+plot(phyt_cca_reduced_forw, display = c("sites", "cn"))
+```
+
+
+
+Таким образом, сообщество фитопланктона, в изученных масштабах, находится в основном под контролем морских вод. Градиент ССA1  отражает как видовое разнообразие, падающее по мере увеличения значений ССA1 (`r figRef("CCA1_scatter")`, A), так и соленость, которая также, в среднем, падает по мере увеличения ССА1 (`r figRef("CCA1_scatter")`, B, C). Вместе с тем, отмечается обратная связь с суммарным обилием фитопланктона, которая достигает максимума при положительных значениях CCA1 (`r figRef("CCA1_scatter")`, D). Последнее, вероятно, и определяет положительную корреляцию CCA1 с концентрацией кислорода (`r figRef("phytopl_cca_red")`). 
+
+```{r, fig.cap = figRef("CCA1_scatter", "Связь значений CCA1 c видовым разнообразием сообщества фитопланктона и значениями придонной и повперхностной солености. Приведены LOESS-линии регрессии.")}
+
+Pl_abund <- phytopl_bio %>% select(-Station) %>% mutate(Total_N = rowSums(.)) %>% select(Total_N) %>% mutate(CCA1 = phyt_cca_sites_score$CCA1) %>% ggplot(., aes(x = CCA1, y = Total_N)) + geom_point() +labs(x = "CCA1", y = "Суммарное обилие (экз.)") + geom_smooth(se = F)
+
+Pl_Shen <- phytopl_env %>% select(Bot_Salinity, Surf_Salinity) %>% mutate(H = diversity(phytopl_bio[,-1]), CCA1 = phyt_cca_sites_score$CCA1) %>% ggplot(., aes(x = CCA1, y = H)) + geom_point() +labs(x = "CCA1", y = "Индекс разнообразия Шеннона (H)") + geom_smooth(se = F)
+
+Pl_Bot_Sal <- phytopl_env %>% select(Bot_Salinity, Surf_Salinity) %>% mutate(H = diversity(phytopl_bio[,-1]), CCA1 = phyt_cca_sites_score$CCA1) %>% ggplot(., aes(x = CCA1, y = Bot_Salinity)) + geom_point() +labs(x = "CCA1", y = "Придонная соленость") + geom_smooth(se = F)
+
+Pl_Surf_Sal <- phytopl_env %>% select(Bot_Salinity, Surf_Salinity) %>% mutate(H = diversity(phytopl_bio[,-1]), CCA1 = phyt_cca_sites_score$CCA1) %>% ggplot(., aes(x = CCA1, y = Surf_Salinity)) + geom_point() + labs(x = "CCA1", y = "Поверхностная соленость") +  geom_smooth(se = F)
+
+
+plot_grid(Pl_Shen, Pl_Bot_Sal, Pl_Surf_Sal,Pl_abund, nrow = 2, labels = c("A", "B", "C", "D") )
+
+```
+
+
+```{r}
+CCA1_stations <- merge(data.frame(Station = phytopl_bio$Station, CCA1 = phyt_cca_sites_score$CCA1), stat_full %>% select(Station, Long, Lat))
+
+
+
+
+```
+
+
+В пространстве сообщество фитопланктона демонстрирует градиент очень близкий к градиенту солености (`r figRef("CCA1_map")`). Таким образом, наиболее разнообразное сообщество фитопланктона представлено в северной части устья Обской губы, которая находится под влиянием морских вод. Менее разнообразное, но при этом, характеризующееся очень высоким суммарным обилием, сообщество фитопланктона представлено в южной, наиболее опресненной части акватории.     
+
+
+```{r, fig.cap = figRef("CCA1_map", "Распределение значений первой канонической оси, характериюзующей структуру сообщества фитопланктона")}
+
+
+theme_set(theme_bw())
+
+# Coordinate limites 
+# Ob_x <- c(71, 79)
+
+Ob_x <- c(71, 75)
+Ob_y <- c(70, 73.2)
+
+# Sabetta
+Sabetta_y <- 71.235220
+Sabetta_x <- 72.126754
+
+# Terminal
+
+Terminal_y <- 71.010886
+Terminal_x <- 73.793525
+
+
+
+Pl_Obskaya_bay <- 
+ggplot(Ob_df, aes(x=long, y=lat, group=group)) +
+  geom_polygon(fill = "gray90", colour = "gray20") + 
+  coord_map(xlim = Ob_x, ylim = Ob_y) + 
+  theme_bw() +  
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
+  theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+  theme(axis.ticks = element_blank()) +
+  geom_point(aes(x = Sabetta_x, y = Sabetta_y), size = 3, shape = 21, fill = "red") + 
+  geom_point(aes(x = Terminal_x, y = Terminal_y), size = 3, shape = 22, fill = "yellow") 
+
+
+
+Obskaya_bay_cover <-function(plt){
+  plt <- plt + 
+    geom_polygon(data = Ob_df, aes(x=long, y=lat, group=group), fill = "gray90", colour = "gray20") + 
+    coord_map(xlim = Ob_x, ylim = Ob_y) + 
+    theme_bw() +  
+    theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
+    theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+    theme(axis.ticks = element_blank()) +
+    geom_point(aes(x = Sabetta_x, y = Sabetta_y), size = 3, shape = 21, fill = "red") + 
+    geom_point(aes(x = Terminal_x, y = Terminal_y), size = 3, shape = 22, fill = "yellow") +
+    geom_point(data = stat_full, aes(x = Long, y = Lat, group = 1), size = 0.5) +
+    theme(strip.background = element_blank())
+  plt
+}
+
+
+grid_data <- expand.grid(Lat = seq(from = 70.01, to =72.9, length.out = 100), Long =  seq(from = 71, to =75.2 , length.out = 100))
+
+
+
+
+fit_CCA1_phytopl <- gam(formula = CCA1  ~ s(Long, Lat, bs = "tp"), data = CCA1_stations, family = gaussian)
+
+CCA1_pred <- predict(fit_CCA1_phytopl, newdata = grid_data, type = "response")
+
+
+Pl_CCA1_phytopl <- ggplot() + 
+  geom_tile(data = grid_data, aes(x = Long, y = Lat, fill = (CCA1_pred), group = 1))  + 
+  scale_fill_gradient(low = "yellow", high = "red") +
+  labs(fill = "CCA1")
+
+Obskaya_bay_cover(Pl_CCA1_phytopl)
+
+
+
+
+# CCA1 распределение ###################
+
+# Pl_Obskaya_bay + 
+#   geom_point(data = CCA1_stations, aes(x = Long, y = Lat, size = CCA1, group = 1, color = CCA1))+
+#   labs(size = "Значения ССА1") + 
+#   guides(color = "none") +
+#   scale_color_gradient(low = "white", high = "black")
+#   
+
+```
+
+
+
+```{r}
+species_CCA1_negative <- phyt_cca_species_score %>% filter(CCA1<0) %>% select(Label)
+
+species_CCA1_positive <- phyt_cca_species_score %>% filter(CCA1>0) %>% select(Label)
+
+
+
+
+
+```
+
+
+
+<!-- Соотношение обилй систематических групп фитопланктона среди форм тяшотеющих к осолоненным и опресненным ыодным массам демонстрирует рисунок +++. -->
+
+
+<!-- ```{r} -->
+
+<!-- phytopl_long$Group <- ifelse(phytopl_long$Taxa_1 %in% species_CCA1_negative$Label, "Sal", "Fresh") -->
+
+<!-- phytopl_long %>% group_by(Taxa_2, Group) %>% summarise(N_mean = mean(N)) %>% ggplot(., aes(x = Taxa_2, y = N_mean, color = Group)) + geom_point(position = position_dodge(width = 1)) -->
+
+<!-- ``` -->
+
+
+
+
+
+Виды фитопланктона положительно связанные с соленостью приведены в таблице 2, а виды, тяготеющие к опресненной воде, в таблице 3. 
+
+
+```{r}
+Saline_taxa <- phytopl_long %>% filter(Taxa_1 %in% species_CCA1_negative$Label) %>% group_by(Taxa_1) %>% summarise(Taxa_2 = unique(Taxa_2)) %>% arrange(desc(Taxa_2))
+
+Saline_taxa$Taxa_1 <- gsub("_", " ", Saline_taxa$Taxa_1)
+
+Fresh_taxa <- phytopl_long %>% filter(Taxa_1 %in% species_CCA1_positive$Label) %>% group_by(Taxa_1) %>% summarise(Taxa_2 = unique(Taxa_2)) %>% arrange(desc(Taxa_2))
+
+Fresh_taxa$Taxa_1 <- gsub("_", " ", Fresh_taxa$Taxa_1)
+
+
+```
+
+
+
+
+```{r}
+kable(Saline_taxa, col.names = c("Виды", "Группа"), caption = "Таблица 2. Виды фитопланктона, тяготеющие к осолоненным водным массам")
+```
+
+
+
+
+```{r}
+kable(Fresh_taxa, col.names = c("Виды", "Группа"), caption = "Таблица 3. Виды фитопланктона, тяготеющие к опресненным водным массам")
+```
+
