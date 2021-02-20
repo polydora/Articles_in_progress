@@ -1,0 +1,558 @@
+---
+title: "Влияние техногенной взвеси"
+author: ""
+date: ""
+output: html_document
+---
+
+
+
+
+
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+
+```
+
+
+<style type="text/css">
+
+body{ /* Normal  */
+      font-size: 18px;
+  }
+td {  /* Table  */
+  font-size: 14px;
+}
+h1.title {
+  font-size: 38px;
+  color: DarkRed;
+}
+h1 { /* Header 1 */
+  font-size: 28px;
+  color: DarkBlue;
+}
+h2 { /* Header 2 */
+    font-size: 22px;
+  color: DarkBlue;
+}
+h3 { /* Header 3 */
+  font-size: 18px;
+  font-family: "Times New Roman", Times, serif;
+  color: DarkBlue;
+}
+code.r{ /* Code block */
+    font-size: 12px;
+}
+pre { /* Code block - determines code spacing between lines */
+    font-size: 14px;
+}
+</style>
+
+
+
+
+```{r}
+# Packages ######################
+library(ggmap)
+library(mapproj)
+library(maps)
+
+library(rgeos) 
+
+library(mapdata)
+library(maptools) # Rgshhs
+library(PBSmapping)
+
+library(readxl)
+library(dplyr)
+library(cowplot)
+library(mgcv)
+library(reshape2)
+library(ggplot2)
+library(ggrepel)
+
+library(png)
+
+library(vegan)
+
+library(broom)
+library( broom.mixed)
+
+
+library(ggvegan)
+library(car)
+
+
+theme_set(theme_bw())
+```
+
+
+
+```{r}
+
+# Функция, задающая нумерацию рисунков
+
+figRef <- local({
+    tag <- numeric()
+    created <- logical()
+    used <- logical()
+    function(label, caption, prefix = options("figcap.prefix"), 
+        sep = options("figcap.sep"), prefix.highlight = options("figcap.prefix.highlight")) {
+        i <- which(names(tag) == label)
+        if (length(i) == 0) {
+            i <- length(tag) + 1
+            tag <<- c(tag, i)
+            names(tag)[length(tag)] <<- label
+            used <<- c(used, FALSE)
+            names(used)[length(used)] <<- label
+            created <<- c(created, FALSE)
+            names(created)[length(created)] <<- label
+        }
+        if (!missing(caption)) {
+            created[label] <<- TRUE
+            paste0(prefix.highlight, prefix, " ", i, sep, prefix.highlight, 
+                " ", caption)
+        } else {
+            used[label] <<- TRUE
+            paste(prefix, tag[label])
+        }
+    }
+})
+
+options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**")
+
+
+```
+
+
+
+```{r}
+
+# Data reading ####################
+
+Ob_df <- read.csv("Data/Obskaya_bay_map.csv") # Map poligones
+
+# All Station position
+stations <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Station parameters", na = "NA")
+
+# Stations with biological samples
+stat_full <- stations %>% filter(Exclude == 0)
+
+stat_full <- as.data.frame(stat_full)
+
+# Data on organic matter from the file "Содержание органического вещества в ДО.docx"
+
+org <- read.csv("Data/Organic matter_2020.csv")
+
+org <- org[org$Station %in% stat_full$Station, ]
+
+# Data on Granulmetric from the file "Грансостав ДО.docx"
+
+granul <- read_excel("Data/Granulometry_2020.xlsx",  na = "NA")
+
+
+granul$Small <- with(granul, F_0.002 + `F_0.01-0.002` + `F_0.05-0.01`)              
+
+granul$Big <- rowSums(granul[ ,8:15]  )
+
+
+granul$Season <- factor(granul$Season)
+
+
+# Chlorophyll a 
+
+chlor <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Chlorophyll august 2020", na = "NA")
+
+
+# Biogenes
+
+biogen <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Biogenes_August", na = "NA")
+
+biogen_full <- biogen %>% filter(Exclude == 0) %>% select(-Exclude)
+
+biogen_full_melt <- melt(biogen_full, id.vars = c("Station", "Layer"))
+
+biogen_full_2 <- dcast(biogen_full_melt, Station ~ Layer + variable )
+
+
+
+# Zooplancton
+
+zoopl_long <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Zooplancton_long", na = "NA")
+
+zoopl <- dcast(zoopl_long %>%select(-B), Station ~ Taxa) 
+
+zoopl[is.na(zoopl)] <- 0
+
+zoopl$Station_ID <- as.numeric(gsub("O","", zoopl$Station))
+
+zoopl <- zoopl[order(zoopl$Station_ID), ] %>% select(-Station_ID)
+
+
+# Ship activity and Sattelite data on suspended matter and distances to dumping
+
+# ships <- read.table("Data/Stations_tsm_ships.shp.txt", header = T, sep = "\t")
+# write.table(ships, "clipboard", sep = "\t")
+
+ships <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Ship_activity")
+
+ships <- ships %>% filter(Exclude != 1) %>% select(Station, Ships, Distance_Dump, Distance_to_Drag)
+
+ships2 <- merge(stat_full %>% select(Station, Lat, Long), ships)
+
+ships2$Station_ID <- as.numeric(gsub("O","", ships2$Station))
+
+ships2 <- ships2[order(ships2$Station_ID), ] %>% select(-Station_ID)
+
+
+# nrow(ships2)
+
+
+# All chlorophyll
+chlorophyll <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Chlorophyll august 2020")
+
+# Suspensed matter
+
+suspensed_metter_by_layers <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Suspensed matters August", na = "NA")
+
+suspensed_metter_by_layers <- suspensed_metter_by_layers %>% filter(Exclude !=1) %>% select(-Exclude)  
+
+
+
+# Phytoplancton Species
+
+phytopl_long <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Phytoplancton Species long")
+
+
+
+```
+
+
+```{r}
+
+# Данные для карт ###############################################
+
+# Coordinate limites 
+# Ob_x <- c(71, 79)
+
+Ob_x <- c(71, 75)
+Ob_y <- c(70, 73.2)
+
+# Sabetta
+Sabetta_y <- 71.235220
+Sabetta_x <- 72.126754
+
+# Terminal
+
+Terminal_y <- 71.010886
+Terminal_x <- 73.793525
+
+
+grid_data <- expand.grid(Lat = seq(from = 70.01, to =72.89, length.out = 100), Long =  seq(from = 71, to =75.2 , length.out = 100))
+
+
+
+
+
+Pl_Obskaya_bay <- 
+ggplot(Ob_df, aes(x=long, y=lat, group=group)) +
+  geom_polygon(fill = "gray90", colour = "gray20") + 
+  coord_map(xlim = Ob_x, ylim = Ob_y) + 
+  theme_bw() +  
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
+  theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+  theme(axis.ticks = element_blank()) +
+  geom_point(aes(x = Sabetta_x, y = Sabetta_y), size = 3, shape = 21, fill = "red") + 
+  geom_point(aes(x = Terminal_x, y = Terminal_y), size = 3, shape = 22, fill = "yellow") 
+
+
+
+Obskaya_bay_cover <-function(plt){
+  plt <- plt + 
+    geom_polygon(data = Ob_df, aes(x=long, y=lat, group=group), fill = "gray90", colour = "gray20") + 
+    coord_map(xlim = Ob_x, ylim = Ob_y) + 
+    theme_bw() +  
+    theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
+    theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+    theme(axis.ticks = element_blank()) +
+    geom_point(aes(x = Sabetta_x, y = Sabetta_y), size = 3, shape = 21, fill = "red") + 
+    geom_point(aes(x = Terminal_x, y = Terminal_y), size = 3, shape = 22, fill = "yellow") +
+    geom_point(data = stat_full, aes(x = Long, y = Lat, group = 1), size = 0.5) +
+    theme(strip.background = element_blank())
+  plt
+}
+
+
+
+
+
+```
+
+
+
+
+```{r}
+# Подготовка таблицы предикторов ####################################
+predictors <- stat_full %>% select(Station, Lat, Long,  Depth_aug_20, Transparency_aug_20, Surface_Salinity_Aug_20, Bottom_Salinity_Aug_20, Surface_Turbidity_Aug_20, Bottom_Turbidity_Aug_20, Surface_Susp_Aug_20, Interm_Susp_Aug_20, Bottom_Susp_Aug_20)
+
+
+chlor_surface <- chlor %>% filter(Layer == "Surface") %>% select(Station, Chla) %>% rename(Chla_surface = Chla)
+
+
+chlor_intermed <- chlor %>% filter(Layer == "Intermediate") %>% select(Station, Chla) %>% rename(Chla_intermed = Chla)
+
+chlor_bottom <- chlor %>% filter(Layer == "Bottom") %>% select(Station, Chla) %>% rename(Chla_bottom = Chla)
+
+
+
+predictors2 <- merge(predictors, chlor_surface, all.x = T)
+
+predictors3 <- merge(predictors2, chlor_intermed, all.x = T)
+
+predictors4 <- merge(predictors3, chlor_bottom, all.x = T)
+
+
+predictors5 <- merge(predictors4, org %>% select(Station, Org_Aug_20), all.x = T)
+
+
+predictors6 <- merge(predictors5, granul %>% filter(Season == "August") %>% select(Station, Small, Big) %>% rename(Fine_particles = Small, Coarce_particles = Big), all.x =T)
+
+
+predictors7 <- merge(predictors6, biogen_full_2, all.x = T)
+
+
+# # All variables from intermediate layer will be excluded from analysis 
+# 
+# predictors8 <- predictors7 %>% select(-c(Interm_Susp_Aug_20, Chla_intermed, Intermediate_Color, Intermediate_O2, Intermediate_pH,  Intermediate_Amon_N, Intermediate_Nitrit_N, Intermediate_Nitrat_N, Intermediate_Total_N, Intermediate_Mineral_P, Intermediate_Toal_P, Intermediate_Si, Intermediate_Organic_N, Intermediate_Organic_P))
+
+predictors8 <- merge(predictors7, ships2 %>% select(Station, Ships, Distance_Dump, Distance_to_Drag, ))
+
+# nrow(ships2)
+# Variable names cleaning
+
+var_names <- names(predictors8)
+
+var_names <- gsub("Bottom", "Bot", var_names)
+
+var_names <- gsub("Surface", "Surf", var_names)
+
+var_names <- gsub("Intermediate", "Int", var_names)
+
+var_names <- gsub("_aug_20", "", var_names)
+
+var_names <- gsub("_Aug_20", "", var_names)
+
+
+names(predictors8) <- var_names
+
+complete_stations <- nrow(predictors8[complete.cases(predictors8),])
+
+NA_present <- predictors8 %>% summarise_all(funs(sum(is.na(.)))) %>% t() %>% as.data.frame()%>% mutate(Param = row.names(.))
+
+library(imputeTS)
+predictors9 <- na_mean(predictors8)
+
+predictors9$Station_ID <- as.numeric(gsub("O","", predictors9$Station))
+
+predictors10 <- predictors9[order(predictors9$Station_ID), ] %>% select(-Station_ID)
+
+# nrow(predictors10)
+```
+
+
+
+
+```{r}
+# Рабочая таблица по зоопланктону
+
+
+biogen_full_wide <- dcast(biogen_full_melt, Station  ~ variable, mean)
+
+
+zoopl_biogen <- merge(zoopl, biogen_full_wide, all.x = T)
+
+
+
+suspensed_metter <- suspensed_metter_by_layers %>% group_by(Station) %>% summarise(Suspended_matter = mean(Suspended_matter , na.rm = T)) 
+
+zoopl_biogen_susp <- merge(zoopl_biogen, suspensed_metter, all.x = T)
+
+
+zoopl_biogen_susp_ship <- merge(zoopl_biogen_susp, ships, all.x = T)
+
+zoopl_pred <- predictors10 %>% select(Station, Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity)
+
+zoopl_biogen_susp_ship_pred <- merge(zoopl_biogen_susp_ship, zoopl_pred, all.x = T)
+
+
+zoopl_bio <- zoopl_biogen_susp_ship_pred %>% select(-c(Color, O2,pH, Amon_N, Nitrit_N, Nitrat_N, Total_N, Mineral_P, Total_P, Si, Organic_N, Organic_P, Suspended_matter, Ships, Distance_Dump, Distance_to_Drag, Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity))
+
+
+zoopl_env <- zoopl_biogen_susp_ship_pred %>% select(c(Station,  Color, O2,pH, Amon_N, Nitrit_N, Nitrat_N, Total_N, Mineral_P, Total_P, Si, Organic_N, Organic_P,  Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity))
+
+zoopl_techno <- zoopl_biogen_susp_ship_pred %>% select(Suspended_matter, Ships, Distance_Dump, Distance_to_Drag)
+
+zoopl_coord <- merge(zoopl_env, stat_full %>% select(Station, Long, Lat), all.x = T) %>% select(Station, Long, Lat)
+
+
+
+###################################################
+# Рабочая таблица по фитопланктону
+phytopl_long2 <- phytopl_long %>% select(-Taxa_2) %>% group_by(Station, Taxa_1) %>% summarize(N = mean(N, na.rm = T))
+
+
+phytopl_wide <- dcast(phytopl_long2, Station  ~ Taxa_1, sum) 
+
+
+
+biogen_full_wide <- dcast(biogen_full_melt, Station  ~ variable, mean)
+
+
+phyt_biogen <- merge(phytopl_wide, biogen_full_wide, all.x = T)
+
+# nrow(phyt_biogen)
+
+suspensed_metter <- suspensed_metter_by_layers %>% group_by(Station) %>% summarise(Suspended_matter = mean(Suspended_matter , na.rm = T)) 
+
+phyt_biogen_susp <- merge(phyt_biogen, suspensed_metter, all.x = T)
+
+
+phyt_biogen_susp_ship <- merge(phyt_biogen_susp, ships, all.x = T)
+
+phytopl_pred <- predictors10 %>% select(Station, Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity)
+
+phyt_biogen_susp_ship_pred <- merge(phyt_biogen_susp_ship, phytopl_pred, all.x = T)
+
+
+
+phytopl_bio <- phyt_biogen_susp_ship_pred %>% select(-c(Color, O2,pH, Amon_N, Nitrit_N, Nitrat_N, Total_N, Mineral_P, Total_P, Si, Organic_N, Organic_P, Suspended_matter, Ships, Distance_Dump, Distance_to_Drag, Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity))
+
+
+phytopl_env <- phyt_biogen_susp_ship_pred %>% select(c(Station,  Color, O2,pH, Amon_N, Nitrit_N, Nitrat_N, Total_N, Mineral_P, Total_P, Si, Organic_N, Organic_P,  Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity))
+
+phytopl_techno <- phyt_biogen_susp_ship_pred %>% select(Suspended_matter, Ships, Distance_Dump, Distance_to_Drag)
+
+phytopl_coord <- merge(phytopl_env, stat_full %>% select(Station, Long, Lat), all.x = T) %>% select(Station, Long, Lat)
+
+
+
+
+
+```
+
+
+
+
+
+# Связь фитопланктона с техногенной взвесью
+
+
+
+```{r}
+
+phytopl_abund <- phytopl_long %>% group_by(Layer, Station) %>% summarise(Total_N = sum(N, na.rm = T)) 
+
+
+
+
+Station_impacted <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Stations near impact source")
+
+
+susp <- predictors8 %>% select(Station, Long, Lat, Surf_Susp, Interm_Susp, Bot_Susp)
+
+susp_layer <-
+  susp %>% select(Station, Surf_Susp, Interm_Susp, Bot_Susp) %>% melt(.) %>% 
+  mutate(Layer = case_when(variable  == "Surf_Susp" ~ "Surface",
+                           variable  == "Interm_Susp" ~ "Intermediate",
+                           variable  == "Bot_Susp" ~ "Bottom")) %>% 
+  select(-variable) %>% 
+  rename(Suspended_matter = value)
+
+
+phytopl_susp <- merge(phytopl_abund, susp_layer, all = T)
+
+
+phytopl_source_impact <- merge(Station_impacted, phytopl_susp, all.x = T)
+
+phytopl_source_impact$Layer <- factor(phytopl_source_impact$Layer, levels= c("Surface", "Intermediate", "Bottom"))
+```
+
+
+Второй способ оценки влияния взвеси на сообщества планктона основывается на визуальном (по спутниковым снимкам) определении области, где представлен шлейф взвешенных частиц. Этот шлейф читается в двух участках, где потенциально присутствует техногенная нагрузка: в районе терминала (далее *Terminal*) и в районе морского канала (далее *Channel*). Соответственно, в обеих участках можно выделить области, попадающие в зоны шлейфа (далее *In*) и области вне этой зоны (далее *Out*). Распределение концентрации взвешенных частиц в указанных зонах демонстрирует `r figRef("Loop_susp")`. В пределах шлейфа концентрация частиц существенно выше в районе терминала и незначительно выше в районе канала.  
+
+
+
+```{r fig.cap=figRef("Loop_susp", "Значения концентрации взвешенных частиц в трех слоях воды в пределах визуально выявленного шлейфа взвеси (In) и за его пределами (Out) на двух участках активного техногенного воздействия")}
+
+ggplot(phytopl_source_impact, aes(x = Source, y = Suspended_matter, fill = Loop)) + geom_boxplot() + facet_wrap(~Layer) + 
+  labs(x = "Зоны техногенного воздействия", y = "Концентрация взвешенных частиц")
+```
+
+
+
+Обилие фитопланктона в указанных выделах демонстрирует `r figRef("Loop_phytopl")`. Видно, что в пределах шлейфа обилие фитопланктона существенно ниже, чем за пределами шлейфа в районе терминала. Однако в районе морского канала существенных различивший не выявляется.  
+
+
+```{r fig.cap=figRef("Loop_phytopl", "Суммарное обилие фитопланктона в трех слоях воды в пределах визуально выявленного шлейфа взвеси (In) и за его пределами (Out) на двух участках активного техногенного воздействия")}
+ggplot(phytopl_source_impact, aes(x = Source, y = Total_N, fill = Loop)) + geom_boxplot() + facet_wrap(~Layer) + 
+  labs(x = "Зоны техногенного воздействия", y = "Обилие фитопланктона (экз.)")
+
+```
+
+
+Для более детальной оценки влияния взвешенных в воде частиц на обилие фитопланктона была подобрана модель, описывающая зависимость суммарного обилия фитопланктона (анализировали значение логарифма и вследствие выраженной нелинейности связи использовали аддитивные модели, GAM, `r figRef("GAM_phytopl")`). В пределах шлейфа в районе терминала обилие фитопланктона было существенно ниже, чем в областях, находящихся за пределами шлейфа (линия регрессии для области шлейфа лежит ниже значения среднего для области, находящейся за пределами шлейфа). Столь сильного отклонения от среднего в районе канала не обнаружено. 
+
+Диапазон обилия между средними значениями для участков за пределами шлейфа взвеси (зона между красной и синей горизонтальными линиями на `r figRef("GAM_phytopl")`) можно принять за приблизительную оценку нормального варьирования обилия фитопланктона. Тогда выход линий регрессии за пределы этого диапазона в зоне шлейфа можно трактовать как признак нарушения сообщества. Приблизительные границы нормы выходят  за пределы доверительного интервала линии регрессии в области шлейфа при значениях концентрации более 200 мг/л. Приведенная величина может рассматриваться как приблизительная оценка границы воздействия, после которой начинается существенная деградация сообщества фитопланктона. 
+
+
+
+```{r fig.cap=figRef("GAM_phytopl", "Зависимость суммарного обилия фитопланктона от концентрации взвешенных частиц в пределах визуального шлейфа взвеси (In) и за его пределами (Out) на двух участках активного техногенного воздействия. Горизонтальные пунктирные линии отражают среднее значение обилия фитопланктона в районе канала (синяя линия) и в районе терминала (красная линия).")}
+
+
+phytopl_source_impact$Source <- factor(phytopl_source_impact$Source)
+phytopl_source_impact$Loop <- factor(phytopl_source_impact$Loop)
+
+
+
+
+Mod_gam <- gam(log(Total_N) ~ s(Suspended_matter, by = Loop) +  Loop*Source, data = phytopl_source_impact)
+
+# summary(Mod_gam)
+# plot(Mod_gam, pages = 1)
+
+
+mydata <- phytopl_source_impact %>% group_by(Loop, Source) %>% do(data.frame(Suspended_matter = seq(0, max(.$Suspended_matter, na.rm = T), length.out = 100)))
+
+predicted <- predict(Mod_gam, newdata = mydata, se.fit = T)
+
+mydata$fit <- predicted$fit
+mydata$se <- predicted$se.fit
+
+
+Pl_gam <- ggplot(mydata, aes(x = Suspended_matter, y = fit, color = Source)) + geom_line(size = 2) + facet_wrap(~Loop) + geom_ribbon(aes(ymin = fit-1.96*se, ymax = fit+1.96*se), alpha = 0.2) + geom_point(data = phytopl_source_impact, aes(x = Suspended_matter, y = log(Total_N))) + scale_color_manual(values = c("blue", "red"))
+
+
+Means <- phytopl_source_impact %>% filter(Loop == "Out") %>% filter(!is.na(Total_N)) %>%   group_by(Source) %>% summarise(Mean_N = mean(Total_N), SD = sd(Total_N))
+
+Pl_gam + geom_hline(data = Means, aes(yintercept = log(Mean_N), color = Source), linetype = 2, size = 1) + labs(x = "Концентрация взвешенных частиц (мг/л)", y = "Логарифм суммарного обилия фитопланктона", color = "Участки техногенного воздействия") + theme(legend.position = "bottom") + geom_text(aes(x = 250, y = 6.5, label = "Приблизительные \nграницы нормы"), color = "gray")
+
+
+
+```
+
+
+
+```{r}
+Impacted_area <- phytopl_source_impact %>%filter(Loop == "In")  %>% filter(Suspended_matter>=150) %>% filter(log(Total_N)<6) 
+
+
+Pl_gam + geom_hline(data = Means, aes(yintercept = log(Mean_N), color = Source), linetype = 2, size = 1) + labs(x = "Концентрация взвешенных частиц (мг/л)", y = "Логарифм суммарного обилия фитопланктона", color = "Участки техногенного воздействия") + theme(legend.position = "bottom") + geom_text(aes(x = 250, y = 6.5, label = "Приблизительные \nграницы нормы"), color = "gray") + geom_point(data = Impacted_area, aes(y = log(Total_N)), size = 5)
+
+
+```
+
+
+Большие точки - это станции `r unique(Impacted_area$Station)`. Получилось на одну меньше, так как для одной станции (O109) приведено   две точки - это два слоя воды (поверхностный и придонный).

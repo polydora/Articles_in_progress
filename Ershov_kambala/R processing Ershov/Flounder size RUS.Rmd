@@ -69,6 +69,8 @@ Mod_6 <- update(Mod_5, . ~ . - Sex)
 
 
 ```{r}
+AIC(Mod, Mod_6)
+
 kable(tidy(Mod_6))
 
 ```
@@ -110,14 +112,15 @@ kable(tidy(Mod_6))
 
 
 
-new_data <- kam %>% group_by(Bay) %>% do(data.frame(L = seq(min(.$L), max(.$L), length.out = 100) ))
+new_data <- kam %>% group_by(Bay) %>% do(data.frame(L = seq(min(.$L), max(.$L), length.out = 100) )) %>% filter(Bay == "Onega_Bay")
 
 predicted <- predict(Mod_6, newdata = new_data, se.fit = T, type = "response")
 
 new_data$Predicted <- predicted$fit
 new_data$SE <- predicted$se.fit
 
-Left_prop <- kam %>% group_by(Bay) %>% do(data.frame(L = .$L, Orient = .$Orient, Size_class = ntile(x = .$L, n = 10))) %>% group_by(Bay,Size_class) %>% summarise(L_mean = mean(L), Left_prop = mean(Orient == "Left"))
+Left_prop <- kam %>% group_by(Bay) %>% do(data.frame(L = .$L, Orient = .$Orient, Size_class = cut_number(x = .$L, n = 20))) %>% group_by(Bay,Size_class) %>% summarise(L_mean = max(L), Left_prop = mean(Orient == "Left"), N = n()) %>% filter(N>0)  %>% filter(Bay == "Onega_Bay")
+
 
   
   
@@ -130,9 +133,9 @@ ggplot(new_data, aes(x = L, y = Predicted)) +
   geom_line( size = 1) +  
   geom_ribbon(aes(ymin = Predicted - 1.96*SE, ymax = Predicted + 1.96*SE), alpha = 0.5 ) + 
   geom_point(data = Left_prop, aes(x = L_mean, y = Left_prop), shape = 21, size = 2, fill = "gray") + 
-  facet_wrap(~ Bay, ncol = 2, scales = "free_y") +
+  facet_wrap(~ Bay, ncol = 2) +
   labs(x = "Длина, см", y = "Частота встречаемости реверсивных рыб", fill ="Пол", color = "Пол") +
-  scale_fill_manual(values = c("pink", "blue"))
+  scale_fill_manual(values = c("pink", "blue")) 
 
 
 
