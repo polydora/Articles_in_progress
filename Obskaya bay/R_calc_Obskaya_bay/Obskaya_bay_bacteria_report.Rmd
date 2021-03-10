@@ -182,25 +182,6 @@ biogen_full_melt <- melt(biogen_full, id.vars = c("Station", "Layer"))
 biogen_full_2 <- dcast(biogen_full_melt, Station ~ Layer + variable )
 
 
-
-# Zooplancton
-
-zoopl_long <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Zooplancton_long", na = "NA")
-
-zoopl <- dcast(zoopl_long %>%select(-B), Station ~ Taxa) 
-
-zoopl[is.na(zoopl)] <- 0
-
-zoopl$Station_ID <- as.numeric(gsub("O","", zoopl$Station))
-
-zoopl <- zoopl[order(zoopl$Station_ID), ] %>% select(-Station_ID)
-
-
-# Ship activity and Sattelite data on suspended matter and distances to dumping
-
-# ships <- read.table("Data/Stations_tsm_ships.shp.txt", header = T, sep = "\t")
-# write.table(ships, "clipboard", sep = "\t")
-
 ships <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Ship_activity")
 
 ships <- ships %>% filter(Exclude != 1) %>% select(Station, Ships, Distance_Dump, Distance_to_Drag)
@@ -225,21 +206,7 @@ suspensed_metter_by_layers <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "
 suspensed_metter_by_layers <- suspensed_metter_by_layers %>% filter(Exclude !=1) %>% select(-Exclude)  
 
 
-
-# Phytoplancton Species
-
-phytopl_long <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Phytoplancton Species long")
-
-
-
-# Zoobenthos
-
-bent <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Benthos")
-
-
-bent_B <- bent %>% filter(Type == "Biomass") %>% select(-Type)
-
-bent_N <- bent %>% filter(Type == "Abundance") %>% select(-Type)
+bact <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Bacterioplancton")
 
 
 ```
@@ -381,222 +348,87 @@ predictors10 <- predictors9[order(predictors9$Station_ID), ] %>% select(-Station
 
 
 ```{r}
-# Рабочая таблица по зоопланктону
 
+# Рабочая таблица по бактреиям
+predictors11 <- predictors10 %>% select(-Depth, Org, Fine_particles, Coarce_particles, Ships, Distance_Dump, Distance_to_Drag)
 
-biogen_full_wide <- dcast(biogen_full_melt, Station  ~ variable, mean)
+bact_pred <- merge(bact, predictors11)
 
-
-zoopl_biogen <- merge(zoopl, biogen_full_wide, all.x = T)
-
-
-
-suspensed_metter <- suspensed_metter_by_layers %>% group_by(Station) %>% summarise(Suspended_matter = mean(Suspended_matter , na.rm = T)) 
-
-zoopl_biogen_susp <- merge(zoopl_biogen, suspensed_metter, all.x = T)
-
-
-zoopl_biogen_susp_ship <- merge(zoopl_biogen_susp, ships, all.x = T)
-
-zoopl_pred <- predictors10 %>% select(Station, Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity)
-
-zoopl_biogen_susp_ship_pred <- merge(zoopl_biogen_susp_ship, zoopl_pred, all.x = T)
-
-
-zoopl_bio <- zoopl_biogen_susp_ship_pred %>% select(-c(Color, O2,pH, Amon_N, Nitrit_N, Nitrat_N, Total_N, Mineral_P, Total_P, Si, Organic_N, Organic_P, Suspended_matter, Ships, Distance_Dump, Distance_to_Drag, Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity))
-
-
-zoopl_env <- zoopl_biogen_susp_ship_pred %>% select(c(Station,  Color, O2,pH, Amon_N, Nitrit_N, Nitrat_N, Total_N, Mineral_P, Total_P, Si, Organic_N, Organic_P,  Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity))
-
-zoopl_techno <- zoopl_biogen_susp_ship_pred %>% select(Suspended_matter, Ships, Distance_Dump, Distance_to_Drag)
-
-zoopl_coord <- merge(zoopl_env, stat_full %>% select(Station, Long, Lat), all.x = T) %>% select(Station, Long, Lat)
-
-
-
-###################################################
-# Рабочая таблица по фитопланктону
-phytopl_long2 <- phytopl_long %>% select(-Taxa_2) %>% group_by(Station, Taxa_1) %>% summarize(N = mean(N, na.rm = T))
-
-
-phytopl_wide <- dcast(phytopl_long2, Station  ~ Taxa_1, sum) 
-
-
-
-biogen_full_wide <- dcast(biogen_full_melt, Station  ~ variable, mean)
-
-
-phyt_biogen <- merge(phytopl_wide, biogen_full_wide, all.x = T)
-
-# nrow(phyt_biogen)
-
-suspensed_metter <- suspensed_metter_by_layers %>% group_by(Station) %>% summarise(Suspended_matter = mean(Suspended_matter , na.rm = T)) 
-
-phyt_biogen_susp <- merge(phyt_biogen, suspensed_metter, all.x = T)
-
-
-phyt_biogen_susp_ship <- merge(phyt_biogen_susp, ships, all.x = T)
-
-phytopl_pred <- predictors10 %>% select(Station, Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity)
-
-phyt_biogen_susp_ship_pred <- merge(phyt_biogen_susp_ship, phytopl_pred, all.x = T)
-
-
-
-phytopl_bio <- phyt_biogen_susp_ship_pred %>% select(-c(Color, O2,pH, Amon_N, Nitrit_N, Nitrat_N, Total_N, Mineral_P, Total_P, Si, Organic_N, Organic_P, Suspended_matter, Ships, Distance_Dump, Distance_to_Drag, Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity))
-
-
-phytopl_env <- phyt_biogen_susp_ship_pred %>% select(c(Station,  Color, O2,pH, Amon_N, Nitrit_N, Nitrat_N, Total_N, Mineral_P, Total_P, Si, Organic_N, Organic_P,  Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity))
-
-phytopl_techno <- phyt_biogen_susp_ship_pred %>% select(Suspended_matter, Ships, Distance_Dump, Distance_to_Drag)
-
-phytopl_coord <- merge(phytopl_env, stat_full %>% select(Station, Long, Lat), all.x = T) %>% select(Station, Long, Lat)
-
-
-###################################################
-# Рабочая таблица по Бентосу
-
-
-
-bent_biogen <- merge(bent_N, biogen_full_wide, all.x = T)
-
-# nrow(phyt_biogen)
-
-suspensed_metter <- suspensed_metter_by_layers %>% group_by(Station) %>% summarise(Suspended_matter = mean(Suspended_matter , na.rm = T)) 
-
-bent_biogen_susp <- merge(bent_biogen, suspensed_metter, all.x = T)
-
-
-bent_biogen_susp_ship <- merge(bent_biogen_susp, ships, all.x = T)
-
-bent_pred <- predictors10 %>% select(Station, Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity, Fine_particles, Coarce_particles)
-
-bent_biogen_susp_ship_pred <- merge(bent_biogen_susp_ship, bent_pred, all.x = T)
-
-bent_biogen_susp_ship_pred_org <- merge(bent_biogen_susp_ship_pred, org, all.x = T)
- 
-
-bent_bio <- bent_biogen_susp_ship_pred_org %>% select(-c(Color, O2,pH, Amon_N, Nitrit_N, Nitrat_N, Total_N, Mineral_P, Total_P, Si, Organic_N, Organic_P, Suspended_matter, Ships, Distance_Dump, Distance_to_Drag, Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity, Fine_particles, Coarce_particles, Org_Aug_20))
-
-
-bent_env <- bent_biogen_susp_ship_pred_org %>% select(c(Station,  Color, O2,pH, Amon_N, Nitrit_N, Nitrat_N, Total_N, Mineral_P, Total_P, Si, Organic_N, Organic_P,  Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity, Fine_particles, Coarce_particles,  Org_Aug_20))
-
-bent_techno <- bent_biogen_susp_ship_pred_org %>% select(Suspended_matter, Ships, Distance_Dump, Distance_to_Drag)
-
-bent_coord <- merge(bent_env, stat_full %>% select(Station, Long, Lat), all.x = T) %>% select(Station, Long, Lat)
-
-# nrow(bent_coord)
+# nrow(bact_pred)
 
 ```
 
 
 
+```{r}
+bact_data <- bact_pred %>% select(-c(Bot_Organic_N, Int_Organic_N, Surf_Organic_N, Fine_particles, Coarce_particles, Bot_Total_P, Int_Total_P, Surf_Total_P, Surf_Total_N, Int_Mineral_P, Bot_pH, Bot_O2, Int_Nitrit_N, Bot_Total_N, Surf_O2, Distance_to_Drag, Bot_Nitrit_N, Surf_Color, Int_Total_N, Int_pH, Bot_Salinity, Int_Organic_P, Surf_Mineral_P, Bot_Si, Surf_Amon_N, Bot_Color, Surf_Organic_P, Surf_Si, Surf_Turbidity, Int_Nitrat_N, Int_Color, Bot_Amon_N, Transparency, Surf_Nitrit_N, Ships, Int_Amon_N, Chla_intermed, Surf_pH, Bot_Nitrat_N, Distance_Dump,  Ships, Distance_to_Drag, Surf_Organic_N, Int_Organic_N, Bot_Organic_N))
+
+
+bact_data2 <- bact_data %>% group_by(Station) %>% summarise_all(list(mean))
+
+
+x <- bact_data2$Long
+y <- bact_data2$Lat
+```
+
+
+## Пространственное распределение бактериопланктона
+
 
 ```{r}
-total_B <- bent_B %>% mutate(Total_B = rowSums(.[,-1])) %>% select(Station, Total_B)
 
-total_N <- bent_N %>%  mutate(Total_N = rowSums(.[,-1])) %>% select(Station, Total_N)
+bact_data2 <- bact_data2 %>% mutate(Anomaly = ifelse(N > mean(N), "High", "Low"))
 
 
-total_B <- merge(total_B, bent_coord) %>% mutate(Anomaly = case_when(Total_B > mean(Total_B) ~ "High", Total_B <= mean(Total_B) ~ "Low"))
+Mod_gam_bact <- gam(log(N) ~ s(Lat, Long), data = bact_data2)
 
-total_N <- merge(total_N, bent_coord) %>% mutate(Anomaly = case_when(Total_N > mean(Total_N) ~ "High", Total_N <= mean(Total_N) ~ "Low"))
+# gam.check(Mod_gam_bact)
 
-Pl_B <- Pl_Obskaya_bay + 
-  geom_point(data = total_B, aes(x = Long, y = Lat, group = 1, size = (Total_B), fill = Anomaly), shape = 21) +
-  scale_fill_manual(values = c("red", "gray")) + 
-  labs(size = "Биомасса \n(г/кв.м)") +
+bact_pred <- predict(Mod_gam_bact, newdata = grid_data, type = "response")
+
+Pl_bact <- ggplot() + 
+  geom_tile(data = grid_data, aes(x = Long, y = Lat, fill = bact_pred, group = 1))  + 
+  scale_fill_gradient(low = "yellow", high = "red") +
+  labs(fill = "bact_pred")
+
+
+Pl_bact2 <- Obskaya_bay_cover(Pl_bact)
+
+
+Pl_bact3 <- Pl_bact2 +   geom_point(data = bact_data2, aes(x = Long, y = Lat, group = 1, size = N, color = Anomaly)) +
+  scale_color_manual(values = c("red", "gray")) + 
+  labs(size = "Плотность \n(млн. кл./мл)") +
+  guides(color = "none")
+
+
+Tambey_y = 71.474355
+Tambey_x = 71.813562
+
+Seyakha_y = 70.160113
+Seyakha_x = 72.533310
+
+Pl_bact4 <-
+Pl_bact3 + 
+  geom_point(aes(x = Sabetta_x, y = Sabetta_y), shape = 17, color = "black", size = 4) + 
+  geom_point(aes(x = Terminal_x, y = Terminal_y), shape = 17, color = "black", size = 4) +
+  geom_point(aes(x = Tambey_x, y = Tambey_y), shape = 17, color = "black", size = 4) + 
+  geom_point(aes(x = Seyakha_x, y = Seyakha_y), shape = 17, color = "black", size = 4) +
   guides(fill = "none")
 
-Pl_N <- Pl_Obskaya_bay + 
-  geom_point(data = total_N, aes(x = Long, y = Lat, group = 1, size = (Total_N), fill = Anomaly), shape = 21) +
-  scale_fill_manual(values = c("red", "gray")) + 
-  labs(size = "Плотность \n(экз./кв.м)") +
-  guides(fill = "none")
-
-
-
-```
-
-<!-- ```{r fig.cap=figRef("Bent_map", "Пространственное распределение общей биомассы (А) и суммарной плотности поселения (B) бентосных организмов.Размер точек пропорционален обилию на станции. Красные точки - станции, на которых обилие превышает среднее значение.")} -->
-
-<!-- plot_grid(Pl_B, Pl_N, labels = c("А", "В")) -->
-
-<!-- ``` -->
-
-
-
-
-<!-- ```{r fig.cap=figRef("Bent_depth", "Связь общей биомассы (А) и суммарной плотности поселения (B) бентосных организмов с глубиной.Линия отражает LOESS регрессию.")} -->
-
-
-<!-- Pl_depth_N <-  -->
-<!--   merge(total_N,  bent_env %>% select(Station, Depth)) %>% ggplot(., aes(x = Depth, y= Total_N)) + geom_point() + geom_smooth(se = F) -->
-
-
-<!-- Pl_depth_B <-  -->
-<!--   merge(total_B,  bent_env %>% select(Station, Depth)) %>% ggplot(., aes(x = Depth, y= Total_B)) + geom_point() + geom_smooth(se = F) -->
-
-
-<!-- plot_grid(Pl_depth_B, Pl_depth_N, labels = c("A", "B")) -->
-
-<!-- ``` -->
-
-
-```{r}
-
-
-Station_impacted <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Stations near impact source")
-
-Station_impacted <- Station_impacted %>% filter(Source == "Channel")
-
-loop <- Station_impacted %>% filter(Loop == "In") %>% select(Station)
-loop <- loop$Station
-
-
-out <- Station_impacted %>% filter(Loop == "Out") %>% select(Station)
-out <- out$Station
 ```
 
 
-
-```{r}
-Zoopl_total <- zoopl_bio %>% select(-Station) %>% rowSums()
-Zoopl_H <- zoopl_bio %>% select(-Station) %>% diversity(.)
+Визуализация пространственного распределения бактериопланткона (`r figRef("Bact_map")`) позволяет увидеть обычный для планктонных сообществ Обской губы градиентный паттерн. Наиболее высокие концентрации бактерий наблюдаются выше по течению реки, наименьшие - в осолоненном устье Обской губы. Вместе с тем, прослеживаются явные корреляции в расположении точек с максимальной концентрацией бактериопланктона с месторасположением населенных пунктов (помечены треугольниками на карте,`r figRef("Bact_map")` ). Впрочем, возможно, данная связь имеет и иную трактовку - населенные пункты, как правило, расположены неподалеку от устьевых участков рек, впадающих в акваторию Обской губы.  
 
 
-Phytopl_total <- phytopl_bio %>% select(-Station) %>% rowSums()
-Phytopl_H <- phytopl_bio %>% select(-Station) %>% diversity()
+```{r fig.cap=figRef("Bact_map", "Пространственное распределение бактериопланктона.Размер точек пропорционален обилию на станции. Красные точки - станции, на которых обилие превышает среднее значение.")}
 
-
-Bent_total <- bent_bio %>% select(-Station) %>% rowSums()
-Bent_H <- bent_bio %>% select(-Station) %>% diversity()
-
-
-
-all_total <- data.frame(Station = bent_bio$Station,  Phytopl_total, Zoopl_H, Zoopl_total, Phytopl_H, Bent_total, Bent_H)
-
-dd <- merge(suspensed_metter, all_total, all.y = T)
-
-# bioenv(dd %>% select(Suspended_matter) %>% dist(.), dd %>%  select(-c(Station, Suspended_matter)) %>% log(.))
-
-
-
-staion_coord <- predictors %>% select(Station, Lat, Long)
-
-
-
-
-bent_dd <- bent_env %>% select(Station, Bot_Salinity, Surf_Salinity) %>% merge(., dd)
-
-bent_data <- merge(bent_dd, staion_coord, all.x = T)
-
-bent_data$Total_B <- total_B$Total_B
-
+Pl_bact4
 
 ```
 
 
+## Связь обилия бактериопланктона с факторами среды
 
 
 
@@ -605,327 +437,103 @@ bent_data$Total_B <- total_B$Total_B
 
 
 
-Spec_abund <- bent_N %>% select(-Station) %>% colSums(.) %>% t() %>% as.vector() 
 
-spec_total_abund <- data.frame(Sp = bent_bio %>% select(-Station) %>% colnames(), Spec_abund)
-
-N_porog <- 500 
-
-spec_selected <- spec_total_abund %>% filter(Spec_abund > N_porog)
-
-bent_bio_short <- bent_bio %>% select(spec_selected$Sp)
-
-
-
-```
-
-
-
-```{r}
-
-bent_cca_full <- cca(log(bent_bio_short + 1) ~ . - Coarce_particles - Total_P - Organic_N  , data = bent_env[,-c(1)])
-
-# plot(metaMDS(log(bent_bio_short + 1)), type = "t")
-
-# Depth + Bot_Salinity +Bot_Turbidity + Fine_particles + Org_Aug_20 + O2   
-# plot(bent_cca_full)
-
-# vif.cca(bent_cca_full)
-
-bent_cca_0 <- cca(log(bent_bio_short + 1) ~ 1, data = bent_env[,-c(1)])
-
-
-bent_cca_reduced_forw <- ordistep(bent_cca_0, scope = formula(bent_cca_full), direction = "forward", Pin = 0.1, Pout = 0.1, trace = F)
-  
-# plot(bent_cca_reduced_forw)
-
-
-
-# plot(phyt_cca_reduced_forw, display = c("sites", "cn"), choice = c(1, 2))
-
-# anova(bent_cca_reduced_forw, by = "margin", permutations = 999)
-# 
-# 
-# anova(bent_cca_reduced_forw, by = "axis")
-
-
-CCA1_importance <- round(summary(bent_cca_reduced_forw)$cont$ importance [2, 1] * 100, 1)
-CCA2_importance <- round(summary(bent_cca_reduced_forw)$cont$ importance [2, 2] * 100, 1)
-CCA3_importance <- round(summary(bent_cca_reduced_forw)$cont$ importance [2, 3] * 100, 1)
-
-
-bent_cca_scores <- fortify(bent_cca_reduced_forw)
-
-bent_cca_species_score <- bent_cca_scores %>% filter(Score == "species") 
-bent_cca_species_score$Label <- gsub("_", " ", bent_cca_species_score$Label)
-
-
-
-bent_cca_sites_score <- bent_cca_scores %>% filter(Score == "sites")
-
-bent_cca_biplot_score <- bent_cca_scores %>% filter(Score == "biplot")
-
-cca_results <- fortify(bent_cca_reduced_forw, scaling = "sites")
-
-CCA_scores_sites <- cca_results %>% filter(Score == "sites")
-
-CCA_scores_biplot <- cca_results %>% filter(Score == "biplot")
-
-
-
-CCA1_negative <- CCA_scores_biplot[order(CCA_scores_biplot$CCA1), ]$Label[1:5] 
-CCA1_positive <- CCA_scores_biplot[order(CCA_scores_biplot$CCA1, decreasing = T), ]$Label[1:5] 
-
-```
+bact_data3 <- bact_data2 %>% select(-c(Station, B, Lat, Long, Depth))
 
 
 
 
-```{r}
-community <- ifelse(bent_cca_sites_score$CCA1 < 0, "Marine", "Fresh")
-
-bent_data$Community <- factor(community)
-
-x <- bent_data$Long
-y <- bent_data$Lat
-
-
-```
-
-
-
-```{r}
-
-
-form_TotN = formula(log(Bent_total) ~  (Suspended_matter) * Community)
+form_bact_N = formula(log(N) ~ scale(Bot_Mineral_P) + scale(Bot_Susp) + scale(Surf_Susp) + scale(Bot_Organic_P) + scale(Chla_surface) + scale(Surf_Salinity) + scale(Bot_Turbidity) + scale(Int_O2) + scale(Interm_Susp) + scale(Chla_bottom) + scale(Surf_Nitrat_N)  + scale(Int_Si) + scale(Org)) 
 
 
 # No spatial correlation
 
-M_gls <- gls(form_TotN, data =  bent_data)
+M_gls <- lm(form_bact_N, data =  bact_data3)
 
-# vif(M_gls)
 
-Vario.gls <- Variogram(M_gls, form = ~ x + y, robust = TRUE, maxDist = 2000, resType = "pearson")
+# sort(vif(M_gls), decreasing = T)
+
+# Vario.gls <- Variogram(M_gls, form = ~ x + y, robust = TRUE, maxDist = 2000, resType = "pearson")
 
 # plot(Vario.gls)
 
 
-M_gls_spher <- gls( form_TotN, correlation = corSpher(form = ~ x + y, nugget = F), data =  bent_data )
-
-Vario.gls_spher <- Variogram(M_gls_spher, form = ~ x + y, robust = TRUE, maxDist = 2000, resType = "pearson")
-
-# plot(Vario.gls_spher, smooth = TRUE)
-
-# Linear correlation
-
-# M_gls_lin <- gls(form_TotN, correlation = corLin(form = ~ x + y, nugget = F), data =  bent_data )
-
-# Vario.gls_lin <- Variogram(M_gls_lin, form = ~ x + y, robust = TRUE, maxDist = 2000, resType = "pearson")
-
-# plot(Vario.gls_lin, smooth = TRUE)
-
-
-
-# Rational quadratic correlation
-
-M_gls_ratio <- gls( form_TotN, correlation = corRatio(form = ~ x + y, nugget = F), data =  bent_data )
-
-Vario.gls_ratio <- Variogram(M_gls_ratio, form = ~ x + y, robust = TRUE, maxDist = 2000, resType = "pearson")
-
-# plot(Vario.gls_ratio, smooth = TRUE)
-
-
-# Gaussian correlation
-
-
-M_gls_gaus <- gls(form_TotN, correlation = corGaus(form = ~ x + y, nugget = F), data =  bent_data )
-
-Vario.gls_gaus <- Variogram(M_gls_gaus, form = ~ x + y, robust = TRUE, maxDist = 2000, resType = "pearson")
-
-# plot(Vario.gls_gaus, smooth = TRUE)
-
-
-
-
-# Exponential correlation
-
-M_gls_exp <- gls(form_TotN, correlation = corExp(form = ~ x + y, nugget = F), data =  bent_data )
-
-Vario.gls_exp <- Variogram(M_gls_exp, form = ~ x + y, robust = TRUE, maxDist = 2000, resType = "pearson")
-
-# plot(Vario.gls_exp, smooth = TRUE)
-
-# AIC(M_gls, M_gls_spher, M_gls_lin, M_gls_ratio, M_gls_gaus, M_gls_exp)
-
-# plot(M_gls_ratio)
-
-# summary(M_gls_ratio)
-```
-
-
-```{r}
-mydata <- bent_data %>% group_by(Community) %>%  do(data.frame(Suspended_matter = seq(min(.$Suspended_matter), max(.$Suspended_matter), length.out = 100)))
-
-mydata$predict <- predict(M_gls_ratio, newdata = mydata)
-
-X <- model.matrix(  ~ (Suspended_matter) * Community, data = mydata) #Модельная матрица для визуализации
-
-# Ошибки
-
-mydata$se <- sqrt(diag(X %*% vcov(M_gls_ratio) %*% t(X)))
-
-
-Pl_TotalN <- 
-  ggplot(mydata, aes(x = (Suspended_matter), y = predict, color = Community)) + 
-  geom_line(size = 2) +
-  geom_ribbon(data = mydata, aes(ymin = predict - 1.96*se, ymax = predict + 1.96*se), alpha = 0.2) + 
-  geom_point(data = bent_data, aes( x = (Suspended_matter), y = log(Bent_total)))
 
 ```
 
 
 ```{r}
-Mod_gam_N <- gam(log(Bent_total) ~ s(Lat, Long) + s(Suspended_matter, by = Community, k = 9) + Community , data = bent_data )
+bact_data_depth <- bact_data %>% mutate(Depth_class = case_when(Depth == 0 ~ "Поверхность",
+                                             Depth <=10 & Depth > 0 ~ "5 - 10 м", 
+                                             Depth <=15 & Depth > 10 ~ "10 - 15 м",
+                                             Depth <= 20 & Depth > 15 ~ "15 - 20 м",
+                                             Depth > 20 ~ "Больше 20 м"))
 
+bact_data_depth$Depth_class <- factor(bact_data_depth$Depth_class, levels = c("Поверхность","5 - 10 м", "10 - 15 м", "15 - 20 м", "Больше 20 м"))
 
-# gam.check(Mod_gam_N)
-# summary(Mod_gam_N)
-
-mydata <- bent_data %>% group_by(Community) %>%  do(data.frame(Suspended_matter = seq(min(.$Suspended_matter), max(.$Suspended_matter), length.out = 100), Lat = mean(.$Lat), Long = mean(.$Long)))
-
-predict <- predict(Mod_gam_N, newdata = mydata, se.fit = T)
-
-mydata$predict <- predict$fit
-mydata$se <- predict$se.fit
-
-mydata$Community <- factor(mydata$Community, labels = c("Пресноводное", "Морское"))
-
-bent_data$Community <- factor(bent_data$Community, labels = c("Пресноводное", "Морское"))
-
-
-
-Pl_gam_N <-
-  ggplot(mydata, aes(x = (Suspended_matter), y = predict, color = Community)) + 
-  geom_line(size = 2)+
-  geom_ribbon(data = mydata, aes(ymin = predict - 1.96*se, ymax = predict + 1.96*se), alpha = 0.2)+ 
-  geom_point(data = bent_data, aes( x = (Suspended_matter), y = log(Bent_total))) +
-  facet_grid(~Community) +
-  labs(color = "Сообщество", x = "Количество взвеси (мг/л)", y = "Логарифм суммарной численности")
-
-
+Pl_bact_depth <- ggplot(bact_data_depth, aes(x = Depth_class, y = log(N))) + geom_boxplot() + labs(x = "Глубина", y = "Логарифм численности бактериопланктона")
 
 ```
 
 
 
-```{r}
-Mod_gam_B <- gam(log(Total_B) ~ s(Lat, Long) + s(Suspended_matter, by = Community) + Community , data = bent_data )
-
-# gam.check(Mod_gam_B)
-# summary(Mod_gam_B)
-
-mydata <- bent_data %>% group_by(Community) %>%  do(data.frame(Suspended_matter = seq(min(.$Suspended_matter), max(.$Suspended_matter), length.out = 100), Lat = mean(.$Lat), Long = mean(.$Long)))
-
-predict <- predict(Mod_gam_B, newdata = mydata, se.fit = T)
-
-mydata$predict <- predict$fit
-mydata$se <- predict$se.fit
+Концентрация бактерий не демонстрирует существенной стратификации по гулбине (`r figRef("Bact_depth")`). Однако максимальное обилие бактерий отмечается на поверхности водной массы.  
 
 
-Pl_gam_B <-
-  ggplot(mydata, aes(x = (Suspended_matter), y = predict, color = Community)) + 
-  geom_line(size = 2)+
-  geom_ribbon(data = mydata, aes(ymin = predict - 1.96*se, ymax = predict + 1.96*se), alpha = 0.2)+ 
-  geom_point(data = bent_data, aes( x = (Suspended_matter), y = log(Total_B))) + facet_grid(~Community)+
-  labs(color = "Сообщество", x = "Количество взвеси (мг/л)", y = "Логарифм суммарной биомассы")
-
+```{r fig.cap=figRef("Bact_depth", "Распределение бактериопланктона по горизонтам глубины")}
+Pl_bact_depth
 ```
 
 
-Для оценки зависимости макробентоса от количества взвеси были построены две регрессионные модели, в которых в качестве зависимых переменных были рассмотрены суммарная численность организмов макробентоса и их суммарная биомасса (обе величины были логарифмированы). В качестве предикторов в обеих моделях были использованы следующие величины.
+Для более детального анализа факторов, регулирующих распределение бактериопланктона, была построена регрессионная модель описывающая поведение логарифма численности бактерий (обилие бактерий, измеренное на разных горизонтах глубины, было усреднено для каждой станции). После удаления коллинеарных предикторов, в модель были включены следующие факторы среды:
 
-1. Тип сообщества ("Community") дискретный фактор с двумя градациями ("Пресноводное" vs "Морское"). Отнесение станций к тому или иному уровню данного фактора осуществлялось на основе результатов канонического корреспондентного анализа (CCA, см. текст "Obskaya_bay_zoobenthos_report.html"), в котором первая каноническая ось демонстрировала значимую корреляцию с уровнем солености. Станции с отрицательными значениями первой канонической оси (CCA1) были классифицированы, как станции, на которых было отмечено морское сообщество. Станции с положительными значениями CCA2, как станции, на которых отмечено пресноводное сообщество.    
-2. Концентрация взвеси ("Suspended_matter") непрерывный предиктор.    
-3. Географические координаты: широта (Lat) и долгота (Long).     
+-Придонная концентрация минерального фосфора (Bot_Mineral_P);   
+-Придонная концентрация взвеси (Bot_Susp);    
+-Концентрация взвеси в поверхностном слое воды (Surf_Susp);    
+-Концентрация органического фосфора в придонном слое воды (Bot_Organic_P);    
+-Концентрация хлорофилла-А в поверхностном слое воды (Chla_surface);    
+-Придонная мутность воды (Bot_Turbidity);    
+-Концентрация кислорода в среднем слое воды (Int_O2);    
+-Концентрация взвеси в среднем слое воды (Interm_Susp);   
+-Концентрация хлорофилла-А в придонном слое воды (Chla_bottom);    
+-Концентрация нитратного азота в поверхностном слое воды (Surf_Nitrat_N);    
+-Концентрация силикатов в промежуточном слое воды (Int_Si);    
+-Содержание органики в донных осадках (Org).    
 
-Построенные модели имели следующий вид:
 
-$$
-log(N) = s(Lat, Long) + s(Suspended_matter:Community) + Community + \varepsilon
-$$
+Значения всех указанных величин были стандартизованы (разность между измеренным значением и средним значением, была отнесенна к величине среднеквадратичного отклонения). Построенная вариограмма, не выявила явной зависимости остатков от пространственного масштаба, что говорит об отсутствии пространственных автокорреляций и позволяет не включать в модель географический компонент.
 
-
-$$
-log(B) = s(Lat, Long) + s(Suspended\_matter:Community) + Community + \varepsilon
-$$
-
-где 
-$log(N)$ и $log(B)$ - зависимые переменные;     
-$s(Lat, Long)$ - двумерная сглаживающая функция, описывающая связь с географическими координатами;    
-$s(Suspended\_matter:Community)$ - две сглаживающие функции, описывающие связь с концентрацией взвешенных частиц, отдельно для каждого типа сообществ;    
-$Community$ - тип сообщества;    
-$\varepsilon$ - остатки.    
-
-Статистически значимых связей суммарной биомассой выявлено не было (Табл. 1). 
+Результаты оценки параметров регрессионной модели приведены в Таблице 1. Модель описывает более 60% суммарной дисперсии обилия бактериопланктона ($R^2_{adj}=$ `r round(summary(M_gls)$adj.r.squared, 2)`). 
 
 ```{r}
 library(broom)
-kable(tidy(Mod_gam_B), caption = "Таблица 1. Характеристики сглаживающих функций, описывающих связь логарифма биомассы зообентоса с предикторами", col.names = c("Предиктор", "edf","ref.df", "F", "p-value" ))
 
-kable(tidy(Mod_gam_B, parametric = T), caption = "Параметрические компоненты модели", col.names = c("Компонент модели", "Значение параметра","SE", "t", "p-value" ))
+M_gls_result <- tidy(M_gls)
 
+M_gls_result$Signif <- ifelse(M_gls_result$p.value < 0.05, "*", "")
+
+kable(M_gls_result, caption = "Таблица 1. Параметры регрессионной модели, описывающей связь обилия бактериопланктона с факторами среды.", col.names = c("Член модели", "Значение параметра", "SE", "t", "p-value", ""))
 ```
 
+Статистически значимой оказались лишь связь с пятью параметрами среды. При этом, численность бактерий положительно коррелирует с концентрацией взвешенных частиц в поверхностном слое воды (Surf_Susp), концентрацией хлорофилла в поверхностном слое воды (Chla_surface)  и мутностью придонной воды (Bot_Turbidity).  Отрицательная корреляция была выявлена между обилием бактериопланктона и  соленостью поверхностного слоя воды (Surf_Salinity) и концентрацией силикатов в среднем слое воды (Int_Si). 
 
-Суммарная численность бентосных организмов демонстрировала статистически значимую связь с уровнем взвеси (Табл. 2) как в пресноводном, так и в морском сообществах. При этом в морском сообществе зависимость была прямолинейной (`r figRef("Mod_gam_N")`). Важно отметить, что на тех станциях, которые были отнесены к морским сообществам, высокого уровня взвеси не наблюдалось. Однако и в этом диапазоне значений фактора, по мере увеличения количества взвеси обилие животных падало. 
+Поскольку предикторы были стандартизованы, то по величине значения углового коэффициента можно судить о силе влияния фактора. Наиболее сильное влияние на обилие бактериопланктона оказывает концентрация взвеси и соленость. 
 
-В пресноводном сообществе связь численности животных с обилием взвешенных частиц имела нелинейный характер (`r figRef("Mod_gam_N")`). В диапазоне концентрации взвеси меньше 50 мг/л отмечалось резкое падение численности  по мере увеличения концентрации взвеси. При более высокой концентрации взвеси обилие животных было на стабильно низком уровне. 
-
-Таким образом, суммарная численность бентосных животных, как в пресноводном сообществе, так и в  морском, резко убывает по мере увеличения концентрации взвеси. Важно отметить, что даже небольшое увеличение концентрации взвеси значительно сокращает суммарное обилие донных беспозвоночных. Высокие значения обилия донных животных в пресноводном сообществе отмечаются только при концентрации взвешенных частиц меньше 100 мг/л (`r figRef("boxplot_N")`).  
-
+Отрицательная корреляция с соленостью, несомненно, отражает уже описанный ранее градиент между пресноводными и морскими сообществами. Бактериопланктон в осолоненной части акватории, судя по полученным результатам, заметно беднее, чем в опресненной. Положительная корреляция с обилием взвешенных частиц, может объясняться тем, что бактерии связываются с частицами взвеси, заметную часть которых составляют, судя по всему, частицы детрита, несущегося потоком реки Обь. Взвешенный детрит, видимо, служит источником энергии для бактерий, которые  агглютинируются вокруг частиц. Объяснить отрицательную корреляцию обилия бактериопланктона с силикатами пока трудно. Не исключено, что эту зависимость можно связать с тем, что некоторые элементы зоопланктона демонстрируют положительную корреляцию с концентрацией силикатов (см. соответствующую часть отчета). Возможно, что потребление бактерий планктонными животными приводит к понижению обилия бактерий, которые, при условии низкого обилия фитопланктона, могут быть основными источниками продукции, поддерживающей зоопланктон.   
 
 
-```{r}
-kable(tidy(Mod_gam_N), caption = "Таблица 2. Характеристики непараметрических сглаживающих функций, описывающих связь логарифма общей численнсти зообентоса с предикторами", col.names = c("Предиктор", "edf","ref.df", "F", "p-value" ))
+## Группы бактерий 
 
-kable(tidy(Mod_gam_N, parametric = T), caption = "Параметрические компоненты модели", col.names = c("Компонент модели", "Значение параметра","SE", "t", "p-value" ))
+Абсолютное большинство бактерий, выявленных в посевах, относится к группе сапротрофов (`r figRef("Bact_type")`), что подтверждает выдвинутое предположение о роли детрита в трофике бактериопланктона. Медианы обилия бактерий всех типов демонстрируют максимальные значения в поверхностном слое воды. 
 
+```{r fig.cap=figRef("Bact_type", "Обилие разных типов бактерий в посевах из разных горизонтах глубины")}
+bact_type <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Bacteria cultivation", na = "NA")
+
+bact_type$Depth_range <- factor(bact_type$Depth_range, levels = c("Поверхностный", "Средний", "Придонный"))
+
+medians <- bact_type %>% group_by(Depth_range, Bacteria_type) %>% summarise(Med = median(log(N) ))
+
+ggplot(bact_type, aes(x = Depth_range, y = log(N))) + geom_boxplot(aes(fill = Bacteria_type)) + labs(x = "Горизонт глубины", y = "Логарифм численности в посевах") 
 ```
 
-
-```{r fig.cap=figRef("Mod_gam_N", "Зависимость суммарной численности бентосных организмов от концентрации взыешенных частиц. Для визуализации модели значения географических координат были усреднены.")}
-
-Pl_gam_N + guides(color = "none")
-
-```
-
-
-
-
-
-```{r fig.cap=figRef("boxplot_N", "Значения суммарной численности (A) и биомассы (B) бентосных организмов в пресноводном сообществе при низкой (менее 100 мг/л) и высокой (более 100 мг/л) концентрации взвешенных частиц.")}
-
- 
-dd <- bent_data %>% filter(Community == "Пресноводное") %>% mutate(Susp_class = ifelse(Suspended_matter <100, "Низкая", "Высокая")) 
-
-dd$Susp_class <- factor(dd$Susp_class, levels = c("Низкая", "Высокая"))
-
-Pl_N <- ggplot(dd, aes(x = Susp_class, y = log(Bent_total) )) + 
-  geom_boxplot() +
-  labs(x = "Концентарция взвеси", y = "Логарифм суммарной численности")
-
-
-
-ddd <- bent_data %>% filter(Community == "Пресноводное") %>% mutate(Susp_class = ifelse(Suspended_matter <100, "Низкая", "Высокая")) 
-
-ddd$Susp_class <- factor(dd$Susp_class, levels = c("Низкая", "Высокая"))
-
-
-Pl_B <- ggplot(ddd, aes(x = Susp_class, y = log(Total_B) )) + 
-  geom_boxplot() +
-  labs(x = "Концентарция взвеси", y = "Логарифм суммарной биомассы")
-
-plot_grid(Pl_N, Pl_B, ncol = 2, labels = c("A", "B"))
-```
 

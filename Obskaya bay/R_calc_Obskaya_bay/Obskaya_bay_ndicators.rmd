@@ -1,0 +1,952 @@
+---
+title: "Сообщества Макрозообентоса Обской губы"
+author: ""
+date: ""
+output: html_document
+---
+
+
+
+
+
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+
+```
+
+
+<style type="text/css">
+
+body{ /* Normal  */
+      font-size: 18px;
+  }
+td {  /* Table  */
+  font-size: 14px;
+}
+h1.title {
+  font-size: 38px;
+  color: DarkRed;
+}
+h1 { /* Header 1 */
+  font-size: 28px;
+  color: DarkBlue;
+}
+h2 { /* Header 2 */
+    font-size: 22px;
+  color: DarkBlue;
+}
+h3 { /* Header 3 */
+  font-size: 18px;
+  font-family: "Times New Roman", Times, serif;
+  color: DarkBlue;
+}
+code.r{ /* Code block */
+    font-size: 12px;
+}
+pre { /* Code block - determines code spacing between lines */
+    font-size: 14px;
+}
+</style>
+
+
+
+
+```{r}
+# Packages ######################
+library(ggmap)
+library(mapproj)
+library(maps)
+
+library(rgeos) 
+
+library(mapdata)
+library(maptools) # Rgshhs
+library(PBSmapping)
+
+library(readxl)
+library(dplyr)
+library(cowplot)
+library(mgcv)
+library(reshape2)
+library(ggplot2)
+library(ggrepel)
+
+library(png)
+
+library(vegan)
+
+library(broom)
+library( broom.mixed)
+
+
+library(ggvegan)
+library(car)
+
+
+theme_set(theme_bw())
+```
+
+
+
+```{r}
+
+# Функция, задающая нумерацию рисунков
+
+figRef <- local({
+    tag <- numeric()
+    created <- logical()
+    used <- logical()
+    function(label, caption, prefix = options("figcap.prefix"), 
+        sep = options("figcap.sep"), prefix.highlight = options("figcap.prefix.highlight")) {
+        i <- which(names(tag) == label)
+        if (length(i) == 0) {
+            i <- length(tag) + 1
+            tag <<- c(tag, i)
+            names(tag)[length(tag)] <<- label
+            used <<- c(used, FALSE)
+            names(used)[length(used)] <<- label
+            created <<- c(created, FALSE)
+            names(created)[length(created)] <<- label
+        }
+        if (!missing(caption)) {
+            created[label] <<- TRUE
+            paste0(prefix.highlight, prefix, " ", i, sep, prefix.highlight, 
+                " ", caption)
+        } else {
+            used[label] <<- TRUE
+            paste(prefix, tag[label])
+        }
+    }
+})
+
+options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**")
+
+
+```
+
+
+
+```{r}
+
+# Data reading ####################
+
+Ob_df <- read.csv("Data/Obskaya_bay_map.csv") # Map poligones
+
+# All Station position
+stations <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Station parameters", na = "NA")
+
+# Stations with biological samples
+stat_full <- stations %>% filter(Exclude == 0)
+
+stat_full <- as.data.frame(stat_full)
+
+# Data on organic matter from the file "Содержание органического вещества в ДО.docx"
+
+org <-  read.csv("Data/Organic matter_2020.csv")
+
+org <- org[org$Station %in% stat_full$Station, ]
+
+org <- org %>% select(Station, Org_Aug_20)
+
+
+
+# Data on Granulmetric from the file "Грансостав ДО.docx"
+
+granul <- read_excel("Data/Granulometry_2020.xlsx",  na = "NA")
+
+
+granul$Small <- with(granul, F_0.002 + `F_0.01-0.002` + `F_0.05-0.01`)              
+
+granul$Big <- rowSums(granul[ ,8:15]  )
+
+
+granul$Season <- factor(granul$Season)
+
+
+# Chlorophyll a 
+
+chlor <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Chlorophyll august 2020", na = "NA")
+
+
+# Biogenes
+
+biogen <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Biogenes_August", na = "NA")
+
+biogen_full <- biogen %>% filter(Exclude == 0) %>% select(-Exclude)
+
+biogen_full_melt <- melt(biogen_full, id.vars = c("Station", "Layer"))
+
+biogen_full_2 <- dcast(biogen_full_melt, Station ~ Layer + variable )
+
+
+
+# Zooplancton
+
+zoopl_long <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Zooplancton_long", na = "NA")
+
+zoopl <- dcast(zoopl_long %>%select(-B), Station ~ Taxa) 
+
+zoopl[is.na(zoopl)] <- 0
+
+zoopl$Station_ID <- as.numeric(gsub("O","", zoopl$Station))
+
+zoopl <- zoopl[order(zoopl$Station_ID), ] %>% select(-Station_ID)
+
+
+# Ship activity and Sattelite data on suspended matter and distances to dumping
+
+# ships <- read.table("Data/Stations_tsm_ships.shp.txt", header = T, sep = "\t")
+# write.table(ships, "clipboard", sep = "\t")
+
+ships <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Ship_activity")
+
+ships <- ships %>% filter(Exclude != 1) %>% select(Station, Ships, Distance_Dump, Distance_to_Drag)
+
+ships2 <- merge(stat_full %>% select(Station, Lat, Long), ships)
+
+ships2$Station_ID <- as.numeric(gsub("O","", ships2$Station))
+
+ships2 <- ships2[order(ships2$Station_ID), ] %>% select(-Station_ID)
+
+
+# nrow(ships2)
+
+
+# All chlorophyll
+chlorophyll <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Chlorophyll august 2020")
+
+# Suspensed matter
+
+suspensed_metter_by_layers <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Suspensed matters August", na = "NA")
+
+suspensed_metter_by_layers <- suspensed_metter_by_layers %>% filter(Exclude !=1) %>% select(-Exclude)  
+
+
+
+# Phytoplancton Species
+
+phytopl_long <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Phytoplancton Species long")
+
+
+
+# Zoobenthos
+
+bent <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Benthos")
+
+
+bent_B <- bent %>% filter(Type == "Biomass") %>% select(-Type)
+
+bent_N <- bent %>% filter(Type == "Abundance") %>% select(-Type)
+
+
+```
+
+
+```{r}
+
+# Данные для карт ###############################################
+
+# Coordinate limites 
+# Ob_x <- c(71, 79)
+
+Ob_x <- c(71, 75)
+Ob_y <- c(70, 73.2)
+
+# Sabetta
+Sabetta_y <- 71.235220
+Sabetta_x <- 72.126754
+
+# Terminal
+
+Terminal_y <- 71.010886
+Terminal_x <- 73.793525
+
+
+grid_data <- expand.grid(Lat = seq(from = 70.01, to =72.89, length.out = 100), Long =  seq(from = 71, to =75.2 , length.out = 100))
+
+
+
+
+
+Pl_Obskaya_bay <- 
+ggplot(Ob_df, aes(x=long, y=lat, group=group)) +
+  geom_polygon(fill = "gray90", colour = "gray20") + 
+  coord_map(xlim = Ob_x, ylim = Ob_y) + 
+  theme_bw() +  
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
+  theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+  theme(axis.ticks = element_blank())  + 
+  geom_point(aes(x = Terminal_x, y = Terminal_y), size = 3, shape = 22, fill = "yellow") 
+
+
+
+Obskaya_bay_cover <-function(plt){
+  plt <- plt + 
+    geom_polygon(data = Ob_df, aes(x=long, y=lat, group=group), fill = "gray90", colour = "gray20") + 
+    coord_map(xlim = Ob_x, ylim = Ob_y) + 
+    theme_bw() +  
+    theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
+    theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+    theme(axis.ticks = element_blank()) + 
+    geom_point(aes(x = Terminal_x, y = Terminal_y), size = 3, shape = 22, fill = "yellow") +
+    geom_point(data = stat_full, aes(x = Long, y = Lat, group = 1), size = 0.5) +
+    theme(strip.background = element_blank())
+  plt
+}
+
+
+
+
+
+```
+
+
+
+
+
+
+
+```{r}
+# Подготовка таблицы предикторов ####################################
+predictors <- stat_full %>% select(Station, Lat, Long,  Depth_aug_20, Transparency_aug_20, Surface_Salinity_Aug_20, Bottom_Salinity_Aug_20, Surface_Turbidity_Aug_20, Bottom_Turbidity_Aug_20, Surface_Susp_Aug_20, Interm_Susp_Aug_20, Bottom_Susp_Aug_20)
+
+
+chlor_surface <- chlor %>% filter(Layer == "Surface") %>% select(Station, Chla) %>% rename(Chla_surface = Chla)
+
+
+chlor_intermed <- chlor %>% filter(Layer == "Intermediate") %>% select(Station, Chla) %>% rename(Chla_intermed = Chla)
+
+chlor_bottom <- chlor %>% filter(Layer == "Bottom") %>% select(Station, Chla) %>% rename(Chla_bottom = Chla)
+
+
+
+predictors2 <- merge(predictors, chlor_surface, all.x = T)
+
+predictors3 <- merge(predictors2, chlor_intermed, all.x = T)
+
+predictors4 <- merge(predictors3, chlor_bottom, all.x = T)
+
+
+predictors5 <- merge(predictors4, org %>% select(Station, Org_Aug_20), all.x = T)
+
+
+predictors6 <- merge(predictors5, granul %>% filter(Season == "August") %>% select(Station, Small, Big) %>% rename(Fine_particles = Small, Coarce_particles = Big), all.x =T)
+
+
+predictors7 <- merge(predictors6, biogen_full_2, all.x = T)
+
+
+# # All variables from intermediate layer will be excluded from analysis 
+# 
+# predictors8 <- predictors7 %>% select(-c(Interm_Susp_Aug_20, Chla_intermed, Intermediate_Color, Intermediate_O2, Intermediate_pH,  Intermediate_Amon_N, Intermediate_Nitrit_N, Intermediate_Nitrat_N, Intermediate_Total_N, Intermediate_Mineral_P, Intermediate_Toal_P, Intermediate_Si, Intermediate_Organic_N, Intermediate_Organic_P))
+
+predictors8 <- merge(predictors7, ships2 %>% select(Station, Ships, Distance_Dump, Distance_to_Drag, ))
+
+# nrow(ships2)
+# Variable names cleaning
+
+var_names <- names(predictors8)
+
+var_names <- gsub("Bottom", "Bot", var_names)
+
+var_names <- gsub("Surface", "Surf", var_names)
+
+var_names <- gsub("Intermediate", "Int", var_names)
+
+var_names <- gsub("_aug_20", "", var_names)
+
+var_names <- gsub("_Aug_20", "", var_names)
+
+
+names(predictors8) <- var_names
+
+complete_stations <- nrow(predictors8[complete.cases(predictors8),])
+
+NA_present <- predictors8 %>% summarise_all(funs(sum(is.na(.)))) %>% t() %>% as.data.frame()%>% mutate(Param = row.names(.))
+
+library(imputeTS)
+predictors9 <- na_mean(predictors8)
+
+predictors9$Station_ID <- as.numeric(gsub("O","", predictors9$Station))
+
+predictors10 <- predictors9[order(predictors9$Station_ID), ] %>% select(-Station_ID)
+
+# nrow(predictors10)
+```
+
+
+
+
+```{r}
+# Рабочая таблица по зоопланктону
+
+
+biogen_full_wide <- dcast(biogen_full_melt, Station  ~ variable, mean)
+
+
+zoopl_biogen <- merge(zoopl, biogen_full_wide, all.x = T)
+
+
+
+suspensed_metter <- suspensed_metter_by_layers %>% group_by(Station) %>% summarise(Suspended_matter = mean(Suspended_matter , na.rm = T)) 
+
+zoopl_biogen_susp <- merge(zoopl_biogen, suspensed_metter, all.x = T)
+
+
+zoopl_biogen_susp_ship <- merge(zoopl_biogen_susp, ships, all.x = T)
+
+zoopl_pred <- predictors10 %>% select(Station, Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity)
+
+zoopl_biogen_susp_ship_pred <- merge(zoopl_biogen_susp_ship, zoopl_pred, all.x = T)
+
+
+zoopl_bio <- zoopl_biogen_susp_ship_pred %>% select(-c(Color, O2,pH, Amon_N, Nitrit_N, Nitrat_N, Total_N, Mineral_P, Total_P, Si, Organic_N, Organic_P, Suspended_matter, Ships, Distance_Dump, Distance_to_Drag, Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity))
+
+
+zoopl_env <- zoopl_biogen_susp_ship_pred %>% select(c(Station,  Color, O2,pH, Amon_N, Nitrit_N, Nitrat_N, Total_N, Mineral_P, Total_P, Si, Organic_N, Organic_P,  Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity))
+
+zoopl_techno <- zoopl_biogen_susp_ship_pred %>% select(Suspended_matter, Ships, Distance_Dump, Distance_to_Drag)
+
+zoopl_coord <- merge(zoopl_env, stat_full %>% select(Station, Long, Lat), all.x = T) %>% select(Station, Long, Lat)
+
+
+
+###################################################
+# Рабочая таблица по фитопланктону
+phytopl_long2 <- phytopl_long %>% select(-Taxa_2) %>% group_by(Station, Taxa_1) %>% summarize(N = mean(N, na.rm = T))
+
+
+phytopl_wide <- dcast(phytopl_long2, Station  ~ Taxa_1, sum) 
+
+
+
+biogen_full_wide <- dcast(biogen_full_melt, Station  ~ variable, mean)
+
+
+phyt_biogen <- merge(phytopl_wide, biogen_full_wide, all.x = T)
+
+# nrow(phyt_biogen)
+
+suspensed_metter <- suspensed_metter_by_layers %>% group_by(Station) %>% summarise(Suspended_matter = mean(Suspended_matter , na.rm = T)) 
+
+phyt_biogen_susp <- merge(phyt_biogen, suspensed_metter, all.x = T)
+
+
+phyt_biogen_susp_ship <- merge(phyt_biogen_susp, ships, all.x = T)
+
+phytopl_pred <- predictors10 %>% select(Station, Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity)
+
+phyt_biogen_susp_ship_pred <- merge(phyt_biogen_susp_ship, phytopl_pred, all.x = T)
+
+
+
+phytopl_bio <- phyt_biogen_susp_ship_pred %>% select(-c(Color, O2,pH, Amon_N, Nitrit_N, Nitrat_N, Total_N, Mineral_P, Total_P, Si, Organic_N, Organic_P, Suspended_matter, Ships, Distance_Dump, Distance_to_Drag, Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity))
+
+
+phytopl_env <- phyt_biogen_susp_ship_pred %>% select(c(Station,  Color, O2,pH, Amon_N, Nitrit_N, Nitrat_N, Total_N, Mineral_P, Total_P, Si, Organic_N, Organic_P,  Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity))
+
+phytopl_techno <- phyt_biogen_susp_ship_pred %>% select(Suspended_matter, Ships, Distance_Dump, Distance_to_Drag)
+
+phytopl_coord <- merge(phytopl_env, stat_full %>% select(Station, Long, Lat), all.x = T) %>% select(Station, Long, Lat)
+
+
+###################################################
+# Рабочая таблица по Бентосу
+
+
+
+bent_biogen <- merge(bent_N, biogen_full_wide, all.x = T)
+
+# nrow(phyt_biogen)
+
+suspensed_metter <- suspensed_metter_by_layers %>% group_by(Station) %>% summarise(Suspended_matter = mean(Suspended_matter , na.rm = T)) 
+
+bent_biogen_susp <- merge(bent_biogen, suspensed_metter, all.x = T)
+
+
+bent_biogen_susp_ship <- merge(bent_biogen_susp, ships, all.x = T)
+
+bent_pred <- predictors10 %>% select(Station, Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity, Fine_particles, Coarce_particles)
+
+bent_biogen_susp_ship_pred <- merge(bent_biogen_susp_ship, bent_pred, all.x = T)
+
+bent_biogen_susp_ship_pred_org <- merge(bent_biogen_susp_ship_pred, org, all.x = T)
+ 
+
+bent_bio <- bent_biogen_susp_ship_pred_org %>% select(-c(Color, O2,pH, Amon_N, Nitrit_N, Nitrat_N, Total_N, Mineral_P, Total_P, Si, Organic_N, Organic_P, Suspended_matter, Ships, Distance_Dump, Distance_to_Drag, Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity, Fine_particles, Coarce_particles, Org_Aug_20))
+
+
+bent_env <- bent_biogen_susp_ship_pred_org %>% select(c(Station,  Color, O2,pH, Amon_N, Nitrit_N, Nitrat_N, Total_N, Mineral_P, Total_P, Si, Organic_N, Organic_P,  Depth, Transparency, Surf_Salinity, Bot_Salinity, Surf_Turbidity, Bot_Turbidity, Fine_particles, Coarce_particles,  Org_Aug_20))
+
+bent_techno <- bent_biogen_susp_ship_pred_org %>% select(Suspended_matter, Ships, Distance_Dump, Distance_to_Drag)
+
+bent_coord <- merge(bent_env, stat_full %>% select(Station, Long, Lat), all.x = T) %>% select(Station, Long, Lat)
+
+# nrow(bent_coord)
+
+```
+
+
+## Пространственное распределение биомассы и плотности поселения бентосных животных
+
+
+Для оценки пространственного распределения бентоса Обской губы были построены карты (`r figRef("Bent_map")`). Высокие суммарные биомассы и плотности поселения отмечались в основном в прибрежных районах. Важно отметить и высокие показатели обилия бентоса в районе терминала. Биомасса  демонстрирует некоторую связь с глубиной (`r figRef("Bent_depth")`, A). Однако эта связь нелинейна: максимальные биомассы отмечаются на средних значениях глубины (10-20 м). Связь суммарной численности организмов с глубиной значительно слабее (`r figRef("Bent_depth")`, B). В целом, в пространственном распределении суммарной биомассы и общей плотности просматривается, скорее пятнистый паттерн, чем черты градиента.  О пятнистой структуре биоценотического покрова свидетельствует и заметное количество станций, с отскакивающими от общего пула станциями, демонстрирующими чрезвычайно высокие  показатели обилия (`r figRef("Bent_depth")`). 
+
+```{r}
+total_B <- bent_B %>% mutate(Total_B = rowSums(.[,-1])) %>% select(Station, Total_B)
+
+total_N <- bent_N %>%  mutate(Total_N = rowSums(.[,-1])) %>% select(Station, Total_N)
+
+
+total_B <- merge(total_B, bent_coord) %>% mutate(Anomaly = case_when(Total_B > mean(Total_B) ~ "High", Total_B <= mean(Total_B) ~ "Low"))
+
+total_N <- merge(total_N, bent_coord) %>% mutate(Anomaly = case_when(Total_N > mean(Total_N) ~ "High", Total_N <= mean(Total_N) ~ "Low"))
+
+Pl_B <- Pl_Obskaya_bay + 
+  geom_point(data = total_B, aes(x = Long, y = Lat, group = 1, size = (Total_B), fill = Anomaly), shape = 21) +
+  scale_fill_manual(values = c("red", "gray")) + 
+  labs(size = "Биомасса \n(г/кв.м)") +
+  guides(fill = "none")
+
+Pl_N <- Pl_Obskaya_bay + 
+  geom_point(data = total_N, aes(x = Long, y = Lat, group = 1, size = (Total_N), fill = Anomaly), shape = 21) +
+  scale_fill_manual(values = c("red", "gray")) + 
+  labs(size = "Плотность \n(экз./кв.м)") +
+  guides(fill = "none")
+
+
+
+```
+
+```{r fig.cap=figRef("Bent_map", "Пространственное распределение общей биомассы (А) и суммарной плотности поселения (B) бентосных организмов.Размер точек пропорционален обилию на станции. Красные точки - станции, на которых обилие превышает среднее значение.")}
+
+plot_grid(Pl_B, Pl_N, labels = c("А", "В"))
+
+```
+
+
+```{r fig.cap=figRef("Bent_depth", "Связь общей биомассы (А) и суммарной плотности поселения (B) бентосных организмов с глубиной.Линия отражает LOESS регрессию.")}
+
+
+Pl_depth_N <- 
+  merge(total_N,  bent_env %>% select(Station, Depth)) %>% ggplot(., aes(x = Depth, y= Total_N)) + geom_point() + geom_smooth(se = F)
+
+
+Pl_depth_B <- 
+  merge(total_B,  bent_env %>% select(Station, Depth)) %>% ggplot(., aes(x = Depth, y= Total_B)) + geom_point() + geom_smooth(se = F)
+
+
+plot_grid(Pl_depth_B, Pl_depth_N, labels = c("A", "B"))
+
+```
+
+
+
+
+
+```{r}
+
+
+
+
+Spec_abund <- bent_N %>% select(-Station) %>% colSums(.) %>% t() %>% as.vector() 
+
+spec_total_abund <- data.frame(Sp = bent_bio %>% select(-Station) %>% colnames(), Spec_abund)
+
+N_porog <- 500 
+
+spec_selected <- spec_total_abund %>% filter(Spec_abund > N_porog)
+
+bent_bio_short <- bent_bio %>% select(spec_selected$Sp)
+
+
+
+```
+
+
+
+
+# Связь зообентоса с параметрами среды
+
+
+
+```{r}
+
+bent_cca_full <- cca(log(bent_bio_short + 1) ~ . - Coarce_particles - Total_P - Organic_N  , data = bent_env[,-c(1)])
+
+# plot(metaMDS(log(bent_bio_short + 1)), type = "t")
+
+# Depth + Bot_Salinity +Bot_Turbidity + Fine_particles + Org_Aug_20 + O2   
+# plot(bent_cca_full)
+
+# vif.cca(bent_cca_full)
+
+bent_cca_0 <- cca(log(bent_bio_short + 1) ~ 1, data = bent_env[,-c(1)])
+
+
+bent_cca_reduced_forw <- ordistep(bent_cca_0, scope = formula(bent_cca_full), direction = "forward", Pin = 0.1, Pout = 0.1, trace = F)
+  
+
+
+
+
+# plot(phyt_cca_reduced_forw, display = c("sites", "cn"), choice = c(1, 2))
+
+# anova(bent_cca_reduced_forw, by = "margin", permutations = 999)
+# 
+# 
+# anova(bent_cca_reduced_forw, by = "axis")
+
+
+CCA1_importance <- round(summary(bent_cca_reduced_forw)$cont$ importance [2, 1] * 100, 1)
+CCA2_importance <- round(summary(bent_cca_reduced_forw)$cont$ importance [2, 2] * 100, 1)
+CCA3_importance <- round(summary(bent_cca_reduced_forw)$cont$ importance [2, 3] * 100, 1)
+
+
+bent_cca_scores <- fortify(bent_cca_reduced_forw)
+
+bent_cca_species_score <- bent_cca_scores %>% filter(Score == "species") 
+bent_cca_species_score$Label <- gsub("_", " ", bent_cca_species_score$Label)
+
+
+
+bent_cca_sites_score <- bent_cca_scores %>% filter(Score == "sites")
+
+bent_cca_biplot_score <- bent_cca_scores %>% filter(Score == "biplot")
+
+cca_results <- fortify(bent_cca_reduced_forw, scaling = "sites")
+
+CCA_scores_sites <- cca_results %>% filter(Score == "sites")
+
+CCA_scores_biplot <- cca_results %>% filter(Score == "biplot")
+
+
+
+CCA1_negative <- CCA_scores_biplot[order(CCA_scores_biplot$CCA1), ]$Label[1:5] 
+CCA1_positive <- CCA_scores_biplot[order(CCA_scores_biplot$CCA1, decreasing = T), ]$Label[1:5] 
+
+```
+
+```{r}
+dd <- bent_cca_species_score %>% filter(CCA1 < 0) %>% select(Label) %>% as.vector()
+
+
+```
+
+
+При рассмотрении всего набора видов зообентоса, включающего `r length(names(bent_bio)) - 1` вида, канонический корреспондентный анализ показал лишь незначительную роль канонических осей (они описывали лишь единичные проценты суммарной изменчивости). Применение непрямых методов ординации (nMDS) также не позволило достичь приемлемой ординации станций при использовании полного набора видов.  Это еще раз подтверждает мозаичный характер распределения бентосных сообществ. В связи с этим была произведена фильтрация видового состава: были отброшены виды, имеющие плотность поселения ниже `r N_porog` экз./м^2^. Дальнейший многомерный анализ был проведен с использованием матрицы обилий лишь `r ncol(bent_bio_short)`видов.
+
+Канонический корреспонтдентный анализ (ССА) на первом  этапе включал все доступные переменные, характеризующие условия среды. Далее было проведено прямое пошаговое упрощение модели, результаты, которой демонстрирует `r figRef("bent_CCA_stations")`. Первая каноническая ось, которая описывает `r CCA1_importance` % общей изменчивости,  традиционно демонстрировала связь с соленостью, разделяя бентосные сообщества на солоновато водные сообщества (отрицательные значения CCA1) и  сообщества представленные в опресненной водной массе (положительные значения CCA1).
+
+Ординация видов в пространстве тех же канонических осей (`r figRef("bent_CCA_species")`) позволяет заметить, что к числу видов, характерных для солоноватоводных сообществ, можно отнести следующие таксоны:
+`r dd$Label `.
+
+Эти виды тяготеют к не только к местообитаниям с более высокой соленостью, но их обилие также положительно коррелирует с долей мелкодисперсных частиц в грунте и концентрацией кремния в воде.   
+
+
+Более детальное рассмотрение видов, имеющих положительные нагрузки по CCA1 (`r figRef("bent_CCA_species")`), позволяет говорить о существовании трех групп видов. Первая группа представлена олигохетами (*Limnodrilus hoffmeisteri*), тяготеющими к большим глубинам. Вторая группа  характеризуется высоким обилием *Sduria entomon* и *Mysis relicta*. Эта группа видов представлена при минимальной солености в водах, богатых азотом. Третья группа включает неопределенных олигохет, остракод и бокоплавов *Monoporeia affinis*, которые тяготеют к малым глубинам в зоне опреснения.
+
+Особое положение занимают *Merenzelleria sp.* и неопределенные сипункулиды, которые имеют нагрузки по CCA1 и CCA2 близкие к нулю, а стало быть распределение этих организмов не подчиняется выявленным градиентам условий. 
+
+
+
+```{r fig.cap=figRef("bent_CCA_stations", "Ординация станций в канонических корреспондентных осях.")}
+
+ordiplot(bent_cca_reduced_forw, display = c("sites", "cn"), scaling = "sites")
+
+```
+
+
+
+```{r fig.cap = figRef("bent_CCA_species", "Ординация видов в канонических корреспондентных осях.")}
+
+ordiplot(bent_cca_reduced_forw, display = c("species", "cn"), scaling = "species", type = "t", choice = c(1,2))
+
+```
+
+
+
+
+```{r}
+Saline_bent <- bent_bio_short %>% select(Ampharete_vega_, Halicryptus_spinulosus, Diastylis_sulcata, Pontoporeia_femorata, Portlandia_aestuariorum) %>% mutate(N_total = rowSums(.), Station =  bent_bio$Station) %>% select(Station, N_total) %>% mutate(bent_coord)
+
+
+Fresh_bent_1 <- bent_bio_short %>% select(Limnodrilus_hoffmeisteri_, Oligochaeta_gen._spp., Oligochaeta_gen._sp._cocons) %>% mutate(N_total = rowSums(.), Station =  bent_bio$Station)%>% select(Station, N_total) %>% mutate(bent_coord)
+
+
+Fresh_bent_2 <- bent_bio_short %>% select(Oligochaeta_gen._sp., Ostracoda_gen._sp., Monoporeia_affinis) %>% mutate(N_total = rowSums(.), Station =  bent_bio$Station)%>% select(Station, N_total) %>% mutate(bent_coord)
+
+
+Fresh_bent_3 <- bent_bio_short %>% select(Senecella_siberica, Mysis_relicta_, Saduria_entomon) %>% mutate(N_total = rowSums(.), Station =  bent_bio$Station)%>% select(Station, N_total) %>% mutate(bent_coord)
+
+
+
+Fresh_bent_4 <- bent_bio_short %>% select(Marenzelleria_sp., Sipunculidea_gen._sp.) %>% mutate(N_total = rowSums(.), Station =  bent_bio$Station)%>% select(Station, N_total) %>% mutate(bent_coord)
+
+
+```
+
+Поскольку визуализация распределения сообществ, как таковых, в столь сложных градиентах малоинформативна ниже приводятся карты, отражающие распределение суммарных обилий видов каждой из описанных групп. 
+
+Суммарное обилие видов, тяготеющих к осолоненным водным массам (`r figRef("Saline_bent")`) достигает максимума в устьевом участке акватории. Однако в этом районе более низкие значения отмечаются в районах, близких к морскому каналу. 
+
+Сообщество олигохет, по всей видимости, приурочено к центральным частям акватории с максимальными глубинами. Вероятно, это сообщество приурочено к локальным ямам и центральному более глубоководному "желобу", который представлен в центральной части русла.  
+
+Сообщество, в котором доминируют *Monoporeia affinis*, *Oligochaeta* и  *Ostracoda gen. sp.* демонстрирует заметные обилия только на мелководьях, идущих вдоль западного берега губы. 
+
+Самое очевидную трактовку можно дать природе сообщества, в котором доминируют  *Saduria entomon*, *Mysis relicta* и *Senecella siberica*. Эта группировка наиболее обильна в непосредственной близости от терминала, где наблюдаются наиболее сильные техногенные воздействия. Вместе с тем, высокое обилие хищников, *Saduria entomon*, связанное с зоной с техногенного нарушения сообществ, вероятно, свидетельствует о переключении питания на какие-то объекты, также связанные с техногенным воздействием. В сходных сообществах Балтийского моря морские тараканы питаются в значительной степени бокоплавами *Monoporeia affinis* (Sparrevik, Leonardsson, 1998; Bergström, Englund, 2002), хотя могут питаться и другими объектами, включая и особей собственного вида. В акватории Обской губы *Monoporeia affinis* избегает разрушенных местообитаний (см. выше). 
+
+Возможно кормовую базу для *Saduria entomon* составляют полихеты *Marenzelleria sp.*. В изучаемой акватории самые высокие обилия группа *Marenzelleria sp.*+ Sipunculidea демонстрируют в тех же участках акватории, где наблюдаются максимальные обилия *Saduria entomon*.
+
+Полихеты *Marenzelleria sp.*, представители сем. Spionidae, будучи типичными видами-оппортунистами, демонстрируют экспансию во многих акваториях Северной Атлантики, в том числе и в Балтийском море (Kube et al., 1996; Kauppi et al. 2015), где формируются сообщества очень близкие к сообществам, наблюдаемым в акватории Обской губы. Вспышки обилия видов-оппортунистов характерны для нарушенных местообитаний поэтому вполне ожидаемо эти полихеты оказываются обильными, помимо самого нарушенного местообитания в районе терминала, еще и в районе морского канала. Присутствие этих полихет в большом количестве можно рассматривать как признак нарушенности местообитания.  
+
+
+
+```{r fig.cap=figRef("Saline_bent", "Суммарное обилие видов, тяготеющих к осолоненным водным массам. Станции с нулевым обилием организмов данной группы не прорисованы.")}
+
+Pl_Obskaya_bay + geom_point(data = Saline_bent, aes(x = Long, y = Lat, size = N_total, group = 1, color = log(N_total+1) ) ) + scale_color_gradient(low = "white", high = "black") + guides(color = FALSE)
+
+
+```
+
+
+
+
+
+```{r fig.cap=figRef("Fresh_bent_1", "Суммарное обилие видов сообщества олигохет (*Limnodrilus hoffmeisteri*, *Oligochaeta gen. spp.* Станции с нулевым обилием организмов данной группы не прорисованы.")}
+Pl_Obskaya_bay + geom_point(data = Fresh_bent_1, aes(x = Long, y = Lat, size = N_total, group = 1, color = log(N_total+1) ) ) + scale_color_gradient(low = "white", high = "black") + guides(color = FALSE)
+```
+
+
+```{r fig.cap=figRef("Fresh_bent_2", "Суммарное обилие видов сообщества *Monoporeia affinis* + *Oligochaeta* + *Ostracoda gen. sp.*  Станции с нулевым обилием организмов данной группы не прорисованы.")}
+Pl_Obskaya_bay + geom_point(data = Fresh_bent_2, aes(x = Long, y = Lat, size = N_total, group = 1, color = log(N_total+1) ) ) + scale_color_gradient(low = "white", high = "black") + guides(color = FALSE)
+
+```
+
+
+```{r fig.cap=figRef("Fresh_bent_3", "Суммарное обилие основных видов сообщества *Saduria entomon* + , *Mysis relicta* + *Senecella siberica*. Станции с нулевым обилием организмов данной группы не прорисованы.") }
+Pl_Obskaya_bay + geom_point(data = Fresh_bent_3, aes(x = Long, y = Lat, size = N_total, group = 1, color = log(N_total+1) ) ) + scale_color_gradient(low = "white", high = "black") + guides(color = FALSE)
+```
+
+
+```{r fig.cap=figRef("Fresh_bent_4", "Суммарное обилие *Marenzelleria sp.* + *Sipunculidea gen. sp.*")}
+Pl_Obskaya_bay + geom_point(data = Fresh_bent_4, aes(x = Long, y = Lat, size = N_total, group = 1, color = log(N_total+1) ) ) + scale_color_gradient(low = "white", high = "black") + guides(color = FALSE)
+```
+
+
+# Некоторые мысли по поводу важных сообществ
+
+Судя по картам распределения морянки, этот вид держится вдоль западного берега. Здесь, вдалеке от факторов, разрушающих сообщества, на сравнительно небольшой глубине представлены сообщества, где доминируют бокоплавы. В северной части губы, где представлены солоновато-водные сообщества, в число доминантов входит *Pontoporeia femorata*, а южнее, в опресненной части, представлены сообщества с доминированием очень близкого вида *Monoporeia affinis*. Известно, что морянка питается в первую очередь моллюсками, но может активно питаться и ракообразными (Stempniewicz, 1995; White et al. 2009). Соответственно, акватория Обской губы представляется исключительно удобным для морянки местом откорма в летний период, где на протяжении, как осолоненной, так и опресненной части акватории присутствуют легкодоступные кормовые объекты. Оба вида бокоплавов короткоживущие детритофаги. Поскольку детрита, приносимого течением реки, в акватории достаточно то эти сообщества, благодаря быстрому обороту энергии, проходящей через популяции бокоплавов, могут быть очень продуктивны. Вероятно, бокоплавы служат хорошей кормовой базой и рыбам, которыми, в свою очередь могут питаться, морянки и другие водоплавающие птицы.   
+
+
+
+# Сравнение сообществ зообентоса в районе терминала
+
+## Сообщества в районе терминала в 2020 г.
+
+```{r}
+
+
+Station_impacted <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Stations near impact source")
+
+Station_impacted <- Station_impacted %>% filter(Source == "Channel")
+
+loop <- Station_impacted %>% filter(Loop == "In") %>% select(Station)
+loop <- loop$Station
+
+
+out <- Station_impacted %>% filter(Loop == "Out") %>% select(Station)
+out <- out$Station
+```
+
+
+
+```{r }
+
+
+
+spec_selected <- spec_total_abund %>% filter(Spec_abund > N_porog)
+
+
+bent_terminal <- merge(Station_impacted, bent_N)
+
+bent_terminal_short <- bent_terminal %>% select(spec_selected$Sp)
+
+bent_terminal_short <- bent_terminal_short %>% select(-c(Senecella_siberica, Mysis_relicta_))
+
+
+loop_cca <- cca(log(bent_terminal_short +1)~ Loop, data = bent_terminal )
+
+# plot(loop_cca, display = c("species", "cn"))
+# 
+# anova(loop_cca, by = "axis")
+
+```
+
+
+
+
+Для сравнения сообществ зообентоса, находящихся под непосредственным влиянием взвеси, образующейся в результате дноуглубительных работ в районе терминала, с сообществами зообентоса, находящимися вне зоны прямого воздействия, станции были разделены на две группы. Первая группа - станции, находящиеся непосредственно в области облака взвеси, заметного на спутниковых снимках (станции (**In**): `r loop`). Вторая группа - станции вне облака взвеси (станции (**Out**): `r out`)
+
+Приведенная ординация (`r figRef("bent_terminal")`) свидетельствует незначительном отличии сообществ на станциях, попадающих в зону шлейфа от сообществ, находящихся за его пределами. Большая часть проб концентрируется вокруг центроида, соответствующего группе "In". Эти станции имеют  положительные значения CCA1.  Это означает, что структура сообщества даже за пределами шлейфа очень похожа на таковую у сообществ, представленных в пределах шлейфа взвеси.  То есть степень низмененности сообществ оказывается высокой и за пределами непосредственного влияния шлейфа взвеси. Меньшинство станций, которые имеют отрицательные значения CCA1, они находятся ближе к центроиду "Out" очень гетерогенны и, видимо, представляют, как минимум, два разных сообщества. Для визуализации сути  градиента, описываемого CCA1, приводятся графики (`r figRef("spec_abund")`), отражающие изменения обилия нескольких, наиболее обильных видов в градиенте значений ССА1. Видно, что большинство видов снижают свое обилие в градиенте, заданном первой канонической осью, то есть градиентом от зоны вне шлейфа к областям, покрытым шлейфом взвеси. Исключение составляет  *Marenzelleria* sp.. 
+
+
+```{r fig.cap=figRef("bent_terminal", "Ординация станций в канонических корреспондентных осях в связи с принадлежностью станций к одной из двух групп.")}
+CCA_scores <- fortify(loop_cca)
+
+CCA_centroids <- CCA_scores %>% filter(Score == "centroids")
+
+CCA_centroids$Label <- c("In", "Out")
+
+
+CCA_centroids$Label <- c("In", "Out")
+
+
+CCA_stations <- CCA_scores %>% filter(Score == "sites") %>% mutate(Loop = bent_terminal$Loop)
+
+
+Pl_station <- ggplot(CCA_stations, aes(x = CCA1, y = CA1)) + geom_point(aes(color = Loop), size = 4) + scale_color_manual(values = c("red", "gray")) + geom_text(data = CCA_centroids, aes(label = Label), size = 10)
+
+Pl_station
+```
+
+
+
+
+
+```{r}
+
+
+Pl_Merenceller <- qplot(CCA_stations$CCA1, bent_terminal_short$Marenzelleria_sp.) + labs(x = "CCA1", y = "Плотность поселения") + geom_smooth(se = F) + ggtitle("Marenzelleria sp.")
+
+Pl_Pont <- qplot(CCA_stations$CCA1, bent_terminal_short$Pontoporeia_femorata) + labs(x = "CCA1", y = "Плотность поселения")  + geom_smooth(se = F) + ggtitle("Pontoporeia femorata")
+
+
+Pl_Limnodr <- qplot(CCA_stations$CCA1, bent_terminal_short$Limnodrilus_hoffmeisteri_) + labs(x = "CCA1", y = "Плотность поселения")  + geom_smooth(se = F) + ggtitle("Limnodrilus hoffmeisteri")
+
+Pl_Sadur <- qplot(CCA_stations$CCA1, bent_terminal_short$Saduria_entomon) + labs(x = "CCA1", y = "Плотность поселения")  + geom_smooth(se = F) + ggtitle("Saduria entomon")
+
+
+
+Pl_Monop <- qplot(CCA_stations$CCA1, bent_terminal_short$Monoporeia_affinis) + labs(x = "CCA1", y = "Плотность поселения")  + geom_smooth(se = F) + ggtitle("Monoporeia affinis")
+
+
+```
+
+
+```{r fig.cap=figRef("spec_abund", "Обилие видов-доминантов в градиенте первой канонической оси, заданной двумя группами станций (In vs Out).")}
+plot_grid(Pl_Merenceller, Pl_Pont, Pl_Limnodr, Pl_Sadur, Pl_Monop, ncol = 3)
+```
+
+
+
+## Литература
+
+
+Sparrevik E., Leonardsson K. Recruitment in the predacious isopod Saduria entomon (L.): alternative prey reduces cannibalism //Journal of Experimental Marine Biology and Ecology. – 1998. – Т. 221. – №. 1. – С. 117-130.
+
+Bergström U., Englund G. Estimating predation rates in experimental systems: scale‐dependent effects of aggregative behaviour //Oikos. – 2002. – Т. 97. – №. 2. – С. 251-259.
+
+Kube, J., Zettler, M. L., Gosselck, F., Ossig, S. and Powilleit, M., 1996. Distribution of Marenzelleria viridis (Verrill, 1873) (Polychaeta: Spionidae) in the southwestern Baltic Sea in 1993/94—ten years after introduction.Sarsia 81: 131–142.
+
+Kauppi L., Norkko A., Norkko J. Large-scale species invasion into a low-diversity system: spatial and temporal distribution of the invasive polychaetes Marenzelleria spp. in the Baltic Sea //Biological invasions. – 2015. – Т. 17. – №. 7. – С. 2055-2074.
+
+
+
+
++++++++++++++++
+
+Mun et al куда-то проал из базы, проще не ссылаться...
+
+Stempniewicz L. Feeding ecology of the Long-tailed Duck Clangula hyemalis wintering in the Gulf of Gdansk(southern Baltic Sea) //Ornis Svecica. – 1995. – Т. 5. – №. 3. – С. 133-142.
+
+White T. P., Veit R. R., Perry M. C. Feeding ecology of long-tailed ducks Clangula hyemalis wintering on the Nantucket Shoals //Waterbirds. – 2009. – Т. 32. – №. 2. – С. 293-299.
+
+
+
+
+
+# Сравнение сообществ, описанных в 2019 и 2020 гг.
+
+
+
+```{r}
+
+
+
+
+bent <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Zoobenthos 2019-2020") 
+
+bent <- bent %>% filter(Station != "О3")
+
+
+bent_B <- bent %>% filter(Type == "Biomass") %>% select(-Type)
+
+bent_N <- bent %>% filter(Type == "Abundance") %>% select(-Type)
+
+
+
+```
+
+
+```{r }
+
+permanova <- adonis(bent_N[, -c(1:2)] ~ Year, data = bent_N, permutations = 9999 )
+
+simp <- simper((bent_N[,-c(1:2)]+1), bent_N$Year, permutations = 99999)
+
+df_simper <- summary(simp)[[1]]
+
+
+```
+
+
+Структура сообществ, описанных в приблизительно одних и тех же точках в районе терминала, существенно различалась в при сравнении 2019 и 2020 гг.(PERMANOVA pseudoF = `r permanova$aov.tab$F.Model[1]`, p = `r permanova$aov.tab$"Pr(>F)"[1]`, 9999 пермутаций). Точки, соответствующие станциям, взятым в разные годы,  расходятся на ориднации в осях многомерного шкалироввания (`r figRef("mds")`)    
+
+
+
+```{r }
+
+mds_bent <- metaMDS(log(bent_N[,-c(1:2)]+1), trace = F)
+
+MDS <- as.data.frame(scores(mds_bent))
+
+
+
+```
+
+
+Применение процедуры Simper позволило оценить вклад видов в формирование различий между двумя группами. Наибольший вклад в формирование разлиий между ними вносят  *Marenzelleria* sp., *Saduria entomon*,  *Limnodrilus hoffmeisteri*,  Nemertea gen. sp. и *Senecella siberica*. Указанные виды отвечают за 80.7% различий между данными 2019 и 2020 гг (таблица ++). Средние показатели обилия у всех этих видов в 2019 г.  возросли по сравнению с 2020 г. Обилие большинства видов, на станциях 2019 года было меньше, чем в 2020 году.  
+
+```{r}
+df_simper <- df_simper %>% select(ava, avb, average, cumsum,  p ) %>% rename(N_2019 = ava, N_2020 = avb) 
+
+df_simper$N_2019 <- round(df_simper$N_2019, 1)
+
+df_simper$average <- round(df_simper$average, 2)
+
+df_simper$cumsum <- round(df_simper$cumsum *100, 1)
+
+df_simper$Spec <- gsub("_", " ", row.names(df_simper))
+
+df_simper <- df_simper %>% select(Spec, N_2019, N_2020, average, cumsum,  p)
+
+row.names(df_simper) <- NULL
+```
+
+```{r}
+kable(df_simper, col.names = c("Таксоны", "Средняя плотность в 2019","Средняя плотность в 2020", "Вклад в формирование различий", "Накопленный вклад в формироавние различий (%)", "Пермутационный уровень значимости"), caption = "Таблица ++. Результаты применения процедуры Simper для сравнения сообществ в 2019 и 2020 гг.")
+```
+
+
+
+
+```{r fig.cap=figRef("mds", "Ординация станций, взятых в местах техногенного воздействия в  2019 и 2020 гг., в осях многомерного шакалирования.")}
+
+ggplot(MDS, aes(NMDS1, NMDS2)) + geom_point(aes(color = factor(bent_N$Year) ), size = 4) + scale_color_manual(values = c("blue", "red")) + labs(color = "Годы") 
+
+```
+
