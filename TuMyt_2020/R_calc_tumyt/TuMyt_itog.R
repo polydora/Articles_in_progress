@@ -278,28 +278,28 @@ tuv_all_constant4 <- tuv_all %>%  filter(Sample_ID %in% c("BN_1.5_04", 'BS_2_05'
 
 tuv_predictors2 <-  tuv_all %>% select(Transect, Depth, Period, Distance)
 
-dem_dat <- tuv_all_constant4 %>% select(Age2_3, Age4_6, Age7_9,  Age10_12, N, W,OGP, max_L )
+dem_dat <- tuv_all %>% select(Age2_3, Age4_6, Age7_9,  Age10_12, N, W,OGP, max_L )
 
-tuv_all_constant_ca_res <- cca(dem_dat ~ Distance + Depth,  data = tuv_all_constant4)
+tuv_all_constant_ca_res <- cca(dem_dat ~ Distance + Depth,  data = tuv_predictors2)
 
 plot(tuv_all_constant_ca_res, display = c( "cn","species"), scaling = "symmetric")
 plot(tuv_all_constant_ca_res, display = c( "cn","sites"), scaling = "symmetric")
 
-anova(tuv_all_constant_ca_res)
+anova(tuv_all_constant_ca_res, by = "axis")
 
 
 # посмотрим остатки от модели
-CA1_2_scores <- as.data.frame(scores(tuv_all_constant_ca_res, choices = 1:10)$sites)
+CA1_2_scores <- as.data.frame(scores(tuv_all_constant_ca_res, choices = 1:8)$sites)
 # делаю расстояние и глубину факторами
 tuv_all_constant4$f_Distance <- factor(tuv_all_constant4$Distance)
 tuv_all_constant4$f_Depth <- factor(tuv_all_constant4$Depth)
 
-CA1_2_scores$Distance <- tuv_all_constant4$Distance
-CA1_2_scores$Transect <- tuv_all_constant4$Transect
-CA1_2_scores$Depth <- tuv_all_constant4$Depth
-CA1_2_scores$f_Distance <- tuv_all_constant4$f_Distance
-CA1_2_scores$f_Depth <- tuv_all_constant4$f_Depth
-CA1_2_scores$Period <- tuv_all_constant4$Period
+CA1_2_scores$Distance <- tuv_all$Distance
+CA1_2_scores$Transect <- tuv_all$Transect
+CA1_2_scores$Depth <- tuv_all$Depth
+CA1_2_scores$f_Distance <- factor(tuv_all$Distance)
+CA1_2_scores$f_Depth <- factor(tuv_all$Depth)
+CA1_2_scores$Period <- tuv_all$Period
 
 str(CA1_2_scores)
 
