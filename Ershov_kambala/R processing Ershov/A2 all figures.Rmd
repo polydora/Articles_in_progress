@@ -76,7 +76,9 @@ kam$Bay <- factor(kam$Bay, levels = c("Kandalaksha_Bay", "Onega_Bay", "Dvina_Bay
 
 ```{r, fig.cap = figRef("Size_boxplot", "Характеристика размерного состава камбал в разных заливах Белого моря.") }
 
-ggplot(kam, aes(x = Bay, y = L,  fill = Sidedness)) + geom_boxplot(notch = T) + facet_wrap(~Sex) + scale_fill_manual(values = c("gray10", "gray80")) + theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 30, vjust = 0.6)) + labs(x = "Bay", y = "Length", fill = "Morph")
+
+
+ggplot(kam, aes(x = Bay, y = L,  fill = Sidedness)) + geom_boxplot(notch = T) + facet_wrap(~Sex) + scale_fill_manual(values = c("gray10", "gray80")) + theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 30, vjust = 0.6)) + labs(x = "Bay", y = "Length, cm", fill = "Morph")
 ```
 
 
@@ -226,6 +228,10 @@ onega_cam2 <- onega_cam[-c(2353:2356),]
 onega_cam3 <- onega_cam2 %>% filter(Age<=7)
 
 
+# nrow(onega_cam3)/nrow(onega_cam2)
+# max(onega_cam2$Age)
+
+
 onega_cam3$Sex <-factor(onega_cam3$Sex, labels = c("female", "male"))
 
 
@@ -265,7 +271,8 @@ ggplot(mydata, aes(x = Age, y = fit, linetype = Sex))  +
   scale_fill_manual(values = c("white", "black") ) +
   theme_bw() +
   labs(y = "Frequency of left-sided morph", x = "Age, years", fill = "", linetype = "") +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") +
+  guides(shape = guide_legend(override.aes = list(fill = 20)))
 
 ```
 
