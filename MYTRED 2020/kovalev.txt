@@ -1,0 +1,68 @@
+
+
+Software Version	2.06.10
+
+
+
+Experiment File Path:	DB:\Experiments\kovalev.xpt
+Protocol File Path:	
+
+
+
+Plate Number	Plate 2
+Date	3/5/2021
+Time	3:55:20 PM
+Reader Type:	Epoch 2
+Reader Serial Number:	1409306
+Reading Type	Reader
+
+Procedure Details
+
+Plate Type	96 WELL PLATE
+Read	Absorbance Endpoint
+	Full Plate
+	Wavelengths:  440
+	Read Speed: Normal,  Delay: 100 msec,  Measurements/Data Point: 8
+
+Layout
+	1	2	3	4	5	6	7	8	9	10	11	12
+A	SPL1	SPL9		STD1	STD9		BLK						Well ID
+				0.1333	0.0066								Conc/Dil
+B	SPL2	SPL10		STD2	STD10		BLK						Well ID
+				0.1	0.0033								Conc/Dil
+C	SPL3			STD3									Well ID
+				0.0666									Conc/Dil
+D	SPL4			STD4									Well ID
+				0.0333									Conc/Dil
+E	SPL5			STD5									Well ID
+				0.0266									Conc/Dil
+F	SPL6			STD6									Well ID
+				0.02									Conc/Dil
+G	SPL7			STD7									Well ID
+				0.013									Conc/Dil
+H	SPL8			STD8									Well ID
+				0.01									Conc/Dil
+
+
+
+Actual Temperature:	0.0
+
+Results
+	1	2	3	4	5	6	7	8	9	10	11	12
+A	0.053	0.049		0.054	0.050		0.052						440
+	0.001	-0.002		0.002	-0.001		0.001						Blank 440
+B	0.051	0.054		0.057	0.050		0.050						440
+	-0.001	0.002		0.006	-0.002		-0.001						Blank 440
+C	0.053			0.064									440
+	0.002			0.012									Blank 440
+D	0.051			0.057									440
+	-0.000			0.006									Blank 440
+E	0.052			0.062									440
+	0.001			0.010									Blank 440
+F	0.050			0.056									440
+	-0.002			0.005									Blank 440
+G	0.051			0.058									440
+	-0.000			0.006									Blank 440
+H	0.050			0.075									440
+	-0.001			0.024									Blank 440
+
