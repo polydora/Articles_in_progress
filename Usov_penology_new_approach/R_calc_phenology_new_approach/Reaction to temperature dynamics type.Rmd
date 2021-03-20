@@ -7,7 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 library(knitr)
-opts_chunk$set(echo = TRUE, message = F)
+opts_chunk$set(echo = FALSE, message = F)
 ```
 
 
@@ -17,6 +17,8 @@ library(ggplot2)
 library(dplyr)
 library(reshape2)
 library(tidyr)
+library(cowplot)
+
 ```
 
 
@@ -24,13 +26,38 @@ library(tidyr)
 phen <- read_excel("Data/Phenology_2021.xlsx", sheet = "phenology")
 
 
-phen %>% select(Year, Temp_dynamics_type, Calanus_50_perc, Pseudocalanus_50_perc, Acartia_50_perc, Centropages_50_perc, Temora_50_perc, Microsetella_50_perc, Oithona_50_perc) %>% melt(id.vars = c("Year", "Temp_dynamics_type")) %>% filter(!is.na(Temp_dynamics_type)) %>% filter(Temp_dynamics_type != 5) %>%
-  ggplot(., aes(x = factor(Temp_dynamics_type), y = value)) + geom_boxplot() + facet_wrap(~variable) + labs(x= "Type of temperature dynamics", y = "Julian day")
+phen_middle <- 
+phen %>% select(Year, Temp_dynamics_type, Calanus_50_perc, Pseudocalanus_50_perc, Acartia_50_perc, Centropages_50_perc, Temora_50_perc, Microsetella_50_perc, Oithona_50_perc) %>% melt(id.vars = c("Year", "Temp_dynamics_type")) %>% filter(!is.na(Temp_dynamics_type)) %>% filter(Temp_dynamics_type != 5) 
 
 
-phen %>% select(Year, Temp_dynamics_type, Calanus_N, Pseudocalanus_N, Acartia_N, Centropages_N, Temora_N, Microsetella_N, Oithona_N) %>% melt(id.vars = c("Year", "Temp_dynamics_type")) %>% filter(!is.na(Temp_dynamics_type)) %>% filter(Temp_dynamics_type != 5) %>% 
-  ggplot(., aes(x = factor(Temp_dynamics_type), y = log(value) )) + geom_boxplot() + facet_wrap(~variable) + labs(x= "Type of temperature dynamics", y = "Log(N)")
+phen_middle$variable <- gsub("_50_perc", "", phen_middle$variable)
+
+Pl_Middle <- 
+phen_middle %>% 
+ggplot(., aes(x = factor(Temp_dynamics_type), y = value)) + geom_boxplot() + facet_wrap(~variable, ncol =1) + labs(x= "Type of temperature dynamics", y = "Julian day") + theme_bw() + theme(strip.text = element_blank())
+
+phen_N <- 
+phen %>% select(Year, Temp_dynamics_type, Calanus_N, Pseudocalanus_N, Acartia_N, Centropages_N, Temora_N, Microsetella_N, Oithona_N) %>% melt(id.vars = c("Year", "Temp_dynamics_type")) %>% filter(!is.na(Temp_dynamics_type)) %>% filter(Temp_dynamics_type != 5) 
+
+
+phen_N$variable <- gsub("_N", "", phen_N$variable)
+
+Pl_N <-
+phen_N %>% 
+  ggplot(., aes(x = factor(Temp_dynamics_type), y = log(value) )) + geom_boxplot() + facet_wrap(~variable, ncol = 1, strip.position="right") + labs(x= "Type of temperature dynamics", y = "Log(N)") + theme_bw() + theme(strip.text = element_text(size = 7)) 
 
 
 ```
+
+
+
+
+```{r}
+plot_grid(Pl_Middle, Pl_N, ncol = 2, labels = c("A", "B"))
+```
+
+Fig. ++. Boxplots reflecting distribution of middle season dates (A) and abundnace (B) of copepod species in years with different patterns of temperature dynamics.
+
+
+Обрати внимание на то, что при паттерне температуры 4 (если правильно понимаю, это Late fast) микросетелла дает пик раньше и у нее выше среднего обилие. НО! Скорее противоположный паттерн у Псевдокалянуса, оитоны и Теморы.
 

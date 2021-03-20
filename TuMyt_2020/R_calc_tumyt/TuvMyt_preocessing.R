@@ -7,12 +7,47 @@ library(reshape2)
 library(readxl)
 
 
-tuv <- read_excel("Data/TuMyt_2009_2010.xlsx")
+tuv <- read.table("Data/TuMyt_0910_itog.csv", sep = ";", header = T)
 str(tuv)
 
 tuv_reduc <- tuv %>% filter(!is.na(PT))
 
-tuv_demogr <- tuv_reduc %>% select(Age2, Age3,Age4, Age5, Age6, Age7, Age8, Age9, Age10, Age11, Age12, PT, N, W, OGP, max_L) %>% as.data.frame()
+
+tuv_abund <- tuv_reduc %>% select(Transect, Trans, Depth2, PT, N, W, Age4, Age5, Age6, Age7 ) %>% mutate(Age_4_7 = Age4 + Age5 + Age6 + Age7) %>% select(-c(Age4, Age5, Age6, Age7))  %>% as.data.frame()
+
+
+
+tuv_totals <- tuv_abund  %>% mutate(Gorizont = case_when(Depth2 < 0 ~ "Subtidal", Depth2 >=0 ~ "Intertidal")) %>% group_by(Trans, Gorizont) %>% summarise(PT_m = mean(PT), N_m = mean(N), W_m =  mean(W), Age_4_7_m = mean(Age_4_7))
+
+Area <- read.csv("Data/Area.csv")
+
+Area$Area <-  Area$Area/1.635*10000
+
+
+tuv_totals_area <- merge(tuv_totals, Area)
+
+tuv_totals_area$Stock_N <- tuv_totals_area$N_m * tuv_totals_area$Area
+
+Total_stock_N <- sum(tuv_totals_area$Stock_N)
+
+tuv_totals_area$Stock_B <- tuv_totals_area$W_m * tuv_totals_area$Area
+
+Total_stock_W <- sum(tuv_totals_area$Stock_B)/1000
+
+
+tuv_totals_area$Ptros <- with(tuv_totals_area, exp(-3.9 + 5*PT_m)/(1+exp(-3.9 + 5*PT_m)))
+
+tuv_totals_area$N_tros <- tuv_totals_area$Ptros * tuv_totals_area$Age_4_7_m
+
+tuv_totals_area$N_edul <- tuv_totals_area$Age_4_7_m - tuv_totals_area$N_tros
+
+Total_stock_tros <- sum(tuv_totals_area$N_tros*tuv_totals_area$Area)
+Total_stock_edul <- sum(tuv_totals_area$N_edul*tuv_totals_area$Area)
+
+
+#######################################
+
+tuv_demogr <- tuv_reduc %>% select(Transect, Depth, Age2, Age3,Age4, Age5, Age6, Age7, Age8, Age9, Age10, Age11, Age12, PT, N, W, OGP, max_L) %>% as.data.frame()
 
 row.names(tuv_demogr) <- tuv_reduc$Sample_ID
 
