@@ -1,0 +1,185 @@
+---
+title: "Визуализация многолетней динамики видов"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+
+
+```{r}
+# Packages  ####
+library(reshape2)
+library(ggplot2)
+library(mgcv)
+library(dplyr)
+library(readxl)
+
+
+
+# Подготовка данных ####
+plankt_wide <- read.csv("Data/Plankton_raw_tidy.csv", header = TRUE)
+vars <- read.csv("Data/Plankton_raw_tidy_variables.csv", header = T)
+phen <- read_excel("Data/Phenology_2021.xlsx", sheet = "phenology")
+
+
+d <- (melt(plankt_wide, id.vars = c("Day", 	"Month", 	"Year", 	"Data"), variable.name = "Var_ID", value.name = "Abundance"))
+
+
+plankt <- merge(d, vars)
+
+## Среденвзвешанные значения, объединение слоев
+
+plankt_1 <- plankt[plankt$Level == "0-10", ]
+# nrow(plankt_1)
+
+plankt_2 <- plankt[plankt$Level == "10-25", ]
+# nrow(plankt_2)
+
+plankt_3 <- plankt[plankt$Level == "25-bottom", ]
+# nrow(plankt_3)
+
+
+
+plankt_mean <- plankt_1
+
+# plankt_mean$Abund_mean <- (plankt_1$Abundance*10 + plankt_2$Abundance*15)/25
+plankt_mean$Abund_mean <- (plankt_1$Abundance*10)
+
+
+plankt_mean <- plankt_mean[, -6]
+plankt_mean <- plankt_mean[, -8]
+
+
+
+plankt_mean$Date2 <- strptime(paste(plankt_mean$Day,"/", plankt_mean$Month, "/", plankt_mean$Year, sep = ""), format=("%d/%m/%Y"))
+
+
+
+# plankt_mean$Days_from_year_start <-  as.numeric(round(difftime(plankt_mean$Date2, as.Date(Start_day))))
+
+
+
+abund_total <- plankt_mean %>% group_by(Day, Month, Year, Date2, Species) %>% summarise(N_total = sum(Abund_mean))
+
+Start_day <- strptime(paste(abund_total$Year,"/01/01", sep = ""), format=("%Y/%d/%m"))
+
+abund_total$DOY <- as.numeric(round(difftime(abund_total$Date2, as.Date(Start_day))))
+
+abund_total$LogN <- log(abund_total$N_total + 1)
+
+abund_total <- as.data.frame(abund_total)
+abund_total$Species <- factor(abund_total$Species)
+
+
+abund_total <- abund_total %>% filter(Species != "Triconia spp.")
+
+
+```
+
+
+
+```{r}
+
+Mod_abund <- gam(LogN ~ s(DOY,Year, by = Species) + Species, data = abund_total)
+
+
+
+new_data <- expand.grid(Species = unique(abund_total$Species), DOY = 1:365, Year = seq(min(abund_total$Year), max(abund_total$Year), 1))
+
+new_data$Predicted <- predict(Mod_abund, newdata = new_data, type = "response")
+
+Pl_dynamics <-
+ggplot(new_data, aes(x = Year, y = DOY)) + 
+  geom_tile(aes(color = Predicted)) + 
+  facet_wrap(~Species, scales = "free_y") + 
+  scale_color_gradient(low = "white", high = "gray25") + 
+  labs(color = "Log(N)", y = "Julian Day") +
+  theme_bw()
+```
+
+
+
+```{r}
+phen_middle <- 
+phen %>% select(Year, Temp_dynamics_type, Calanus_50_perc, Pseudocalanus_50_perc, Acartia_50_perc, Centropages_50_perc, Temora_50_perc, Microsetella_50_perc, Oithona_50_perc) %>% melt(id.vars = c("Year", "Temp_dynamics_type")) %>% filter(!is.na(Temp_dynamics_type)) %>%
+filter(Temp_dynamics_type != 5) 
+
+
+
+phen_middle <-phen_middle %>% mutate(Species = 
+                       case_when(variable == "Calanus_50_perc" ~ "Calanus glacialis",
+                                 variable =="Pseudocalanus_50_perc" ~ "Pseudocalanus spp.",
+                                 variable =="Centropages_50_perc" ~ "Centropages hamatus",
+                                 variable =="Acartia_50_perc" ~ "Acartia spp.",
+                                 variable =="Temora_50_perc" ~ "Temora longicornis",
+                                 variable =="Microsetella_50_perc" ~ "Microsetella norvegica",
+                                 variable =="Oithona_50_perc" ~ "Oithona similis")) 
+
+
+mean_mid <- phen_middle %>% group_by(Species) %>% summarise(Mean_Mid = mean(value))
+
+```
+
+
+Варинт 1. Просто визуализация динамики с точками, соответствующими дате середины пика.
+
+```{r}
+Pl_dynamics + 
+  geom_point(data = phen_middle, aes(y = value), shape = 21, fill = "white")
+
+```
+
+
+Вариант 2. То же самое, но плюс еще горизонтальная линия, отражающая многолетнюю среднюю дату середины пика. Это поволяет отслеживать положительные и отрицательные аномалии.Удобно.
+
+
+```{r}
+Pl_dynamics_with_mid_data <-
+Pl_dynamics + 
+  geom_hline(data = mean_mid, aes(yintercept = Mean_Mid), color = "gray", size = 1) +
+  geom_point(data = phen_middle, aes(y = value), shape = 21, fill = "white")
+
+Pl_dynamics_with_mid_data
+```
+
+
+
+```{r}
+Type1 <- c(1964, 1971, 1976, 1978, 1979, 1981, 1982, 1989, 1990, 1998, 1999, 2002, 2005)
+Type2 <- c(1962, 1963, 1965, 1968, 1970, 1973, 1986, 1987, 1988, 1993, 2004)
+Type3 <- c(1967, 1974, 1975, 1977, 1980, 1984, 1985, 1991, 1997, 2007, 2014)
+Type4 <-c(1961, 2000, 2003, 2006, 2009, 2011, 2012, 2013, 2017, 2018)
+Type5 <- c(1966, 1969, 1983, 1992, 1994, 1995, 1996, 2001, 2008, 2010, 2015, 2016)
+
+transition_types <- data.frame(Year = seq(min(abund_total$Year), max(abund_total$Year)))
+
+transition_types <-
+transition_types %>% mutate(Type = case_when(Year %in% Type1 ~ "Late and Fast",
+                                             Year %in% Type2 ~ "Late and Slow",
+                                             Year %in% Type3 ~ "Early and Fast",
+                                             Year %in% Type4 ~ "Early and Slow",
+                                             Year %in% Type5 ~ "Unspecified"))
+
+transition_types <- transition_types %>% filter(Type != "Unspecified")
+```
+
+
+
+Вариант 3. То же самое, но плюс информация из твоего рисунка 5. Тогда можно рисунок 5 сократить. К тому же на рис. 5 совершенно непонятно, что за величина отложена по оси ординат. Цвета можно подобрать более правильные, но я не могу :)
+
+
+```{r}
+library(ggnewscale)
+
+Pl_dynamics_with_mid_data +
+  new_scale_color() + 
+  geom_segment(data = transition_types, aes(x = Year, xend = Year, y = 0, yend = 30, color = Type),  size = 2) + 
+  scale_color_manual(values = c("blue", "cyan", "yellow", "red", "gray"))+
+  guides(color = guide_legend(nrow=2,byrow=TRUE)) +
+  theme(legend.direction  = "horizontal", legend.position = c(0.7, 0.15))
+
+```
+
