@@ -110,9 +110,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.7"
-     inkscape:cx="633.74282"
-     inkscape:cy="487.39676"
+     inkscape:zoom="1.4"
+     inkscape:cx="489.65764"
+     inkscape:cy="442.18446"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -206,7 +206,7 @@
          x="115.45591"
          style="font-style:normal;font-weight:normal;font-size:3.52778px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
          xml:space="preserve"><tspan
-           style="stroke-width:0.264583"
+           style="stroke-width:0.264583;font-style:italic"
            y="54.106747"
            x="115.45591"
            id="tspan6241"
@@ -289,5 +289,18 @@
          rx="1.5591518"
          ry="1.7008928" />
     </g>
+    <text
+       id="text6243-8"
+       y="118.8296"
+       x="96.58709"
+       style="font-style:normal;font-weight:normal;font-size:3.52777px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       xml:space="preserve"
+       inkscape:transform-center-x="0.56696429"
+       inkscape:transform-center-y="4.9136905"><tspan
+         style="font-style:italic;stroke-width:0.264583"
+         y="118.8296"
+         x="96.58709"
+         id="tspan6241-7"
+         sodipodi:role="line">White Sea</tspan></text>
   </g>
 </svg>

@@ -121,10 +121,10 @@ ggplot(new_data, aes(x = L, y = Predicted)) +
   geom_ribbon(aes(ymin = Predicted - 1.96*SE, ymax = Predicted + 1.96*SE), alpha = 0.5 ) + 
   geom_point(data = Left_prop, aes(x = L_mean, y = Left_prop), shape = 21, size = 2, fill = "gray") + 
   facet_wrap(~ Bay, ncol = 2) +
-  labs(x = "Length, cm", y = "Frequency of left-sided morph") +
+  labs(x = "Length, cm", y = "Frequency of \nleft-sided morph") +
   geom_segment(data = kam_oneg, aes(x = L, xend = L, y = 0, yend = 0.01)) +
-  theme(strip.text = element_blank())
-
+  theme(strip.text = element_blank()) + 
+  ggtitle("A")+ theme(panel.grid = element_blank())
 
 
 ```
@@ -182,21 +182,23 @@ mydata$SE <- fit$se.fit
 P_age <- onega_cam3 %>% group_by(Sex, Age) %>% summarize(P_left = mean(Side2 == 1), N = n())
 
 Pl_age_onega <- 
-ggplot(mydata, aes(x = Age, y = fit, color = Sex))  + 
+ggplot(mydata, aes(x = Age, y = fit, group = Sex))  + 
   geom_ribbon(aes(ymin = fit - 1.96*SE, ymax = fit + 1.96*SE), alpha = 0.3) + 
-  geom_line(size = 1) +
-  geom_point(data = P_age, aes(x = Age, y = P_left, color = Sex), size = 4) +
+  geom_line(aes(linetype = Sex), size = 1) +
+  geom_point(data = P_age, aes(x = Age, y = P_left, fill = Sex), size = 4, shape = 21) +
   theme_bw() +
-  labs(y = "Frequency of left-sided morph", x = "Age, years") +
-  theme(legend.position = "bottom")
+  labs(y = "Frequency of \nleft-sided morph", x = "Age, years") + 
+  scale_fill_manual(values = c("white", "black"))+
+  theme(legend.position = "bottom") + 
+  ggtitle("B") + theme(panel.grid = element_blank())
 
 ```
 
 
-```{r fig.cap="**Fig.** Association between probability of left-sided morph and fish length (A) and age (B). Points represent frequency of reversed fish in 25 length classes of equal sample size. Gray area around regression line represent 95% confidential interval."}
+```{r fig.width=4, fig.cap="**Fig.** Association between probability of left-sided morph and fish length (A) and age (B). Points represent frequency of reversed fish in 25 length classes of equal sample size. Gray area around regression line represent 95% confidential interval."}
 
 
-plot_grid(Pl_size_onega, Pl_age_onega, ncol = 1, labels = c("A", "B"), hjust = c(-0.3, -0.3))
+plot_grid(Pl_size_onega, Pl_age_onega, ncol = 1, rel_heights = c(1, 1.2))
 
 ```
 
