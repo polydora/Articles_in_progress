@@ -170,7 +170,7 @@ labs(y = "Proportion", x = "Length", fill = "Sidedness" ) +
 
 ```{r, fig.cap = figRef("Size_boxplot", "Характеристика размерного состава камбал в разных заливах Белого моря.") }
 
-ggplot(kam, aes(x = Bay, y = L,  fill = Sidedness)) + geom_boxplot(notch = T) + facet_wrap(~Sex) + scale_fill_manual(values = c("gray10", "gray80")) + theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 30, vjust = 0.6)) + labs(x = "Bay", y = "Length", fill = "Sidedness")
+ggplot(kam, aes(x = Bay, y = L,  fill = Sidedness)) + geom_boxplot(notch = T) + facet_wrap(~Sex) + scale_fill_manual(values = c("gray40", "gray80")) + theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 30, vjust = 0.6)) + labs(x = "Bay", y = "Length", fill = "")
 ```
 
 
