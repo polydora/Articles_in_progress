@@ -6,17 +6,193 @@ library(ggrepel)
 library(reshape2)
 library(readxl)
 library(ggpubr)
+library(lubridate)
+#####################################################################################################################
+# считаем солёность
+tide <- read.csv("tides.csv", header = F)
+tide <- tide[-c(1:144),-1]
+
+names(tide) <- c("H", "Time", "Day_part", "Date")
+
+tide$Date[1:144] <- "25/07/2009"
+tide$Date[145:nrow(tide)] <- "26/07/2009"
+
+
+tide$Date2 <- paste(tide$Time, tide$Day_part, tide$Date )
+
+tide$Date3 <- parse_date_time(tide$Date2, '%I:%M %p %d/%m%Y', tz = "Europe/Moscow")
+
+min_time <- as.POSIXct(strptime("17:00 25.07.2009", format = "%H:%M %d.%m.%Y", tz = "Europe/Moscow"))
+
+max_time <- as.POSIXct(strptime("13:00 26.07.2009", format = "%H:%M %d.%m.%Y", tz = "Europe/Moscow"))
+
+tide <- tide[tide$Date3 < max_time & tide$Date3 > min_time, ]
+
+ggplot(tide, aes(x = Date3, y = H)) + geom_line()
+
+sal_tuv <- read_excel("Data/TuMyt_2009_2010.xlsx", sheet = "sal-temp")
+
+sal_tuv$Dat_text <- paste(sal_tuv$Time, sal_tuv$Date)
+
+sal_tuv$Date_true <- as.POSIXct(strptime(sal_tuv$Dat_text, '%H_%M %d_%m_%Y', tz = "Europe/Moscow"))
+
+sal_tuv$H <- abs(sal_tuv$Height)
+
+ggplot(tide, aes(x = Date3, y = H)) + geom_line() + geom_point(data = sal_tuv, aes(x = Date_true, y = abs(Height), size = Salinity)) + facet_grid(Transect ~ Depth) + geom_hline(yintercept = c(2, 1.5, 1, 0.5, -0.5, -1.5, -3.5))
+
+ggplot(sal_tuv, aes(x = abs(Height), y = Salinity)) + geom_point()
+
+Mod_tide <- lm(Salinity ~ H*Distance, data = sal_tuv)
+
+summary(Mod_tide)
+
+tuv <- read_excel("Data/TuMyt_2009_2010.xlsx", sheet = "для многомерки" )
+
+tuv$Mean_Salinity_predicted <- NA
+tuv$Min_Salinity_predicted <- NA
+
+library(dplyr)
+
+for(i in 1:nrow(tuv)){
+  d <- tide %>% filter(H >= tuv$High[i])
+  d$Distance <- tuv$Distance[i]
+  Sal_pred <- predict(Mod_tide, newdata = d)
+  tuv$Mean_Salinity_predicted[i] <- mean(Sal_pred)
+  tuv$Min_Salinity_predicted[i] <- min(Sal_pred)
+}
+
+tuv$Min_Salinity_predicted
+
+ggplot(tuv, aes(x = Distance, y = Min_Salinity_predicted)) + geom_point()
+ggplot(tuv, aes(x = Distance, y = Min_Salinity_predicted)) + geom_text(aes(label = High), position = position_jitter(width = 0))
+
+tide_salinity$Predict_sal <- predict(Mod_tide, newdata = tide_salinity)
+
+ggplot(tide_salinity, aes(x = Date3, y = H, size = Predict_sal)) + geom_point() + geom_hline(yintercept = 1.5)
+
+tuv_print <- tuv %>% select(Sample_ID, Min_Salinity_predicted, Mean_Salinity_predicted)
+
+write.table(tuv_print, "Data/Salinity_predicted.csv", sep = ";", row.names = F)
+
+
+
+#####################################################################################################################
+# Делаем калькулятор по Тюве и сравниваем его предсказания с WSBL и BH
+tuv_calc <- read_excel("Tu_myt_calculator.xlsx")
+str(tuv_calc)
+
+tuv_calc$sp <- ifelse(tuv_calc$str <= 0.5, 0, 1)
+
+PT <- tuv_calc %>% group_by(pop) %>% summarise(PT=mean(ind==1), Ptros=mean(sp==1))
+
+PT$type <- c("new", "old", "new", "old", "old", "new", "old", "old", "old")
+
+PT$type <- c("new", "old", "new", "old", "old", "new", "old", "old", "old")
+
+
+calculator <- merge(tuv_calc, PT)
+str(calculator)
+
+Model1 <- glm(sp~PT, family = "binomial", data = calculator)
+
+plot(Model1)
+
+summary(Model1)
+
+MyData <- data.frame(PT=seq(0, 1, length.out = 100))
+
+Model1_Predict <- predict(Model1, newdata = MyData, type = "response", se.fit=TRUE)
+
+MyData$fit <- Model1_Predict$fit
+
+MyData$se <- Model1_Predict$se.fit
+
+MyData$Ptros_calc_BH <- with(MyData, exp(-3.9 + 5.0*PT)/(1 + exp(-3.9 + 5.0*PT)))
+
+MyData$Ptros_calc_WSBL <- with(MyData, exp(-2.4 + 5.4*PT)/(1 + exp(-2.4 + 5.4*PT)))
+
+df <- data.frame(x1 = 0, x2 = 1, y1 = 0, y2 = 1)
+
+ggplot(MyData, aes(x = PT, y = fit)) + geom_line(color="red", size = 2) + theme_bw() + geom_ribbon(aes(ymin = fit-1.96*se, ymax = fit+1.96*se), fill = "gray", alpha=0.3) + ylim(0, 1) + geom_point(data=PT, aes(y=Ptros), size = 2, color = "red") + geom_line(aes(y=Ptros_calc_BH), size = 1.5) + geom_line(aes(y=Ptros_calc_WSBL), color = "blue", size = 1.5) + labs(y="predicted Ptros")  
+# не забыть указать, что были выборки для ВН (черная линия) - может в тексте
+
+#####################################################################################################################
+# считаем обилие мидий на губу
+tuv <- read.table("TuMyt_0910_itog.csv", sep = ";", header = T)
+str(tuv)
+
+tuv_reduc <- tuv %>% filter(!is.na(PT))
+
+tuv_abund <- tuv_reduc %>% select(Transect, Trans, Depth2, PT, N, W, Age4, Age5, Age6, Age7 ) %>% mutate(Age_4_7 = Age4 + Age5 + Age6 + Age7) %>% select(-c(Age4, Age5, Age6, Age7))  %>% as.data.frame()
+
+tuv_totals <- tuv_abund  %>% mutate(Gorizont = case_when(Depth2 < 0 ~ "Subtidal", Depth2 >=0 ~ "Intertidal")) %>% group_by(Trans, Gorizont) %>% summarise(PT_m = mean(PT), N_m = mean(N), W_m =  mean(W), Age_4_7_m = mean(Age_4_7))
+
+Area <- read.csv("Area.csv")
+
+Area$Area <-  Area$Area/1.635*10000
+
+tuv_totals_area <- merge(tuv_totals, Area)
+# тут приведены значения на квадратный метр! экземпляров - для численности, грамм - для биомассы
+# численность
+tuv_totals_area$Stock_N <- tuv_totals_area$N_m * tuv_totals_area$Area
+# общая
+Total_stock_N <- sum(tuv_totals_area$Stock_N)
+# на литорали
+tuv_totals_area_lit <- tuv_totals_area %>%  filter(Gorizont %in% "Intertidal")
+Total_stock_N_lit <- sum(tuv_totals_area_lit$Stock_N)
+# в сублиторали
+tuv_totals_area_slit <- tuv_totals_area %>%  filter(Gorizont %in% "Subtidal")
+Total_stock_N_slit <- sum(tuv_totals_area_slit$Stock_N)
+
+# биомасса
+tuv_totals_area$Stock_B <- tuv_totals_area$W_m * tuv_totals_area$Area
+# общая
+Total_stock_W <- sum(tuv_totals_area$Stock_B)/1000
+# на литорали
+tuv_totals_area_lit <- tuv_totals_area %>%  filter(Gorizont %in% "Intertidal")
+Total_stock_W_lit <- sum(tuv_totals_area_lit$Stock_B)/1000
+# в сублиторали
+tuv_totals_area_slit <- tuv_totals_area %>%  filter(Gorizont %in% "Subtidal")
+Total_stock_W_slit <- sum(tuv_totals_area_slit$Stock_B)/1000
+
+# репродуктивный потенциал МЕ и МТ
+tuv_totals_area$Ptros <- with(tuv_totals_area, exp(-3.9 + 5*PT_m)/(1+exp(-3.9 + 5*PT_m)))
+
+# МТ
+# общая
+tuv_totals_area$N_tros <- tuv_totals_area$Ptros * tuv_totals_area$Age_4_7_m
+tuv_totals_area$N_edul <- tuv_totals_area$Age_4_7_m - tuv_totals_area$N_tros
+Total_stock_tros <- sum(tuv_totals_area$N_tros*tuv_totals_area$Area)
+Total_stock_edul <- sum(tuv_totals_area$N_edul*tuv_totals_area$Area)
+# литораль
+tuv_totals_area_lit <- tuv_totals_area %>%  filter(Gorizont %in% "Intertidal")
+tuv_totals_area_lit$N_tros <- tuv_totals_area_lit$Ptros * tuv_totals_area_lit$Age_4_7_m
+tuv_totals_area_lit$N_edul <- tuv_totals_area_lit$Age_4_7_m - tuv_totals_area_lit$N_tros
+Total_stock_tros_lit <- sum(tuv_totals_area_lit$N_tros*tuv_totals_area_lit$Area)
+Total_stock_edul_lit <- sum(tuv_totals_area_lit$N_edul*tuv_totals_area_lit$Area)
+# сублитораль
+tuv_totals_area_slit <- tuv_totals_area %>%  filter(Gorizont %in% "Subtidal")
+tuv_totals_area_slit$N_tros <- tuv_totals_area_slit$Ptros * tuv_totals_area_slit$Age_4_7_m
+tuv_totals_area_slit$N_edul <- tuv_totals_area_slit$Age_4_7_m - tuv_totals_area_slit$N_tros
+Total_stock_tros_slit <- sum(tuv_totals_area_slit$N_tros*tuv_totals_area_slit$Area)
+Total_stock_edul_slit <- sum(tuv_totals_area_slit$N_edul*tuv_totals_area_slit$Area)
+
+# сделать биомассу ещё для МЕ и МТ!!!
+# 
+# 
+# 
 
 #####################################################################################################################
 # ССА по данным 09-10 года: новый OGP, новый Slope и Cover_algae в баллах
 
 # читаем данные
-tuv_demogr2 <- read.table("Data/TuMyt_0910_itog.csv", header = T, sep = ";")
-row.names(tuv_demogr2) <- tuv$Sample_ID
-colSums(is.na(tuv_demogr2))
+tuv <- read.table("TuMyt_0910_itog.csv", header = T, sep = ";")
+
 
 # отбор демографических признаков
 tuv_demogr2 <- tuv %>% select(Age2_3, Age4_6, Age7_9, Age10_12, Ptros, N, W, OGP, max_L) %>% as.data.frame()
+row.names(tuv_demogr2) <- tuv$Sample_ID
+colSums(is.na(tuv_demogr2))
 
 # отбор факторов среды
 # не пугайтесь Habitat, это нововведение, напишу ниже 
@@ -40,7 +216,7 @@ anova(tuv_cca3_reduced, by = "margin")
 plot(tuv_cca3_reduced, scaling = "symmetric")
 scores(tuv_cca3_reduced)
 # и тут всё хорошо
-
+table_cca <- summary(tuv_cca3_reduced)
 
 # создаем датафрейм для графика
 demogr_scores <- fortify(tuv_cca3_reduced, scaling = "symmetric")
@@ -145,27 +321,34 @@ Age10_12_2 <- ggplot(demogr_scores_site, aes(x = CCA2, y = tuv_demogr2$Age10_12)
 Demography_CCA2 <- ggarrange(Ptros2, Age4_6_2, OGP2, max_L2, Age7_9_2, Age2_3_2, N2, Age10_12_2, W2, ncol = 1)
 # скачивать картинку будем в нормальном формате
 
+
+
 # Появилась идея сделать перманову по Habitat!
 # обрезаю исходный файл с данными
 perm_hab <- tuv %>% select(Habitat, Age2_3, Age4_6, Age7_9, Age10_12, Ptros, N, W, OGP, max_L) %>% as.data.frame()
 
-# стандартизирую переменные
-perm_hab$Age2_3 <- (perm_hab$Age2_3 - (mean(perm_hab$Age2_3))) / var(perm_hab$Age2_3)
-perm_hab$Age4_6 <- (perm_hab$Age4_6 - (mean(perm_hab$Age4_6))) / var(perm_hab$Age4_6)
-perm_hab$Age7_9 <- (perm_hab$Age7_9 - (mean(perm_hab$Age7_9))) / var(perm_hab$Age7_9)
-perm_hab$Age10_12 <- (perm_hab$Age10_12 - (mean(perm_hab$Age10_12))) / var(perm_hab$Age10_12)
-perm_hab$Ptros <- (perm_hab$Ptros - (mean(perm_hab$Ptros))) / var(perm_hab$Ptros)
-perm_hab$N <- (perm_hab$N - (mean(perm_hab$N))) / var(perm_hab$N)
-perm_hab$W <- (perm_hab$W - (mean(perm_hab$W))) / var(perm_hab$W)
-perm_hab$OGP <- (perm_hab$OGP - (mean(perm_hab$OGP))) / var(perm_hab$OGP)
-perm_hab$max_L <- (perm_hab$max_L - (mean(perm_hab$max_L))) / var(perm_hab$max_L)
+perm_hab_log <- log(perm_hab[2:10] + 1)
 
-permanova_habitat <- adonis(perm_hab[2:9] ~ perm_hab$Habitat, method = "euclidean")
+#  Надо log +1!!!!!!!!!!!!
+
+# стандартизирую переменные
+# perm_hab$Age2_3 <- (perm_hab$Age2_3 - (mean(perm_hab$Age2_3))) / var(perm_hab$Age2_3)
+# perm_hab$Age4_6 <- (perm_hab$Age4_6 - (mean(perm_hab$Age4_6))) / var(perm_hab$Age4_6)
+# perm_hab$Age7_9 <- (perm_hab$Age7_9 - (mean(perm_hab$Age7_9))) / var(perm_hab$Age7_9)
+# perm_hab$Age10_12 <- (perm_hab$Age10_12 - (mean(perm_hab$Age10_12))) / var(perm_hab$Age10_12)
+# perm_hab$Ptros <- (perm_hab$Ptros - (mean(perm_hab$Ptros))) / var(perm_hab$Ptros)
+# perm_hab$N <- (perm_hab$N - (mean(perm_hab$N))) / var(perm_hab$N)
+# perm_hab$W <- (perm_hab$W - (mean(perm_hab$W))) / var(perm_hab$W)
+# perm_hab$OGP <- (perm_hab$OGP - (mean(perm_hab$OGP))) / var(perm_hab$OGP)
+# perm_hab$max_L <- (perm_hab$max_L - (mean(perm_hab$max_L))) / var(perm_hab$max_L)
+
+# решили взять расстояние брея-кёртиса
+permanova_habitat <- adonis(perm_hab_log ~ perm_hab$Habitat, method = "bray")
 # брея-кёртиса не получается взять, потому что есть отрицательные значения
 # мы видим, что местообитания по своей демографической структуре достоверно отличаются
 
 # проверка равенства внутригрупповых дисперсий
-dist_habitat <- vegdist(perm_hab[2:9], method = "euclidian")
+dist_habitat <- vegdist(perm_hab_log, method = "bray")
 PCO_habitat <- betadisper(dist_habitat, perm_hab$Habitat)
 plot(PCO_habitat)
 
@@ -177,25 +360,23 @@ boxplot(PCO_habitat)
 # post-hoc tests
 pair <- combn(unique(as.character(perm_hab$Habitat)), 2)
 ncomb <- dim(pair)[2]
-x <- perm_hab[, -1]
+x <- perm_hab_log
 y <- perm_hab$Habitat
 for (i in 1:ncomb) {
   filter <- y %in% pair[, i]
-  posthoc <- adonis(x[filter, ] ~ y[filter], method = "euclidean")$aov.tab$Pr[1]
+  posthoc <- adonis(x[filter, ] ~ y[filter], method = "bray")$aov.tab$Pr[1]
   cat(pair[, i], ": p = ", posthoc, "\n", sep = " ")
 }
 
-# а вот теперь не знаю, правильно ли я трактую результаты..
-# между собой не отличаются отмели и скалы, а также отмели и кельпы, а всё остальное отличается
-# если ввести поправку Бонферрони, то всё отсанется так же
+# отмели категорически отличаются от всего остального!
 0.05/6
 
 # SIMPER
-simper_habitat <- simper(perm_hab[, 2:9], perm_hab$Habitat, permutations = 999)
+simper_habitat <- simper(perm_hab_log, perm_hab$Habitat, permutations = 999)
 summary(simper_habitat)
 # и тут я не помню, как трактовать результаты. где звёздочки - это значит, что признаки одинаковы? или что различаются? если различаются, то тут какое-то глобальное противоречие с пост-хоками. или я неправильно понимаю пост-хоки
 
-# ну и вообще не знаю, нужна тут эта перманова или нет)) и не знаю, правильно ли я её сделала
+
 
 
 #####################################################################################################################
@@ -210,7 +391,7 @@ tuv_all$Transect  <- factor(tuv_all$Transect)
 tuv_all$Monitoring  <- factor(tuv_all$Monitoring)
 
 # отделяю нужные данные
-tuv_all <- tuv_all %>% select(Sample_ID, Period, Distance, Transect, Depth, Monitoring, Ptros, Age2_3, Age4_6, Age7_9, Age10_12, N, W, OGP, max_L) %>% as.data.frame()
+tuv_all <- tuv_all %>% select(Sample_ID, Period, Distance, Transect, Habitat, Depth, Monitoring, Ptros, Age2_3, Age4_6, Age7_9, Age10_12, N, W, OGP, max_L) %>% as.data.frame()
 
 colSums(is.na(tuv_all))
 
@@ -220,7 +401,7 @@ tuv_all <- tuv_all[!is.na(tuv_all$OGP), ]
 row.names(tuv_all) <- tuv_all$Sample_ID
 
 # убираю ненужные для СА данные
-tuv_all_ca2 <- (tuv_all[ , -c(1:7)])
+tuv_all_ca2 <- (tuv_all[ , -c(1:8)])
 
 # СА
 tuv_ca <- cca(tuv_all_ca2, scale = TRUE)
@@ -247,6 +428,7 @@ ggplot(tuv_ca_f_site, aes(x = CA1, y = -CA2)) +  geom_vline(xintercept = 0) + ge
 BS_05 <- tuv_ca_f_site %>%  filter(Label %in% c('BS_0.5_04', 'BS_0.5_09', 'BS_0.5_10', 'BS_0.5_12', "BS_0.5_18"))
 BS_05g <- ggplot(BS_05, aes(x = CA1, y = -CA2)) +  ylim(-2, 2) + xlim(-1.5, 1) + geom_vline(xintercept = 0) + geom_hline(yintercept = 0) + theme_bw() + geom_point(aes(fill = Monitoring, color = Monitoring, stroke = 2.5), size = 1, shape = 21) + scale_fill_manual(values = c("red", "black", "azure4", "blue2",  "aquamarine3")) + scale_color_manual(values = c("red", "black", "azure4", "blue2",  "aquamarine3"))  + theme(axis.text = element_blank(), axis.title = element_blank(), axis.ticks = element_blank(), legend.position = "", panel.grid = element_blank()) 
 
+
 BS_15 <- tuv_ca_f_site %>%  filter(Label %in% c('BS_-1.5_04', "BS_-1.5_09", 'BS_-1.5_18'))
 BS_15g <- ggplot(BS_15, aes(x = CA1, y = -CA2)) +  ylim(-2, 2) + xlim(-1.5, 1) + geom_vline(xintercept = 0) + geom_hline(yintercept = 0) + theme_bw() + geom_point(aes(fill = Monitoring, color = Monitoring, stroke = 2.5), size = 2, shape = 21) + scale_fill_manual(values = c("red", "black", "aquamarine3")) + scale_color_manual(values = c("red", "black", "aquamarine3"))  + theme(axis.text = element_blank(), axis.title = element_blank(), axis.ticks = element_blank(), legend.position = "", panel.grid = element_blank())
 
@@ -266,70 +448,276 @@ MoS_15g <- ggplot(MoS_15, aes(x = CA1, y = CA2)) +  ylim(-2, 2) + xlim(-1.5, 1) 
 ggarrange(BS_05g, BS_15g, MidN_05g, MidN_15g, MoS_05g, MoS_15g, ncol=1)
 
 
-# теперь я реализую вашу идею с боксплотами от остатков
+# теперь я реализую вашу идею с боксплотами от остатков - ВМ сам пересчитывает..
+# 
 # мне не нравится брать те точки из 09-10 года, которые никогда ни с чем не пересекаются. поэтому я их уберу
-
-tuv_all_constant4 <- tuv_all %>%  filter(Sample_ID %in% c("BN_1.5_04", 'BS_2_05', 'BS_1.5_04', 'BS_1_04', 'BS_0.5_04', 'BS_-0.5_04', 'BS_-1.5_04', 'MidN_2_04', 'MidN_1.5_04', 'MidN_1_04', 'MidN_0.5_04', 'MoN_2_04', 'MoN_1.5_04', 'MoN_1_04', 'MoN_0.5_04', 'MoS_1.5_04', 'MoS_1_04', 'MoS_0.5_04', 'SS_0.5_05', 'R_0.5_05', 'BN_1.5_09', 'BS_2_09', 'BS_1.5_09', 'BS_1_09', 'BS_0.5_09', "BS_-0.5_09", "BS_-1.5_09", "MidN_2_09", "MidN_1.5_09", "MidN_1_09", "MidN_0.5_09", 'MoN_2_10', 'MoN_1.5_10', 'MoN_1_10', 'MoN_0.5_10', 'MoS_1.5_09', 'MoS_1_09', 'MoS_0.5_09', 'SS_0.5_10', 'R_0.5_09', 'MoS_0.5_12', 'MoS_0.5_18', 'MoS_-1.5_12', 'MoS_-1.5_18', 'MoS_-1.5_09', 'MidN_0.5_12', 'MidN_0.5_18', 'MidN_-1.5_12', 'MidN_-1.5_18', 'MidN_-1.5_09', 'BS_0.5_12', "BS_0.5_18", 'BS_-1.5_18'))
-
-
-
-####################################################################################3
-
-
-tuv_predictors2 <-  tuv_all %>% select(Transect, Depth, Period, Distance)
-
-dem_dat <- tuv_all %>% select(Age2_3, Age4_6, Age7_9,  Age10_12, N, W,OGP, max_L )
-
-tuv_all_constant_ca_res <- cca(dem_dat ~ Distance + Depth,  data = tuv_predictors2)
-
-plot(tuv_all_constant_ca_res, display = c( "cn","species"), scaling = "symmetric")
-plot(tuv_all_constant_ca_res, display = c( "cn","sites"), scaling = "symmetric")
-
-anova(tuv_all_constant_ca_res, by = "axis")
-
-
-# посмотрим остатки от модели
-CA1_2_scores <- as.data.frame(scores(tuv_all_constant_ca_res, choices = 1:8)$sites)
-# делаю расстояние и глубину факторами
-tuv_all_constant4$f_Distance <- factor(tuv_all_constant4$Distance)
-tuv_all_constant4$f_Depth <- factor(tuv_all_constant4$Depth)
-
-CA1_2_scores$Distance <- tuv_all$Distance
-CA1_2_scores$Transect <- tuv_all$Transect
-CA1_2_scores$Depth <- tuv_all$Depth
-CA1_2_scores$f_Distance <- factor(tuv_all$Distance)
-CA1_2_scores$f_Depth <- factor(tuv_all$Depth)
-CA1_2_scores$Period <- tuv_all$Period
-
-str(CA1_2_scores)
-
-# рисую боксплоты для оси 1. если я правильно понимаю, раз вторая ось не значима, значит, мы её и не смотрим
-distCA1f <- ggplot(CA1_2_scores, aes(x = f_Distance, y = CA1)) + geom_hline(yintercept = 0) + geom_boxplot(size = 1.3) + theme_bw() + theme(legend.position ="")
-
-depthCA1f <- ggplot(CA1_2_scores, aes(x = f_Depth, y = CA1)) + geom_hline(yintercept = 0) + geom_boxplot(size = 1.3) + theme_bw() + theme(legend.position ="")
-
-transectCA1f <- ggplot(CA1_2_scores, aes(x = Transect, y = CA1)) + geom_hline(yintercept = 0) + geom_boxplot(size = 1.3) + theme_bw() + theme(legend.position ="")
-
-ggarrange(distCA1f, depthCA1f, transectCA1f, ncol = 1)
-#  и чего? годится это или нет?
-
-# может неправильно делать расстояние и глубину факторами? 
-# рисую точки и геом_смуз
-distCA1 <- ggplot(CA1_2_scores, aes(x = Distance, y = CA1)) + geom_hline(yintercept = 0) + geom_point() + theme_bw() + geom_smooth() + theme(legend.position ="")
-
-depthCA1 <- ggplot(CA1_2_scores, aes(x = Depth, y = CA1)) + geom_hline(yintercept = 0) + geom_point() + theme_bw() + geom_smooth() + theme(legend.position ="")
-
-ggarrange(distCA1, depthCA1, ncol = 1)
-
-# допустим, что всё ок. рисую боксплоты по периодам
-box_period <- ggplot(CA1_2_scores, aes(x = Period, y = CA1, color = Period)) + geom_hline(yintercept = 0) + geom_boxplot(size = 1.3) + theme_bw() + scale_color_manual(values = c("red", "black", "blue2",  "aquamarine3")) + theme(legend.position ="")
-
-scores(tuv_all_constant_ca_res, choices = 1:9)
+# 
+# tuv_all_constant4 <- tuv_all %>%  filter(Sample_ID %in% c("BN_1.5_04", 'BS_2_05', 'BS_1.5_04', 'BS_1_04', 'BS_0.5_04', 'BS_-0.5_04', 'BS_-1.5_04', 'MidN_2_04', 'MidN_1.5_04', 'MidN_1_04', 'MidN_0.5_04', 'MoN_2_04', 'MoN_1.5_04', 'MoN_1_04', 'MoN_0.5_04', 'MoS_1.5_04', 'MoS_1_04', 'MoS_0.5_04', 'SS_0.5_05', 'R_0.5_05', 'BN_1.5_09', 'BS_2_09', 'BS_1.5_09', 'BS_1_09', 'BS_0.5_09', "BS_-0.5_09", "BS_-1.5_09", "MidN_2_09", "MidN_1.5_09", "MidN_1_09", "MidN_0.5_09", 'MoN_2_10', 'MoN_1.5_10', 'MoN_1_10', 'MoN_0.5_10', 'MoS_1.5_09', 'MoS_1_09', 'MoS_0.5_09', 'SS_0.5_10', 'R _0.5_09', 'MoS_0.5_12', 'MoS_0.5_18', 'MoS_-1.5_12', 'MoS_-1.5_18', 'MoS_-1.5_09', 'MidN_0.5_12', 'MidN_0.5_18', 'MidN_-1.5_12', 'MidN_-1.5_18', 'MidN_-1.5_09', 'BS_0.5_12', "BS_0.5_18", 'BS_-1.5_18'))
+# 
+# tuv_predictors2 <-  tuv_all_constant4 %>% select(Transect, Depth, Period, Distance)
+# 
+# tuv_all_constant_ca_res <- cca(tuv_all_constant4[,-c(1:7)] ~ Distance + Depth,  data = tuv_all_constant4)
+# 
+# plot(tuv_all_constant_ca_res, display = c( "cn","species"), scaling = "symmetric")
+# plot(tuv_all_constant_ca_res, display = c( "cn","sites"), scaling = "symmetric")
+# 
+# anova(tuv_all_constant_ca_res)
+# anova(tuv_all_constant_ca_res, by="axis")
+# anova(tuv_all_constant_ca_res, by="margin")
+# # глубина тут не значима..но пусть будет 
+# 
+# scores(tuv_all_constant_ca_res, choices = 1:9)
+# 
+# # посмотрим остатки от модели
+# CA1_2_scores <- as.data.frame(scores(tuv_all_constant_ca_res, choices = 3:4)$sites)
+# # делаю расстояние и глубину факторами
+# tuv_all_constant4$f_Distance <- factor(tuv_all_constant4$Distance)
+# tuv_all_constant4$f_Depth <- factor(tuv_all_constant4$Depth)
+# 
+# CA1_2_scores$Distance <- tuv_all_constant4$Distance
+# CA1_2_scores$Transect <- tuv_all_constant4$Transect
+# CA1_2_scores$Depth <- tuv_all_constant4$Depth
+# CA1_2_scores$f_Distance <- tuv_all_constant4$f_Distance
+# CA1_2_scores$f_Depth <- tuv_all_constant4$f_Depth
+# CA1_2_scores$Period <- tuv_all_constant4$Period
+# 
+# str(CA1_2_scores)
+# 
+# # рисую боксплоты для оси 1. если я правильно понимаю, раз вторая ось не значима, значит, мы её и не смотрим
+# distCA1f <- ggplot(CA1_2_scores, aes(x = f_Distance, y = CA1)) + geom_hline(yintercept = 0) + geom_boxplot(size = 1.3) + theme_bw() + theme(legend.position ="")
+# 
+# depthCA1f <- ggplot(CA1_2_scores, aes(x = f_Depth, y = CA1)) + geom_hline(yintercept = 0) + geom_boxplot(size = 1.3) + theme_bw() + theme(legend.position ="")
+# 
+# transectCA1f <- ggplot(CA1_2_scores, aes(x = Transect, y = CA1)) + geom_hline(yintercept = 0) + geom_boxplot(size = 1.3) + theme_bw() + theme(legend.position ="")
+# 
+# ggarrange(distCA1f, depthCA1f, transectCA1f, ncol = 1)
+# #  и чего? годится это или нет?
+# 
+# # может неправильно делать расстояние и глубину факторами? 
+# # рисую точки и геом_смуз
+# distCA1 <- ggplot(CA1_2_scores, aes(x = Distance, y = CA1)) + geom_hline(yintercept = 0) + geom_point() + theme_bw() + geom_smooth() + theme(legend.position ="")
+# 
+# depthCA1 <- ggplot(CA1_2_scores, aes(x = Depth, y = CA1)) + geom_hline(yintercept = 0) + geom_point() + theme_bw() + geom_smooth() + theme(legend.position ="")
+# 
+# ggarrange(distCA1, depthCA1, ncol = 1)
+# 
+# # допустим, что всё ок. рисую боксплоты по периодам
+# box_period <- ggplot(CA1_2_scores, aes(x = Period, y = CA1, color = Period)) + geom_hline(yintercept = 0) + geom_boxplot(size = 1.3) + theme_bw() + scale_color_manual(values = c("red", "black", "blue2",  "aquamarine3")) + theme(legend.position ="")
+# 
+# scores(tuv_all_constant_ca_res, choices = 1:9)
 
 # если боксплот в положительной области, значит, там было много Age10_12 и Age7_9
 # если боксплот в отрицательной области, значит, там было много Age2_3 и N
 
-# перманову сделать не успела, надо срочно выбегать с кафедры (форс-мажор)
+
+# перманова по периодам 1 и 2
+# отбираю выборки, которые есть и там и там
+# 
+tuv_all_constant5 <- tuv_all %>%  filter(Sample_ID %in% c("BN_1.5_04", 'BS_2_05', 'BS_1.5_04', 'BS_1_04', 'BS_0.5_04', 'BS_-0.5_04', 'BS_-1.5_04', 'MidN_2_04', 'MidN_1.5_04', 'MidN_1_04', 'MidN_0.5_04', 'MoN_2_04', 'MoN_1.5_04', 'MoN_1_04', 'MoN_0.5_04', 'MoS_1.5_04', 'MoS_1_04', 'MoS_0.5_04', 'SS_0.5_05', 'R_0.5_05', 'BN_1.5_09', 'BS_2_09', 'BS_1.5_09', 'BS_1_09', 'BS_0.5_09', "BS_-0.5_09", "BS_-1.5_09", "MidN_2_09", "MidN_1.5_09", "MidN_1_09", "MidN_0.5_09", 'MoN_2_10', 'MoN_1.5_10', 'MoN_1_10', 'MoN_0.5_10', 'MoS_1.5_09', 'MoS_1_09', 'MoS_0.5_09', 'SS_0.5_10', 'R _0.5_09'))
+
+perm_period <- tuv_all_constant5 %>% select(Period, Age2_3, Age4_6, Age7_9, Age10_12, N, W, OGP, max_L, Habitat) %>% as.data.frame()
+
+perm_period_log <- log(perm_period[2:9] + 1)
+
+# стандартизирую переменные
+# perm_period$Age2_3 <- (perm_period$Age2_3 - (mean(perm_period$Age2_3))) / var(perm_period$Age2_3)
+# perm_period$Age4_6 <- (perm_period$Age4_6 - (mean(perm_period$Age4_6))) / var(perm_period$Age4_6)
+# perm_period$Age7_9 <- (perm_period$Age7_9 - (mean(perm_period$Age7_9))) / var(perm_period$Age7_9)
+# perm_period$Age10_12 <- (perm_period$Age10_12 - (mean(perm_period$Age10_12))) / var(perm_period$Age10_12)
+# perm_period$N <- (perm_period$N - (mean(perm_period$N))) / var(perm_period$N)
+# perm_period$W <- (perm_period$W - (mean(perm_period$W))) / var(perm_period$W)
+# perm_period$OGP <- (perm_period$OGP - (mean(perm_period$OGP))) / var(perm_period$OGP)
+# perm_period$max_L <- (perm_period$max_L - (mean(perm_period$max_L))) / var(perm_period$max_L)
+
+permanova_period <- adonis(perm_period_log ~ perm_period$Period * perm_period$Habitat, permutation = 99999, method = "bray")
+
+# а дальше я не знаю, как правильно всмотреть это взаимодействие. наверное, его смотреть не нужно, потому что оно не значимо? и нужно просто смотреть период и хэбитат по отдельности?
+ 
+# проверка равенства внутригрупповых дисперсий
+dist_period <- vegdist(perm_period_log, method = "bray")
+PCO_period <- betadisper(dist_period, perm_period$Period)
+plot(PCO_period)
+
+PCO_period_hab <- betadisper(dist_period, perm_period$Habitat)
+plot(PCO_period_hab)
+
+# достоверность различий отклонений от центроидов в разных группах проверяется с помощью процедуры
+anova(PCO_period)
+boxplot(PCO_period)
+
+anova(PCO_period_hab)
+boxplot(PCO_period_hab)
+# достоверных различий разброса внутригрупповых расстояний не выявлено
+
+# post-hoc tests habitat как тут правильно сделать пост-хок? взаимодействие ведь есть
+pair <- combn(unique(as.character(perm_period$Habitat)), 2)
+ncomb <- dim(pair)[2]
+x <- perm_period_log
+y <- perm_period$Habitat
+for (i in 1:ncomb) {
+  filter <- y %in% pair[, i]
+  posthoc <- adonis(x[filter, ] ~ y[filter], method = "bray")$aov.tab$Pr[1]
+  cat(pair[, i], ": p = ", posthoc, "\n", sep = " ")
+}
+
+# отмели отличаются от всего остального. а банка и скалы попали в одну секту после поправки бонферрони
+0.05/3
+
+# симпер
+simper_period <- simper(perm_period_log, group = perm_period$Period, permutations = 9999)
+summary(simper_period)
+
+# сравниваем демогр признаки между 1 и 2 периодом
+
+# критерий Вилкоксона
+
+period1 <- tuv_all_constant5 %>%  filter(Period %in% "1")
+period2 <- tuv_all_constant5 %>%  filter(Period %in% "2")
+
+
+wilcox.test(period1$Age2_3, period2$Age2_3, paired = T)
+wilcox.test(period1$N, period2$N, paired = T)
+wilcox.test(period1$Age4_6, period2$Age4_6, paired = T)
+wilcox.test(period1$Age7_9, period2$Age7_9, paired = T)
+wilcox.test(period1$Age10_12, period2$Age10_12, paired = T)
+wilcox.test(period1$W, period2$W, paired = T)
+wilcox.test(period1$OGP, period2$OGP, paired = T)
+wilcox.test(period1$max_L, period2$max_L, paired = T)
+
+wilcox.test(log(period1$Age2_3 + 1), log(period2$Age2_3 + 1), paired = T)
+wilcox.test(log(period1$N + 1), log(period2$N +1), paired = T)
+wilcox.test(log(period1$Age4_6 + 1), log(period2$Age4_6 + 1), paired = T)
+wilcox.test(log(period1$Age7_9 + 1), log(period2$Age7_9 + 1), paired = T)
+wilcox.test(log(period1$Age10_12 + 1), log(period2$Age10_12 + 1), paired = T)
+wilcox.test(log(period1$W +1), log(period2$W + 1), paired = T)
+wilcox.test(log(period1$OGP + 1), log(period2$OGP + 1), paired = T)
+wilcox.test(log(period1$max_L + 1), log(period2$max_L + 1), paired = T)
+
+0.05/8
 
 
 
+
+# берём 5 мониторинговых точек по 2-4 периоду
+tuv_all_constant6 <- tuv_all %>%  filter(Sample_ID %in% c('BS_0.5_09',  "MidN_0.5_09", 'MoS_0.5_09', "MidN_-1.5_09", 'MoS_-1.5_09', 'BS_0.5_12',  "MidN_0.5_12", 'MoS_0.5_12', "MidN_-1.5_12", 'MoS_-1.5_12', 'BS_0.5_18',  "MidN_0.5_18", 'MoS_0.5_18', "MidN_-1.5_18", 'MoS_-1.5_18'))
+
+perm_period2 <- tuv_all_constant6 %>% select(Period, Age2_3, Age4_6, Age7_9, Age10_12, N, W, OGP, max_L, Ptros, Habitat) %>% as.data.frame()
+
+a <- metaMDS(perm_period2[2:10])
+plot(a, type = "t")
+
+perm_period2_log <- log(perm_period2[2:10] + 1)
+
+permanova_period2 <- adonis(log(perm_period2[2:10] + 1) ~ perm_period2$Period * perm_period2$Habitat, permutation = 99999, method = "bray")
+
+# проверка равенства внутригрупповых дисперсий
+dist_period2 <- vegdist(perm_period2_log, method = "bray")
+PCO_period2 <- betadisper(dist_period2, perm_period2$Period)
+plot(PCO_period2)
+
+PCO_period_hab2 <- betadisper(dist_period2, perm_period2$Habitat)
+plot(PCO_period_hab2)
+
+# от периода к периоду ничего не менялось, но разницу между местообитаниями он видит?
+
+# берём 3 мониторинговых точки по всем периодам
+tuv_all_constant7 <- tuv_all %>%  filter(Sample_ID %in% c('BS_0.5_04',  "MidN_0.5_04", 'MoS_0.5_04', 'BS_0.5_09',  "MidN_0.5_09", 'MoS_0.5_09', 'BS_0.5_12',  "MidN_0.5_12", 'MoS_0.5_12',  'BS_0.5_18',  "MidN_0.5_18", 'MoS_0.5_18' ))
+
+Pl1 <- ggplot(tuv_all_constant7, aes(x = as.factor(Period), y = log(N) )) + geom_boxplot() 
+
+Pl2 <- ggplot(tuv_all, aes(x = as.factor(Period), y = log(N) ) ) + geom_boxplot() 
+
+library(cowplot)
+plot_grid(Pl1, Pl2)
+
+
+
+
+
+perm_period2 <- tuv_all_constant6 %>% select(Period, Age2_3, Age4_6, Age7_9, Age10_12, N, W, OGP, max_L, Ptros, Habitat) %>% as.data.frame()
+
+a <- metaMDS(perm_period2[2:10])
+plot(a, type = "t")
+
+perm_period2_log <- log(perm_period2[2:10] + 1)
+
+permanova_period2 <- adonis(log(perm_period2[2:10] + 1) ~ perm_period2$Period * perm_period2$Habitat, permutation = 99999, method = "bray")
+
+# проверка равенства внутригрупповых дисперсий
+dist_period2 <- vegdist(perm_period2_log, method = "bray")
+PCO_period2 <- betadisper(dist_period2, perm_period2$Period)
+plot(PCO_period2)
+
+PCO_period_hab2 <- betadisper(dist_period2, perm_period2$Habitat)
+plot(PCO_period_hab2)
+
+
+
+
+#####################################################################################################################
+
+# считаем фукус-грунт
+tuv_sub <- read.table("TuMyt_Ptros.csv", header = T, sep = ";")
+str(tuv_sub)
+
+# берём вместе сублитораль и литораль в Тюве
+WS <- tuv_sub %>% filter(sea == "WS")
+perms <- rep(NA, 1000)
+
+for(i in 1:1000){
+  ind <- sample(1:nrow(WS), 5)
+  perms[i] <- mean(WS$algae[ind] - WS$bottom[ind])
+}
+
+hist(perms)
+
+BS <- tuv_sub %>% filter(sea == "BS")
+
+obs_BS <- mean(BS$algae - BS$bottom)
+
+perms <- data.frame(perm = perms)
+
+perms <- perms %>% mutate(Q = case_when(perm<= quantile(perms$perm)[2] ~ 1,
+                                          perm> quantile(perms$perm)[2] & perm <= quantile(perms$perm)[3] ~ 2, 
+                                          perm> quantile(perms$perm)[3] & perm <= quantile(perms$perm)[4] ~ 3,
+                                          perm> quantile(perms$perm)[4] ~ 4))
+
+
+l_sl <- ggplot(perms, aes(x=perm))  + geom_histogram(aes(fill = Q), color="lightgrey") + geom_vline(xintercept = quantile(perms$perm), color = "blue", size = 1) + geom_point(aes(x=obs_BS, y = 0), fill = "red", size = 6, shape = 21) + theme_bw()  + xlim(0, 0.5)
+
+
+# берём только литораль в Тюве
+WS2 <- tuv_sub %>% filter(sea == "WS")
+perms2 <- rep(NA, 1000)
+
+for(i in 1:1000){
+  ind <- sample(1:nrow(WS2), 3)
+  perms2[i] <- mean(WS2$algae[ind] - WS2$bottom[ind])
+}
+
+hist(perms2)
+
+BS2 <- tuv_sub %>% filter(sea == "BS") %>% filter(hor == "lit")
+
+obs_BS2 <- mean(BS2$algae - BS2$bottom)
+
+perms2 <- data.frame(perm2 = perms2)
+
+perms2 <- perms2 %>% mutate(Q = case_when(perm2<= quantile(perms2$perm2)[2] ~ 1,
+                                perm2> quantile(perms2$perm2)[2] & perm2 <= quantile(perms2$perm2)[3] ~ 2, 
+                                perm2> quantile(perms2$perm2)[3] & perm2 <= quantile(perms2$perm2)[4] ~ 3,
+                                perm2> quantile(perms2$perm2)[4] ~ 4))
+
+
+l <- ggplot(perms2, aes(x=perm2))+ xlim(0, 0.5)  + geom_histogram(aes(fill = Q), color="lightgrey") + geom_vline(xintercept = quantile(perms2$perm2), color = "blue", size = 1) + geom_point(aes(x=obs_BS2, y = 0), fill = "red", size = 6, shape = 21) + theme_bw() 
+
+ggarrange(l_sl, l, nrow = 2)
+
+# Добавить сюда х-у диаграмму первым графиком! 
+df <- data.frame(x1 = 0, x2 = 1, y1 = 0, y2 = 1)
+
+xy <- ggplot(WS, aes(x = algae, y = bottom)) + geom_segment(aes(x = 0, y = 0, xend = 1, yend = 1)) + geom_point(aes(size = 3), shape = 21, fill = "azure4", color = "black") + theme_bw() + xlim(0, 1) + ylim(0,1)  + geom_point(data=BS, aes(size = 3, group = hor, shape = hor), color= "red") + theme(legend.position ="")
+
+ggarrange(xy, l_sl, l, nrow = 1)
+
+# добавить Тюву!!! лит и слит разными маркерами!
