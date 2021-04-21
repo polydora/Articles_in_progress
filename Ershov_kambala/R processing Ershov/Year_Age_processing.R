@@ -31,23 +31,6 @@ right_w_onega <- right_w %>% filter(Bay == "Onega") %>% mutate(Old = `8`+`9`+`10
 
 
 
-left_onega_cca <- cca(left_w_onega ~ `2`  + `3`   + `5` +  `6`     + Old, data = right_w_onega)
-
-
-vif.cca(left_onega_cca)
-
-anova(left_onega_cca)
-anova(left_onega_cca, by = "axis")
-
-anova(left_onega_cca, by = "margin")
-
-
-plot(left_onega_cca)
-
-
-
-
-
 left_stages_onega <- left_w_onega %>% mutate(Young = `2`+`3`, Med = `4`+`5`, Old = Old + `6` + `7`) %>% select(Young, Med, Old) %>% mutate(Orient = "Left")
 
 rigth_stages_onega <- right_w_onega %>% mutate(Young = `2`+`3`, Med = `4`+`5`, Old = Old + `6` + `7`) %>% select(Young, Med, Old, Year) %>% mutate(Orient = "Right")
@@ -142,4 +125,22 @@ mydata$SE = predicted$se.fit
 
 left_freq <- cam %>%  group_by(Bay, Year) %>% summarise(Left_prop = mean(Orient2))
 
-ggplot(mydata, aes(x = Year, y = Fit)) + geom_line(size = 1) + facet_wrap(~Bay) + geom_point(data = left_freq, aes(y = Left_prop)) 
+historic_data <- data.frame(Bay = c("Onega", "Onega", "Dvina", "Кandalaksha", "Кandalaksha"), Year = c(1950, 1948, 2005, 1962, 2006), Left_prop = c(0.285, 0.313, 0.04, 0.38, 0.36), N = c(358, 182, 897, 507, 450) )
+
+historic_data$SE <- with(historic_data, sqrt(Left_prop*(1-Left_prop)/N)  ) 
+
+
+ggplot(mydata, aes(x = Year, y = Fit, group = Bay)) + geom_line(aes(linetype = Bay), size = 1) + 
+    geom_ribbon(aes(ymax = Fit + 1.96*SE, ymin = Fit - 1.96*SE), alpha = 0.2) + 
+  geom_point(data = left_freq, aes(y = Left_prop, shape = Bay), size = 3, fill = "gray")  + 
+  geom_errorbar(data = historic_data, aes(x = Year, y = Left_prop,   ymin = Left_prop - 1.96 * SE, ymax = Left_prop + 1.96 * SE), width = 0.5) + 
+  geom_point(data = historic_data, aes(x = Year, y = Left_prop,  shape = Bay), size = 8, fill = "white")+ 
+  labs(x = "Year",  y = "Probability of beeng left-sided") + 
+  theme_bw() + scale_shape_manual(values = c(15, 17, 16, 18))  
+
+
+facet_wrap(~Bay, scales = "free_x")  
+
+
+
+
