@@ -141,6 +141,6 @@ ggplot(mydata, aes(x = Year, y = Fit, group = Bay)) + geom_line(aes(linetype = B
 
 facet_wrap(~Bay, scales = "free_x")  
 
-
+ggplot(cam, aes(x = Year, y = Age, group = Year)) + geom_boxplot(fill = "gray") + facet_wrap(~Bay)  + theme_bw() + labs(y = "Age (years)")
 
 
