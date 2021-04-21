@@ -390,8 +390,24 @@ tuv_all$Period <- factor(tuv_all$Period)
 tuv_all$Transect  <- factor(tuv_all$Transect)
 tuv_all$Monitoring  <- factor(tuv_all$Monitoring)
 
+
 # отделяю нужные данные
 tuv_all <- tuv_all %>% select(Sample_ID, Period, Distance, Transect, Habitat, Depth, Monitoring, Ptros, Age2_3, Age4_6, Age7_9, Age10_12, N, W, OGP, max_L) %>% as.data.frame()
+
+
+
+ggplot(tuv_all, aes(x = Period, y = Ptros)) +  geom_boxplot(aes(fill = Habitat), varwidth = T)  + geom_hline(yintercept = mean(tuv_all$Ptros, na.rm = T))  + geom_path(data = tuv_all %>% group_by(Period) %>% summarise(Y = mean(Ptros, na.rm = T)), aes(x = Period, y = Y, group = 1), color = "red", size = 1)
+
+
+
+ggplot(tuv_all, aes(x = Period, y = N)) +  geom_boxplot(aes(fill = Habitat), varwidth = T)  + geom_hline(yintercept = mean(tuv_all$N, na.rm = T))  + geom_path(data = tuv_all %>% group_by(Period) %>% summarise(Y = mean(N, na.rm = T)), aes(x = Period, y = Y, group = 1), color = "red", size = 1)
+
+
+ggplot(tuv_all, aes(x = Period, y = OGP)) +  geom_boxplot(aes(fill = Habitat), varwidth = T)  + geom_hline(yintercept = mean(tuv_all$OGP, na.rm = T))  + geom_path(data = tuv_all %>% group_by(Period) %>% summarise(Y = mean(OGP, na.rm = T)), aes(x = Period, y = Y, group = 1), color = "red", size = 1)
+
+
+
+
 
 colSums(is.na(tuv_all))
 
