@@ -1,0 +1,223 @@
+---
+title: "Динамика гидрологических показателей в Южной губе о. Ряжкова в летние месяцы 2020 года."
+author: "В. М. Хайтов"
+output: 
+      word_document:
+                reference_docx: Letopis_template.docx
+                fig_width: 5
+                fig_height: 5
+
+ 
+abstract: |
+    **Хайтов В. М. Динамика гидрологических показателей в Южной губе о. Ряжкова в летние месяцы 2020 года** // Толмачева Е. Л. (ред.) Летопись природы Кадалакшского заповедника за 2020 год (ежегодный отчет). Кандалакша. Т.1 (Летопись природы Кандалакшского заповедника, кн. ++)
+    
+    Рассматриваются данные гидрологических проб, бравшихся ежедневно с 18.06.20 по 19.08.20
+    
+    **Khaitov V.M. Dynamics of salinity, water and air  temperature and wind characteristics in the Youzhnaya inlet (Ryazhkov island)** // Tolmacheva E. L. (ed.)  The Chronicle of Nature by the Kandalaksha Reserve for 2019 (Annual report).  Kandalaksha. V.1. (The Chronicle of Nature by the Kandalaksha Reserve, Book N ++)
+    
+    The data of hydrological samples is discussed. Samples were collected during all summer months.
+      
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+library(reshape2)
+library(knitr)
+library(pander)
+library(readxl)
+library(dplyr)
+
+
+editor <- "Толмачева Е. Л."
+editor_eng <- "Tolmacheva E. L."
+
+Year <- 2020
+
+# Функция, задающая нумерацию рисунков
+
+figRef <- local({
+    tag <- numeric()
+    created <- logical()
+    used <- logical()
+    function(label, caption, prefix = options("figcap.prefix"), 
+        sep = options("figcap.sep"), prefix.highlight = options("figcap.prefix.highlight")) {
+        i <- which(names(tag) == label)
+        if (length(i) == 0) {
+            i <- length(tag) + 1
+            tag <<- c(tag, i)
+            names(tag)[length(tag)] <<- label
+            used <<- c(used, FALSE)
+            names(used)[length(used)] <<- label
+            created <<- c(created, FALSE)
+            names(created)[length(created)] <<- label
+        }
+        if (!missing(caption)) {
+            created[label] <<- TRUE
+            paste0(prefix.highlight, prefix, " ", i, sep, prefix.highlight, 
+                " ", caption)
+        } else {
+            used[label] <<- TRUE
+            paste(prefix, tag[label])
+        }
+    }
+})
+
+options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**")
+
+```
+
+
+
+```{r}
+# Читаем данные
+hydr <- read_excel("data/hydrology_2020.xlsx",  na = "NA")
+
+hydr$Date_Time <- paste(format(hydr$date, format = "%d-%m-%Y"), format(hydr$time, format = "%H"))
+
+hydr$Date2 <- as.POSIXct(hydr$Date_Time, tz = "Europe/Moscow", format = "%d-%m-%Y %H")
+
+hydr$Date <- format(hydr$Date2, "%d-%m:%H")
+
+hydr$Date_day <- format(hydr$Date2, "%d-%m")
+
+
+hydr$Air_T <- round(as.numeric(hydr$Air_T, 1))
+hydr$Water_T <- round(as.numeric(hydr$Water_T, 1))
+
+
+hydr_print <- data.frame(Year = 2020, Date = hydr$Date, Air_T = hydr$Air_T, Salinity = hydr$S, Water_T = hydr$Water_T)
+
+hydr_print2 <- hydr_print
+hydr_print[is.na(hydr_print)] <- "нет данных"
+
+col_names <- c("Год", "Дата и время", "T воздуха", "Соленость", "Температура воды")
+
+
+
+```
+
+
+Ежедневные метеонаблюдения были проведены в течение трех месяцев с 18 июня  по 19 августа `r Year` г. Смещение даты начала ноблюдений на 18 дней было обусловлено действовавшими на территории Мурманской области ограничениями в связи с пандемией по CAVID-19.  Температура воздух оценивалась с помощью цифрового термометра на высоте человеческого роста. Регистрация температуры воды осуществлялась на глубине 1 м ртутным термометром, свешенным с головки наплавного причала кордона «Ряжков». Переход от замеров автоматическим логгером к замерам, производимым с помощью термометра, был связан с выходом из строя логгера.  Замеры температуры проводились в стандартные временные интервалы 0.00, 12.00 и 18.00 часов. Отбор проб солености по возможности осуществлялся в те же часы. Взятие солености производилось на той же точке, в которой был размещен термометр, регистрирующий температуру воды. Проба бралась с глубины 1 м. Определение солености осуществлялось с помощью ручного рефрактометра, с точностью до 1 промилле. Данные по измеренным показателям приведены в таблице +.1. 
+
+
+**Таблица +.1**  Температура воздуха и воды и соленость в Южной губе о. Ряжкова  летом `r Year` г.   
+
+Table +.1 Air and water temperature and salinity in the Youzhnaza inlet (Ryazhkov island) in `r Year`
+
+
+```{r}
+
+kable(hydr_print,  col.names = col_names)
+
+```
+
+
+
+
+```{r, fig.cap=figRef("Sal", "Динамика солености и температуры воды и воздуха в Южной губе. Dynamics of water salinity and temperature of water and air in Youzhnaya inlet.")}
+
+library(ggplot2)
+library(gridExtra)
+
+
+theme_set(theme_bw())
+
+Means <- hydr %>% group_by(Date_day) %>% summarise(Mean_S = mean(S, na.rm = T), Mean_WT = mean(Water_T, na.rm = T), Mean_AT = mean(Air_T, na.rm = T)) 
+
+Means$Date_day_2 <- as.POSIXct(paste(Year, Means$Date_day), format = "%Y %d-%m" )
+
+
+Pl_sal <- ggplot(hydr, aes(x= Date2 , y = S)) + geom_point() + geom_line(data = Means, aes(x = Date_day_2,  y = Mean_S), color = "gray") + xlab("") + ylab("Соленость") + geom_smooth(se = F, size = 1.5, color = "blue")
+
+Pl_Temp_W <- ggplot(hydr, aes(x= Date2 , y = Water_T)) + geom_point() + geom_line(data = Means, aes(x = Date_day_2,  y = Mean_WT), color = "gray")  + geom_smooth(se = F, size = 1.5, color = "blue") + xlab("") + ylab("Температура воды")
+
+Pl_Temp_A <- ggplot(hydr, aes(x= Date2 , y = Air_T)) + geom_point() + geom_line(data = Means, aes(x = Date_day_2,  y = Mean_AT), color = "gray")  + geom_smooth(se = F, size = 1.5, color = "blue") + xlab("Даты") + ylab("Температура воздуха")
+
+grid.arrange(Pl_sal, Pl_Temp_W, Pl_Temp_A, ncol = 1)
+
+```
+
+
+
+
+
+
+
+Соленость воды, как и в предыдущие годы, демонстрировала колебания (`r figRef("Sal")`). В данный год четко прослеживался тренд повышения солености от начала наблюдения (18 июня) ко второй половине августа. Как и в предыдущие годы четко прослеживается связь между соленостью и температурой воды. Более теплая вода обладала пониженной соленостью.  
+
+
+Важно отметить, что в данном году средняя соленость воды достигла минимальной отметки за весь период наблюдений (`r figRef("Temp_long")`). Среднее же значение температуры воды, напротив, достигло максимального значения за тот же период. Поскольку возможной причиной наблюдаемых отклонений может быть смещение периода наблюдений на 18 дней (см. выше) для более детального анализа были рассмотрены данные по каждому месяцу в отдельности (`r figRef("Temp_month")`). Приведенные данные свидетельствуют о том, что в 2020 г., действительно, наблюдалось аномально низкая соленость. Особенно резко отличались от предыдущих лет солености 2020 года, отмеченные в июне и июле. 
+
+Вероятно, именно такой аномально низкой соленостью можно объяснить практически полное отсутствие морских звезд в прибрежных участках акватории. Визуальные наблюдения не выявил ни одного массового скопления звезд в точках наблюдений, которые были типичны для Южной губы в предыдущие годы. 
+
+
+
+
+```{r}
+hydr_long <- read_excel("data/hydrol_data_2007_2019.xlsx", na = "NA")
+
+hydr_long$Air_T <- as.numeric(hydr_long$Air_T )
+hydr_long$Water_T <- as.numeric(hydr_long$Water_T)
+hydr_long$S <- as.numeric(hydr_long$S)
+
+
+
+hydr_long$Date2 <- as.POSIXct(hydr_long$Date_Time, format = "%m/%d/%Y %H:%M", tz = "Europe/Moscow")
+
+
+hydr_long_all <-  rbind(hydr_long[, c("Date2", "Air_T",   "Water_T", "S")], hydr [, c("Date2", "Air_T",   "Water_T", "S")])
+
+hydr_long_all$Year <- format(hydr_long_all$Date2, "%Y")
+
+Means_long <- hydr_long_all %>% group_by(Year) %>% summarise(Mean_S = mean(S, na.rm = T), SD_S = sd(S, na.rm = T), Mean_WT = mean(Water_T, na.rm = T), SD_WT = sd(Water_T, na.rm = T), Mean_AT = mean(Air_T, na.rm = T), SD_AT = sd(Air_T, na.rm = T))
+
+Means_long[ ,2:7] <- round(Means_long[ ,2:7], 2)
+
+hydr_long_all_print <- with(Means_long, data.frame(Year = Year,
+  Salinity = paste(Mean_S, "±", SD_S),
+  Water_T = paste(Mean_WT, "±", SD_WT),
+  Air_T = paste(Mean_AT, "±", SD_AT))
+  )
+
+```
+
+
+
+**Таблица +.2**  Средние (± SD) значения солености, температуры воды и воздуха в Южной губе о. Ряжкова  в разные годы.   
+
+Table +.1 Mean (± SD) values of salinity, water and air temperature in the Youzhnaza inlet (Ryazhkov island) in different years.
+
+```{r}
+kable(hydr_long_all_print, col.names = c("Годы", "Соленость", "Температура воды", "Температура воздуха"), align = "lccc" )
+```
+
+
+```{r, fig.cap=figRef("Temp_long", "Многолетняя динамика солености (средняя ± SD) и температуры воды и воздуха в Южной губе. Long-term dynamics of water salinity (mean ± SD) and temperature of water and air in Youzhnaya inlet.")}
+
+Pl_long_S <- ggplot(Means_long, aes(x = as.numeric(Year), y = Mean_S)) + geom_point() + geom_errorbar(aes(ymin = Mean_S - SD_S, ymax = Mean_S + SD_S), width = 0.2)  + geom_path() + labs(x = "", y = "Сленость") + scale_x_continuous(breaks = round(seq(min(Means_long$Year), max(Means_long$Year)))) 
+  
+
+Pl_long_WT <- ggplot(Means_long, aes(x = as.numeric(Year), y = Mean_WT)) + geom_point() + geom_errorbar(aes(ymin = Mean_WT - SD_WT, ymax = Mean_WT + SD_WT), width = 0.2)  + geom_path() + labs(x = "", y = "Температура воды")+ scale_x_continuous(breaks = round(seq(min(Means_long$Year), max(Means_long$Year)))) 
+  
+
+Pl_long_AT <- ggplot(Means_long, aes(x = as.numeric(Year), y = Mean_AT)) + geom_point() + geom_errorbar(aes(ymin = Mean_AT - SD_AT, ymax = Mean_AT + SD_AT), width = 0.2)  + geom_path() + labs(x = "Годы", y = "Температура воздуха") + scale_x_continuous(breaks = round(seq(min(Means_long$Year), max(Means_long$Year)))) 
+  
+grid.arrange(Pl_long_S, Pl_long_WT, Pl_long_AT, ncol = 1)
+```
+
+
+
+
+```{r, fig.cap=figRef("Temp_month", "Многолетняя динамика солености в Южной губе в летние месяцы. Long-term dynamics of water salinity in Youzhnaya inlet in summer month.")}
+
+hydr_long_all$Month <- months(hydr_long_all$Date2) 
+
+hydr_long_all$Month <- factor(hydr_long_all$Month, levels = c("Май", "Июнь", "Июль", "Август") )
+
+hydr_long_all %>% filter(Month %in% c( "Июнь", "Июль", "Август") ) %>%  mutate(Marker = factor(ifelse(Year == 2020, 1, 0))) %>% 
+  ggplot(., aes(x = Year, y = S, group = Year)) + geom_boxplot(aes(fill = Marker)) + facet_wrap(~Month) + theme(axis.text.x = element_text(angle = 90)) + labs(x = "Год", y = "Соленость") + scale_fill_manual(values = c("white", "gray")) + guides(fill="none") 
+
+````
+
+
