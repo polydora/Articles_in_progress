@@ -34,6 +34,10 @@ cam$Bay <- factor(cam$Bay)
 
 Mod2 <- glm(Orient2 ~ Year*Bay, data = cam, family = "binomial")
 
+# drop1(Mod2, test = "Chi")
+
+Mod3 <- glm(Orient2 ~ Year + Bay, data = cam, family = "binomial")
+
 
 
 Mod_Dvina <- glm(Orient2 ~ Year, data = cam[cam$Bay == "Dvina", ], family = "binomial")
@@ -53,7 +57,7 @@ summary(Mod_Mezen)
 mydata <- cam %>% group_by(Bay) %>% do(data.frame(Year = seq(min(.$Year), max(.$Year), 1)))
 
 
-predicted <- predict(Mod2, newdata = mydata, se.fit = T, type = "response")
+predicted <- predict(Mod3, newdata = mydata, se.fit = T, type = "response")
 
 
 mydata$Fit = predicted$fit
@@ -86,9 +90,9 @@ ggplot(mydata, aes(x = Year, y = Fit, group = Bay)) + geom_line(aes(linetype = B
 ```
 
 ```{r}
-mod_summary <- tidy(Mod2)
+mod_summary <- tidy(Mod3)
 
-mod_summary[,2:4] <- round (mod_summary[,2:4], 2)
+mod_summary[,2:4] <- round (mod_summary[,2:4], 4)
 
 mod_summary[,5] <- round (mod_summary[,5], 4)
 
