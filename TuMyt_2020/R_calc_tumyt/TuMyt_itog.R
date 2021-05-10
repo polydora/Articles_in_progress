@@ -392,7 +392,7 @@ tuv_all$Monitoring  <- factor(tuv_all$Monitoring)
 
 
 # отделяю нужные данные
-tuv_all <- tuv_all %>% select(Sample_ID, Period, Distance, Transect, Habitat, Depth, Monitoring, Ptros, Age2_3, Age4_6, Age7_9, Age10_12, N, W, OGP, max_L) %>% as.data.frame()
+tuv_all <- tuv_all %>% select(Sample_ID, Period, Distance, Transect, Habitat, Depth, Monitoring, Ptros, Age2_3, Age4_6, Age7_9, Age10_12, N, W, OGP, max_L, Year) %>% as.data.frame()
 
 
 
@@ -407,7 +407,96 @@ ggplot(tuv_all, aes(x = Period, y = OGP)) +  geom_boxplot(aes(fill = Habitat), v
 
 
 
+# Пермутационная оценка переходов от одного периода к другому
 
+
+transition <- function(Param = "Ptros", perm = 999) {
+  require(dplyr)
+  require(reshape2)
+  d <- tuv_all %>% group_by(Transect, Depth, Period) %>% 
+    summarize(n = mean(get(Param), na.rm = T)) %>% 
+    dcast(Transect + Depth ~ Period) %>% 
+    select(-c(Transect, Depth))
+  
+  D_N_1_2 <- sum(d[,2] - d[,1], na.rm = T) / sum(!is.na(d[,2] - d[,1]))
+  deltas_1_2 <- rep(NA, perm +1)
+  i <- 1
+  while (i <= perm) {
+    D_N_perm <- sum(d[sample(1:nrow(d)),2] - d[sample(1:nrow(d)),1], na.rm = T) / sum(!is.na(d[sample(1:nrow(d)),2] - d[sample(1:nrow(d)),1]))
+    deltas_1_2[i] <- D_N_perm
+    i<-i+1
+  }
+  deltas_1_2[perm] <- D_N_1_2 
+  
+  D_N_2_3 <- sum(d[,3] - d[,2], na.rm = T) / sum(!is.na(d[,3] - d[,2]))
+  deltas_2_3 <- rep(NA, perm +1)
+  i <- 1
+  while (i <= perm) {
+    D_N_perm <- sum(d[sample(1:nrow(d)),3] - d[sample(1:nrow(d)),2], na.rm = T) / sum(!is.na(d[sample(1:nrow(d)),3] - d[sample(1:nrow(d)),2]))
+    deltas_2_3[i] <- D_N_perm
+    i<-i+1
+  }
+  deltas_2_3[perm] <- D_N_2_3 
+  
+  
+  
+  D_N_3_4 <- sum(d[,4] - d[,3], na.rm = T) / sum(!is.na(d[,4] - d[,3]))
+  deltas_3_4 <- rep(NA, perm +1)
+  i <- 1
+  while (i <= perm) {
+    D_N_perm <- sum(d[sample(1:nrow(d)),4] - d[sample(1:nrow(d)),3], na.rm = T) / sum(!is.na(d[sample(1:nrow(d)),4] - d[sample(1:nrow(d)),3]))
+    deltas_3_4[i] <- D_N_perm
+    i<-i+1
+  }
+  deltas_3_4[perm] <- D_N_3_4 
+  
+  DN_perm_1_2 <- data.frame(Compare = "1 vs 2", Delta = deltas_1_2)
+  DN_perm_2_3 <- data.frame(Compare = "2 vs 3", Delta = deltas_2_3)
+  DN_perm_3_4 <- data.frame(Compare = "3 vs 4", Delta = deltas_3_4)
+  
+  DN_perm <- rbind(DN_perm_1_2, DN_perm_2_3, DN_perm_3_4)
+  DN <- data.frame(Compare = c("1 vs 2","2 vs 3", "3 vs 4"), Delta = c(D_N_1_2, D_N_2_3, D_N_3_4))
+  
+  
+  ggplot(DN_perm, aes(x = Compare, y = Delta)) + geom_boxplot() + geom_hline(yintercept = 0) + geom_point(data = DN, shape = 21,  fill = "yellow", size = 3) + ggtitle(Param)
+}
+
+
+Pl1 <- transition(Param = "Ptros", perm = 9999)
+
+Pl2 <- transition(Param = "N", perm = 9999)
+
+Pl3 <- transition(Param = "W", perm = 9999)
+
+Pl4 <- transition(Param = "OGP", perm = 9999)
+
+Pl5 <- transition(Param = "max_L", perm = 9999)
+
+Pl6 <- transition(Param = "Age2_3", perm = 9999)
+
+Pl7 <- transition(Param = "Age4_6", perm = 9999)
+
+Pl8 <- transition(Param = "Age7_9", perm = 9999)
+
+Pl9 <- transition(Param = "Age10_12", perm = 9999)
+
+library(cowplot)
+
+plot_grid(Pl1, Pl2, Pl3, Pl4, Pl5, Pl6, Pl7, Pl8, Pl9, ncol = 3)
+
+
+# Пробую построить смешанную модель динамики показателей, где случайным фактором выступает трансекта
+
+
+library(mgcv)
+
+Mod_ptros <- gamm(log(N) ~ s(Year, k = 6), random = list(Transect = ~1),  data = tuv_all)
+
+summary(Mod_ptros$gam)
+
+plot(Mod_ptros$gam, residuals = T, rug = T, )
+
+gam.check(Mod_ptros$gam)
 
 colSums(is.na(tuv_all))
 

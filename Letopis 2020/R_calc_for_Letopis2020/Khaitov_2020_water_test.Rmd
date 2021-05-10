@@ -15,7 +15,6 @@ abstract: |
     **Khaitov V.M.     On the using of the water test for reconstruction of timing of eider nesting on the islands of the Kandalaksha Bay ** // Tolmacheva E. L. (ed.)  The Chronicle of Nature by the Kandalaksha Reserve for 2019 (Annual report).  Kandalaksha. V.1. (The Chronicle of Nature by the Kandalaksha Reserve, Book N ++)
     
     On the basis of long-term data on the water test of egg incubation the timing of the start of nesting on different islands at the top of Kandalak Bay is reconstructed. It is shown that the start of egg laying is shifted to earlier dates on islands located closer to the open sea. 
-      
 ---
 
 ```{r setup, include=FALSE}
@@ -30,6 +29,7 @@ library(ggplot2)
 library(cowplot)
 library(lubridate)
 library(ggmap)
+library(stringr)
 
 
 
@@ -73,8 +73,6 @@ theme_set(theme_bw())
 
 ```
 
-
-
 ```{r}
 # Калькулятор даты откладки яиц по данным водного теста
 df =  read_excel("Data/water_test_calculator.xlsx")
@@ -109,6 +107,8 @@ wtest <- read_excel("Data/water_test_data_base.xlsx", na = "NA")
 
 wtest$Day <- as.numeric(wt_calculator(wtest))
 
+wtest$Day[wtest$Type %in% c("Pierced","Hatching" )] <- 45
+
 # Проверка соответствия названий данным по координатам
 
 islands <- read_excel("Data/Kandalaksha_Bay_Islands.xlsx", na = "NA")
@@ -120,29 +120,21 @@ islands$Lat <- as.numeric(islands$Lat)
 
 ```
 
-
-В ходе ежегодных учетов гнездящихся птиц на островах вершины Кандалакшского залива проводится определение срока насиживани яиц. Для этих целей используется так называемый "водный тест". В каждом гнезде проводится тест нескольких яиц (если численность кладки не превышает трех яиц, то тестируются все яйца, если число яиц превышает три, то делается случайная выборка из трех яиц). Процедуре подлежат лишь яйца с цельной скорлупой. Если яйцо надбито, имеет наклевку или проклев (Корякин, Горяшко, 1995), то эта информация фксируется без дальнейшего использования водного теста, так как по наличию наклевки или проклева уже можно уверенно судить о сроках насиженности.
+В ходе ежегодных учетов гнездящихся птиц на островах вершины Кандалакшского залива проводится определение срока насиживания яиц. Для этих целей используется так называемый "водный тест". В каждом гнезде проводится обследование нескольких яиц (если численность кладки не превышает трех яиц, то тестируются все яйца, если число яиц превышает три, то делается случайная выборка из трех яиц). Процедуре подлежат лишь яйца с цельной скорлупой. Если яйцо надбито, имеет наклевку или проклев (Корякин, Горяшко, 1995), то эта информация фиксируется без дальнейшего использования водного теста, так как по наличию наклевки или проклева уже можно уверенно судить о сроках насиженности.
 
 Для проведения прозрачная емкость наполняется водой, чтобы яйцо было полностью погружено под воду (`r figRef("wt_photo")`). Далее рукой яйцо опускается в воду, тупым концом вверх, и доводится до дна ёмкости. После чего следует плавно убрать руку и смотреть, какое положение примет яйцо (`r figRef("wt_float_pattern")`).
 
+![`r figRef("wt_photo", "Водный тест. Water test.")`](Figures/water_test.png){width="10cm"}
 
-![`r figRef("wt_photo", "Водный тест. Water test.")`](Figures/water_test.png)
+![`r figRef("wt_float_pattern", "Разные типы положения яйца при водном тесте (Корякин, Горяшко, 1995). Different types of egg position in the water test (Koryakin, Goryashko, 1995)")`](Figures/egg_floating_pattern.png){width="15cm"}
 
-
-
-![`r figRef("wt_float_pattern", "Разные типы положения яйца при водном тесте (Корякин, Горяшко, 1995). Different types of egg position in the water test (Koryakin, Goryashko, 1995)")`](Figures/egg_floating_pattern.png)
-
-
-Если яйцо ложится на дно, то измеряется угол между длинной осью яйца и плоскостью дна банки (дно при этом должно располагаться горизонтально). Если яйцо всплывает, то штангенциркулем осторожно измеряют максимальный диаметр той части яйца, которая оказались над поверхностью воды. Измерения проводятся точностью до 1 мм. Если яйцо взвешено, то в базе данных, приведенной в настоящей главе Летописи, угол принимается за 90 градусов.Для каждого яйца прошедшего водный тест был измерен один из  трех параметров: угол положения яйца относительно дна, или диаметр надводной части, или степень наклева.
+Если яйцо ложится на дно, то измеряется угол между длинной осью яйца и плоскостью дна банки (дно при этом должно располагаться горизонтально). Если яйцо всплывает, то штангенциркулем осторожно измеряют максимальный диаметр той части яйца, которая оказались над поверхностью воды. Измерения проводятся точностью до 1 мм. Если яйцо взвешено, то в базе данных, приведенной в настоящей главе Летописи, угол принимается за 90 градусов.Для каждого яйца прошедшего водный тест был измерен один из трех параметров: угол положения яйца относительно дна, или диаметр надводной части, или наличие наклева.
 
 По таблице, приведённой на рисунке (`r figRef("wt_table")`), и по данным из работы В.В.Бианки с соавторами (Бианки и др., 1979) можно оценить сколько идет инкубация яиц в каждом гнезде.
 
+![`r figRef("wt_table", "Таблица соответствия данных водного теста и сроков насиживания. Table of correspondence between water test data and incubation dates")`](Figures/water_test_table.png){width="16.7cm"}
 
-![`r figRef("wt_table", "Таблица соответствия данных водного теста и сроков насиживания. Table of correspondence between water test data and incubation dates")`](Figures/water_test_table.png)
-
-
-
-Поскольку данные, приведенные в таблице (`r figRef("wt_table")`) и данные из работы В.В.Бианки и соавторов (1979, были считаны данные с графика, приведенного в работе) несколько разнились оба источника информации были объединены (Табл. +.1, +.2) и использованы для подбора двух регрессионный моделей. Первая модель описывает связь сроков насиживания с углом наклона яйца. Вторая модель - связь сроков насиживания с диаметром надводной части яйца, опущенного в воду. Мдели имеют следующий вид.
+Поскольку данные, приведенные в таблице (`r figRef("wt_table")`) и данные из работы В.В.Бианки и соавторов (1979, были сняты данные с графика, приведенного в работе) несколько разнились, оба источника информации были объединены (Табл. +.1, +.2) и использованы для подбора двух регрессионный моделей. Первая модель описывает связь сроков насиживания с углом наклона яйца. Вторая модель - связь сроков насиживания с диаметром надводной части яйца, опущенного в воду. Модели имеют следующий вид.
 
 ```{r}
 df$Source2 <- ifelse(df$Source == "Bianki et al. 1974", "Бианки и др., 1979", "Корякин, Горяшко, 1995")
@@ -153,14 +145,12 @@ df_angle <- df %>% filter(Type == "Angle") %>% select(Value, Day, Source2)
 kable(df_angle, col.names = c("День насиживания", "Угол наклона", "Источник"), caption = "Таблица +.1. Соответствие между углом наклона яйца в водном тесте и сроком насиживания, по разным источникам. Correspondence between the angle of the egg in the water test and the length of incubation, according to different sources. ")
 ```
 
-
 ```{r}
 
 df_diam <- df %>% filter(Type == "Diametr") %>% select(Value, Day, Source2) 
 
 kable(df_diam, col.names = c("День насиживания", "Диаметр", "Источник"), caption = "Таблица +.2. Соответствие между диаметром надводной части яйца в водном тесте и сроком насиживания, по разным источникам. Correspondence between the diameter of the above-water part of the egg in the water test and the incubation period, according to different sources. ")
 ```
-
 
 ```{r}
 Pl_angl <- ggplot(df_angle, aes(x = Day, y = Value)) + geom_point(aes(shape = Source2), size = 3) + geom_smooth(method = "lm") + labs(x = "День насиживания", y = "Угол наклона яйца (градусы)") + guides(shape = "none")+ xlim(0, max(df$Day))  + ggtitle("Угол")
@@ -172,22 +162,17 @@ Pl_diam <- ggplot(df_diam, aes(x = Day, y = Value)) + geom_point(aes(shape = Sou
 
 ```
 
-
 ```{r, fig.cap = figRef("Pl_models","Зависимость между продолжительностью насиживания и результатами водного теста. Relationship between incubation time and water test results. ")}
 
 plot_grid(Pl_angl, Pl_diam, ncol = 1) 
 
 ```
 
-
-
-
 Модель, описывающая связь сроков насиживания (дни) с углом наклона (измерение в градусах):
 
 $$
 Incubation = -0.28 + 0.11 \alpha
 $$
-
 
 Модель, описывающая связь сроков насиживания (дни) с диаметром надводной части (измерение в мм):
 
@@ -201,15 +186,13 @@ $$
 Incubation = 11
 $$
 
-
 Если яйцо было наклюнуто, то для дальнейших расчетов принималось, что продолжительность инкубации (дни) составляет:
 
 $$
 Incubation = 45
 $$
 
-
-Сбор матриала проводился на островах вершины Кандалакшского залива. Для  анализа пространственного распрделения величины, характеризующей сроки начала инкубации, были найдены координаты центральной части островов вершины Канадалкшского залива и других географических объектов, к которым происходит привязка учетов гнездящихся птиц (Табл. +.1).
+Сбор материала проводился на островах вершины Кандалакшского залива. Для анализа пространственного распределения величины, характеризующей сроки начала инкубации, были найдены координаты центральной части островов вершины Кандалакшского залива и других географических объектов, к которым происходит привязка учетов гнездящихся птиц (Табл. +.1).
 
 ```{r}
 islands_coord <- islands %>% select(Name, Lat, Long)
@@ -219,7 +202,6 @@ islands_coord <- islands_coord[order(islands_coord$Name), ]
 kable(islands_coord, col.names = c("Географический объект", "Широта (N)", "Долота (E)"), caption = "Таблица +.3. Координаты географических объектов, к которым привязаны учеты гнездящихся морских птиц. Coordinates of geographical locations to which counts of breeding seabirds are referenced.")
 
 ```
-
 
 ```{r}
 
@@ -239,7 +221,6 @@ wtest_coord$Year <- year(wtest_coord$Date)
 
 ```
 
-
 ```{r}
 Total_median <- median(wtest_coord$DOY, na.rm = T)
 # as.Date(Total_median, origin = "2020-01-01")
@@ -256,21 +237,19 @@ wtest_generalized <- wtest_coord %>% group_by(Name) %>% summarise(Anomalia = med
 
 ```
 
+Первичные данные по водному тесту, проведенному в `r as.numeric(unique(format(wtest$Date, format = "%Y")))` годы приведены в таблице +.5.Зная дату проведения учета, можно определить дату откладки каждого яйца как разницу между датой учета и между временем продолжительности инкубации, вычисленной в соответствии с приведенными выше линейными моделями. Для удобства количественной обработки, расчетную дату откладки яиц удобно выражать не в формате календарной даты (Год-Месяц-День), а в количестве дней, прошедших с начала календарного года (1 января).
 
+В среднем, при обобщении всех данных, откладка яиц происходит на `r Total_median` день от начала календарного года, что приблизительно соответствует `r paste(format(as.Date(156, format = "%j", origin = "1.1.2021"), "%d %b"), "я", sep = "")`. Однако в отдельных географических локациях наблюдается заметное отклонение от этой даты. Средние значения количества дней, прошедших от начала календарного года до откладки яиц, и величины отклонения от среднего по всему архипелагу для каждой точки приведены в таблице +.4. Визуализация приведенных в таблице +.4 данных (`r figRef("Date_begin_map")`) позволяет выявить отчетливый паттерн - на островах, расположенных в открытой части акватории инкубация яиц начинается на несколько дней раньше, чем в среднем по всей акватории. В шхерных же районах начало инкубации задерживается. Вероятной причиной наблюдаемого разброса сроков начала инкубации можно считать сроки освобождения от льда, который в шхерных районах сходит позднее.  
 
-Первичные данные по водному тесту, проведенному в `r as.numeric(unique(format(wtest$Date, format = "%Y")))` годы приведены в таблице +.5.Зная дату проведения учета, можно определить дату откладки каждого яйца как разницу между датой учета и между временем продолжительности инкубации, вычисленной в соответствии с приведенными выше линейными моделями. Для удобства количественной обработки, расчетную дату откладки яиц удобно выражать не в формате календарной даты (Год-Месяц-День), а в количестве дней, прошедших с начала календарного года (1 января). 
+```{r }
 
-
-В среднем, при обобщении всех данных, откладка яиц происходит на `r Total_median` день от начала календарного года, что соответствет 5 июня. Однако в каждых географических локациях наблюдается заметное отклонение от этой даты. Средние значения количества дней, прошедших  от начала календарного года до откладки яиц, и величины отклонения от среднего по всему архипелагу для каждой точки приведены в таблице +++++++.
-
-```{r}
 wtest_generalized_print <- wtest_generalized %>% select(Name, N, DOY, Sd_DOY, Anomalia)
 
 wtest_generalized_print$DOY <- round(wtest_generalized_print$DOY)
 wtest_generalized_print$Sd_DOY <- round(wtest_generalized_print$Sd_DOY, 1)
 
 
-kable(wtest_generalized_print)
+kable(wtest_generalized_print, col.names = c("Остров", "Количество проанализированных яиц","Среденее значение даты начала откладки яиц", "Стандартное отклонение", "Отклонение от многолетнего среднего значения"), caption = "Табл. +.4. Средние значения сроков начала откладки яиц на разных островах. Mean values of the beginning of egg laying date on different islands.")
 ```
 
 
@@ -278,32 +257,52 @@ kable(wtest_generalized_print)
 
 
 
-```{r}
-
-
+```{r fig.cap = figRef("Date_begin_map", "Отклонение от многолетней средней даты начала инкубации яиц на островах Вершины Канадалакшского залива. Deviation from the long-term mean start date of egg incubation on the islands of the Kandalaksha Bay") }
 
 load("Data/Kand_upper_map.RData")
 
-ggmap(Kand_map, darken=0, base_layer=ggplot(aes(x=Long, y=Lat), data=wtest_generalized)) + geom_point(aes(color = Anomalia), size = 4)  + scale_color_gradient(low = "white", high = "red", breaks = c(-5, 0, 5, 10)) + labs(color = "Отклонение \nот многолетнего \nсреднего (дни)")
+ggmap(Kand_map, darken=0, base_layer=ggplot(aes(x=Long, y=Lat), data=wtest_generalized)) + geom_point(aes(color = Anomalia), size = 4)  + scale_color_gradient(low = "white", high = "red", breaks = c(-5, 0, 5, 10)) + labs(color = "Отклонение \nот многолетнего \nсреднего (дни)") + theme(axis.text = element_blank(), axis.title = element_blank(), axis.ticks = element_blank())
 
 
 ```
 
+
+Обобщение данных за каждый год (`r figRef("DOY_dynam")`) позволяет заметить, что в среднем сроки начала откладки яиц близки к многолетнему среднему значению. Вместе с тем, заметно, что в 2018 году реконструированные по водному тесту сроки начала откладки яиц были смещены на более ранние сроки по сравнению с предыдущими годами, а в 2020 году наблюдалось заметно более позднее начало откладки яиц, чем в предыдущие годы.  
+
+
+```{r  fig.cap = figRef("DOY_dynam", "Сроки начала откладки яиц на островах Вершины Кандалакшского залива в разные годы. Пунктирная линия отражает многолетнее среднее значение даты откладки яиц. Горизонтальные сплошные линии отражают медианы сроков откладки яиц. Боксы отражают границы 1 и 3 квартилей, размах усов охватывает 95% всех значений в выборке, точки - отскакивающие значения. Dates of the beginning of egg laying on the islands  in the Kandalaksha Bay in different years. The dotted line represents the long-term mean of egg-laying dates.Horizontal solid lines represent medians of egg laying dates in a given year. Boxes represent the boundaries of 1 and 3 quartiles, the whiskers cover 95% of all values variation in the sample, and dots represent outlayers") }
+
+
+ggplot(wtest_coord, aes(Year, DOY, group = Year)) + 
+  geom_boxplot() + 
+  geom_hline(yintercept = Total_median, linetype = 2) + 
+  scale_x_continuous(breaks = seq(min(wtest_coord$Year), max(wtest_coord$Year)))+
+  labs(x = "Годы", y = "Дни от начала календарного года")
+
+
+```
 
 
 
 
 
 ```{r}
-wtest_print <- wtest_coord %>% select(ID, Date, Region, Name, N_eggs, Type, Value, Day, Date_begin, DOY)
+wtest_print <- wtest_coord %>% select(ID, Date, Name, N_eggs, Type, Value, Day,DOY) %>% filter(!is.na(Type)) %>% filter(Type != "Doubt") %>% filter(Type != "Spoiled")
 
 wtest_print <- wtest_print[order(wtest_print$Date), ]
 
-kable(wtest_print, col.names = c("Номер гнезда", "Дата учета", "Архипелаг", "Точка учета", "Количество яиц в гнезде", "Измеренный парамтер", "Значение", "Вычисленная продолжительность инкубации", "Расчетная дата откладки яйца", "Количество дней от начала календарного года" ), caption = "Таблица +.5. Измеренные параметры водного теста и расчетные даты откладки яиц.Measured water test parameters and estimated egg laying dates.")
+wtest_print$ID <- word(wtest_print$ID, 1, sep = "_")
+
+
+wtest_print <- wtest_print %>% mutate(Type2 = case_when(Type == "Angle" ~ "A",
+                          Type == "Diametr" ~ "D",
+                          Type == "Pierced" ~ "Наклев",
+                          Type == "Hatching" ~ "Вылупление"))
+
+
+wtest_print2 <- wtest_print %>% group_by(Date, Name, ID) %>% do(data.frame(N_eggs = unique(.$N_eggs), Measure = paste0(.$Type2, .$Value,"(", .$Day,"/", .$DOY, ")",  collapse = ";")))
+
+
+kable(wtest_print2, col.names = c("Дата учета", "Точка учета","Номер гнезда",  "Количество яиц в гнезде", "Измеренный парамтер"), caption = "Таблица +.5. Измеренные параметры водного теста и расчетные даты откладки яиц. A - Угол; D - диаметр надводной части; В скобках расчетная продолжительность инкубации / Количество дней, прошедших от начала календарного года до откладки данного яйца. Measured water test parameters and estimated egg laying dates.")
 
 ```
-
-
-
-
-

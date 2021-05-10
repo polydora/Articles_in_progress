@@ -1,0 +1,392 @@
+---
+title: "Растительность, ассоциированная с участками антропогенного воздействия  на территории острова Ряжков"
+author: "В. М. Хайтов"
+output: 
+      word_document:
+                reference_docx: Letopis_template.docx
+                fig_width: 5
+                fig_height: 5
+
+ 
+abstract: |
+    **Лезжов В. М., Хайтов В. М. Растительность, ассоциированная с участками антропогенного воздействия  на территории острова Ряжкова** // Толмачева Е. Л. (ред.) Летопись природы Кадалакшского заповедника за 2020 год (ежегодный отчет). Кандалакша. Т.1 (Летопись природы Кандалакшского заповедника, кн. ++)
+    Проведено геоботаническое описание растительности на территориях, прилегающих к объектам, связанным с антропогенным воздействием (жилые дома, хозяйственные постройки). 
+    
+    **Leszhov V. M., Khaitov V.M.     Vegetation associated with areas of anthropogenic impact on Ryazhkov Island ** // Tolmacheva E. L. (ed.)  The Chronicle of Nature by the Kandalaksha Reserve for 2019 (Annual report).  Kandalaksha. V.1. (The Chronicle of Nature by the Kandalaksha Reserve, Book N ++)
+    
+    The results of geobotanical description of vegetation in areas associated with objects of anthropogenic impact (houses, outbuildings) on the Ryazhkov Island is presented. 
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+library(reshape2)
+library(knitr)
+library(pander)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(cowplot)
+library(lubridate)
+library(ggmap)
+library(stringr)
+
+
+
+editor <- "Толмачева Е. Л."
+editor_eng <- "Tolmacheva E. L."
+
+Year <- 2020
+
+# Функция, задающая нумерацию рисунков
+
+figRef <- local({
+    tag <- numeric()
+    created <- logical()
+    used <- logical()
+    function(label, caption, prefix = options("figcap.prefix"), 
+        sep = options("figcap.sep"), prefix.highlight = options("figcap.prefix.highlight")) {
+        i <- which(names(tag) == label)
+        if (length(i) == 0) {
+            i <- length(tag) + 1
+            tag <<- c(tag, i)
+            names(tag)[length(tag)] <<- label
+            used <<- c(used, FALSE)
+            names(used)[length(used)] <<- label
+            created <<- c(created, FALSE)
+            names(created)[length(created)] <<- label
+        }
+        if (!missing(caption)) {
+            created[label] <<- TRUE
+            paste0(prefix.highlight, prefix, " ", i, sep, prefix.highlight, 
+                " ", caption)
+        } else {
+            used[label] <<- TRUE
+            paste(prefix, tag[label])
+        }
+    }
+})
+
+options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**")
+
+theme_set(theme_bw())
+
+```
+
+```{r}
+
+veg <- read_excel("Data/Plant_20_04_2021.xlsx", na = "NA", sheet = "данные по площадкам")
+
+plots <- read_excel("Data/Plant_20_04_2021.xlsx", na = "NA", sheet = "Discription")
+
+coord <- read_excel("Data/Plant_20_04_2021.xlsx", na = "NA", sheet = "Coordinates")
+
+```
+
+С 15 по 21 июля 2020 года на острове Ряжков Кандалакшского заповедника были проведены геоботанические описания растительности, представленной вокруг объектов, связанных с хозяйственной деятельностью сотрудников научной базы "Ряжков". 
+
+Вокруг `r nrow(coord)` объектов (Табл. +.1) было заложено `r nrow(veg)-1` площадок (Табл. +.2). Каждая площадка была ограничена рамкой 1x1 м. Для каждого вида растений было оценено проективное покрытие (ПП), то есть степень закрывания определённым видом растения территории под ним своими побегами (стеблями и листьями). ПП было выражено  в процентах от площади рамки  (1 м^2^).
+
+Кроме проективного покрытия описывались сомкнутость (визуально оцененная часть неба над площадкой, закрытая вышестоящими деревьями и крышами построек, величина выраженная в процентах), расстояние от площадки до ближайшего ненарушенного растительного сообщества, расстояние от площадки до  хозяйственной постройки и указывался тип ближайшего ненарушенного сообщества (Табл. +.2). 
+
+
+
+```{r}
+
+kable(coord, col.names = c("Тип объекта", "Ассоциированный топоним", "Координаты (N, E)"), caption = "Таблица +.1. Исследованные объекты и их координаты. Surveyed objects and their coordinates")
+
+```
+
+
+```{r}
+
+kable(plots, col.names = c("Площадка", "Тип объекта", "Расстояние до объекта", "Общее проективное покрытие", "Сомкнутость", "Расстояние до ближайшего природного сообщества", "Тип ближайшего природного сообщества" ), caption = "Таблица +.2. Параметры учетных площадок. Parameters of survey plots ")
+
+```
+
+
+
+# Объект "**Жилой дом 1**"
+
+![`r figRef("obj_1", "Фотография объекта **жилой дом 1**. Photo of the object **Object 1**")`](figures/жилой дом 1.png)
+
+Описания проводились вокруг нижних венцов разобранного осенью 2019 года здания. Это здание просуществовавшего на о. Ряжков более 60 лет и использовалось в качестве жилого и лабораторного помещения для приезжих групп студентов и юннатов.     
+
+
+```{r}
+pl <- plots %>% filter(Object == "жилой дом 1") %>% pull(Plot)
+
+veg_red <- veg %>% select(pl) %>% mutate(Sum = rowSums(.)) %>% mutate(Taxa = veg$Taxa) %>% select(Taxa, everything())%>% filter(Sum > 0) %>% select(-Sum) 
+
+```
+
+```{r}
+kable(veg_red %>% select(Taxa, pl[1:10]), caption = "Таблица +.1. Растительность вокруг объекта **жилой дом 1**. Vegetation around the **Object 1**.")
+```
+
+
+
+
+```{r}
+kable(veg_red %>% select(Taxa, pl[11:21]), caption = "Таблица +.1. Продолжение. Continuation.")
+```
+
+
+
+```{r}
+kable(veg_red %>% select(Taxa, pl[22:25]), caption = "Таблица +.1. Продолжение. Continuation.")
+```
+
+
+
+# Объект "**Жилой дом 2**"
+
+![`r figRef("obj_1", "Фотография объекта **жилой дом 2**. Photo of the object **Object 2**")`](figures/жилой дом 2.png)
+
+Здание, существующее на о.Ряжков более 60 лет. Здание используется, как жилое, научными сотрудниками в теплое время года.  
+
+```{r}
+pl <- plots %>% filter(Object == "жилой дом 2") %>% pull(Plot)
+
+veg_red <- veg %>% select(pl) %>% mutate(Sum = rowSums(.)) %>% mutate(Taxa = veg$Taxa) %>% select(Taxa, everything())%>% filter(Sum > 0) %>% select(-Sum) 
+
+```
+
+```{r}
+kable(veg_red %>% select(Taxa, pl), caption = "Таблица +.2. Растительность вокруг объекта **жилой дом 2**. Vegetation around the **Object 2**.")
+```
+
+
+
+<!-- ++++++++++++++++++ -->
+
+# Объект "**Сарай**"
+
+![`r figRef("saraj", "Фотография объекта **сарай**. Photo of the **Object 3**")`](figures/сарай.png)
+
+Здание используется в качестве подсобного помещения и дровяного склада научными сотрудниками заповедника. Описана растительность только на том участке, который изображен на фотографии (`r figRef("saraj")`)
+
+```{r}
+pl <- plots %>% filter(Object == "сарай") %>% pull(Plot)
+
+veg_red <- veg %>% select(pl) %>% mutate(Sum = rowSums(.)) %>% mutate(Taxa = veg$Taxa) %>% select(Taxa, everything())%>% filter(Sum > 0) %>% select(-Sum) 
+
+```
+
+```{r}
+kable(veg_red %>% select(Taxa, pl), caption = "Таблица +.3. Растительность вокруг объекта **сарай**. Vegetation around the **Object 3**.")
+```
+
+
+
+<!-- ++++++++++++++++++ -->
+
+# Объект **Площадка для складирования золы**
+
+![`r figRef("Obj4", "Фотография объекта **площадка для складирования золы**. Photo of the object **Object 4**")`](figures/площадка для складирования золы.png)
+
+В непосредственной близости от входа в баню располагается стандартное место, где складируется зола, вынутая из банной печи при ее регулярной прочистке. Описан только участок, заросший иван-чаем на левой части фотографии (`r figRef("Obj4")`)
+
+
+```{r}
+pl <- plots %>% filter(Object == "площадка для складирования золы") %>% pull(Plot)
+
+veg_red <- veg %>% select(pl) %>% mutate(Sum = rowSums(.)) %>% mutate(Taxa = veg$Taxa) %>% select(Taxa, everything())%>% filter(Sum > 0) %>% select(-Sum) 
+
+```
+
+```{r}
+kable(veg_red %>% select(Taxa, pl), caption = "Таблица +.4. Растительность вокруг объекта **площадка для складирования золы**. Vegetation around the  **Object 4**.")
+```
+
+
+
+
+
+<!-- ++++++++++++++++++ -->
+
+# Объект **Место для колки дров**
+
+![`r figRef("Obj5", "Фотография объекта **место для колки дров**. Photo of the object **Object 5**")`](figures/место для колки дров.png)
+
+Банная дровоколка, перестала активно использоваться с 2018 года. Все площадки были расположены в пространстве, ограниченном мостками, бревнами и стеной бани, заметными на фотографии (`r figRef("Obj5")`) 
+
+```{r}
+pl <- plots %>% filter(Object == "место для колки дров") %>% pull(Plot)
+
+veg_red <- veg %>% select(pl) %>% mutate(Sum = rowSums(.)) %>% mutate(Taxa = veg$Taxa) %>% select(Taxa, everything())%>% filter(Sum > 0) %>% select(-Sum) 
+
+```
+
+```{r}
+kable(veg_red %>% select(Taxa, pl), caption = "Таблица +.5. Растительность вокруг объекта **место для колки дров**. Vegetation around the  **Object 5**.")
+```
+
+
+
+
+<!-- ++++++++++++++++++ -->
+
+# Объект **Баня**
+
+![`r figRef("Obj6", "Фотография объекта **баня**. Photo of the object **Object 6**")`](figures/баня.png)
+
+Описан участок, прилегающий к бане с западной стороны (`r figRef("Obj6")`). 
+
+
+```{r}
+pl <- plots %>% filter(Object == "баня") %>% pull(Plot)
+
+veg_red <- veg %>% select(pl) %>% mutate(Sum = rowSums(.)) %>% mutate(Taxa = veg$Taxa) %>% select(Taxa, everything())%>% filter(Sum > 0) %>% select(-Sum) 
+
+```
+
+```{r}
+kable(veg_red %>% select(Taxa, pl), caption = "Таблица +.6. Растительность вокруг объекта **баня**. Vegetation around the **Object 6**.")
+```
+
+
+
+
+<!-- ++++++++++++++++++ -->
+
+# Объект **Складская постройка**
+
+![`r figRef("Obj7", "Фотография объекта **складская постройка**. Photo of the object **Object 7**")`](figures/складская постройка.png)
+
+Складское помещение, используемое научными сотрудниками и сотрудниками отдела охраны.Описан только участок, изображенный на фотографии (`r figRef("Obj7")`)
+
+```{r}
+pl <- plots %>% filter(Object == "складская постройка") %>% pull(Plot)
+
+veg_red <- veg %>% select(pl) %>% mutate(Sum = rowSums(.)) %>% mutate(Taxa = veg$Taxa) %>% select(Taxa, everything())%>% filter(Sum > 0) %>% select(-Sum) 
+
+```
+
+```{r}
+kable(veg_red %>% select(Taxa, pl), caption = "Таблица +.7. Растительность вокруг объекта **складская постройка**. Vegetation around the  **Object 7**.")
+```
+
+
+
+<!-- ++++++++++++++++++ -->
+
+# Объект **склад бытовых отходов**
+
+![`r figRef("Obj8", "Фотография объекта **склад бытовых отходов**. Photo of the object **Object 8**")`](figures/склад бытовых отходов.png)
+
+В 1990-е годы из-за участившихся визитов медведей на территорию базы была выведена из употребления яма, куда ранее сливались жидкие бытовые отходы. На момент описания растительности этот участок опознается по понижению рельефа, заметному рядом с комплексом туалетов (`r figRef("Obj8")`).
+
+```{r}
+pl <- plots %>% filter(Object == "склад бытовых отходов") %>% pull(Plot)
+
+veg_red <- veg %>% select(pl) %>% mutate(Sum = rowSums(.)) %>% mutate(Taxa = veg$Taxa) %>% select(Taxa, everything())%>% filter(Sum > 0) %>% select(-Sum) 
+
+```
+
+```{r}
+kable(veg_red %>% select(Taxa, pl), caption = "Таблица +.8. Растительность вокруг объекта **склад бытовых отходов**. Vegetation around the **Object 8**.")
+```
+
+
+
+<!-- ++++++++++++++++++ -->
+
+# Объект **Туалет**
+
+![`r figRef("Obj9", "Фотография объекта **туалет**. Photo of the object **Object 9**")`](figures/туалет.png)
+
+В начале 2000-х годов старый комплекс туалетов был разрушен и закопан отвалами грунта, образовавшимися при рытье ям для новых туалетов. Старый комплекс располагается между двумя новыми постройками. На фотографии (`r figRef("Obj9")`), сделанной с мостков, соединяющих две действующих группы туалетных кабин, видна правая группа из трех кабинок. Электрический провод, заметный на фотографии, соединяет две группы туалетных кабинок.  Заросли малины, на переднем плане  фотографии, располагаются на месте засыпанного старого туалета. 
+
+
+```{r}
+pl <- plots %>% filter(Object == "туалет") %>% pull(Plot)
+
+veg_red <- veg %>% select(pl) %>% mutate(Sum = rowSums(.)) %>% mutate(Taxa = veg$Taxa) %>% select(Taxa, everything())%>% filter(Sum > 0) %>% select(-Sum) 
+
+```
+
+```{r}
+kable(veg_red %>% select(Taxa, pl), caption = "Таблица +.9. Растительность вокруг объекта **туалет**. Vegetation around the  **Object 9**.")
+```
+
+
+
+<!-- ++++++++++++++++++ -->
+
+# Объект **Вырубка**
+
+![`r figRef("Obj10", "Фотография объекта **Вырубка**. Photo of the object **Object 10**")`](figures/вырубка.png)
+
+До 2019 года пространство перед южной стеной Жилого дома 2 (задний план фотографии, `r figRef("Obj10")`) было занято плотной порослью сосны. Осенью 2019 г., в соответствии с требованиями пожарной безопасности, молодые деревья были срублены.  
+
+
+```{r}
+pl <- plots %>% filter(Object == "вырубка") %>% pull(Plot)
+
+veg_red <- veg %>% select(pl) %>% mutate(Sum = rowSums(.)) %>% mutate(Taxa = veg$Taxa) %>% select(Taxa, everything())%>% filter(Sum > 0) %>% select(-Sum) 
+
+```
+
+```{r}
+kable(veg_red %>% select(Taxa, pl), caption = "Таблица +.10. Растительность вокруг объекта **вырубка**. Vegetation around the  **Object 10**.")
+```
+
+
+
+
+# Объект **Дизельная**
+
+![`r figRef("Obj11_12", "Фотография объектов **дизельная и склад нефтепродуктов**. Photo of the object **Object 11** and **Object 12** ")`](figures/дизельная и склад нефтепродуктов.png)
+
+Здание дизель-электростанции (задний план фотографии, `r figRef("Obj11_12")` ) активно использовалось до конца 1990-х годов. На момент описания растительности здание законсервировано. Бензосклад (левая часть фотографии) активно эксплуатируется. 
+
+```{r}
+pl <- plots %>% filter(Object == "дизельная") %>% pull(Plot)
+
+veg_red <- veg %>% select(pl) %>% mutate(Sum = rowSums(.)) %>% mutate(Taxa = veg$Taxa) %>% select(Taxa, everything())%>% filter(Sum > 0) %>% select(-Sum) 
+
+```
+
+```{r}
+kable(veg_red %>% select(Taxa, pl), caption = "Таблица +.11. Растительность вокруг объекта **дизельная**. Vegetation around the  **Object 11**.")
+```
+
+
+
+
+# Объект **склад нефтепродуктов**
+
+```{r}
+pl <- plots %>% filter(Object == "склад нефтепродуктов") %>% pull(Plot)
+
+veg_red <- veg %>% select(pl) %>% mutate(Sum = rowSums(.)) %>% mutate(Taxa = veg$Taxa) %>% select(Taxa, everything())%>% filter(Sum > 0) %>% select(-Sum) 
+
+```
+
+```{r}
+kable(veg_red %>% select(Taxa, pl), caption = "Таблица +.12. Растительность вокруг объекта **склад нефтепродуктов**. Vegetation around the  **Object 12**.")
+```
+
+
+
+# Объект **тент для обработки пуха**
+
+![`r figRef("Obj13", "Фотография объектов **тент для обработки пуха**. Photo of the object **Object 13**")`](figures/тент для обработки пуха.png)
+
+Тент, под которым находилась сеть, использовавшаяся для переборки гагачьего пуха. Переборка пуха прекратилась в конце 1970-х годов. Однако тент простоял до 2018 года. Объект располагался в пространстве между бензоскладом и дизельной (`r figRef("Obj13")`). После его демонтажа никаких явных следов его нахождения найти нельзя. Положение объекта можно идентифицировать только по координатам (Табл. +.1).
+
+
+```{r}
+pl <- plots %>% filter(Object == "тент для обработки пуха") %>% pull(Plot)
+
+veg_red <- veg %>% select(pl) %>% mutate(Sum = rowSums(.)) %>% mutate(Taxa = veg$Taxa) %>% select(Taxa, everything())%>% filter(Sum > 0) %>% select(-Sum) 
+
+```
+
+```{r}
+kable(veg_red %>% select(Taxa, pl), caption = "Таблица +.13. Растительность вокруг объекта **тент для обработки пуха**. Vegetation around the **Object 13**.")
+```
+
+
+
