@@ -1,0 +1,160 @@
+---
+title: "Многолетняя динамика пополнения мидиевых банок молодью"
+author: "В. М. Хайтов"
+output: 
+      word_document:
+                reference_docx: Letopis_template.docx
+                fig_width: 7
+                fig_height: 5
+
+ 
+abstract: |
+    **Хайтов В. М. Многолетняя динамика пополнения мидиевых банок молодью ** // Толмачева Е. Л. (ред.) Летопись природы Кадалакшского заповедника за 2019 год (ежегодный отчет). Кандалакша. Т.1 (Летопись природы Кандалакшского заповедника, кн. ++)
+    Рассматриваются многолетние данные по обилию живых и мертвых мидий, имеющих размеры до 5 мм, формирующих когорту пополнения на пяти мидиевых банках, расположенных в акватории Вороньей губы и в Лувеньгском архипелаге.   
+    
+    **Khaitov V.M. Long-term dynamics of mussel beds recruitment** // Tolmacheva E. L. (ed.)  The Chronicle of Nature by the Kandalaksha Reserve for 2019 (Annual report).  Kandalaksha. V.1. (The Chronicle of Nature by the Kandalaksha Reserve, Book N ++)
+    Long-term data on the abundance of live and dead mussels, up to 5 mm in size, forming a cohort of recruitment at five mussel banks located in the waters of Voronya Bay and the Luvenga Archipelago are reviewed.       
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+library(reshape2)
+library(knitr)
+library(pander)
+library(doBy)
+library(ggplot2)
+library(gridExtra)
+library(ggmap)
+library(dplyr)
+library(readxl)
+
+
+theme_set(theme_bw())
+options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**" )
+
+
+editor <- "Толмачева Е. Л."
+editor_eng <- "Tolmacheva E. L."
+
+# Функция, задающая нумерацию рисунков
+
+figRef <- local({
+    tag <- numeric()
+    created <- logical()
+    used <- logical()
+    function(label, caption, prefix = options("figcap.prefix"), 
+        sep = options("figcap.sep"), prefix.highlight = options("figcap.prefix.highlight")) {
+        i <- which(names(tag) == label)
+        if (length(i) == 0) {
+            i <- length(tag) + 1
+            tag <<- c(tag, i)
+            names(tag)[length(tag)] <<- label
+            used <<- c(used, FALSE)
+            names(used)[length(used)] <<- label
+            created <<- c(created, FALSE)
+            names(created)[length(created)] <<- label
+        }
+        if (!missing(caption)) {
+            created[label] <<- TRUE
+            paste0(prefix.highlight, prefix, " ", i, sep, prefix.highlight, 
+                " ", caption)
+        } else {
+            used[label] <<- TRUE
+            paste(prefix, tag[label])
+        }
+    }
+})
+
+
+```
+
+
+
+```{r}
+# Читаем данные
+
+myt1 <- read_excel("data/Mussel beds data base 96-20.xls", sheet = "Vor2, vor4, vor5 1996-2008", na = "NA")
+myt2 <- read_excel("data/Mussel beds data base 96-20.xls", sheet = "Vor2, vor4, vor5 2009-2016", na = "NA")
+myt3 <- read_excel("data/Mussel beds data base 96-20.xls", sheet = "Vor2, Vor4, Vor5 2017-2020", na = "NA")
+
+
+myt4 <- read_excel("data/Mussel beds data base 96-20.xls", sheet = "Korg, Mat 1997-2008", na = "NA")
+myt5 <- read_excel("data/Mussel beds data base 96-20.xls", sheet = "Korg, Mat 2009-2011", na = "NA")
+myt6 <- read_excel("data/Mussel beds data base 96-20.xls", sheet = "Korg, Mat 2012-2016", na = "NA")
+myt7 <- read_excel("data/Mussel beds data base 96-20.xls", sheet = "Korg, Mat 2017-2020", na = "NA")
+
+
+
+myt <- rbind(myt1, myt2, myt3, myt4, myt5, myt6, myt7)
+
+
+# balg <- read.table("data/Algae biomass on mussel beds 1997 2016.csv", header = T, sep = ";")
+# cover <- read.table("data/coverage_2004-2017.csv", header = T, sep = ";")
+
+# load("data/Kand_map.RData")
+
+
+myt_reduced <- myt %>% filter(!(bank %in% c("vor2", "vor4", "vor5") & year %in% c(2013) & season %in% c("July", "June")) & !(bank %in% c("mat", "korg") & year %in% c(2008, 2009, 2010, 2011, 2012, 2013) & season %in% c("June", "March", "January", "July")))
+
+myt_stat <- myt_reduced %>% filter(status %in% c("alive", "dead")) %>% filter(length <= 5) %>%  group_by(year, bank, sample, status) %>% summarise(N = n()) %>% dcast(., year + bank + sample ~ status) 
+
+myt_stat$dead <- round(myt_stat$dead/2) 
+
+```
+
+В данной главе приводятся данные только по обилию живых и мертвых мидий, формирующих "когорту пополнения". Под последней подразумевается совокупность моллюсков, имеющих длину раковины не более 5 мм. Эти моллюски составляют наиболее подвижную часть популяции. Они могут активно перемещаться, как за счет ползания, так и за счет плавания в толще воды (биссусный дрифт, перемещение вместе с плавающими матами нитчатых водорослей). Эти моллюски имеют возраст от 1+ до 3+, однако именно они, а не спат (моллюски с возрастом 0+), осуществляю массовое пополнение поселения, представленного на мидиевой банке. Вероятно, до прихода на мидевые банки, где представлены в основном взрослые моллюски (см. главу Летописи, посвященную размерной структуре мидиевых банок), когорта пополнения обитает в верхней сублиторали, поселяясь на матах нитчатых водорослеЙ. Заросли зеленых и бурых нитчаток  в массе представленныы в окрестностях всех изученных мидевых банок. На эти маты, судя по имеющимся наблюдения, происходит первичное оседание спата. Ранняя судьба спата неизвестна, однако известно, что на поселения взрослых мидий, представленные на всех изученных банках, оседение спате практически не поисходит (или весь осевший спат погибает сразу после оседания). Таким образом, основное пополнение молодью на мидиевых банках происходит за счет мигрантов из сублиторали.    
+
+
+**Методика сбора материала на мониторинговых точках**
+
+_Обозначения и координаты изученных поселений_
+В базе использованы обозначения мидиевых банок, устоявшиеся в предыдущих изданиях «Летописи природы Кандалакшского заповедника». 
+
+Мидиевая банка *«korg»*
+N 67 6.655
+E 32 38.523
+Расположена на корге в районе о-вов Малый и Большой Куртяжные (Лувеньгский архипелаг).
+
+Мидиевая банка *«mat»*
+N 67 6.790
+E 32 38.567
+Расположена на косе, идущей от материка, на расстоянии 260 м от предыдущей банки.
+
+Мидиевая банка *«vor2»*
+N 67 56.460
+E 32 26.056 
+Банка расположена на нижней части литорали острова Воронинского, расположенного  в куту Вороньей губы. 
+
+Мидиевая банка *«vor4»*
+N 67 56.072
+E 32 30.417
+Банка расположена на косе, идущей от материка на расстоянии около 500 м от входа в Воронью губу. 
+
+Мидиевая банка *«vor5»*
+N 67 55.673
+E 32 29.465
+Банка расположена в проливе, соединяющем губу Воронью и губу Белую.  
+ 
+
+_Методика описания размерной структуры мидий_
+
+Описание методики взятия и разборки проб приведена в Летописи природы за 2017 год. Следует отметить, что учет раковин мертвых моллюсков в некоторые годы на отдельных мидевых банках не проводился.   
+
+
+**Обилие молоди на мидиевых банках**
+
+
+ Исходные данные по обилию мидий, входящих в состав когорты пополнения,  в 1996-2020 гг  приведены в таблице +.1. 
+ 
+ 
+ 
+```{r}
+kable(myt_stat, col.names = c("Год", "Банка", "Проба", "Количество живых", "Количество мертвых"),
+      caption = "Таблица +.1. Обилие живых и мертвых моллюсков из когорты пополнения на разных мидиевых банках в разные годы. Abundance of live and dead mussels from a cohort of recruitment at different mussel beds in different years. \n **Примечание**: Обилие приведено в экз. на рамку 1/182 м^2^. Обилие мертвых расчитано как общая численность створок моллюсков, отмеченных в пробе, деленная два.")
+```
+ 
+ 
+ 
+ 
+ 

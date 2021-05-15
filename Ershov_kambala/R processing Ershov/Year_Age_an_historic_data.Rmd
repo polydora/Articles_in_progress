@@ -82,7 +82,8 @@ ggplot(mydata, aes(x = Year, y = Fit, group = Bay)) + geom_line(aes(linetype = B
   theme_bw() + 
   scale_shape_manual(values = c(15, 17, 16, 18)) +
   guides(linetype = "none") +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") +
+  guides(shape = guide_legend(override.aes = list(size = c(3, 3, 4, 4) )))
 
   
 
@@ -98,6 +99,12 @@ mod_summary[,5] <- round (mod_summary[,5], 4)
 
 
 kable(mod_summary, col.names = c("Model term", "Parameter", "SE", "Z-statistic", "p-value"), caption = "Table ++. Parameters of model fitted")
+```
+
+```{r}
+
+ggplot(cam, aes(x = Year, y = Age, group = Year)) + geom_boxplot(fill = "gray") + facet_wrap(~Bay)  + theme_bw() + labs(y = "Age, years")
+
 ```
 
 
