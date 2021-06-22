@@ -22,8 +22,20 @@ library(broom)
 library(tidyr)
 
 cam <- read_excel("Data/All_length_age_year.xlsx") 
+cam_full <- read.table("Data/kambala_long_term_dynamics.csv", sep = ",", header = T, dec = ".")
 
 cam$Orient2 <- ifelse(cam$Orient == "Left", 1, 0)
+```
+
+```{r}
+
+left_prop <- cam %>% group_by(Bay, Year) %>% summarise(Left_prop = mean(Orient == "Left"), n = n()) %>% as.data.frame()
+
+year_exclude <- c(2006, 2010)
+
+# left_prop %>% group_by(Bay ) %>% summarise(mean(Left_prop), Sd = sd(Left_prop))
+
+cam <- cam %>% filter(!(Bay == "Onega" &  (Year %in% year_exclude)) )
 ```
 
 
@@ -34,6 +46,7 @@ cam$Bay <- factor(cam$Bay)
 
 Mod2 <- glm(Orient2 ~ Year*Bay, data = cam, family = "binomial")
 
+# summary(Mod2)
 # drop1(Mod2, test = "Chi")
 
 Mod3 <- glm(Orient2 ~ Year + Bay, data = cam, family = "binomial")
@@ -67,11 +80,14 @@ mydata$SE = predicted$se.fit
 
 left_freq <- cam %>%  group_by(Bay, Year) %>% summarise(Left_prop = mean(Orient2))
 
-historic_data <- data.frame(Bay = c("Onega", "Onega", "Dvina", "Кandalaksha", "Кandalaksha"), Year = c(1950, 1948, 2005, 1962, 2006), Left_prop = c(0.285, 0.313, 0.04, 0.38, 0.36), N = c(358, 182, 897, 507, 450), Source = c(1, 2, 3, 4, 5), shift = c(1.5, rep(-1.5, 4)) )
+historic_data <- data.frame(Bay = c("Onega", "Onega", "Кandalaksha", "Кandalaksha"), Year = c(1950, 1948,  1962, 2006), Left_prop = c(0.285, 0.313,  0.38, 0.36), N = c(358, 182,  507, 450), Source = c(2, 1, 3, 4), shift = c(1.5, rep(-1.5, 3)) )
+
+
 
 historic_data$SE <- with(historic_data, sqrt(Left_prop*(1-Left_prop)/N)  ) 
 
 
+Pl <-
 ggplot(mydata, aes(x = Year, y = Fit, group = Bay)) + geom_line(aes(linetype = Bay), size = 1) + 
     geom_ribbon(aes(ymax = Fit + 1.96*SE, ymin = Fit - 1.96*SE), alpha = 0.2) + 
   geom_point(data = left_freq, aes(y = Left_prop, shape = Bay), size = 3, fill = "gray")  + 
@@ -83,10 +99,13 @@ ggplot(mydata, aes(x = Year, y = Fit, group = Bay)) + geom_line(aes(linetype = B
   scale_shape_manual(values = c(15, 17, 16, 18)) +
   guides(linetype = "none") +
   theme(legend.position = "bottom") +
-  guides(shape = guide_legend(override.aes = list(size = c(3, 3, 4, 4) )))
+  guides(shape = guide_legend(override.aes = list(size = c(3, 3, 4, 4) ))) +
+  theme(axis.title = element_text(size = 15), legend.text = element_text(size = 15), legend.title = element_text(size = 15), axis.text = element_text(size = 12))
 
-  
 
+  # ggsave("fig_long-term.tiff", Pl)
+
+Pl
 
 ```
 
@@ -107,5 +126,14 @@ ggplot(cam, aes(x = Year, y = Age, group = Year)) + geom_boxplot(fill = "gray") 
 
 ```
 
+```{r}
+cam %>% group_by(Bay) %>% summarise(N = n())
+
+cam %>% group_by(Bay, Year) %>% summarize(N = n(), Left_prop = mean(Orient2)) %>% as.data.frame()
+
+cam %>% group_by(Bay, Year) %>% summarize(N = n(), Left_prop = mean(Orient2)) %>% as.data.frame() %>% group_by(Bay) %>% summarise(min = min(Left_prop), max = max(Left_prop), mean = mean(Left_prop), SD = sd(Left_prop))
 
 
+```
+ 
+ 

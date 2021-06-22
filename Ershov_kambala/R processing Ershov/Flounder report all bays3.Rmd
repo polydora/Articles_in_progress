@@ -126,6 +126,9 @@ frq_Orient2 <- frq_Orient %>% mutate(Left_prop = Left/(Left + Right), Right_prop
 
 ggplot(frq_Orient2, aes(x ="", y = value, fill = variable)) + geom_bar(stat= "identity", width=1, color = "black") + coord_polar("y", start=0)  + theme(axis.text = element_blank(), panel.grid = element_blank(), panel.border = element_blank(), axis.title = element_blank())+ guides(fill="none") + facet_wrap(~Bay)  + scale_fill_manual(values = c("red", "blue"))
 
+
+
+kam %>% group_by(Bay) %>% summarise(Left_prop = mean(Sidedness == "Left"), n = n())
 ```
 
 Рисунок 2. Соотношение левых (красный сектор) и правых (синий сектор) камбал в разных заливах.

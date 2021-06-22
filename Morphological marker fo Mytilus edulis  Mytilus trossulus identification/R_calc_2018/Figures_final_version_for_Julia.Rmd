@@ -1669,7 +1669,7 @@ AIC_print <- as.data.frame(AIC(Model_4_final_cand_1, Model_4_final_cand_2, Model
 
 # Model 6#########################
 
-myt2_all$Subset <- factor(myt2_all$Subset, levels = c("WSBL", "BH", "GOM", "BALT", "SCOT", "NORW"))
+myt2_all$Subset <- factor(myt2_all$Subset, levels = c("WSBL", "BH", "GOM", "BALT",  "NORW"))
 
 
 
@@ -1730,7 +1730,7 @@ pr_value_M$PME_T <- with(pr_value_M, N_T_ME / N_E)
 # myt3_and_Atlantic$Subset <- factor(myt3_and_Atlantic$Subset, levels = c("WBL", "BH", "GOM",  "BALT", "NORW", "SCOT" ))
 
 
-myt3_and_Atlantic <- myt2_all[myt2_all$Subset %in% c("GOM", "BALT", "SCOT", "NORW"), ]
+myt3_and_Atlantic <- myt2_all[myt2_all$Subset %in% c("GOM", "BALT", "NORW"), ]
 
 pr_value_myt3_and_Atlantic <- myt3_and_Atlantic %>% group_by(Subset, pop) %>% summarise(freq_MT = mean(freq_MT), N_T = sum(ind == 1),  N_T_MT = sum(Sp2 == 1 & ind == 1), N_E_MT = sum(Sp2 == 1 & ind == 0), N_E = sum(ind == 0), N_E_ME = sum(Sp2 == 0 & ind == 0), N_T_ME = sum(Sp2 == 0 & ind == 1))
 
@@ -1748,8 +1748,8 @@ pr_value_myt3_and_Atlantic$PME_T <- with(pr_value_myt3_and_Atlantic, N_T_ME / N_
 
 Pl_mod6_with_initial_data <- Pl_mod6 + geom_segment(data = pr_value_myt3_and_Atlantic, aes(x = freq_MT, y = PME_E, xend = freq_MT, yend = PMT_T), color="darkgrey") +
   geom_hline(aes(yintercept=0.5), color="black") +
-  geom_point(data = pr_value_myt3_and_Atlantic, aes(y = PME_E), fill = "white", shape = 22) +
-  geom_point(data = pr_value_myt3_and_Atlantic, aes(y = PMT_T), fill = "black", shape = 22) +
+  geom_point(data = pr_value_myt3_and_Atlantic, aes(y = PME_E), fill = "white", shape = 21) +
+  geom_point(data = pr_value_myt3_and_Atlantic, aes(y = PMT_T), fill = "black", shape = 21) +
   labs(y =  "P(edu|E)\nP(tros|T)", x = "Ptros", fill = "")+
   ylim(0,1) +
   xlim(0,1)
@@ -1795,7 +1795,7 @@ Pl_mod7 <- ggplot(new_data7, aes(x = Prop_T, y = fit)) +
 
 init_data_Model_7 <- myt3_and_Atlantic %>% group_by(Subset, pop) %>% summarise(Prop_T = mean(morph == "T_m"),  freq_MT = mean(Sp == "M.trossulus"), N = n())
 
-init_data_Model_7$Subset <- factor(init_data_Model_7$Subset, levels = c("WSBL", "BH", "GOM", "BALT", "NORW", "SCOT"))
+init_data_Model_7$Subset <- factor(init_data_Model_7$Subset, levels = c("WSBL", "BH", "GOM", "BALT", "NORW"))
 
 
 # init_data_Model_7 <- init_data_Model_7[init_data_Model_7$pop %in% c("Limh88", "CBCP"),  ]
@@ -1824,7 +1824,7 @@ new_data8$lwr <- logit_back(new_data8$eta -  1.96 *new_data8$SE_eta)
 new_data8$upr <- logit_back(new_data8$eta +  1.96 *new_data8$SE_eta)
 
 Pl_mod8 <-  ggplot(new_data8, aes(x = freq_MT, y = fit, group = Sp)) + 
-  geom_line(linetype = 2,  size = 1, aes(color = Sp)) + 
+  geom_line(linetype = 1,  size = 1, aes(color = Sp)) + 
   geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.1) + 
   facet_wrap(~Subset, ncol = 1)  + 
   xlim(0, 1) + ylim(0, 1) + 
@@ -1859,8 +1859,8 @@ Pl_mod8_with_initial_data <- Pl_mod8 +
   labs(y =  "P(T|edu)\nP(T|tros) ", 
        x = "Ptros", fill = "") +
   geom_segment(data = test_Model_8, aes(x = freq_MT, y = (1-P_E_ME), xend = freq_MT, yend = P_T_MT, group = 1), color = "darkgray")+ 
-  geom_point(data = test_Model_8, aes(y = (1-P_E_ME),  group =1), fill = "white", shape = 22)+
-  geom_point(data = test_Model_8, aes(y = P_T_MT,  group =1), fill = "black", shape = 22)  + 
+  geom_point(data = test_Model_8, aes(y = (1-P_E_ME),  group =1), fill = "white", shape = 21)+
+  geom_point(data = test_Model_8, aes(y = P_T_MT,  group =1), fill = "black", shape = 21)  + 
    
   ylim(0,1) + 
   xlim(0,1) +
@@ -2030,14 +2030,16 @@ calc1_predictions$Subset <- factor(calc1_predictions$Subset, levels = levels(myt
 
 ```{r}
 
-Pl_mod6_with_initial_data_teor_calc2 <- Pl_mod6_with_initial_data + 
-  geom_line(data = calc2_predictions, aes(x = freq_MT, y = P_MT_T), color = "red") + 
-  geom_line(data = calc2_predictions, aes(x = freq_MT, y = P_ME_E), color = "blue")
+Pl_mod6_with_initial_data_teor_calc2 <- Pl_mod6_with_initial_data 
+# + 
+#   geom_line(data = calc2_predictions, aes(x = freq_MT, y = P_MT_T), color = "red") + 
+#   geom_line(data = calc2_predictions, aes(x = freq_MT, y = P_ME_E), color = "blue")
   
 
 
-Pl_mod7_with_initial_data_teor_calc1 <- Pl_mod7_with_initial_data  +
-  geom_line(data = calc1_predictions, aes(x = P_T, y = Ptros), color = "darkgray", size = 1)
+Pl_mod7_with_initial_data_teor_calc1 <- Pl_mod7_with_initial_data 
+# +
+#   geom_line(data = calc1_predictions, aes(x = P_T, y = Ptros), color = "darkgray", size = 1)
 
 ```
 
@@ -2052,9 +2054,9 @@ library(cowplot)
 Pl <- plot_grid(Pl_mod7_with_initial_data_teor_calc1 + theme(axis.text.y = element_text(size = 6)),
                 Pl_mod8_with_initial_data+ theme(axis.text.y = element_text(size = 6)),  
                 Pl_mod6_with_initial_data_teor_calc2+ theme(axis.text.y = element_text(size = 6)), 
-                ncol =3, labels = c("A", "B", "C" )) 
+                ncol =3, labels = c("A.", "Б.", "В." )) 
 
-ggsave("Plot_all_contact_zones.tiff", plot = Pl, dpi = 600 )
+ggsave("Plot_all_contact_zones_Jul.tiff", plot = Pl, dpi = 600 )
 ```
 
 
