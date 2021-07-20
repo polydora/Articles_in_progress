@@ -118,6 +118,40 @@ myt_site <- myt_site %>% as.data.frame()
 
 myt_site <- myt_site %>% filter(complete.cases(.))
 
+# Убираем сайты с неполной схемой вятия проб (нет пары фукус-грунт)
+
+
+sites_excluded <- c("chupa_fg", "umba_pioner", "umba_06", "umba_fg", "umba_sovhoz", "umba_kamni", "umba_bridge", "umba_pikut", "padan", "porya", "Vor5", "Ovech", "oenij", "Korg", "Mat", "Mal", "salnij", "Lubch", "kanal", "Kash", "Vor4", "Vor2")
+
+nrow(myt_site)
+
+myt_site <- myt_site %>% filter(! Site %in% sites_excluded) 
+
+
+
+# Баесовские установки
+
+nChains = 2
+test.run = F
+if (test.run){
+  #with this option, the vignette runs fast but results are not reliable
+  thin = 1
+  samples = 10
+  transient = 5
+  verbose = 5
+} else {
+  #with this option, the vignette evaluates slow but it reproduces the results of the
+  #.pdf version
+  thin = 5
+  samples = 1000
+  transient = 500*thin
+  verbose = 50*thin
+}
+
+
+
+
+
 ############## Попытка построить модель ###########
 
 # Отбираем только данные по Карельскому берегу, они будут trainning datset
@@ -146,28 +180,6 @@ myt_site_kand <- myt_site_kand %>% filter(!is.na(Position))
 
 
 
-
-
-
-
-
-
-nChains = 2
-test.run = F
-if (test.run){
-  #with this option, the vignette runs fast but results are not reliable
-  thin = 1
-  samples = 10
-  transient = 5
-  verbose = 5
-} else {
-  #with this option, the vignette evaluates slow but it reproduces the results of the
-  #.pdf version
-  thin = 5
-  samples = 1000
-  transient = 500*thin
-  verbose = 50*thin
-}
 
 
 
@@ -510,63 +522,79 @@ if (test.run){
   verbose = 20*thin
 }
 
+myt_site <- rbind(myt_site_karel, myt_site_kand)
 
-
-studyDesign = data.frame(position = as.factor(myt_site$Position), Site = as.factor(myt_site$Site) )
-
-Site_icnlude <- as.data.frame(table(studyDesign$Site)) %>% filter(Freq >1) %>% pull(Var1)
-
-length(Site_icnlude)
-
-studyDesign <- studyDesign %>% filter(Site %in% Site_icnlude) 
-
-
-y = myt_site %>%  filter(Site %in% Site_icnlude) %>% pull(Fi_T) 
+y = myt_site$Fi_T 
 Y=as.matrix(y)
 
-XData <- myt_site %>% filter(Site %in% Site_icnlude) %>%  select(Position, Shore, Min_dist_river,  Average, Min_dist_port)
+# XData <- myt_full_karel %>% select(Total_N, Position, Min_dist_river,  Average, Min_dist_port)
+
+XData <- myt_site %>% select(Position, Min_dist_river,  Average, Min_dist_port)
+
 
 XData$Position <- factor(XData$Position)
-XData$Shore <- factor(XData$Shore)
-
 
 XData <- as.data.frame(XData)
 
-# XData<- XData %>% select(-Site)
-
 str(XData)
 
-xycoords2 <- myt_site %>% filter(Site %in% Site_icnlude) %>%  as.data.frame() %>% group_by(Site) %>% summarise(Lon = mean(Lon), Lat = mean(Lat)) %>% select(-1) %>% as.matrix()
+# xycoords = myt_full_karel %>% select(Lon, Lat) %>% as.matrix()
+# rownames(xycoords) = myt_full_karel$Sample
+# colnames(xycoords) = c("Lon","Lat")
+# 
+# studyDesign = data.frame(sample = as.factor(myt_full_karel$Sample), plot = as.factor(myt_full_karel$Site)) 
+# 
+# xycoords <- xycoords + rnorm(n = nrow(xycoords),mean = 0.00001, sd = 0.0000001)
 
-# rownames(xycoords2) = myt_site$Site
+
+
+
+xycoords2 <- myt_site %>% as.data.frame() %>% select(Lon, Lat)  %>% as.matrix()
+
+
+#   myt_site_karel %>% group_by(Site) %>% summarise(Lon = mean(Lon), Lat = mean(Lat))
+# sites <- xycoords2$Site
+
+# xycoords2 <- xycoords2 %>% select(Lon, Lat) %>% as.matrix()
+
+rownames(xycoords2) = myt_site$Site
 colnames(xycoords2) = c("Lon","Lat")
 
 xycoords2 <- xycoords2 + rnorm(n = nrow(xycoords2),mean = 0.00001, sd = 0.00000001)
 
-nrow(xycoords2)
 plot(xycoords2)
 
-
+studyDesign = data.frame(sample = as.factor(myt_site$Site), position = as.factor(myt_site$Position))
 
 
 rL = HmscRandomLevel(sData = xycoords2, longlat = F)
 
-# str(rL)
+m_spat = Hmsc(Y=Y, XData=XData, XFormula = ~  Position + Min_dist_river + Average + Min_dist_port,  studyDesign=studyDesign, ranLevels=list("sample"=rL))
 
-m_spat = Hmsc(Y=Y, XData=XData, XFormula = ~ Position + Min_dist_river + Average + Min_dist_port)
- # , studyDesign=studyDesign, ranLevels=list("Site"=rL))
+m_spat_1 = Hmsc(Y=Y, XData=XData, XFormula = ~  Position + Min_dist_river + Average + Min_dist_port + Position:Average,  studyDesign=studyDesign, ranLevels=list("sample"=rL))
 
 
+# , distr="lognormal poisson"
 
 m_spat = sampleMcmc(m_spat, thin = thin, samples = samples, transient = transient,
                     nChains = nChains, verbose = verbose)
 
 
+m_spat_1 = sampleMcmc(m_spat_1, thin = thin, samples = samples, transient = transient,
+                    nChains = nChains, verbose = verbose)
+
+
 mpost_spat = convertToCodaObject(m_spat)
+
+mpost_spat_1 = convertToCodaObject(m_spat_1)
+
 summary(mpost_spat$Beta)
+
+summary(mpost_spat_1$Beta)
+
 plot(mpost_spat$Beta)
 
-# 
+#
 # ess.beta = effectiveSize(mpost_spat$Beta)
 # psrf.beta = gelman.diag(mpost_spat$Beta,multivariate = FALSE)$psrf
 # ess.alpha = effectiveSize(mpost_spat$Alpha[[1]])
@@ -586,11 +614,19 @@ preds = computePredictedValues(m_spat, expected = FALSE)
 MF = evaluateModelFit(hM = m_spat, predY = preds)
 
 
+preds_1 = computePredictedValues(m_spat_1, expected = FALSE)
+MF_1 = evaluateModelFit(hM = m_spat_1, predY = preds_1)
 
-preds.mean = apply(preds, FUN=mean, MARGIN=1) 
+
+str(preds_1)
+
+
+preds_1.mean = apply(preds, FUN=mean, MARGIN=1) 
+
 
 # Остатки находим как разность между наблюдемым значением и предсказанным
 nres = scale(y-preds.mean)
+nres_1 = scale(y-preds_1.mean)
 
 
 par(mfrow=c(1,2))
@@ -598,20 +634,31 @@ hist(nres, las = 1)
 plot(preds.mean,nres, las = 1)
 abline(a=0,b=0)
 
+qplot(preds.mean,nres) + geom_smooth(method = "lm")
 
-qplot(x = preds.mean, y = nres) + aes(color = studyDesign$position) + geom_smooth(method = "lm")
+qplot(preds_1.mean,nres) + geom_smooth()
+
+
 
 m_spat$X
+
+m_spat_1$X
 
 groupnames = c("Habitat",  "Salinity", "Surf", "Port")
 group = c(1,1,2,3,4)
 
+group_1 = c(1,1,2,3,4,1)
 
 
 VP = computeVariancePartitioning(m_spat,group = group, groupnames = groupnames)
 
+VP_1 = computeVariancePartitioning(m_spat_1,group = group_1, groupnames = groupnames)
 
-computeWAIC(m_spat, byColumn=TRUE)
+
+computeWAIC(m_spat_1)
+
+
+
 
 
 m_spat_coefs <- summary(mpost_spat$Beta)$statistics[,1]
@@ -624,14 +671,11 @@ Mod_matr_karel <- model.matrix(~ Position + Min_dist_river + Average + Min_dist_
 
 
 
-predicted_kand_spat <- (Mod_matr_kand %*% m_spat_coefs) 
+predicted_karel_spat <- (Mod_matr_karel %*% m_spat_coefs) 
 
 
-predicted_karel <- (Mod_matr_karel %*% m_spat_coefs) 
 
 
-qplot(x = myt_site_kand$Fi_T, y = (predicted_kand_spat)) + geom_abline() + geom_abline() + geom_smooth(method = "lm")
-
-
+qplot(x = myt_site_karel$Fi_T, y = (predicted_karel_spat)) + geom_abline() + geom_abline() + geom_smooth(method = "lm")
 
 
