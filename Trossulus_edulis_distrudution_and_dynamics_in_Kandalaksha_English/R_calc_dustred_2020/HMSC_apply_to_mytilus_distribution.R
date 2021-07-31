@@ -121,7 +121,7 @@ myt_site <- myt_site %>% filter(complete.cases(.))
 # Убираем сайты с неполной схемой вятия проб (нет пары фукус-грунт)
 
 
-sites_excluded <- c("chupa_fg", "umba_pioner", "umba_06", "umba_fg", "umba_sovhoz", "umba_kamni", "umba_bridge", "umba_pikut", "padan", "porya", "Vor5", "Ovech", "oenij", "Korg", "Mat", "Mal", "salnij", "Lubch", "kanal", "Kash", "Vor4", "Vor2")
+sites_excluded <- c("chupa_fg", "umba_pioner", "umba_06", "umba_fg", "umba_sovhoz", "umba_kamni", "umba_bridge", "umba_pikut", "padan", "porya", "Vor5", "Ovech", "oenij", "Korg", "Mat", "Mal", "salnij", "Lubch", "kanal",  "Vor4", "Vor2", "Kash")
 
 nrow(myt_site)
 
@@ -522,14 +522,17 @@ if (test.run){
   verbose = 20*thin
 }
 
-myt_site <- rbind(myt_site_karel, myt_site_kand)
+# myt_site <- rbind(myt_site_karel, myt_site_kand)
 
-y = myt_site$Fi_T 
+y = myt_site$Fi_T
+
+# y = myt_site$N_T
+
 Y=as.matrix(y)
 
 # XData <- myt_full_karel %>% select(Total_N, Position, Min_dist_river,  Average, Min_dist_port)
 
-XData <- myt_site %>% select(Position, Min_dist_river,  Average, Min_dist_port)
+XData <- myt_site %>% select(Position, Min_dist_river,  Average, Min_dist_port, Total_N)
 
 
 XData$Position <- factor(XData$Position)
@@ -564,20 +567,26 @@ xycoords2 <- xycoords2 + rnorm(n = nrow(xycoords2),mean = 0.00001, sd = 0.000000
 
 plot(xycoords2)
 
-studyDesign = data.frame(sample = as.factor(myt_site$Site), position = as.factor(myt_site$Position))
+# studyDesign = data.frame(sample = as.factor(myt_site$Site), position = as.factor(myt_site$Position))
+
+studyDesign = data.frame(Site = as.factor(myt_site$Site))
+
 
 
 rL = HmscRandomLevel(sData = xycoords2, longlat = F)
 
-m_spat = Hmsc(Y=Y, XData=XData, XFormula = ~  Position + Min_dist_river + Average + Min_dist_port,  studyDesign=studyDesign, ranLevels=list("sample"=rL))
+m_spat = Hmsc(Y=Y, XData=XData, XFormula = ~  Position + Min_dist_river + Average + Min_dist_port+ Total_N,  studyDesign=studyDesign, ranLevels=list("Site"=rL))
 
-m_spat_1 = Hmsc(Y=Y, XData=XData, XFormula = ~  Position + Min_dist_river + Average + Min_dist_port + Position:Average,  studyDesign=studyDesign, ranLevels=list("sample"=rL))
+# 
+
+m_spat_1 = Hmsc(Y=Y, XData=XData, XFormula = ~  Position + Min_dist_river + Average + Min_dist_port,  studyDesign=studyDesign, ranLevels=list("Site"=rL))
 
 
 # , distr="lognormal poisson"
 
 m_spat = sampleMcmc(m_spat, thin = thin, samples = samples, transient = transient,
                     nChains = nChains, verbose = verbose)
+
 
 
 m_spat_1 = sampleMcmc(m_spat_1, thin = thin, samples = samples, transient = transient,
@@ -621,12 +630,15 @@ MF_1 = evaluateModelFit(hM = m_spat_1, predY = preds_1)
 str(preds_1)
 
 
-preds_1.mean = apply(preds, FUN=mean, MARGIN=1) 
+preds.mean = apply(preds, FUN=mean, MARGIN=1) 
+
+preds.mean_1 = apply(preds_1, FUN=mean, MARGIN=1) 
 
 
 # Остатки находим как разность между наблюдемым значением и предсказанным
 nres = scale(y-preds.mean)
-nres_1 = scale(y-preds_1.mean)
+
+nres_1 = scale(y-preds.mean_1)
 
 
 par(mfrow=c(1,2))
@@ -634,9 +646,12 @@ hist(nres, las = 1)
 plot(preds.mean,nres, las = 1)
 abline(a=0,b=0)
 
-qplot(preds.mean,nres) + geom_smooth(method = "lm")
+qplot(preds.mean,nres) + geom_smooth()
 
-qplot(preds_1.mean,nres) + geom_smooth()
+qplot(preds.mean_1, nres) + geom_smooth()
+
+
+myt_site %>% filter(preds.mean<0)
 
 
 
@@ -644,38 +659,64 @@ m_spat$X
 
 m_spat_1$X
 
-groupnames = c("Habitat",  "Salinity", "Surf", "Port")
-group = c(1,1,2,3,4)
+groupnames = c("Habitat",  "Salinity", "Surf", "Port", "Effort")
+group = c(1,1,2,3,4,5)
 
 group_1 = c(1,1,2,3,4,1)
 
 
 VP = computeVariancePartitioning(m_spat,group = group, groupnames = groupnames)
 
+VP$vals
+
+
 VP_1 = computeVariancePartitioning(m_spat_1,group = group_1, groupnames = groupnames)
 
 
-computeWAIC(m_spat_1)
+computeWAIC(m_spat)
+
+
+
+# Gradient  construction##############
+
+
+par(mfrow = c(1,2))
+
+Gradient = constructGradient(m_spat, focalVariable = "Min_dist_port", non.focalVariables = list(Position = 1))
+
+
+predY = predict(m_spat, Gradient = Gradient, expected = TRUE)
+
+plotGradient(m_spat, Gradient, pred = predY, measure = "Y",
+             index = 1,showData = TRUE)
+
+
+Gradient2 = constructGradient(m_spat, focalVariable = "Min_dist_port", non.focalVariables = list(Position = 2))
+
+
+predY = predict(m_spat, Gradient = Gradient2, expected = TRUE)
+
+plotGradient(m_spat, Gradient2, pred = predY, measure = "Y",
+             index = 1,showData = TRUE)
+
+
+
+
+Gradient = constructGradient(m_spat, focalVariable = "Average", non.focalVariables = list(Position = 1))
+plotGradient(m_spat, Gradient, pred = predY, measure = "Y", index = 1, showData = TRUE)
+
+Gradient = constructGradient(m_spat, focalVariable = "Average", non.focalVariables = list(Position = 0))
+plotGradient(m_spat, Gradient, pred = predY, measure = "Y", index = 1, showData = TRUE)
 
 
 
 
 
-m_spat_coefs <- summary(mpost_spat$Beta)$statistics[,1]
 
-
-Mod_matr_kand <- model.matrix(~  Position + Min_dist_river + Average + Min_dist_port, data =  myt_site_kand)
-
-Mod_matr_karel <- model.matrix(~ Position + Min_dist_river + Average + Min_dist_port, data =  myt_site_karel)
+Gradient = constructGradient(m_spat, focalVariable = "Position")
+plotGradient(m_spat, Gradient, pred = predY, measure = "Y", index = 1, showData = TRUE)
 
 
 
-
-predicted_karel_spat <- (Mod_matr_karel %*% m_spat_coefs) 
-
-
-
-
-qplot(x = myt_site_karel$Fi_T, y = (predicted_karel_spat)) + geom_abline() + geom_abline() + geom_smooth(method = "lm")
-
-
+Gradient = constructGradient(m_spat, focalVariable = "Average", non.focalVariables = list(Position = 0))
+plotGradient(m_spat, Gradient, pred = predY, measure = "Y", index = 1, showData = TRUE)
