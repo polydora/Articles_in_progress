@@ -207,17 +207,35 @@ if (test.run){
 library(tidyr)
 library(reshape2)
 
-t_long <- myt_site %>% slice(rep(1:n(), N_T)) %>% mutate(Sp = "t") %>% select(-N_E, -N_T, -Total_N, -Prop_T,  -Fi_T ) 
+t_site_long <- myt_site %>% slice(rep(1:n(), N_T)) %>% mutate(Sp = "t") %>% select(-N_E, -N_T, -Total_N, -Prop_T,  -Fi_T ) 
 
-e_long <- myt_site %>% slice(rep(1:n(), N_E)) %>% mutate(Sp = "e") %>% select(-N_E, -N_T, -Total_N, -Prop_T,  -Fi_T )  
+e_site_long <- myt_site %>% slice(rep(1:n(), N_E)) %>% mutate(Sp = "e") %>% select(-N_E, -N_T, -Total_N, -Prop_T,  -Fi_T )  
+
+
+t_full_long <- myt_full %>% slice(rep(1:n(), N_T)) %>% mutate(Sp = "t") %>% select(-N_E, -N_T, -Total_N, -Prop_T,  -Fi_T ) 
+
+e_full_long <- myt_full %>% slice(rep(1:n(), N_E)) %>% mutate(Sp = "e") %>% select(-N_E, -N_T, -Total_N, -Prop_T,  -Fi_T )  
+
 
 
 myt_site_long <- rbind(t_long, e_long) 
 
+myt_full_long <- rbind(t_full_long, e_full_long) 
+
+
 myt_site_long$Sp2 <- ifelse(myt_site_long$Sp == "t", 1, 0)
 
 
-y = myt_site_long$Sp2
+myt_full_long$Sp2 <- ifelse(myt_full_long$Sp == "t", 1, 0)
+
+myt_full_long <- myt_full_long %>% filter(! Site %in% sites_excluded) 
+
+
+
+# y = myt_site_long$Sp2
+
+y = myt_full_long$Sp2
+
 
 table(y)
 
@@ -234,7 +252,7 @@ Y=as.matrix(y)
 
 # XData <- myt_site_long %>% select(Position, Min_dist_river,  Average, Min_dist_port, Total_N)
 
-XData <- myt_site_long %>% select(Position, Min_dist_river,  Average, Min_dist_port)
+XData <- myt_full_long %>% select(Position, Min_dist_river,  Average, Min_dist_port)
 
 
 XData$Position <- factor(XData$Position)
@@ -254,7 +272,7 @@ str(XData)
 
 
 
-xycoords2 <- myt_site_long %>% as.data.frame() %>% select(Lon, Lat)  %>% as.matrix()
+xycoords2 <- myt_full_long %>% as.data.frame() %>% select(Lon, Lat)  %>% as.matrix()
 
 
 #   myt_site_karel %>% group_by(Site) %>% summarise(Lon = mean(Lon), Lat = mean(Lat))
@@ -262,7 +280,7 @@ xycoords2 <- myt_site_long %>% as.data.frame() %>% select(Lon, Lat)  %>% as.matr
 
 # xycoords2 <- xycoords2 %>% select(Lon, Lat) %>% as.matrix()
 
-rownames(xycoords2) = myt_site_long$Site
+rownames(xycoords2) = myt_full_long$Site
 colnames(xycoords2) = c("Lon","Lat")
 
 # xycoords2 <- xycoords2 + rnorm(n = nrow(xycoords2),mean = 0.00001, sd = 0.00000001)
@@ -274,7 +292,7 @@ plot(xycoords2)
 
 # studyDesign = data.frame(sample = as.factor(myt_site$Site), position = as.factor(myt_site$Position))
 
-studyDesign = data.frame(Site = as.factor(myt_site_long$Site))
+studyDesign = data.frame(Site = as.factor(myt_full_long$Site), Sample =  as.factor(myt_full_long$Sample))
 
 
 
@@ -294,8 +312,7 @@ m_spat = sampleMcmc(m_spat, thin = thin, samples = samples, transient = transien
 
 
 
-# m_spat_1 = sampleMcmc(m_spat_1, thin = thin, samples = samples, transient = transient,
-                    # nChains = nChains, verbose = verbose)
+save(m_spat, file = "mspat_probit_all_samples_separately.RData")
 
 
 mpost_spat = convertToCodaObject(m_spat)
@@ -328,22 +345,15 @@ preds = computePredictedValues(m_spat, expected = FALSE)
 MF = evaluateModelFit(hM = m_spat, predY = preds)
 
 
-preds_1 = computePredictedValues(m_spat_1, expected = FALSE)
-MF_1 = evaluateModelFit(hM = m_spat_1, predY = preds_1)
 
-
-str(preds_1)
 
 
 preds.mean = apply(preds, FUN=mean, MARGIN=1) 
 
-preds.mean_1 = apply(preds_1, FUN=mean, MARGIN=1) 
 
 
 # Остатки находим как разность между наблюдемым значением и предсказанным
 nres = scale(y-preds.mean)
-
-nres_1 = scale(y-preds.mean_1)
 
 
 par(mfrow=c(1,2))
@@ -362,10 +372,10 @@ myt_site %>% filter(preds.mean<0)
 
 m_spat$X
 
-m_spat_1$X
 
-groupnames = c("Habitat",  "Salinity", "Surf", "Port", "Effort")
-group = c(1,1,2,3,4,5)
+
+groupnames = c("Habitat",  "Salinity", "Surf", "Port")
+group = c(1,1,2,3,4)
 
 group_1 = c(1,1,2,3,4,1)
 
@@ -378,10 +388,31 @@ VP$vals
 VP_1 = computeVariancePartitioning(m_spat_1,group = group_1, groupnames = groupnames)
 
 
-computeWAIC(m_spat)
+
+
+load(file = "mspat_probit_all_samples_separately.RData")
+
+m_spat_full <- m_spat
+
+mpost_spat = convertToCodaObject(m_spat_full)
+
+summary(mpost_spat$Beta)
+
+computeWAIC(m_spat_full)
 
 
 
+
+
+
+# Модель где все пробы из одного сайта объединены ####
+load(file = "mspat_probit_full.RData")
+
+m_spat_1 <- m_spat
+
+
+
+#####################################3
 
 
 
