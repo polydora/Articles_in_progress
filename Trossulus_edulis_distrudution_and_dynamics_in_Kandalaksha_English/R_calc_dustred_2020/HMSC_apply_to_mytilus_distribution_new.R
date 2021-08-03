@@ -118,14 +118,27 @@ myt_site <- myt_site %>% as.data.frame()
 
 myt_site <- myt_site %>% filter(complete.cases(.))
 
-# Убираем сайты с неполной схемой вятия проб (нет пары фукус-грунт)
 
+# Убираем сайты с неполной схемой вятия проб (нет пары фукус-грунт, или какой-нибудь другой сбой в схеме взятия проб)
 
-sites_excluded <- c("chupa_fg", "umba_pioner", "umba_06", "umba_fg", "umba_sovhoz", "umba_kamni", "umba_bridge", "umba_pikut", "padan", "porya", "Vor5", "Ovech", "oenij", "Korg", "Mat", "Mal", "salnij", "Lubch", "kanal",  "Vor4", "Vor2", "Kash")
+sites_excluded <- c("chupa_fg", "umba_pioner", "umba_06", "umba_fg", "umba_sovhoz", "umba_kamni", "umba_bridge", "umba_pikut", "padan", "porya", "Vor5", "Ovech", "oenij", "Korg", "Mat", "Mal", "salnij", "Lubch", "kanal",  "Vor4", "Vor2", "Kurt", "Ryazh4", "Youzh")
 
 nrow(myt_site)
 
 myt_site <- myt_site %>% filter(! Site %in% sites_excluded) 
+
+nrow(myt_site)
+
+myt_full <- myt_full %>% filter(! Site %in% sites_excluded) 
+
+nrow(myt_full)
+
+### Общая характеристика материала #########
+library(reshape2)
+myt_full %>% group_by(Site, Position) %>% summarise(N_samples = n()) %>% dcast(Site ~ Position ) 
+
+
+
 
 
 
