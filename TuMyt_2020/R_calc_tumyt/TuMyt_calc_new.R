@@ -94,3 +94,4 @@ calc_BH <- ggplot(data = MyData_BH, aes(x=PT, y = fit)) + theme_bw() + geom_line
 calc_comp_3 <- ggarrange(calc_BL, calc_TV, calc_BH, nrow = 1)
 
 # тут на графике для Тювы хорошо видна динамика Ptros на прямых генетических данных. и динамика PT, кстати тоже. 
+
