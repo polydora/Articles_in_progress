@@ -137,8 +137,7 @@ nrow(myt_full)
 library(reshape2)
 myt_full %>% group_by(Site, Position) %>% summarise(N_samples = n()) %>% dcast(Site ~ Position ) 
 
-
-
+unique(myt_full$Port)
 
 
 
