@@ -4,27 +4,31 @@ library(Hmsc)
 
 
 ##### Data reading
-myt <- read.table("data/Distred_samples_fetch_corrected_2018.csv", header = T, sep = ",")
+myt <- read.table("data/Distred_samples_fetch_corrected_2021.csv", header = T, sep = ",")
 
-sal <- read.table("data/Distred_samples_salinity_2018.csv", header = T, sep = ",")
+sal <- read.table("data/Distred_samples_salinity_2021.csv", header = T, sep = ",")
 
 myt <- merge(myt, sal, all = T)
 
-river <- read.table("data/Rivers.csv", sep = ";", header = T)
+river <- read.table("data/Rivers_2021.csv", sep = ",", header = T)
 
-ports <- data.frame(Shore = c("Kand", "Karel", "Kand", "Karel", "Karel"), Port = c("Кандалакша", "Витино", "Умба", "Чупа", "Средний"), Lat = c(67.137283, 67.076570,  66.677970, 66.269964, 66.294178), Lon = c(32.407995, 32.333630, 34.357655, 33.069534, 33.640656))
+ports <- data.frame(Shore = c("Kand", "Karel", "Kand", "Karel", "Karel"), Port = c("Kandalaksha", "Vitino", "Umba", "Chupa", "Sredny"), Status = c("Active", "Active", "Abandoned", "Abandoned", "Abandoned" ), Lat = c(67.137283, 67.076570,  66.677970, 66.269964, 66.294178), Lon = c(32.407995, 32.333630, 34.357655, 33.069534, 33.640656))
 
 
-sites_fetch_df <- read.table("data/Distred_samples_fetch_values_2018.csv", sep = ",", header = T)
+sites_fetch_df <- read.table("data/Distred_samples_fetch_values_2021.csv", sep = ",", header = T)
 
 
 ##### Связь уровня сброса рек с размером площади водосбора
-ggplot(river, aes(x = Drainage_Are, y = Discharge )) + geom_point()
+ggplot(river, aes(x = Drainage_Area, y = Discharge )) + geom_point()
 
 # Модель для вычисления уровня сброса рек в зависимости от Drainage_Are
 
-Mod_river <- lm(Discharge ~ Drainage_Are, data = river)
+Mod_river <- lm(Discharge ~ Drainage_Area, data = river)
 summary(Mod_river)
+
+
+quantile(river$Drainage_Area, na.rm = T)
+
 
 
 
@@ -56,7 +60,7 @@ for(i in 1:nrow(myt)) {
   df_river$Site[i] <- as.character(myt$Site)[i]
 }
 
-names(df_river) <- c( "Shore_river", "River", "Discharge", "Drainage_Are", "Lat_river", "Lon_river", "Min_dist_river", "Site" )
+names(df_river) <- c( "Shore_river", "River", "Discharge", "Drainage_Area", "River_size", "Lat_river", "Lon_river", "Min_dist_river", "Site" )
 
 
 df_river$Discharge_pred <- predict(Mod_river, newdata = df_river) 
@@ -75,7 +79,7 @@ for(i in 1:nrow(myt)) {
   df_port$Site[i] <- as.character(myt$Site)[i]
 }
 
-names(df_port) <- c("Shore_port",  "Port", "Lat_port", "Lon_port", "Min_dist_port", "Site")
+names(df_port) <- c("Shore_port",  "Port","Port_Status", "Lat_port", "Lon_port", "Min_dist_port", "Site")
 
 
 
@@ -108,7 +112,7 @@ myt_full$Dist_cut <- with(myt_full, acos(sin(Shore_boundary[1])*sin(Lat*pi/180) 
 
 myt_full <- myt_full %>% mutate(Total_N = N_T + N_E) %>% mutate(Prop_T = N_T/(N_T +N_E)) %>% mutate(Fi_T = 2*asin(sqrt(Prop_T))*180/pi) 
 
-myt_site <- myt_full %>% select(-Prop_T, -Fi_T) %>% group_by(Position, Site, Shore) %>% select(Lat,      Lon, N_T, N_E, Min_dist_river, Min_dist_port, Average,   Dist_cut, Total_N) %>% summarise(Lat = mean(Lat), Lon = mean(Lon), N_T = sum(N_T), N_E = sum(N_E), Min_dist_river = mean(Min_dist_river), Min_dist_port = mean(Min_dist_port), Average = min(Average),   Dist_cut = mean(Average), Total_N = sum(Total_N)) %>% mutate(Prop_T = N_T/(N_T+N_E)) %>% mutate(Fi_T = 2*asin(sqrt(Prop_T))*180/pi)
+myt_site <- myt_full %>% select(-Prop_T, -Fi_T) %>% group_by(Shore, Site, Position) %>% select(Lat,      Lon, N_T, N_E, Min_dist_river, River, River_size, Min_dist_port, Port, Port_Status, Average, Dist_cut, Total_N) %>% summarise(Lat = mean(Lat), Lon = mean(Lon), N_T = sum(N_T), N_E = sum(N_E), Min_dist_river = mean(Min_dist_river), River = unique(River), River_size = unique(River_size), Min_dist_port = mean(Min_dist_port), Port = unique(Port), Port_Status = unique(Port_Status), Average = min(Average),   Dist_cut = mean(Average), Total_N = sum(Total_N)) %>% mutate(Prop_T = N_T/(N_T+N_E)) %>% mutate(Fi_T = 2*asin(sqrt(Prop_T))*180/pi)
 
 str(myt_site)
 
@@ -121,7 +125,7 @@ myt_site <- myt_site %>% filter(complete.cases(.))
 
 # Убираем сайты с неполной схемой вятия проб (нет пары фукус-грунт, или какой-нибудь другой сбой в схеме взятия проб)
 
-sites_excluded <- c("chupa_fg", "umba_pioner", "umba_06", "umba_fg", "umba_sovhoz", "umba_kamni", "umba_bridge", "umba_pikut", "padan", "porya", "Vor5", "Ovech", "oenij", "Korg", "Mat", "Mal", "salnij", "Lubch", "kanal",  "Vor4", "Vor2", "Kurt", "Ryazh4", "Youzh")
+sites_excluded <- c("chupa_fg", "umba_pioner", "umba_06", "umba_fg", "umba_sovhoz", "umba_kamni", "umba_bridge", "umba_pikut", "padan", "porya", "Vor5", "Ovech", "oenij", "Korg", "Mat", "Mal", "salnij", "Lubch", "kanal",  "Vor4", "Vor2", "Kurt", "Ryazh4", "Ryazh5", "Youzh")
 
 nrow(myt_site)
 
@@ -133,63 +137,21 @@ myt_full <- myt_full %>% filter(! Site %in% sites_excluded)
 
 nrow(myt_full)
 
+
+# myt_full$Lat2 <- myt_full$Lat + rep(seq(0.00000, 0.00005, by = 0.00001), nrow(myt_full)/6) 
+
+# myt_full$Lat - myt_full$Lat2
+
 ### Общая характеристика материала #########
 library(reshape2)
 myt_full %>% group_by(Site, Position) %>% summarise(N_samples = n()) %>% dcast(Site ~ Position ) 
 
 
 
+# Ближайшие реки
 
+unique(myt_full$River) 
 
-
-# Баесовские установки
-
-nChains = 2
-test.run = F
-if (test.run){
-  #with this option, the vignette runs fast but results are not reliable
-  thin = 1
-  samples = 10
-  transient = 5
-  verbose = 5
-} else {
-  #with this option, the vignette evaluates slow but it reproduces the results of the
-  #.pdf version
-  thin = 5
-  samples = 1000
-  transient = 500*thin
-  verbose = 50*thin
-}
-
-
-
-
-
-############## Попытка построить модель ###########
-
-# Отбираем только данные по Карельскому берегу, они будут trainning datset
-
-myt_full_karel <- myt_full %>% filter(Shore == "Karel")
-
-myt_full_karel <- myt_full_karel %>% filter(!is.na(Position))
-
-nrow(myt_full_karel)
-
-myt_full_kand <- myt_full %>% filter(Shore == "Kand")
-
-myt_full_kand <- myt_full_kand %>% filter(!is.na(Position))
-
-
-
-
-myt_site_karel <- myt_site %>% filter(Shore == "Karel")
-
-myt_site_karel <- myt_site_karel %>% filter(!is.na(Position))
-
-
-myt_site_kand <- myt_site %>% filter(Shore == "Kand")
-
-myt_site_kand <- myt_site_kand %>% filter(!is.na(Position))
 
 
 
@@ -215,10 +177,9 @@ if (test.run){
   verbose = 20*thin
 }
 
-# myt_site <- rbind(myt_site_karel, myt_site_kand)
-
 library(tidyr)
 library(reshape2)
+
 
 t_site_long <- myt_site %>% slice(rep(1:n(), N_T)) %>% mutate(Sp = "t") %>% select(-N_E, -N_T, -Total_N, -Prop_T,  -Fi_T ) 
 
@@ -231,9 +192,21 @@ e_full_long <- myt_full %>% slice(rep(1:n(), N_E)) %>% mutate(Sp = "e") %>% sele
 
 
 
-myt_site_long <- rbind(t_long, e_long) 
+myt_site_long <- rbind(t_site_long, e_site_long) 
+
+myt_site_long$Mussel_ID <- 1:nrow(myt_site_long) 
+
+max(myt_site_long$Mussel_ID)
+  
+
 
 myt_full_long <- rbind(t_full_long, e_full_long) 
+myt_full_long$Mussel_ID <- 1:nrow(myt_full_long) 
+max(myt_full_long$Mussel_ID)
+
+
+
+
 
 
 myt_site_long$Sp2 <- ifelse(myt_site_long$Sp == "t", 1, 0)
@@ -242,6 +215,10 @@ myt_site_long$Sp2 <- ifelse(myt_site_long$Sp == "t", 1, 0)
 myt_full_long$Sp2 <- ifelse(myt_full_long$Sp == "t", 1, 0)
 
 myt_full_long <- myt_full_long %>% filter(! Site %in% sites_excluded) 
+
+
+
+
 
 
 
@@ -265,10 +242,13 @@ Y=as.matrix(y)
 
 # XData <- myt_site_long %>% select(Position, Min_dist_river,  Average, Min_dist_port, Total_N)
 
-XData <- myt_full_long %>% select(Position, Min_dist_river,  Average, Min_dist_port)
+XData <- myt_full_long %>% select(Position, Min_dist_river, River_size,  Average, Min_dist_port, Port_Status)
 
 
 XData$Position <- factor(XData$Position)
+XData$River_size <- factor(XData$River_size, levels = c("Small", "Large"))
+XData$Port_Status <- factor(XData$Port_Status)
+
 
 XData <- as.data.frame(XData)
 
@@ -284,7 +264,6 @@ str(XData)
 
 
 
-
 xycoords2 <- myt_full_long %>% as.data.frame() %>% select(Lon, Lat)  %>% as.matrix()
 
 
@@ -293,25 +272,29 @@ xycoords2 <- myt_full_long %>% as.data.frame() %>% select(Lon, Lat)  %>% as.matr
 
 # xycoords2 <- xycoords2 %>% select(Lon, Lat) %>% as.matrix()
 
-rownames(xycoords2) = myt_full_long$Site
+rownames(xycoords2) = paste(myt_full_long$Site, myt_full_long$Sample, myt_full_long$Mussel_ID, sep = "_")
 colnames(xycoords2) = c("Lon","Lat")
 
 # xycoords2 <- xycoords2 + rnorm(n = nrow(xycoords2),mean = 0.00001, sd = 0.00000001)
 
-xycoords2 <- xycoords2 + rnorm(n = nrow(xycoords2),mean = 0.00001, sd = 0.0000001)
+# set.seed(12345)
+# xycoords2 <- xycoords2 + rnorm(n = nrow(xycoords2),mean = 0.0000001, sd = 0.00000001)
+
 
 
 plot(xycoords2)
 
 # studyDesign = data.frame(sample = as.factor(myt_site$Site), position = as.factor(myt_site$Position))
 
-studyDesign = data.frame(Site = as.factor(myt_full_long$Site), Sample =  as.factor(myt_full_long$Sample))
+studyDesign = data.frame(Site = as.factor(myt_full_long$Site), Sample =  as.factor(myt_full_long$Sample), Mussel_ID =  as.factor(myt_full_long$Mussel_ID) )
+
+# studyDesign = data.frame(Site = as.factor(myt_site_long$Site))
 
 
 
 rL = HmscRandomLevel(sData = xycoords2, longlat = F)
 
-m_spat = Hmsc(Y=Y, XData=XData, XFormula = ~  Position + Min_dist_river + Average + Min_dist_port,  studyDesign=studyDesign, ranLevels=list("Site"=rL), distr="probit")
+m_spat = Hmsc(Y=Y, XData=XData, XFormula = ~  Position + Min_dist_river + River_size +  Average + Min_dist_port + Port_Status,  studyDesign=studyDesign, ranLevels=list("Site"=rL), distr="probit")
 
 # 
 
@@ -327,14 +310,13 @@ m_spat = sampleMcmc(m_spat, thin = thin, samples = samples, transient = transien
 
 save(m_spat, file = "mspat_probit_all_samples_separately.RData")
 
+# load(file = "mspat_probit_all_samples_separately.RData")
 
 mpost_spat = convertToCodaObject(m_spat)
 
 # mpost_spat_1 = convertToCodaObject(m_spat_1)
 
 summary(mpost_spat$Beta)
-
-summary(mpost_spat_1$Beta)
 
 plot(mpost_spat$Beta)
 
@@ -356,6 +338,20 @@ MF_spat = evaluateModelFit(hM=m_spat, predY=preds_spat)
 
 preds = computePredictedValues(m_spat, expected = FALSE)
 MF = evaluateModelFit(hM = m_spat, predY = preds)
+
+
+
+# Компоненты дисперсии ####################
+
+m_spat$X
+
+groupnames = c("Habitat",  "Salinity", "Surf", "Port")
+group = c(1,1,2,2,3,4,4)
+
+VP = computeVariancePartitioning(m_spat,group = group, groupnames = groupnames)
+
+VP$vals
+
 
 
 
@@ -383,22 +379,6 @@ myt_site %>% filter(preds.mean<0)
 
 
 
-m_spat$X
-
-
-
-groupnames = c("Habitat",  "Salinity", "Surf", "Port")
-group = c(1,1,2,3,4)
-
-group_1 = c(1,1,2,3,4,1)
-
-
-VP = computeVariancePartitioning(m_spat,group = group, groupnames = groupnames)
-
-VP$vals
-
-
-VP_1 = computeVariancePartitioning(m_spat_1,group = group_1, groupnames = groupnames)
 
 
 
