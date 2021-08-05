@@ -145,10 +145,12 @@ nrow(myt_full)
 # myt_full$Lat - myt_full$Lat2
 
 ### Общая характеристика материала #########
+
 library(reshape2)
 myt_full %>% group_by(Site, Position) %>% summarise(N_samples = n()) %>% dcast(Site ~ Position ) 
 
 
+# Добавляю к широте и долготе минимальное значение, чтобы обеспечить смещение ближайших проб на небольшое расстояние друг относительно друга. Это нужно для анализа пространственных автокорреляций.
 
 myt_full$Lat2 <- myt_full$Lat + rep(seq(0.00000, 0.00000005, by = 0.00000001), nrow(myt_full)/6)
 
@@ -159,7 +161,41 @@ myt_full$Lon2 <- myt_full$Lon + rep(seq(0.00000, 0.00000005, by = 0.00000001), n
 
 unique(myt_full$River) 
 
+myt_full %>% filter(Site == "Por")
 
+# Распределение значений Wind Fetch между визуальной оценкой степени открытости побережья.
+
+sites_fetch_df %>% 
+  melt(., id.vars = c("Site", "Site_Exposition"), value.name = "Fetch", variable.name = "Direction") %>%
+  ggplot(., aes(x = Site_Exposition, y = Fetch, fill = Direction)) + geom_boxplot() + scale_fill_manual(values = c("gray95", "gray80", "gray70", "gray60", "gray40"))
+
+
+citation("fetchR")
+
+# Оценка связи солености с возможными proxy
+
+salinity <- myt_full %>% group_by(Site) %>% summarize(Min_dist_river = mean(Min_dist_river), River_size = unique(River_size), Salinity = mean(Salinity))
+
+sum(!is.na(salinity$Salinity))
+
+nrow(salinity)
+
+
+ggplot(salinity, aes(x = Min_dist_river, y = Salinity, color = River_size)) + geom_point() + geom_smooth()
+
+ggplot(salinity, aes(x = River_size, y = Salinity)) + geom_boxplot()
+
+Model_salinity <- lm(Salinity ~ Min_dist_river * River_size, data = salinity)
+
+summary(Model_salinity)
+
+
+# Реконструкция солености для тех сайтов, где нет прямого наблюдения
+# 
+# salinity_no_data <- salinity %>% filter(is.na(Salinity))
+# 
+# salinity_no_data$Sal_predicted <- predict(Model_salinity, newdata = salinity_no_data)
+# 
 
 # fit a non-spatial model
 
@@ -175,14 +211,13 @@ lstw$neighbours
 
 str(lstw)
 
-model <- glmer(cbind(N_T, N_E) ~ Position + Min_dist_river + River_size + Average + Min_dist_port + Port_Status + (1|Site),  data = myt_full, family = binomial(link = "logit"))
+model <- glmer(cbind(N_T, N_E) ~ Position + Salinity + Min_dist_river + River_size + Average + Min_dist_port + Port_Status + (1|Site),  data = myt_full, family = binomial(link = "logit"))
 
-model2 <- glm(cbind(N_T, N_E) ~ Position + Min_dist_river + River_size + Average + Min_dist_port + Port_Status,  data = myt_full, family = binomial(link = "logit"))
+model2 <- glm(cbind(N_T, N_E) ~ Position +  Salinity + Min_dist_river + River_size + Average + Min_dist_port + Port_Status,  data = myt_full, family = binomial(link = "logit"))
 
 AIC(model, model2)
 
 
-sp.mantel.mc(residuals(model), lstw, nsim = 9999)
 
 
 moran.test(residuals(model), lstw) 
@@ -203,16 +238,23 @@ ggplot(myt_full, aes(x = Dist_cut, y = residuals(model, type = "pearson"), color
 
 summary(model)
 
+library(MASS)
+library(car)
+
+vif(model)
+
 library(MuMIn)
 
 r.squaredGLMM(model)
+
+
 
 library(partR2)
 
 
 res <- partR2(model, partvars=c("Position", "Min_dist_river", "River_size",  "Average", "Min_dist_port", "Port_Status"),max_level=1, nboot=100)
 
-save(res, file = "partR2 result glmer binomial samples in sites.RData")
+# save(res, file = "partR2 result glmer binomial samples in sites.RData")
 
 load(file = "partR2 result glmer binomial samples in sites.RData")
 
@@ -229,7 +271,7 @@ p3 <- forestplot(res, type = "SC")
 p4 <- forestplot(res, type = "BW")
 
 
-
+forestplot
 library(patchwork)
 
 (p1 + p2) / (p3 + p4) + plot_annotation(tag_levels = "A", tag_prefix = "(", tag_suffix = ")")
