@@ -1,7 +1,7 @@
 library(ggplot2)
-library(dplyr)
 library(lme4)
-library(nlme)
+library(dplyr)
+
 
 
 
@@ -172,6 +172,8 @@ myt_full$Lon2 <- myt_full$Lon + rep(seq(0.00000, 0.00000005, by = 0.00000001), n
 
 # Ближайшие реки
 
+river
+
 unique(myt_full$River) 
 
 myt_full %>% filter(Site == "Por")
@@ -194,7 +196,7 @@ sum(!is.na(salinity$Salinity))
 nrow(salinity)
 
 
-ggplot(salinity, aes(x = Min_dist_river, y = Salinity, color = River_size)) + geom_point() + geom_smooth()
+ggplot(salinity, aes(x = Min_dist_river, y = Salinity)) + geom_point() + geom_smooth()
 
 ggplot(salinity, aes(x = River_size, y = Salinity)) + geom_boxplot()
 
@@ -231,11 +233,28 @@ model2 <- glm(cbind(N_T, N_E) ~ Position +  Salinity + Min_dist_river + River_si
 AIC(model, model2)
 
 
-
+str(myt_full$Position)
 
 moran.test(residuals(model), lstw) 
 
 moran.test(residuals(model2), lstw) 
+
+
+
+
+overdisp_fun <- function(model) {
+  rdf <- df.residual(model)
+  rp <- residuals(model,type="pearson")
+  Pearson.chisq <- sum(rp^2)
+  prat <- Pearson.chisq/rdf
+  pval <- pchisq(Pearson.chisq, df=rdf, lower.tail=FALSE)
+  c(chisq=Pearson.chisq,ratio=prat,rdf=rdf,p=pval)
+}
+
+library(performance)
+library(RVAideMemoire)
+
+check_overdispersion(model)
 
 
 plot(model)
@@ -247,7 +266,6 @@ ggplot(myt_full, aes(x = Dist_cut, y = residuals(model, type = "pearson"), color
 
 summary(model)
 
-library(MASS)
 library(car)
 
 vif(model)
