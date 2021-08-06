@@ -1,0 +1,154 @@
+---
+title: "Factors regulating distribution of MT and ME"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, message = FALSE)
+```
+
+```{r}
+## Packages ######
+
+library(ggplot2)
+library(dplyr)
+library(lme4)
+
+
+```
+
+```{r}
+##### Data reading
+myt <- read.table("data/Distred_samples_fetch_corrected_2021.csv", header = T, sep = ",")
+
+sal <- read.table("data/Distred_samples_salinity_2021.csv", header = T, sep = ",")
+
+myt <- merge(myt, sal, all = T)
+
+river <- read.table("data/Rivers_2021.csv", sep = ",", header = T)
+
+ports <- data.frame(Shore = c("Kand", "Karel", "Kand", "Karel", "Karel"), Port = c("Kandalaksha", "Vitino", "Umba", "Chupa", "Sredny"), Status = c("Active", "Active", "Abandoned", "Abandoned", "Abandoned" ), Lat = c(67.137283, 67.076570,  66.677970, 66.269964, 66.294178), Lon = c(32.407995, 32.333630, 34.357655, 33.069534, 33.640656))
+
+
+sites_fetch_df <- read.table("data/Distred_samples_fetch_values_2021.csv", sep = ",", header = T)
+
+```
+
+```{r}
+# Combine all variables in commondataset
+
+#The function for calculation of neares object and distance to it  
+
+nearest_dist <- function(XY, objects = river, x.name = "Lon", y.name = "Lat"){
+  
+  XY1 <-as.numeric(XY[,1])
+  XY2 <- as.numeric(XY[,2])
+  dist <- (acos(sin(XY1*pi/180)*sin(objects[ ,y.name]*pi/180) + cos(XY1*pi/180)*cos(objects[ ,y.name]*pi/180)*cos(XY2*pi/180 - objects[ ,x.name]*pi/180)) * 6371)
+  
+  MD <- data.frame(Min_dist = min(dist))
+  cbind(objects[which(dist == min(dist)), ], MD)
+  
+}
+
+
+# The distance to mouth of the neares river 
+
+df_river <- nearest_dist(XY = myt[1, c("Lat", "Lon")], objects = river)
+
+df_river[1,] <- NA
+
+for(i in 1:nrow(myt)) {
+  df_river[i,] <- nearest_dist(XY = myt[i, c("Lat", "Lon")], objects = river)
+  df_river$Site[i] <- as.character(myt$Site)[i]
+}
+
+names(df_river) <- c( "Shore_river", "River", "Discharge", "Drainage_Area", "River_size", "Lat_river", "Lon_river", "Min_dist_river", "Site" )
+
+
+# The distance to the neares port 
+
+df_port <- nearest_dist(XY = myt[1, c("Lat", "Lon")], objects = ports)
+
+df_port[1,] <- NA
+
+for(i in 1:nrow(myt)) {
+  df_port[i,] <- nearest_dist(XY = myt[i, c("Lat", "Lon")], objects = ports)
+  df_port$Site[i] <- as.character(myt$Site)[i]
+}
+
+names(df_port) <- c("Shore_port",  "Port","Port_Status", "Lat_port", "Lon_port", "Min_dist_port", "Site")
+
+
+# Merging all data in one data set
+
+d <- cbind(myt, df_river %>% select(-Site))
+
+dd <- cbind(d, df_port %>% select(-Site))
+
+
+ddd <- merge(dd, sites_fetch_df, by = "Site")
+
+myt_full <- ddd
+
+```
+
+```{r}
+# Сonventional coordinates of the top of the Kandalaksha Bay
+Shore_boundary = c(67.162360, 32.332371)
+
+# Conversion of coordinates to radians
+Shore_boundary <- Shore_boundary*pi/180
+
+# Calculating the distance from each site to the top of the Kandalksha bay
+myt_full$Dist_cut <- with(myt_full, acos(sin(Shore_boundary[1])*sin(Lat*pi/180) + cos(Shore_boundary[1])*cos(Lat*pi/180)*cos(Shore_boundary[2] - Lon*pi/180))) * 6371
+
+
+```
+
+```{r}
+# Убираем сайты с неполной схемой вятия проб (нет пары фукус-грунт, или какой-нибудь другой сбой в схеме взятия проб)
+
+sites_excluded <- c("chupa_fg", "umba_pioner", "umba_06", "umba_fg", "umba_sovhoz", "umba_kamni", "umba_bridge", "umba_pikut", "padan", "porya", "Vor5", "Ovech", "oenij", "Korg", "Mat", "Mal", "salnij", "Lubch", "kanal",  "Vor4", "Vor2", "Kurt", "Ryazh4", "Ryazh5", "Youzh")
+
+myt_full <- myt_full %>% filter(! Site %in% sites_excluded) 
+
+
+# By design of field collection, each of the samples within the site received equal coordinates. To analyze the presence of spatial autocorrelations (Moran's I test), it is necessary that there are no zero distances between units. For this purpose, the coordinates of five of the six samples in each site were formally changed to the minimum possible value of the coordinates.       
+
+myt_full$Lat2 <- myt_full$Lat + rep(seq(0, 0.00000005, by = 0.00000001), nrow(myt_full)/6)
+
+myt_full$Lon2 <- myt_full$Lon + rep(seq(0, 0.00000005, by = 0.00000001), nrow(myt_full)/6)
+
+
+```
+
+
+## Environmental parameters distribution
+
+### Wind fetch
+```{r}
+
+sites_fetch_df %>% 
+  melt(., id.vars = c("Site", "Site_Exposition"), value.name = "Fetch", variable.name = "Direction") %>%
+  ggplot(., aes(x = Site_Exposition, y = Fetch, fill = Direction)) + 
+  geom_boxplot() + 
+  scale_fill_manual(values = c("gray95", "gray80", "gray70", "gray60", "gray40")) + 
+  theme_bw() +
+  labs(x = "Visual assessment of site exposition", y = "Wind fetch")
+
+```
+
+### Salinity
+
+```{r}
+myt_full %>% group_by(Site, River_size) %>% 
+  summarise(Salinity = mean(Salinity)) %>% 
+  ggplot(., aes(x = River_size, y = Salinity)) + 
+  geom_violin(fill = "gray") +
+  theme_bw() +
+  labs(x = "The size of the nearest river", y = "Salinity")
+  
+```
+
+
