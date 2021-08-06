@@ -12,9 +12,8 @@ opts_chunk$set(echo = FALSE, message = FALSE)
 ## Packages ######
 
 library(ggplot2)
-library(dplyr)
 library(lme4)
-
+library(dplyr)
 
 ```
 
@@ -63,7 +62,8 @@ for(i in 1:nrow(myt)) {
   df_river$Site[i] <- as.character(myt$Site)[i]
 }
 
-names(df_river) <- c( "Shore_river", "River", "Discharge", "Drainage_Area", "River_size", "Lat_river", "Lon_river", "Min_dist_river", "Site" )
+
+names(df_river) <- c( "Shore_river", "River",  "Drainage_Area", "River_size", "Lat_river", "Lon_river", "Min_dist_river", "Site" )
 
 
 # The distance to the neares port 
@@ -79,12 +79,11 @@ for(i in 1:nrow(myt)) {
 
 names(df_port) <- c("Shore_port",  "Port","Port_Status", "Lat_port", "Lon_port", "Min_dist_port", "Site")
 
-
 # Merging all data in one data set
 
-d <- cbind(myt, df_river %>% select(-Site))
+d <- cbind(myt, df_river)
 
-dd <- cbind(d, df_port %>% select(-Site))
+dd <- cbind(d, df_port)
 
 
 ddd <- merge(dd, sites_fetch_df, by = "Site")
