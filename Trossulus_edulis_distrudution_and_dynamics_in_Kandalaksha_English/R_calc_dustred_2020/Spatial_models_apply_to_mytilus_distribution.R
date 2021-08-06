@@ -139,6 +139,19 @@ myt_full <- myt_full %>% filter(! Site %in% sites_excluded)
 
 nrow(myt_full)
 
+myt_full$Position <- factor(myt_full$Position)
+
+myt_full$Position <- relevel(myt_full$Position, ref = "Bottom")
+
+myt_full$Port_Status <- factor(myt_full$Port_Status)
+
+myt_full$Port_Status <- relevel(myt_full$Port_Status, ref = "Abandoned")
+
+
+str(myt_full$Position)
+
+str(myt_full$Port_Status)
+
 
 # myt_full$Lat2 <- myt_full$Lat + rep(seq(0.00000, 0.00005, by = 0.00001), nrow(myt_full)/6) 
 
@@ -211,7 +224,7 @@ lstw$neighbours
 
 str(lstw)
 
-model <- glmer(cbind(N_T, N_E) ~ Position + Salinity + Min_dist_river + River_size + Average + Min_dist_port + Port_Status + (1|Site),  data = myt_full, family = binomial(link = "logit"))
+model <- glmer(cbind(N_T, N_E) ~ Position + Salinity + Min_dist_river + River_size + Average + Min_dist_port + Port_Status + (1|Site),  data = myt_full, family = binomial(link = "logit"), control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)) )
 
 model2 <- glm(cbind(N_T, N_E) ~ Position +  Salinity + Min_dist_river + River_size + Average + Min_dist_port + Port_Status,  data = myt_full, family = binomial(link = "logit"))
 
@@ -221,18 +234,14 @@ AIC(model, model2)
 
 
 moran.test(residuals(model), lstw) 
-moran.mc(residuals(model), lstw, nsim = 9999)
 
 moran.test(residuals(model2), lstw) 
-moran.mc(residuals(model2), lstw, nsim = 9999)
 
 
 plot(model)
 
 
-ggplot(myt_full, aes(x = Lon, y = Lat)) + geom_point(aes(size = residuals(model, type = "pearson")), position = position_jitter(width = 0.1, height = 0.1), shape = 21)
-
-ggplot(myt_full, aes(x = Dist_cut, y = residuals(model, type = "pearson"), color = Shore)) + geom_point(aes(size = residuals(model, type = "pearson")), shape = 21) + facet_wrap(~Shore) + geom_smooth()
+ggplot(myt_full, aes(x = Dist_cut, y = residuals(model, type = "pearson"), color = Shore)) + geom_point() + geom_smooth()  
 
 
 
@@ -252,9 +261,9 @@ r.squaredGLMM(model)
 library(partR2)
 
 
-res <- partR2(model, partvars=c("Position", "Min_dist_river", "River_size",  "Average", "Min_dist_port", "Port_Status"),max_level=1, nboot=100)
+res_part_R2 <- partR2(model, partvars=c("Position", "Salinity", "Min_dist_river", "River_size",  "Average", "Min_dist_port", "Port_Status"),max_level=1, nboot=100, parallel = FALSE)
 
-# save(res, file = "partR2 result glmer binomial samples in sites.RData")
+# save(res_part_R2, file = "partR2 result glmer binomial samples in sites.RData")
 
 load(file = "partR2 result glmer binomial samples in sites.RData")
 
@@ -271,7 +280,6 @@ p3 <- forestplot(res, type = "SC")
 p4 <- forestplot(res, type = "BW")
 
 
-forestplot
 library(patchwork)
 
 (p1 + p2) / (p3 + p4) + plot_annotation(tag_levels = "A", tag_prefix = "(", tag_suffix = ")")
