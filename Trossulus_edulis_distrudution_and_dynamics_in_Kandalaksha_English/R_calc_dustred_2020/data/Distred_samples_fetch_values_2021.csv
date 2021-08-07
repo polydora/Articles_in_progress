@@ -1,4 +1,4 @@
-North,East,South,West,Average,Site,Site_Exposition
+North_Fetch,East_Fetch,South_Fetch,West_Fetch,Average_Fetch,Site,Site_Exposition
 0.729415369,0.606361323,64.41717349,42.44786527,27.05020387,50km,Exposed
 1.473003209,3.647310705,9.847312648,9.450725633,6.104588049,Anis,Sheltered
 0.752149672,4.682060043,12.18638078,5.238352587,5.71473577,Bar,Exposed
