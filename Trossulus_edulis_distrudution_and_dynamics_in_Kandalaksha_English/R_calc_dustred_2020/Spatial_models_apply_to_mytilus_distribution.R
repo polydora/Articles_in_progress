@@ -20,19 +20,6 @@ ports <- data.frame(Shore = c("Kand", "Karel", "Kand", "Karel", "Karel"), Port =
 sites_fetch_df <- read.table("data/Distred_samples_fetch_values_2021.csv", sep = ",", header = T)
 
 
-##### Связь уровня сброса рек с размером площади водосбора
-ggplot(river, aes(x = Drainage_Area, y = Discharge )) + geom_point()
-
-# Модель для вычисления уровня сброса рек в зависимости от Drainage_Are
-
-Mod_river <- lm(Discharge ~ Drainage_Area, data = river)
-summary(Mod_river)
-
-
-quantile(river$Drainage_Area, na.rm = T)
-
-
-
 
 
 
@@ -62,12 +49,7 @@ for(i in 1:nrow(myt)) {
   df_river$Site[i] <- as.character(myt$Site)[i]
 }
 
-names(df_river) <- c( "Shore_river", "River", "Discharge", "Drainage_Area", "River_size", "Lat_river", "Lon_river", "Min_dist_river", "Site" )
-
-
-df_river$Discharge_pred <- predict(Mod_river, newdata = df_river) 
-
-
+names(df_river) <- c( "Shore_river", "River", "Drainage_Area", "River_Size", "Lat_river", "Lon_river", "Min_dist_river", "Site" )
 
 
 # Находим расстояния для ближайшего порта.
@@ -114,11 +96,10 @@ myt_full$Dist_cut <- with(myt_full, acos(sin(Shore_boundary[1])*sin(Lat*pi/180) 
 
 myt_full <- myt_full %>% mutate(Total_N = N_T + N_E) %>% mutate(Prop_T = N_T/(N_T +N_E)) %>% mutate(Fi_T = 2*asin(sqrt(Prop_T))*180/pi) 
 
-myt_site <- myt_full %>% select(-Prop_T, -Fi_T) %>% group_by(Shore, Site, Position) %>% select(Lat,      Lon, N_T, N_E, Min_dist_river, River, River_size, Min_dist_port, Port, Port_Status, Average, Dist_cut, Total_N) %>% summarise(Lat = mean(Lat), Lon = mean(Lon), N_T = sum(N_T), N_E = sum(N_E), Min_dist_river = mean(Min_dist_river), River = unique(River), River_size = unique(River_size), Min_dist_port = mean(Min_dist_port), Port = unique(Port), Port_Status = unique(Port_Status), Average = min(Average),   Dist_cut = mean(Average), Total_N = sum(Total_N)) %>% mutate(Prop_T = N_T/(N_T+N_E)) %>% mutate(Fi_T = 2*asin(sqrt(Prop_T))*180/pi)
+myt_site <- myt_full %>% select(-Prop_T, -Fi_T) %>% group_by(Shore, Site, Position) %>% select(Lat,      Lon, N_T, N_E, Min_dist_river, River, River_Size, Min_dist_port, Port, Port_Status, Average_Fetch, Dist_cut, Total_N) %>% summarise(Lat = mean(Lat), Lon = mean(Lon), N_T = sum(N_T), N_E = sum(N_E), Min_dist_river = mean(Min_dist_river), River = unique(River), River_size = unique(River_Size), Min_dist_port = mean(Min_dist_port), Port = unique(Port), Port_Status = unique(Port_Status), Average_Fetch = min(Average_Fetch),   Dist_cut = mean(Dist_cut), Total_N = sum(Total_N)) %>% mutate(Prop_T = N_T/(N_T+N_E)) %>% mutate(Fi_T = 2*asin(sqrt(Prop_T))*180/pi) %>% as.data.frame()
 
 str(myt_site)
 
-myt_site <- myt_site %>% as.data.frame()
 
 # Убираем сайты с NA
 
@@ -139,6 +120,9 @@ myt_full <- myt_full %>% filter(! Site %in% sites_excluded)
 
 nrow(myt_full)
 
+
+# Задаем удобные базовые уровни дискретных факторов
+
 myt_full$Position <- factor(myt_full$Position)
 
 myt_full$Position <- relevel(myt_full$Position, ref = "Bottom")
@@ -147,10 +131,10 @@ myt_full$Port_Status <- factor(myt_full$Port_Status)
 
 myt_full$Port_Status <- relevel(myt_full$Port_Status, ref = "Abandoned")
 
+myt_full$River_Size <- factor(myt_full$River_Size)
 
-str(myt_full$Position)
+myt_full$River_Size <- relevel(myt_full$River_Size, ref = "Small")
 
-str(myt_full$Port_Status)
 
 
 # myt_full$Lat2 <- myt_full$Lat + rep(seq(0.00000, 0.00005, by = 0.00001), nrow(myt_full)/6) 
@@ -170,13 +154,28 @@ myt_full$Lat2 <- myt_full$Lat + rep(seq(0.00000, 0.00000005, by = 0.00000001), n
 myt_full$Lon2 <- myt_full$Lon + rep(seq(0.00000, 0.00000005, by = 0.00000001), nrow(myt_full)/6)
 
 
-# Ближайшие реки
 
-river
+# перевод в длинный формат
+t_long <- myt_full %>% slice(rep(1:n(), N_T)) %>% mutate(Sp = "t") %>% select(-N_E, -N_T, -Total_N, -Prop_T,  -Fi_T ) 
+
+e_long <- myt_full %>% slice(rep(1:n(), N_E)) %>% mutate(Sp = "e") %>% select(-N_E, -N_T, -Total_N, -Prop_T,  -Fi_T )  
+
+
+myt_full_long <- rbind(t_long, e_long) 
+
+myt_full_long$Sp2 <- ifelse(myt_full_long$Sp == "t", 1, 0)
+
+
+
+
+
+
+
+
+# Ближайшие реки
 
 unique(myt_full$River) 
 
-myt_full %>% filter(Site == "Por")
 
 # Распределение значений Wind Fetch между визуальной оценкой степени открытости побережья.
 
@@ -189,7 +188,7 @@ citation("fetchR")
 
 # Оценка связи солености с возможными proxy
 
-salinity <- myt_full %>% group_by(Site) %>% summarize(Min_dist_river = mean(Min_dist_river), River_size = unique(River_size), Salinity = mean(Salinity))
+salinity <- myt_full %>% group_by(Site) %>% summarize(Min_dist_river = mean(Min_dist_river), River_size = unique(River_Size), Salinity = mean(Salinity))
 
 sum(!is.na(salinity$Salinity))
 
@@ -214,6 +213,26 @@ summary(Model_salinity)
 
 # fit a non-spatial model
 
+
+# Задаем Observation level random effect
+myt_full$OLRE <- 1:nrow(myt_full)
+
+
+model <- glmer(cbind(N_T, N_E) ~ Position + Salinity + Min_dist_river + River_Size + Average_Fetch + Min_dist_port + Port_Status + (1|Site) + (1|OLRE),  data = myt_full, family = binomial(link = "logit"), control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)) )
+
+
+summary(model)
+
+
+
+model2 <- glm(cbind(N_T, N_E) ~ Position +  Salinity + Min_dist_river + River_Size + Average_Fetch + Min_dist_port + Port_Status,  data = myt_full, family = binomial(link = "logit"))
+
+AIC(model,  model2)
+
+
+
+
+
 library(sp)
 library(spdep)
 
@@ -226,16 +245,10 @@ lstw$neighbours
 
 str(lstw)
 
-model <- glmer(cbind(N_T, N_E) ~ Position + Salinity + Min_dist_river + River_size + Average + Min_dist_port + Port_Status + (1|Site),  data = myt_full, family = binomial(link = "logit"), control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)) )
-
-model2 <- glm(cbind(N_T, N_E) ~ Position +  Salinity + Min_dist_river + River_size + Average + Min_dist_port + Port_Status,  data = myt_full, family = binomial(link = "logit"))
-
-AIC(model, model2)
-
-
-str(myt_full$Position)
-
 moran.test(residuals(model), lstw) 
+
+moran.test(residuals(model_TMB), lstw) 
+
 
 moran.test(residuals(model2), lstw) 
 
@@ -251,16 +264,37 @@ overdisp_fun <- function(model) {
   c(chisq=Pearson.chisq,ratio=prat,rdf=rdf,p=pval)
 }
 
+overdisp_fun(model)
+
+
+
+E1 <- residuals(model)
+p1 <- length(fixef(model)) + 1  #+1 because of sigma_zoo
+Overdisp1 <- sum(E1^2) / (nrow(myt_full) - p1)
+Overdisp1
+
+
+
+
+
 library(performance)
 library(RVAideMemoire)
 
 check_overdispersion(model)
 
+overdisp.glmer(model)
+
+
+library(blmeco)
+
+dispersion_glmer(model)
+
+
 
 plot(model)
 
 
-ggplot(myt_full, aes(x = Dist_cut, y = residuals(model, type = "pearson"), color = Shore)) + geom_point() + geom_smooth()  
+ggplot(myt_full, aes(x = fitted(model), y = residuals(model, type = "pearson"), color = Shore)) + geom_point() + geom_smooth()  
 
 
 
@@ -270,38 +304,37 @@ library(car)
 
 vif(model)
 
-library(MuMIn)
-
-r.squaredGLMM(model)
-
-
 
 library(partR2)
 
 
-res_part_R2 <- partR2(model, partvars=c("Position", "Salinity", "Min_dist_river", "River_size",  "Average", "Min_dist_port", "Port_Status"),max_level=1, nboot=100, parallel = FALSE)
+res_part_R2 <- partR2(model, partvars=c("Position", "Salinity", "Min_dist_river", "River_Size",  "Average_Fetch", "Min_dist_port", "Port_Status"),max_level=1, nboot=500, parallel = FALSE)
 
 # save(res_part_R2, file = "partR2 result glmer binomial samples in sites.RData")
 
 load(file = "partR2 result glmer binomial samples in sites.RData")
 
-summary(res)
+str(res_part_R2)
+
+res_part_R2$BW
+
 summary(model)
 forestplot(res, type = "R2")
 
-p1 <- forestplot(res, type = "R2")
+p1 <- forestplot(res_part_R2, type = "R2")
 
-p2 <- forestplot(res, type = "IR2")
+p2 <- forestplot(res_part_R2, type = "IR2")
 
-p3 <- forestplot(res, type = "SC")
+p3 <- forestplot(res_part_R2, type = "SC")
 
-p4 <- forestplot(res, type = "BW")
+p4 <- forestplot(res_part_R2, type = "BW")
 
 
 library(patchwork)
 
 (p1 + p2) / (p3 + p4) + plot_annotation(tag_levels = "A", tag_prefix = "(", tag_suffix = ")")
 
+(p1 + p4)  + plot_annotation(tag_levels = "A", tag_prefix = "(", tag_suffix = ")")
 
 
 
