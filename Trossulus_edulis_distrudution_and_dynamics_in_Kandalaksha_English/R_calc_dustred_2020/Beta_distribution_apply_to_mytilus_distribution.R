@@ -168,6 +168,9 @@ library(glmmTMB)
 
 model_TMB <- glmmTMB(cbind(N_T, N_E) ~ Position + Salinity + Min_dist_river + River_Size + Average_Fetch + Min_dist_port + Port_Status + (1|Site),  data = myt_full, family = betabinomial(link = "logit"))
 
+AIC(model, model_TMB, model_admb)
+
+
 summary(model_TMB)
 
 E1 <- residuals(model_TMB)
@@ -222,6 +225,7 @@ model_ADMB <- glmmadmb(cbind(N_T, N_E) ~ Position + Salinity + Min_dist_river + 
 
 summary(model_ADMB)
 summary(model_TMB)
+summary(model)
 
 
 moran.test(residuals(model_ADMB), lstw) 
