@@ -37,6 +37,10 @@ sal_tuv$Date_true <- as.POSIXct(strptime(sal_tuv$Dat_text, '%H_%M %d_%m_%Y', tz 
 
 sal_tuv$H <- abs(sal_tuv$Height)
 
+nrow(sal_tuv)
+
+sal_tuv$Time
+
 ggplot(tide, aes(x = Date3, y = H)) + geom_line() + geom_point(data = sal_tuv, aes(x = Date_true, y = abs(Height), size = Salinity)) + facet_grid(Transect ~ Depth) + geom_hline(yintercept = c(2, 1.5, 1, 0.5, -0.5, -1.5, -3.5))
 
 ggplot(sal_tuv, aes(x = abs(Height), y = Salinity)) + geom_point()
