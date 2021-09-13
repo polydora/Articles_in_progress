@@ -37,6 +37,17 @@ sal_tuv$Date_true <- as.POSIXct(strptime(sal_tuv$Dat_text, '%H_%M %d_%m_%Y', tz 
 
 sal_tuv$H <- abs(sal_tuv$Height)
 
+
+
+ggplot(sal_tuv, aes(x =Depth, y = Salinity)) + geom_point() + geom_smooth()
+
+sal_tuv %>% filter(Depth == -2) %>% summarize(Sal = mean(Salinity)) 
+
+
+%>% 
+  ggplot(., aes(x = Distance, y = Salinity)) + geom_point()
+
+
 nrow(sal_tuv)
 
 sal_tuv$Time
@@ -58,7 +69,7 @@ tuv$Min_Salinity_predicted <- NA
 
 
 library(dplyr)
-
+i=9
 for(i in 1:nrow(tuv)){
   d <- tide %>% filter(H >= tuv$Depth[i])
   d$Distance <- tuv$Distance[i]
@@ -67,6 +78,71 @@ for(i in 1:nrow(tuv)){
   tuv$Min_Salinity_predicted[i] <- min(Sal_pred)
 }
 
+
+tide_transect_R <- tide
+tide_transect_R$Transect <- "R"
+tide_transect_R$Distance <- 0
+
+
+tide_transect_B <- tide
+tide_transect_B$Transect <- "B"
+tide_transect_B$Distance <- 250
+
+
+tide_transect_Mid <- tide
+tide_transect_Mid$Transect <- "Mid"
+tide_transect_Mid$Distance <- 1750
+
+
+tide_transect_Mon <- tide
+tide_transect_Mon$Transect <- "Mon"
+tide_transect_Mon$Distance <- 2550
+
+tide_transect <- rbind(tide_transect_R, tide_transect_B, tide_transect_Mid, tide_transect_Mon)
+
+tide_transect$Salinity_predicted <- predict(Mod_tide, newdata = tide_transect)
+
+tide_transect$Transect <- factor(tide_transect$Transect, levels = c("R", "B", "Mid", "Mon"))
+sal_tuv$Transect <- factor(sal_tuv$Transect, levels = c("R", "B", "Mid", "Mon"))
+
+
+levels_salinity_0.5 <- tide_transect %>% filter(H>=0.5) %>% group_by(Transect) %>% summarise(Level = 0.5, Salinity_predicted = mean(Salinity_predicted))
+  
+levels_salinity_1 <- tide_transect %>% filter(H>=1) %>% group_by(Transect) %>% summarise(Level = 1, Salinity_predicted = mean(Salinity_predicted))
+
+levels_salinity_1.5 <- tide_transect %>% filter(H>=1.5) %>% group_by(Transect) %>% summarise(Level = 1.5, Salinity_predicted = mean(Salinity_predicted))
+
+levels_salinity_2 <- tide_transect %>% filter(H>=2) %>% group_by(Transect) %>% summarise(Level = 2, Salinity_predicted = mean(Salinity_predicted))
+
+
+
+levels_salinity_subtidal <- tide_transect %>% filter(H>=0) %>% group_by(Transect) %>% summarise(Level = "subtidal", Salinity_predicted = mean(Salinity_predicted))
+
+
+
+ggplot(tide_transect, aes(x = Date3, y = Salinity_predicted)) + 
+  geom_line() + 
+  facet_wrap(~Transect, nrow = 1) + 
+  geom_point(data = sal_tuv, aes(x= Date_true, y = Salinity, color = Depth), size = 2) + 
+  geom_hline(data = levels_salinity_0.5, aes(yintercept = Salinity_predicted)) +
+  geom_text(data = levels_salinity_0.5, aes(y = Salinity_predicted - 1, x = mean(tide_transect$Date3), label = "+0.5 m")) +
+  geom_hline(data = levels_salinity_0.5, aes(yintercept = Salinity_predicted))+
+  geom_hline(data = levels_salinity_1, aes(yintercept = Salinity_predicted)) +
+  geom_hline(data = levels_salinity_1.5, aes(yintercept = Salinity_predicted)) + 
+  geom_hline(data = levels_salinity_2, aes(yintercept = Salinity_predicted)) + 
+  geom_hline(data = levels_salinity_subtidal, aes(yintercept = Salinity_predicted)) + 
+  geom_text(data = levels_salinity_2, aes(y = Salinity_predicted + 1, x = mean(tide_transect$Date3), label = "+2 m")) +
+  theme(axis.text.x = element_text(angle = 90))
+  
+
+
+
+
+
+
+
+
+plot(Sal_pred)
 
 
 tuv$Min_Salinity_predicted
