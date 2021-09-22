@@ -1,6 +1,8 @@
 library(ggplot2)
 library(lubridate)
 library(readxl)
+library(dplyr)
+
 
 tide <- read.csv("Data/tides.csv", header = F)
 tide <- tide[-c(1:144),-1]
@@ -41,10 +43,7 @@ sal_tuv$H <- abs(sal_tuv$Height)
 
 ggplot(sal_tuv, aes(x =Depth, y = Salinity)) + geom_point() + geom_smooth()
 
-sal_tuv %>% filter(Depth == -2) %>% summarize(Sal = mean(Salinity)) 
-
-
-%>% 
+sal_tuv %>% filter(Depth == -2) %>% summarize(Sal = mean(Salinity))%>% 
   ggplot(., aes(x = Distance, y = Salinity)) + geom_point()
 
 

@@ -213,7 +213,38 @@ ggplot(new_data, aes(x = L, y = Predicted)) +
 
 
 ```{r}
-onega_cam <- read_excel("Data/Onega_L_Age.xlsx")
+onega_cam_last <- read_excel("Data/Ершову онежский без Конюховки.xlsx")
+
+onega_cam_previous <- read_excel("Data/Onega_L_Age.xlsx")
+
+# hist(onega_cam_last$L)
+# hist(onega_cam_previous$L)
+# 
+# hist(onega_cam_last$Age)
+# hist(onega_cam_previous$Age)
+# 
+# 
+# 
+# 
+# df1 <- onega_cam_last %>% group_by(Sex, Age) %>% summarise(n = n(), Side = mean(Side == "l"))
+# 
+# df2 <- onega_cam_previous %>% group_by(Sex, Age) %>% summarise(n = n(), Side = mean(Side == "l"))
+# 
+# sum(onega_cam_last$Side == "l")
+# sum(onega_cam_previous$Side == "l")
+# 
+# 
+# cbind(df1, df2)
+# 
+# 
+# plot(df1$n, df2$n)
+# 
+# plot(df1$Side, df2$Side)
+# 
+# 
+
+
+onega_cam <- onega_cam_last
 
 onega_cam <- onega_cam %>% filter(Sex !="j")
 
@@ -221,21 +252,37 @@ onega_cam$Side2 <- ifelse(onega_cam$Side == "l", 1, 0)
 
 
 
-onega_cam2 <- onega_cam[-c(2353:2356),]
 
 
 
-onega_cam3 <- onega_cam2 %>% filter(Age<=7)
+# onega_cam2 <- onega_cam[-c(2353:2356),]
 
+# onega_cam3 <- onega_cam2 %>% filter(Age<=7)
+
+
+# onega_cam3 <- onega_cam %>% filter(Age<=7 & Age > 1)
+
+onega_cam3 <- onega_cam %>% filter(Age<=7 & Age > 1) 
 
 # nrow(onega_cam3)/nrow(onega_cam2)
 # max(onega_cam2$Age)
 
+# str(onega_cam3$Sex)
+
+onega_cam3$Sex <- factor(onega_cam3$Sex)
 
 onega_cam3$Sex <-factor(onega_cam3$Sex, labels = c("female", "male"))
 
 
-M <- glm(Side2 ~ Age * Sex, data = onega_cam3, family = "binomial")
+M <- glm(Side2 ~ L , data = onega_cam3, family = "binomial")
+
+cam_oneg <- kam %>% filter(Bay == "Kandalaksha_Bay")
+
+M2 <- glm(Outcome ~ L, data = cam_oneg, family = "binomial")
+
+
+summary(M)
+summary(M2)
 
 ```
 
