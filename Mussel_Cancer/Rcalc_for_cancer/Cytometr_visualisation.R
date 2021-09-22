@@ -1,4 +1,12 @@
 # Скрипт для анализа даных с проточного цитометра
+# if (!requireNamespace("BiocManager", quietly = TRUE))
+#   install.packages("BiocManager")
+# BiocManager::install(version = "3.10")
+
+
+# BiocManager::install("flowCore")
+BiocManager::install("ggcyto")
+BiocManager::install("flowMap")
 
 library(flowCore)
 library(ggcyto)
@@ -22,30 +30,46 @@ autoplot(um22,"FL1-H")
 # fortify(fs)
 
 
-df_extractor <- function(x = um22){
+df_extractor <- function(x = um22, Gate_FSC_A = 260E4, Gate_SSC_A = 440E4){
+  require(dplyr)
   df <- fortify(x)
-  data.frame(FSC_A = df$"FSC-A", SSC_A = df$"SSC-A", Name = sub(".fcs", "", unique(df$.rownames))) 
+  names(df) <- gsub("-", "_", names(df))
+  df <- df %>% filter(FSC_A < Gate_FSC_A & SSC_A < Gate_SSC_A)
+  df <- df %>% select(-.rownames, -name, -Time)
+  df$id <- 1
+  as.data.frame(df)
+}
+
+
+df_extractor_2 <- function(x = um22, Gate_FSC_A = 260E4, Gate_SSC_A = 440E4){
+  require(dplyr)
+  df <- fortify(x)
+  names(df) <- gsub("-", "_", names(df))
+  df <- df %>% filter(FSC_A < Gate_FSC_A & SSC_A < Gate_SSC_A)
+  df <- df %>% select()
+  df$id <- 1
+  as.data.frame(df)
 }
 
 
 
 
+files <- list.files("Data/FCS", pattern = "^UM")
+dfs <- list(NULL)
 
-dfs <- rbind(df_extractor(um36), 
-             df_extractor(um22),
-             df_extractor(um2),
-             df_extractor(um3),
-             df_extractor(um41), 
-             df_extractor(um4)
-)
+for(i in 1:length(files)){
+  case <- read.FCS(filename = paste("Data/FCS/",files[i], sep = ""), transformation=FALSE)
+  dfs[[i]] <- df_extractor(x = case)
+  print(i)
+  
+}
 
 
-sam_3 <- df_extractor(um3)
-sam_41 <- df_extractor(um41)
-sam_36 <- df_extractor(um36)
-sam_22 <- df_extractor(um22)
-sam_2 <- df_extractor(um2)
-sam_4 <- df_extractor(um4)
+
+str(dfs)
+
+
+
 
 
 
@@ -65,61 +89,68 @@ ggplot(dfs, aes(x = FSC_A, y = SSC_A)) +
 # BiocManager::install("flowMap")
 
 library(flowMap)
-# sam1 <-read.table(system.file("extdata/sample.txt",package="flowMap"), header=T) 
-# 
-# sam2 <-read.table(system.file("extdata/sample.txt",package="flowMap"), header=T)
-
-
 library(dplyr)
 
-sam_3 <- sam_3 %>% select(-Name) %>% mutate(id = 1) 
-sam_3 <- sam_3 %>% filter((FSC_A <260E4 ) & (SSC_A < 440E4))
-
-sam_41 <- sam_41 %>% select(-Name) %>% mutate(id = 1)
-sam_41 <- sam_41 %>% filter((FSC_A <260E4 ) & (SSC_A < 440E4))
-
-sam_4 <- sam_4 %>% select(-Name) %>% mutate(id = 1)
-sam_4 <- sam_4 %>% filter((FSC_A <260E4 ) & (SSC_A < 440E4))
 
 
-sam_2 <- sam_2 %>% select(-Name) %>% mutate(id = 1)
-sam_2 <- sam_2 %>% filter((FSC_A <260E4 ) & (SSC_A < 440E4))
+files[56]
 
 
-sam_22 <- sam_22 %>% select(-Name) %>% mutate(id = 1)
-sam_22 <- sam_22 %>% filter((FSC_A <260E4 ) & (SSC_A < 440E4))
+resMulti <- makeDistmat(samples=dfs, sampleSize=100,ndraws=10)
 
-
-sam_36 <- sam_36 %>% select(-Name) %>% mutate(id = 1)
-sam_36 <- sam_36 %>% filter((FSC_A <260E4 ) & (SSC_A < 440E4))
-
-
-
-resMulti <- makeDistmat(samples=list(sam_2, sam_3, sam_4, sam_22, sam_36,sam_41),sampleSize=100,ndraws=10)
-
-as.dist(resMulti$distmat)
+save(resMulti, file = "floMap.RData")
 
 library(vegan)
 
-diag(resMulti$distmat) <- 0
+Dist_Matr <- resMulti$distmat
 
 
-resMulti$distmat <- abs(resMulti$distmat)
+diag(Dist_Matr) <- 0
 
-ord <- metaMDS(com = resMulti$distmat)
+
+Dist_Matr <- abs(Dist_Matr)
+
+ord <- metaMDS(com = Dist_Matr, autotransform = F)
+
+ord$points
 
 plot(ord, type = "t")
 
 
 
+dots <- data.frame(id = 1:length(files), File = files, ord$points)
+
+dots$Mussel <- gsub(".fcs", "", dots$File)
+dots$Mussel <- gsub("UM", "", dots$Mussel)
 
 
-cl <- hclust(d = as.dist(resMulti$distmat), method = "ward.D")
+ggplot(dots, aes(MDS1, MDS2)) + geom_text(aes(label = Mussel)) + theme_bw()
 
-plot(cl)
+
+
+
+as.data.frame(ord$points, dots)
+
+write.table(dots, "clipboard", sep = "\t")
+
+
+
+cl <- hclust(d = as.dist(Dist_Matr), method = "ward.D")
+
+clusDendro <- as.dendrogram(cl)
+plot(clusDendro,horiz=T)
+
+
+plot(cl,horiz=T)
+
+
+
+
 
 resMulti=makeDistmat(samples=list(sam1,sam2),sampleSize=100,ndraws=100)
 
+
+getFRest(sam1, sam2)
 
 
 
