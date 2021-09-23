@@ -5,36 +5,38 @@
 
 
 # BiocManager::install("flowCore")
-BiocManager::install("ggcyto")
+# BiocManager::install("ggcyto")
 BiocManager::install("flowMap")
 
 library(flowCore)
 library(ggcyto)
 
-um22 <-read.FCS("Data/FCS/UM22.fcs", transformation=FALSE) 
-um36 <-read.FCS("Data/FCS/UM36.fcs", transformation=FALSE) 
-um2 <-read.FCS("Data/FCS/UM2.fcs", transformation=FALSE) 
-um41 <-read.FCS("Data/FCS/UM41.fcs", transformation=FALSE) 
-um3 <-read.FCS("Data/FCS/UM3.fcs", transformation=FALSE) 
-um4 <-read.FCS("Data/FCS/UM4.fcs", transformation=FALSE) 
-
-
-autoplot(um22,"FL1-H","FL2-H")
-autoplot(um22,"FL1-H")
-
-
-
-# fs <-read.flowSet(path = "Data/FCS/")
+# um22 <-read.FCS("Data/FCS/UM22.fcs", transformation=FALSE) 
+# um36 <-read.FCS("Data/FCS/UM36.fcs", transformation=FALSE) 
+# um2 <-read.FCS("Data/FCS/UM2.fcs", transformation=FALSE) 
+# um41 <-read.FCS("Data/FCS/UM41.fcs", transformation=FALSE) 
+# um3 <-read.FCS("Data/FCS/UM3.fcs", transformation=FALSE) 
+# um4 <-read.FCS("Data/FCS/UM4.fcs", transformation=FALSE) 
 # 
-# pl <- autoplot(x, "FSC-A", "SSC-A")
-# fortify(fs)
+# 
+# autoplot(um22,"FL1-H","FL2-H")
+# autoplot(um22,"FL1-H")
+# 
+# 
+# 
+# # fs <-read.flowSet(path = "Data/FCS/")
+# # 
+# # pl <- autoplot(x, "FSC-A", "SSC-A")
+# # fortify(fs)
+# 
+# 
 
 
 df_extractor <- function(x = um22, Gate_FSC_A = 260E4, Gate_SSC_A = 440E4){
   require(dplyr)
   df <- fortify(x)
   names(df) <- gsub("-", "_", names(df))
-  df <- df %>% filter(FSC_A < Gate_FSC_A & SSC_A < Gate_SSC_A)
+  df <- df %>% filter(FSC_A < Gate_FSC_A & SSC_A < Gate_SSC_A & FSC_A > 0 & SSC_A > 0)
   df <- df %>% select(-.rownames, -name, -Time)
   df$id <- 1
   as.data.frame(df)
@@ -45,7 +47,7 @@ df_extractor_2 <- function(x = um22, Gate_FSC_A = 260E4, Gate_SSC_A = 440E4){
   require(dplyr)
   df <- fortify(x)
   names(df) <- gsub("-", "_", names(df))
-  df <- df %>% filter(FSC_A < Gate_FSC_A & SSC_A < Gate_SSC_A)
+  df <- df %>% filter(FSC_A < Gate_FSC_A & SSC_A < Gate_SSC_A & FSC_A > 0 & SSC_A > 0)
   df <- df %>% select()
   df$id <- 1
   as.data.frame(df)
@@ -70,10 +72,27 @@ str(dfs)
 
 
 
+# Визуализация данных проточной цитометрии для избранных файлов
 
 
 
-dfs$Name <- factor(dfs$Name, levels = c("UM2", "UM3", "UM4", "UM22", "UM36", "UM41"))
+plot_cytometry <- function(file = "UM22.fcs"){
+  require(ggplot2)
+  require(dplyr)
+  df <- dfs[[which(files == file)]]
+  Pl_SSC_FSC <- ggplot(df, aes(x = FSC_A, y = SSC_A))+
+    geom_point(color = "grey20", size = 0.01)+
+    geom_density2d(color = "yellow") +
+    ggtitle(file)
+  Pl_SSC_FSC
+
+}
+
+library(patchwork)
+
+plot_cytometry("UM27.fcs") + plot_cytometry("UM26.fcs") + plot_cytometry("UM9.fcs") + plot_cytometry("UM15.fcs") +plot_cytometry("UM48.fcs")+ plot_cytometry("UM41.fcs") + plot_cytometry("UM36.fcs") + plot_cytometry("UM39.fcs") + plot_cytometry("UM44.fcs") + plot_cytometry("UM40.fcs") 
+
+plot_cytometry("UM1.fcs") + plot_cytometry("UM14.fcs") + plot_cytometry("UM4.fcs") + plot_cytometry("UM12.fcs") + plot_cytometry("UM55.fcs") + plot_cytometry("UM48.fcs") 
 
 
 ggplot(dfs, aes(x = FSC_A, y = SSC_A)) +
