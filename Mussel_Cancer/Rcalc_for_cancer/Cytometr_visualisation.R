@@ -6,7 +6,7 @@
 
 # BiocManager::install("flowCore")
 # BiocManager::install("ggcyto")
-BiocManager::install("flowMap")
+# BiocManager::install("flowMap")
 
 library(flowCore)
 library(ggcyto)
@@ -83,16 +83,24 @@ plot_cytometry <- function(file = "UM22.fcs"){
   Pl_SSC_FSC <- ggplot(df, aes(x = FSC_A, y = SSC_A))+
     geom_point(color = "grey20", size = 0.01)+
     geom_density2d(color = "yellow") +
+    geom_point(aes(x=median(FSC_A), y= median(SSC_A)), color="blue", size=4)+
     ggtitle(file)
-  Pl_SSC_FSC
+  Pl_DAPI <- ggplot(df, aes(x = FL7_A)) + 
+    geom_density() +
+    scale_x_continuous(trans='log10')+
+    ggtitle(file)
+  
+  Plots <- list(Pl_SSC_FSC, Pl_DAPI)
 
 }
 
 library(patchwork)
 
-plot_cytometry("UM27.fcs") + plot_cytometry("UM26.fcs") + plot_cytometry("UM9.fcs") + plot_cytometry("UM15.fcs") +plot_cytometry("UM48.fcs")+ plot_cytometry("UM41.fcs") + plot_cytometry("UM36.fcs") + plot_cytometry("UM39.fcs") + plot_cytometry("UM44.fcs") + plot_cytometry("UM40.fcs") 
+(plot_cytometry("UM4.fcs")[[1]] + plot_cytometry("UM4.fcs")[[2]]) /
+(plot_cytometry("UM41.fcs")[[1]] + plot_cytometry("UM41.fcs")[[2]]) / 
+(plot_cytometry("UM36.fcs")[[1]] + plot_cytometry("UM36.fcs")[[2]]) /
+((plot_cytometry("UM48.fcs")[[1]] + plot_cytometry("UM48.fcs")[[2]]))
 
-plot_cytometry("UM1.fcs") + plot_cytometry("UM14.fcs") + plot_cytometry("UM4.fcs") + plot_cytometry("UM12.fcs") + plot_cytometry("UM55.fcs") + plot_cytometry("UM48.fcs") 
 
 
 ggplot(dfs, aes(x = FSC_A, y = SSC_A)) +
@@ -112,12 +120,31 @@ library(dplyr)
 
 
 
-files[56]
+files[1]
+
+names(dfs[[1]])
+
+
+medians <- data.frame(Med_FSC = rep(NA, length(files)), Med_SSC = NA)
+
+for(i in 1:length(files)){
+medians$File[i] <- files[i]  
+medians$Med_FSC[i] <- median(dfs[[i]]$FSC_A)
+medians$Med_SSC[i] <- median(dfs[[i]]$SSC_A)
+medians$Med_DAPI[i] <- median(dfs[[i]]$FL7_A)
+
+print(i)
+}
+
+
 
 
 resMulti <- makeDistmat(samples=dfs, sampleSize=100,ndraws=10)
 
 save(resMulti, file = "floMap.RData")
+
+load("floMap.RData")
+
 
 library(vegan)
 
@@ -143,39 +170,25 @@ dots$Mussel <- gsub(".fcs", "", dots$File)
 dots$Mussel <- gsub("UM", "", dots$Mussel)
 
 
-ggplot(dots, aes(MDS1, MDS2)) + geom_text(aes(label = Mussel)) + theme_bw()
+dots2 <- merge(medians, dots, by = "File")
+
+ggplot(dots2, aes(x = Med_DAPI,  y =  N_dots, size = N_dots))  +  geom_point() + theme_bw()
+
+ggplot(dots2, aes(x = MDS1,  y =  Med_DAPI))  +  geom_point() + theme_bw()
 
 
+ggplot(dots2, aes(x = N_dots))  +  geom_histogram() + theme_bw()
 
+
+M <- lm(N_dots ~ Med_DAPI+Med_FSC, data = dots2)
+
+summary(M)
 
 as.data.frame(ord$points, dots)
 
 write.table(dots, "clipboard", sep = "\t")
 
 
+dots <- read.table("clipboard", sep = "\t", header = T)
 
-cl <- hclust(d = as.dist(Dist_Matr), method = "ward.D")
-
-clusDendro <- as.dendrogram(cl)
-plot(clusDendro,horiz=T)
-
-
-plot(cl,horiz=T)
-
-
-
-
-
-resMulti=makeDistmat(samples=list(sam1,sam2),sampleSize=100,ndraws=100)
-
-
-getFRest(sam1, sam2)
-
-
-
-require(gplots)
-par(mar=c(0,0,0,0))
-
-heatmapCols<-colorRampPalette(c("red","yellow","white","blue"))(50)
-
-heatmap.2(resMulti$distmat,trace="none",col=heatmapCols,symm=FALSE,dendrogram="none",Rowv=FALSE,Colv=FALSE)
+ggplot(dots, aes(MDS1, MDS2, size = N_dots)) + geom_point()
