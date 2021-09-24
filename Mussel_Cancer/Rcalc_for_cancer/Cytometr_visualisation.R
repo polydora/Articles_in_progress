@@ -11,44 +11,16 @@
 library(flowCore)
 library(ggcyto)
 
-# um22 <-read.FCS("Data/FCS/UM22.fcs", transformation=FALSE) 
-# um36 <-read.FCS("Data/FCS/UM36.fcs", transformation=FALSE) 
-# um2 <-read.FCS("Data/FCS/UM2.fcs", transformation=FALSE) 
-# um41 <-read.FCS("Data/FCS/UM41.fcs", transformation=FALSE) 
-# um3 <-read.FCS("Data/FCS/UM3.fcs", transformation=FALSE) 
-# um4 <-read.FCS("Data/FCS/UM4.fcs", transformation=FALSE) 
-# 
-# 
-# autoplot(um22,"FL1-H","FL2-H")
-# autoplot(um22,"FL1-H")
-# 
-# 
-# 
-# # fs <-read.flowSet(path = "Data/FCS/")
-# # 
-# # pl <- autoplot(x, "FSC-A", "SSC-A")
-# # fortify(fs)
-# 
-# 
 
 
 df_extractor <- function(x = um22, Gate_FSC_A = 260E4, Gate_SSC_A = 440E4){
   require(dplyr)
   df <- fortify(x)
   names(df) <- gsub("-", "_", names(df))
-  df <- df %>% filter(FSC_A < Gate_FSC_A & SSC_A < Gate_SSC_A & FSC_A > 0 & SSC_A > 0)
-  df <- df %>% select(-.rownames, -name, -Time)
-  df$id <- 1
-  as.data.frame(df)
-}
-
-
-df_extractor_2 <- function(x = um22, Gate_FSC_A = 260E4, Gate_SSC_A = 440E4){
-  require(dplyr)
-  df <- fortify(x)
-  names(df) <- gsub("-", "_", names(df))
-  df <- df %>% filter(FSC_A < Gate_FSC_A & SSC_A < Gate_SSC_A & FSC_A > 0 & SSC_A > 0)
-  df <- df %>% select()
+  
+  df_quant <- df %>% summarise(Min_FSC_A = quantile(FSC_A, probs = 0.01), Min_SSC_A = quantile(SSC_A, probs = 0.01))
+  df <- df %>% filter(FSC_A < Gate_FSC_A & SSC_A < Gate_SSC_A & FSC_A > df_quant$Min_FSC_A & SSC_A > df_quant$Min_SSC_A)
+  df <- df %>% select(FSC_A, SSC_A, FL7_A)
   df$id <- 1
   as.data.frame(df)
 }
@@ -94,6 +66,7 @@ plot_cytometry <- function(file = "UM22.fcs"){
 
 }
 
+
 library(patchwork)
 
 (plot_cytometry("UM4.fcs")[[1]] + plot_cytometry("UM4.fcs")[[2]]) /
@@ -103,12 +76,6 @@ library(patchwork)
 
 
 
-ggplot(dfs, aes(x = FSC_A, y = SSC_A)) +
-  geom_point(color = "grey20", size = 0.1)+
-  geom_density2d(color = "yellow")+
-  facet_wrap(~ Name)+
-  ylim(0, 440E4) +
-  xlim(0, 260E4)
 
 ###########################
 
@@ -120,9 +87,6 @@ library(dplyr)
 
 
 
-files[1]
-
-names(dfs[[1]])
 
 
 medians <- data.frame(Med_FSC = rep(NA, length(files)), Med_SSC = NA)
