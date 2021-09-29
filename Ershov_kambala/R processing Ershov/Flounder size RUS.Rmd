@@ -39,6 +39,7 @@ kam$Bay <- factor(kam$Bay, levels = c("Onega_Bay", "Dvina_Bay","Kandalaksha_Bay"
 
 
 ```{r}
+kam <- kam %>% filter(Bay != "Onega_Bay")
 
 Mod <- glm(Outcome ~  L * Sex*Bay, data = kam, family = "binomial")
 

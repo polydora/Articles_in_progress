@@ -66,20 +66,11 @@ kam <- read.table("Data/kambala.csv", sep = ",", header = T, dec = ".")
 # str(kam)
 kam$Outcome <- ifelse(kam$Sidedness == "Left", 1, 0)
 
-kam$Bay <- factor(kam$Bay, levels = c("Kandalaksha_Bay", "Onega_Bay", "Dvina_Bay", "Mezen_Bay" ), labels = c("Kandalaksha Bay", "Onega Bay", "Dvina Bay", "Mezen Bay" ))
+
 
 ```
 
 
-
-
-
-```{r, fig.cap = figRef("Size_boxplot", "Характеристика размерного состава камбал в разных заливах Белого моря.") }
-
-
-
-ggplot(kam, aes(x = Bay, y = L,  fill = Sidedness)) + geom_boxplot(notch = T) + facet_wrap(~Sex) + scale_fill_manual(values = c("gray10", "gray80")) + theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 30, vjust = 0.6)) + labs(x = "Bay", y = "Length, cm", fill = "Morph")
-```
 
 
 
@@ -105,10 +96,47 @@ kam$Orient <- kam$Sidedness
 kam$Outcome <- ifelse(kam$Orient == "Left", 1, 0)
 
 
-kam$Bay <- factor(kam$Bay, levels = c("Onega_Bay", "Dvina_Bay","Kandalaksha_Bay", "Mezen_Bay" ))
-
 ```
 
+
+
+
+```{r}
+onega_cam_last <- read_excel("Data/Онежский залив без сомнительных данных.xlsx")
+
+onega_cam_last <- onega_cam_last %>% filter(Sex != "j")
+
+
+onega_new <- data.frame(Bay = "Onega_Bay", 
+                        Sex = ifelse(onega_cam_last$Sex == "f", "Female", "Male"),
+                        Sidedness = ifelse(onega_cam_last$Side == "l", "Left", "Right"),
+                        L = onega_cam_last$L,
+                        Orient = ifelse(onega_cam_last$Side == "l", "Left", "Right")
+                        )
+onega_new$Outcome <- ifelse(onega_new$Orient == "Left", 1, 0)
+
+
+kam <- kam %>% filter(Bay != "Onega_Bay")
+
+kam <- rbind(kam, onega_new)
+
+
+# kam$Bay <- factor(kam$Bay, levels = c("Onega_Bay", "Dvina_Bay","Kandalaksha_Bay", "Mezen_Bay" ))
+
+kam$Bay <- factor(kam$Bay, levels = c("Kandalaksha_Bay", "Onega_Bay", "Dvina_Bay", "Mezen_Bay" ), labels = c("Kandalaksha Bay", "Onega Bay", "Dvina Bay", "Mezen Bay" ))
+```
+
+
+
+
+
+
+```{r, fig.cap = figRef("Size_boxplot", "Характеристика размерного состава камбал в разных заливах Белого моря.") }
+
+
+
+ggplot(kam, aes(x = Bay, y = L,  fill = Sidedness)) + geom_boxplot(notch = T) + facet_wrap(~Sex) + scale_fill_manual(values = c("gray10", "gray80")) + theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 30, vjust = 0.6)) + labs(x = "Bay", y = "Length, cm", fill = "Morph")
+```
 
 
 
@@ -129,14 +157,17 @@ Mod_3 <- update(Mod_2, . ~ . - L:Sex)
 
 
 drop1(Mod_3, test = "Chi")
-Mod_4 <- update(Mod_3, . ~ . - Sex:Bay)
+Mod_4 <- update(Mod_3, . ~ . - L:Bay)
 
 drop1(Mod_4, test = "Chi")
-Mod_5 <- update(Mod_4, . ~ . - L:Bay)
+Mod_5 <- update(Mod_4, . ~ . - Sex:Bay)
 
 drop1(Mod_5, test = "Chi")
 
+
 Mod_6 <- update(Mod_5, . ~ . - Sex)
+
+
 
 ```
 
@@ -145,7 +176,7 @@ Mod_6 <- update(Mod_5, . ~ . - Sex)
 ```{r}
 AIC(Mod, Mod_6)
 
-kable(tidy(Mod_6))
+# kable(tidy(Mod_6))
 
 ```
 
@@ -213,7 +244,7 @@ ggplot(new_data, aes(x = L, y = Predicted)) +
 
 
 ```{r}
-onega_cam_last <- read_excel("Data/Ершову онежский без Конюховки.xlsx")
+onega_cam_last <- read_excel("Data/Онежский залив без сомнительных данных.xlsx")
 
 onega_cam_previous <- read_excel("Data/Onega_L_Age.xlsx")
 
@@ -230,7 +261,8 @@ onega_cam_previous <- read_excel("Data/Onega_L_Age.xlsx")
 # 
 # df2 <- onega_cam_previous %>% group_by(Sex, Age) %>% summarise(n = n(), Side = mean(Side == "l"))
 # 
-# sum(onega_cam_last$Side == "l")
+# sum(onega_cam_last$Side == "l") 
+# 
 # sum(onega_cam_previous$Side == "l")
 # 
 # 
@@ -241,7 +273,7 @@ onega_cam_previous <- read_excel("Data/Onega_L_Age.xlsx")
 # 
 # plot(df1$Side, df2$Side)
 # 
-# 
+
 
 
 onega_cam <- onega_cam_last
@@ -262,7 +294,7 @@ onega_cam$Side2 <- ifelse(onega_cam$Side == "l", 1, 0)
 
 # onega_cam3 <- onega_cam %>% filter(Age<=7 & Age > 1)
 
-onega_cam3 <- onega_cam %>% filter(Age<=7 & Age > 1) 
+onega_cam3 <- onega_cam %>% filter(Age > 1) 
 
 # nrow(onega_cam3)/nrow(onega_cam2)
 # max(onega_cam2$Age)
@@ -274,15 +306,16 @@ onega_cam3$Sex <- factor(onega_cam3$Sex)
 onega_cam3$Sex <-factor(onega_cam3$Sex, labels = c("female", "male"))
 
 
-M <- glm(Side2 ~ L , data = onega_cam3, family = "binomial")
-
-cam_oneg <- kam %>% filter(Bay == "Kandalaksha_Bay")
-
-M2 <- glm(Outcome ~ L, data = cam_oneg, family = "binomial")
+M <- glm(Side2 ~ Age + Sex , data = onega_cam3, family = "binomial")
 
 
-summary(M)
-summary(M2)
+# cam_oneg <- kam %>% filter(Bay == "Kandalaksha_Bay")
+# 
+# M2 <- glm(Outcome ~ L, data = cam_oneg, family = "binomial")
+
+
+# summary(M)
+# summary(M2)
 
 ```
 
