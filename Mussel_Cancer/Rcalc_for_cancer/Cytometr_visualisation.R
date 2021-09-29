@@ -18,6 +18,8 @@ df_extractor <- function(x = um22, Gate_FSC_A = 260E4, Gate_SSC_A = 440E4){
   df <- fortify(x)
   names(df) <- gsub("-", "_", names(df))
   
+  names(df)[names(df) == "DAPI_A"] <- "FL7_A" 
+  
   df_quant <- df %>% summarise(Min_FSC_A = quantile(FSC_A, probs = 0.01), Min_SSC_A = quantile(SSC_A, probs = 0.01))
   df <- df %>% filter(FSC_A < Gate_FSC_A & SSC_A < Gate_SSC_A & FSC_A > df_quant$Min_FSC_A & SSC_A > df_quant$Min_SSC_A)
   df <- df %>% select(FSC_A, SSC_A, FL7_A)
@@ -28,7 +30,11 @@ df_extractor <- function(x = um22, Gate_FSC_A = 260E4, Gate_SSC_A = 440E4){
 
 
 
-files <- list.files("Data/FCS", pattern = "^UM")
+# files <- list.files("Data/FCS", pattern = "^UM")
+
+files <- list.files("Data/FCS")
+
+
 dfs <- list(NULL)
 
 for(i in 1:length(files)){
@@ -39,11 +45,86 @@ for(i in 1:length(files)){
 }
 
 
-
 str(dfs)
 
 
 
+
+#################################
+
+n_quant <-10 
+
+probs <- c(seq(0,0.8,1/(n_quant)),  1)
+
+length(probs)
+
+cytom_quantiles <- matrix(rep(NA, n_quant^2*length(files)), nrow = n_quant^2)
+
+
+for(i in 1:length(files)){
+  df_trial <- dfs[[i]]
+  df_quant <- data.frame(
+    FSC_A = cut(df_trial$FSC_A , breaks = quantile(df_trial$FSC_A, probs = probs), labels= 1:(length(probs)-1), include.lowest=TRUE), 
+    SSC_A = cut(df_trial$SSC_A , breaks = quantile(df_trial$SSC_A, probs = probs), labels= 1:(length(probs)-1), include.lowest=TRUE)
+    )
+  cytom_quantiles[,i] <-  as.data.frame(table(df_quant))[,3]
+  print(i)
+  
+}
+
+cytom_quantiles <- as.data.frame(t(cytom_quantiles))
+
+row.names(cytom_quantiles) <- gsub(".fcs", "", files)
+
+library(vegan)
+
+ord <- cca(cytom_quantiles)
+
+summary(ord)
+
+
+
+
+
+plot(ord, display = "sites")
+
+env_f <- envfit(ord ~ N_dots, data = dots, na.rm = T)
+
+plot(env_f)
+
+
+biplot(ord, type = "t")
+
+scores(ord)
+
+ord_scores <- as.data.frame(scores(ord, choices = 1:5)$sites)
+
+plot(hclust(dist(ord_scores), method = "ward.D2"))
+
+
+
+
+
+ord_scores$File <- files
+  
+dots <- read.table("clipboard", sep = "\t", header = T)
+
+ord_dots <- merge(ord_scores, dots)
+
+ggplot(ord_dots, aes(PC1, PC2, size = N_dots)) + geom_point()
+
+
+
+ord_mds <- metaMDS(cytom_quantiles)
+
+plot(ord_mds, display = "sites", type = "t")
+
+env_f2 <- envfit(ord_mds ~ N_dots, data = dots, na.rm = T)
+
+plot(env_f)
+
+
+############################################
 # Визуализация данных проточной цитометрии для избранных файлов
 
 
@@ -63,16 +144,38 @@ plot_cytometry <- function(file = "UM22.fcs"){
     ggtitle(file)
   
   Plots <- list(Pl_SSC_FSC, Pl_DAPI)
-
+  
 }
 
 
 library(patchwork)
 
-(plot_cytometry("UM4.fcs")[[1]] + plot_cytometry("UM4.fcs")[[2]]) /
+# selected_files <- c(6, 61, 14, 51, 33, 58, 23, 41, 36, 48)
+# selected_files <- c(11, 22, 26, 60, 64, 9)
+selected_files <- c(13, 8, 28, 30)
+
+library(dplyr)
+scores(ord)$sites %>% as.data.frame(.) %>%  filter(CA1 < quantile(CA1, probs = 0.25))
+
+for(i in selected_files){
+  pl <-plot_cytometry(paste("UM", i, ".fcs", sep = ""))[[1]] + plot_cytometry(paste("UM", i, ".fcs", sep = ""))[[2]] 
+  ggsave(plot = pl, file = paste("UM", i,".jpg", sep = ""))
+  print(i)
+  
+}
+
+
+
+
+(plot_cytometry("UM1.fcs")[[1]] + plot_cytometry("UM1.fcs")[[2]])
+
+
 (plot_cytometry("UM41.fcs")[[1]] + plot_cytometry("UM41.fcs")[[2]]) / 
-(plot_cytometry("UM36.fcs")[[1]] + plot_cytometry("UM36.fcs")[[2]]) /
-((plot_cytometry("UM48.fcs")[[1]] + plot_cytometry("UM48.fcs")[[2]]))
+  (plot_cytometry("UM36.fcs")[[1]] + plot_cytometry("UM36.fcs")[[2]]) /
+  ((plot_cytometry("UM48.fcs")[[1]] + plot_cytometry("UM48.fcs")[[2]]))
+
+
+
 
 
 
