@@ -52,13 +52,14 @@ str(dfs)
 
 #################################
 
-n_quant <-10 
+n_quant <-100 
 
-probs <- c(seq(0,0.8,1/(n_quant)),  1)
+probs <- c(seq(0, 0.8, 1/(n_quant)),  1)
 
-length(probs)
+(length(probs) - 1)^2
 
-cytom_quantiles <- matrix(rep(NA, n_quant^2*length(files)), nrow = n_quant^2)
+
+cytom_quantiles <- matrix(rep(NA, (length(probs) - 1)^2*length(files)), nrow = (length(probs) - 1)^2)
 
 
 for(i in 1:length(files)){
@@ -67,41 +68,48 @@ for(i in 1:length(files)){
     FSC_A = cut(df_trial$FSC_A , breaks = quantile(df_trial$FSC_A, probs = probs), labels= 1:(length(probs)-1), include.lowest=TRUE), 
     SSC_A = cut(df_trial$SSC_A , breaks = quantile(df_trial$SSC_A, probs = probs), labels= 1:(length(probs)-1), include.lowest=TRUE)
     )
-  cytom_quantiles[,i] <-  as.data.frame(table(df_quant))[,3]
+  cytom_quantiles[,i] <-  as.data.frame(table(df_quant))[,3]/nrow(df_trial)
   print(i)
   
 }
 
 cytom_quantiles <- as.data.frame(t(cytom_quantiles))
 
+# Унификация наименований файлов
+
 row.names(cytom_quantiles) <- gsub(".fcs", "", files)
+row.names(cytom_quantiles) <- gsub("Specimen_001_", "", row.names(cytom_quantiles))
+row.names(cytom_quantiles) <- gsub("_0.*", "", row.names(cytom_quantiles))
+row.names(cytom_quantiles) <- gsub("-", "_", row.names(cytom_quantiles))
+
+
+
+
 
 library(vegan)
 
-ord <- cca(cytom_quantiles)
+ord <- rda(cytom_quantiles)
 
 summary(ord)
 
+ord_scores <- as.data.frame(scores(ord)$sites)
 
 
 
 
 plot(ord, display = "sites")
 
-env_f <- envfit(ord ~ N_dots, data = dots, na.rm = T)
 
-plot(env_f)
+cancer_mussel <- c("NUK1_9",  "Nuk1_28", "NUK1_56", "NUK1_60",  "UM36", "UM41", "UM48", "MChK_29")
 
+ord_scores_cancer <- ord_scores %>% filter(row.names(.) %in% cancer_mussel)
 
-biplot(ord, type = "t")
+library(ggrepel)
 
-scores(ord)
-
-ord_scores <- as.data.frame(scores(ord, choices = 1:5)$sites)
-
-plot(hclust(dist(ord_scores), method = "ward.D2"))
+ggplot(ord_scores, aes(PC1, PC2)) + geom_point() + geom_point(data = ord_scores_cancer, color = "blue", size = 4) + geom_text_repel(data=ord_scores_cancer, aes(label = row.names(ord_scores_cancer))) + geom_vline(xintercept = 0) + geom_hline(yintercept = 0)
 
 
+ggplot(ord_scores, aes(PC1)) + geom_density()
 
 
 
@@ -115,13 +123,6 @@ ggplot(ord_dots, aes(PC1, PC2, size = N_dots)) + geom_point()
 
 
 
-ord_mds <- metaMDS(cytom_quantiles)
-
-plot(ord_mds, display = "sites", type = "t")
-
-env_f2 <- envfit(ord_mds ~ N_dots, data = dots, na.rm = T)
-
-plot(env_f)
 
 
 ############################################
@@ -155,7 +156,7 @@ library(patchwork)
 selected_files <- c(13, 8, 28, 30)
 
 library(dplyr)
-scores(ord)$sites %>% as.data.frame(.) %>%  filter(CA1 < quantile(CA1, probs = 0.25))
+ord_scores %>%  filter(PC1 > quantile(PC1, probs = 0.8))
 
 for(i in selected_files){
   pl <-plot_cytometry(paste("UM", i, ".fcs", sep = ""))[[1]] + plot_cytometry(paste("UM", i, ".fcs", sep = ""))[[2]] 
@@ -167,7 +168,7 @@ for(i in selected_files){
 
 
 
-(plot_cytometry("UM1.fcs")[[1]] + plot_cytometry("UM1.fcs")[[2]])
+(plot_cytometry("NUK1-9.fcs")[[1]] + plot_cytometry("NUK1-9.fcs")[[2]])
 
 
 (plot_cytometry("UM41.fcs")[[1]] + plot_cytometry("UM41.fcs")[[2]]) / 
