@@ -52,7 +52,10 @@ str(dfs)
 
 #################################
 
-n_quant <-100 
+# Распределение мидий в соответствии с результатами проточной цитометрии
+
+
+n_quant <-50 
 
 probs <- c(seq(0, 0.8, 1/(n_quant)),  1)
 
@@ -62,6 +65,8 @@ probs <- c(seq(0, 0.8, 1/(n_quant)),  1)
 cytom_quantiles <- matrix(rep(NA, (length(probs) - 1)^2*length(files)), nrow = (length(probs) - 1)^2)
 
 
+pb = txtProgressBar(min = 0, max = length(files), initial = 0) 
+
 for(i in 1:length(files)){
   df_trial <- dfs[[i]]
   df_quant <- data.frame(
@@ -69,24 +74,26 @@ for(i in 1:length(files)){
     SSC_A = cut(df_trial$SSC_A , breaks = quantile(df_trial$SSC_A, probs = probs), labels= 1:(length(probs)-1), include.lowest=TRUE)
     )
   cytom_quantiles[,i] <-  as.data.frame(table(df_quant))[,3]/nrow(df_trial)
-  print(i)
-  
+  setTxtProgressBar(pb,i)
 }
 
 cytom_quantiles <- as.data.frame(t(cytom_quantiles))
 
+
 # Унификация наименований файлов
 
 row.names(cytom_quantiles) <- gsub(".fcs", "", files)
-row.names(cytom_quantiles) <- gsub("Specimen_001_", "", row.names(cytom_quantiles))
-row.names(cytom_quantiles) <- gsub("_0.*", "", row.names(cytom_quantiles))
-row.names(cytom_quantiles) <- gsub("-", "_", row.names(cytom_quantiles))
+# row.names(cytom_quantiles) <- gsub("Specimen_001_", "", row.names(cytom_quantiles))
+# row.names(cytom_quantiles) <- gsub("_0.*", "", row.names(cytom_quantiles))
+# row.names(cytom_quantiles) <- gsub("-", "_", row.names(cytom_quantiles))
 
 
 
 
 
 library(vegan)
+
+
 
 ord <- rda(cytom_quantiles)
 
@@ -100,7 +107,7 @@ ord_scores <- as.data.frame(scores(ord)$sites)
 plot(ord, display = "sites")
 
 
-cancer_mussel <- c("NUK1_9",  "Nuk1_28", "NUK1_56", "NUK1_60",  "UM36", "UM41", "UM48", "MChK_29")
+cancer_mussel <- c("NUK1-9",  "Nuk1_28", "NUK1-56", "NUK1-60",  "UM36", "UM41", "UM48", "Specimen_001_MChK-29_031")
 
 ord_scores_cancer <- ord_scores %>% filter(row.names(.) %in% cancer_mussel)
 
@@ -111,16 +118,42 @@ ggplot(ord_scores, aes(PC1, PC2)) + geom_point() + geom_point(data = ord_scores_
 
 ggplot(ord_scores, aes(PC1)) + geom_density()
 
+ggplot(ord_scores, aes(PC2)) + geom_density()
 
 
-ord_scores$File <- files
-  
-dots <- read.table("clipboard", sep = "\t", header = T)
+#############################
 
-ord_dots <- merge(ord_scores, dots)
+# Визуализация "образа" скеттер-диграммы, характерного для разных значений PC1, PC2 и их комбинаций
 
-ggplot(ord_dots, aes(PC1, PC2, size = N_dots)) + geom_point()
+ord_PC_loadings <- scores(ord)$species
 
+ord_PC_loadings2 <- cbind(expand.grid(FSC_A = 1:(length(probs) - 1), SSC_A = 1:(length(probs) - 1)), ord_PC_loadings)
+
+ord_PC_loadings2 <-
+  ord_PC_loadings2 %>% mutate(Quadrant = case_when(
+  PC1>0 & PC2>0 ~ "I",
+  PC1<0 & PC2>0 ~ "II",
+  PC1<0 & PC2<0 ~ "III",
+  PC1>0 & PC2<0 ~ "IV"))
+
+
+
+ord_PC_scores2 <-ord_scores %>% 
+   mutate(Quadrant = case_when(
+    PC1>0 & PC2>0 ~ "I",
+    PC1<0 & PC2>0 ~ "II",
+    PC1<0 & PC2<0 ~ "III",
+    PC1>0 & PC2<0 ~ "IV"))
+
+
+
+ggplot(ord_PC_loadings2, aes(FSC_A, SSC_A, fill = Quadrant )) + geom_tile() + scale_fill_manual(values = c("red", "white","gray","yellow"))
+
+
+Quadr_I <- row.names(ord_PC_scores2)[ord_PC_scores2$Quadrant == "I"] 
+Quadr_II <- row.names(ord_PC_scores2)[ord_PC_scores2$Quadrant == "II"] 
+Quadr_III <- row.names(ord_PC_scores2)[ord_PC_scores2$Quadrant == "III"] 
+Quadr_IV <- row.names(ord_PC_scores2)[ord_PC_scores2$Quadrant == "IV"] 
 
 
 
@@ -153,22 +186,25 @@ library(patchwork)
 
 # selected_files <- c(6, 61, 14, 51, 33, 58, 23, 41, 36, 48)
 # selected_files <- c(11, 22, 26, 60, 64, 9)
-selected_files <- c(13, 8, 28, 30)
+# selected_files <- c(13, 8, 28, 30)
 
-library(dplyr)
-ord_scores %>%  filter(PC1 > quantile(PC1, probs = 0.8))
+selected_files <- Quadr_IV
+
+
+
 
 for(i in selected_files){
-  pl <-plot_cytometry(paste("UM", i, ".fcs", sep = ""))[[1]] + plot_cytometry(paste("UM", i, ".fcs", sep = ""))[[2]] 
-  ggsave(plot = pl, file = paste("UM", i,".jpg", sep = ""))
-  print(i)
-  
+  pl <-plot_cytometry(paste(i, ".fcs", sep = ""))[[1]] + plot_cytometry(paste(i, ".fcs", sep = ""))[[2]] 
+  ggsave(plot = pl, file = paste(i,".jpg", sep = ""))
+
 }
 
 
 
 
 (plot_cytometry("NUK1-9.fcs")[[1]] + plot_cytometry("NUK1-9.fcs")[[2]])
+
+(plot_cytometry("UM1.fcs")[[1]] + plot_cytometry("UM1.fcs")[[2]])
 
 
 (plot_cytometry("UM41.fcs")[[1]] + plot_cytometry("UM41.fcs")[[2]]) / 
