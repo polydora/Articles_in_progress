@@ -8,11 +8,12 @@ murm_shape <- read.csv("Data/Murman.csv")
 
 # Доля гибридов в сборах
 
-hybr_pop <- hybr %>% group_by(pop) %>% summarise(lat = mean(N), lon = mean(E), Year = mean(year), Ptros = mean(str), P_hybr = mean(str > 0.1 & str < 0.9), md = 1 - (sd(str))^2/(Ptros*(1-Ptros)) )
+hybr_pop <- hybr %>% group_by(pop) %>% summarise(lat = mean(N), lon = mean(E), Year = mean(year), Ptros = mean(str), P_hybr = mean(str > 0.2 & str < 0.8), md = 1 - (sd(str))^2/(Ptros*(1-Ptros)) )
 
 
 ggplot(hybr_pop, aes(x = P_hybr, y = md)) + geom_point()
 
+hybr_pop <- hybr_pop %>% arrange(desc(P_hybr))
 
 
 # Рисуем карту
@@ -21,6 +22,8 @@ Murm_x <-  c(30, 40)
 Murm_y <- c(67.8, 69.8)
 
 
+
+hybr2 <- merge(hybr, hybr_pop)
 
 
 
@@ -68,7 +71,7 @@ Murm_region_map +
 
 
 Kola_bay_map + 
-  geom_point(data = hybr_pop, aes(x = lon, y = lat, group = 1, fill = md, size = md), shape = 21) +
+  geom_point(data = hybr_pop, aes(x = lon, y = lat, group = 1, fill = P_hybr, size = P_hybr), shape = 21) +
   scale_fill_gradient(low = "yellow", high = "red")
 
 Tuva_map +
@@ -76,8 +79,8 @@ Tuva_map +
   scale_fill_gradient(low = "yellow", high = "red")
 
 
+ggplot(hybr_pop, aes(x = Ptros, y = 1-md)) + geom_density2d() + geom_point()
+
+ggplot(hybr_pop, aes(x = Ptros)) + geom_density() 
 
 
-
-hybr %>% filter(pop %in% hybr_pop$pop[hybr_pop$md > 0.7] ) %>% 
-  ggplot(., aes(x = str)) + geom_histogram() + facet_wrap(~pop)
