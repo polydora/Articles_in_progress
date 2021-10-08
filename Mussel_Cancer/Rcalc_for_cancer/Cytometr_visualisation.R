@@ -50,6 +50,18 @@ str(dfs)
 
 
 
+cytom_event <- rep(NA,length(files))
+
+for(i in 1:length(files)){
+  cytom_event[i] <- nrow(dfs[[i]])
+  setTxtProgressBar(pb,i)
+}
+
+
+hist(cytom_event)
+
+
+
 #################################
 
 # Распределение мидий в соответствии с результатами проточной цитометрии
@@ -95,7 +107,7 @@ library(vegan)
 
 
 
-ord <- rda(cytom_quantiles)
+ord <- cca(cytom_quantiles)
 
 summary(ord)
 
@@ -107,13 +119,22 @@ ord_scores <- as.data.frame(scores(ord)$sites)
 plot(ord, display = "sites")
 
 
-cancer_mussel <- c("NUK1-9",  "Nuk1_28", "NUK1-56", "NUK1-60",  "UM36", "UM41", "UM48", "Specimen_001_MChK-29_031")
+cancer_mussel <- c("NUK1-9",  "Nuk1_28", "NUK1-56", "NUK1-60",  "UM36", "UM41", "UM48", "Specimen_001_MChK-29_031", "hemo_japan_161","hemo_japan_54", "hemo_japan_181", "hemo_japan_181(2)", "hemo_japan_181(3)" )
+
+healthy_mussel <- c("hemo_japan_17", "hemo_japan_38")
 
 ord_scores_cancer <- ord_scores %>% filter(row.names(.) %in% cancer_mussel)
 
+ord_scores_healthy <- ord_scores %>% filter(row.names(.) %in% healthy_mussel)
+
+
+
 library(ggrepel)
 
-ggplot(ord_scores, aes(PC1, PC2)) + geom_point() + geom_point(data = ord_scores_cancer, color = "blue", size = 4) + geom_text_repel(data=ord_scores_cancer, aes(label = row.names(ord_scores_cancer))) + geom_vline(xintercept = 0) + geom_hline(yintercept = 0)
+ggplot(ord_scores, aes(CA1, CA2)) + geom_point() + geom_point(data = ord_scores_cancer, color = "blue", size = 4) + geom_text_repel(data=ord_scores_cancer, aes(label = row.names(ord_scores_cancer))) + 
+  geom_point(data = ord_scores_healthy, color = "red", size = 4) + 
+  geom_text_repel(data=ord_scores_healthy, aes(label = row.names(ord_scores_healthy))) +
+  geom_vline(xintercept = 0) + geom_hline(yintercept = 0)
 
 
 ggplot(ord_scores, aes(PC1)) + geom_density()
