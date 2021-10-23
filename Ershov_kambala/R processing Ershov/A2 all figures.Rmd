@@ -143,7 +143,8 @@ ggplot(kam, aes(x = Bay, y = L,  fill = Sidedness)) + geom_boxplot(notch = T) + 
 ```{r}
 
 Mod <- glm(Outcome ~  L * Sex*Bay, data = kam, family = "binomial")
-
+summary(Mod)
+anova(Mod, test  = "Chi")
 ```
 
 
@@ -165,8 +166,13 @@ Mod_5 <- update(Mod_4, . ~ . - Sex:Bay)
 drop1(Mod_5, test = "Chi")
 
 
-Mod_6 <- update(Mod_5, . ~ . - Sex)
+Mod_6 <- update(Mod_5, . ~ . - L)
 
+drop1(Mod_6, test = "Chi")
+
+Mod_7 <- update(Mod_6, . ~ . - Sex)
+
+AIC(Mod, Mod_7)
 
 
 ```
