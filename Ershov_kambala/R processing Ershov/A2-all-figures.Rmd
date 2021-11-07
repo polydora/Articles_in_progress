@@ -143,9 +143,8 @@ ggplot(kam, aes(x = Bay, y = L,  fill = Sidedness)) + geom_boxplot(notch = T) + 
 ```{r}
 
 Mod <- glm(Outcome ~  L * Sex*Bay, data = kam, family = "binomial")
-
-# summary(Mod)
-# anova(Mod, test  = "Chi")
+summary(Mod)
+anova(Mod, test  = "Chi")
 ```
 
 
@@ -175,21 +174,20 @@ Mod_7 <- update(Mod_6, . ~ . - Sex)
 
 AIC(Mod, Mod_7)
 
-# summary(Mod_7)
 
 ```
 
 
 
-<!-- ```{r} -->
-<!-- AIC(Mod, Mod_6) -->
+```{r}
+AIC(Mod, Mod_6)
 
-<!-- # kable(tidy(Mod_6)) -->
+# kable(tidy(Mod_6))
 
-<!-- ``` -->
+```
 
 ```{r}
-kable(tidy(Mod_7), caption = "Model parameters")
+kable(tidy(Mod_6), caption = "Size Model parameters")
 ```
 
 
@@ -198,13 +196,13 @@ kable(tidy(Mod_7), caption = "Model parameters")
 
 new_data <- kam %>% group_by(Bay) %>% do(data.frame(L = round(mean(.$L), 1)))
 
-predicted <- predict(Mod_7, newdata = new_data, se.fit = T, type = "response")
+predicted <- predict(Mod_6, newdata = new_data, se.fit = T, type = "response")
 
 new_data$Predicted <- predicted$fit
 new_data$SE <- predicted$se.fit
 
 
-ggplot(new_data, aes(x = Bay, y = Predicted)) + geom_col(fill = "gray", color = "gray10") + geom_errorbar(aes(ymin = Predicted - 1.96*SE, ymax = Predicted + 1.96*SE), width = 0.1)  + labs(y = "Probability of left-sided morph")
+ggplot(new_data, aes(x = Bay, y = Predicted)) + geom_col(fill = "gray", color = "gray10") + geom_errorbar(aes(ymin = Predicted - 1.96*SE, ymax = Predicted + 1.96*SE), width = 0.1) + geom_text(aes(y = Predicted - 1.96*SE -0.01, label = L)) + labs(y = "Probability of left-sided morph")
 
 
 ```
@@ -212,37 +210,37 @@ ggplot(new_data, aes(x = Bay, y = Predicted)) + geom_col(fill = "gray", color = 
 
 
 
-<!-- ```{r } -->
+```{r }
 
-<!-- new_data <- kam %>% group_by(Bay) %>% do(data.frame(L = seq(min(.$L), max(.$L), length.out = 100) )) %>% filter(Bay == "Onega_Bay") -->
+new_data <- kam %>% group_by(Bay) %>% do(data.frame(L = seq(min(.$L), max(.$L), length.out = 100) )) %>% filter(Bay == "Onega_Bay")
 
-<!-- predicted <- predict(Mod_6, newdata = new_data, se.fit = T, type = "response") -->
+predicted <- predict(Mod_6, newdata = new_data, se.fit = T, type = "response")
 
-<!-- new_data$Predicted <- predicted$fit -->
-<!-- new_data$SE <- predicted$se.fit -->
+new_data$Predicted <- predicted$fit
+new_data$SE <- predicted$se.fit
 
-<!-- Left_prop <- kam %>% group_by(Bay) %>% do(data.frame(L = .$L, Orient = .$Orient, Size_class = cut_number(x = .$L, n = 25))) %>% group_by(Bay,Size_class) %>% summarise(L_mean = mean(L), Left_prop = mean(Orient == "Left"), N = n()) %>% filter(N>0)  %>% filter(Bay == "Onega_Bay") -->
-
-
+Left_prop <- kam %>% group_by(Bay) %>% do(data.frame(L = .$L, Orient = .$Orient, Size_class = cut_number(x = .$L, n = 25))) %>% group_by(Bay,Size_class) %>% summarise(L_mean = mean(L), Left_prop = mean(Orient == "Left"), N = n()) %>% filter(N>0)  %>% filter(Bay == "Onega_Bay")
 
 
+  
+  
 
 
-<!-- kam_oneg <- kam %>% filter(Bay == "Onega_Bay") -->
+kam_oneg <- kam %>% filter(Bay == "Onega_Bay")
 
-<!-- Pl_size_onega <- -->
-<!-- ggplot(new_data, aes(x = L, y = Predicted)) +  -->
-<!--   geom_line( size = 1) +   -->
-<!--   geom_ribbon(aes(ymin = Predicted - 1.96*SE, ymax = Predicted + 1.96*SE), alpha = 0.5 ) +  -->
-<!--   geom_point(data = Left_prop, aes(x = L_mean, y = Left_prop), shape = 21, size = 2, fill = "gray") +  -->
-<!--   facet_wrap(~ Bay, ncol = 2) + -->
-<!--   labs(x = "Length, cm", y = "Frequency of left-sided morph") + -->
-<!--   geom_segment(data = kam_oneg, aes(x = L, xend = L, y = 0, yend = 0.01)) + -->
-<!--   theme(strip.text = element_blank()) -->
+Pl_size_onega <-
+ggplot(new_data, aes(x = L, y = Predicted)) + 
+  geom_line( size = 1) +  
+  geom_ribbon(aes(ymin = Predicted - 1.96*SE, ymax = Predicted + 1.96*SE), alpha = 0.5 ) + 
+  geom_point(data = Left_prop, aes(x = L_mean, y = Left_prop), shape = 21, size = 2, fill = "gray") + 
+  facet_wrap(~ Bay, ncol = 2) +
+  labs(x = "Length, cm", y = "Frequency of left-sided morph") +
+  geom_segment(data = kam_oneg, aes(x = L, xend = L, y = 0, yend = 0.01)) +
+  theme(strip.text = element_blank())
 
 
 
-<!-- ``` -->
+```
 
 
 
@@ -254,7 +252,7 @@ ggplot(new_data, aes(x = Bay, y = Predicted)) + geom_col(fill = "gray", color = 
 ```{r}
 onega_cam_last <- read_excel("Data/Онежский залив без сомнительных данных.xlsx")
 
-# onega_cam_previous <- read_excel("Data/Onega_L_Age.xlsx")
+onega_cam_previous <- read_excel("Data/Onega_L_Age.xlsx")
 
 # hist(onega_cam_last$L)
 # hist(onega_cam_previous$L)
@@ -314,7 +312,7 @@ onega_cam3$Sex <- factor(onega_cam3$Sex)
 onega_cam3$Sex <-factor(onega_cam3$Sex, labels = c("female", "male"))
 
 
-M <- glm(Side2 ~ Age * Sex , data = onega_cam3, family = "binomial")
+M <- glm(Side2 ~ Age + Sex , data = onega_cam3, family = "binomial")
 
 
 # cam_oneg <- kam %>% filter(Bay == "Kandalaksha_Bay")
@@ -332,7 +330,7 @@ M <- glm(Side2 ~ Age * Sex , data = onega_cam3, family = "binomial")
 
 
 ```{r}
-kable(tidy(M), caption = "Age Model 2 parameters")
+kable(tidy(M), caption = "Age Model parameters")
 
 
 ```

@@ -1,0 +1,317 @@
+Sample,ID,N_dots,Morphotype
+Kuz3,1,8,E
+Kuz3,2,2,E
+Kuz3,3,25,E
+Kuz3,4,14,E
+Kuz3,5,24,E
+Kuz3,6,33,E
+Kuz3,7,2,E
+Kuz3,8,19,E
+Kuz3,9,11,E
+Kuz3,10,23,E
+Kuz3,11,25,E
+Kuz3,12,0,E
+Kuz3,13,24,E
+Kuz3,14,64,E
+Kuz3,15,194,E
+Kuz3,16,1,E
+Kuz3,17,7,E
+Kuz3,18,102,E
+Kuz3,19,22,E
+Kuz3,20,34,E
+Kuz3,21,6,E
+Kuz3,22,16,E
+Kuz3,23,3,E
+Kuz3,24,12,E
+Kuz3,25,4,E
+Kuz3,26,18,E
+Kuz3,27,17,E
+Kuz3,28,30,E
+Kuz3,29,22,E
+Kuz3,30,8,E
+Kuz3,31,10,E
+Kuz3,32,51,E
+Kuz3,33,25,E
+Kuz3,34,44,E
+Kuz3,35,20,E
+Kuz3,36,2,E
+Kuz3,37,12,E
+Kuz3,38,27,E
+Kuz3,39,14,E
+Kuz3,40,28,E
+Kuz3,41,25,E
+Kuz3,42,8,E
+Kuz3,43,16,E
+Kuz3,44,11,E
+Kuz3,45,34,E
+Kuz3,46,4,E
+Kuz3,47,12,E
+Kuz3,48,10,E
+Kuz3,49,8,E
+Kuz3,50,27,E
+Kuz3,51,18,E
+Kuz3,52,4,E
+Kuz3,53,8,E
+Kuz3,54,16,E
+Kuz3,55,7,E
+Kuz3,56,28,E
+Kuz3,57,19,E
+Kuz3,58,0,E
+Kuz3,59,11,E
+Kuz3,60,7,E
+Kuz3,61,4,E
+Kuz3,62,14,E
+Kuz3,63,2,E
+Kuz3,64,0,E
+Kuz3,65,4,E
+Kuz3,66,15,E
+Kuz3,67,7,E
+Kuz3,68,9,E
+Kuz3,69,30,E
+Kuz3,70,7,E
+Kuz3,71,5,E
+Kuz3,72,0,E
+Kuz3,73,21,E
+Kuz3,74,21,E
+Kuz3,75,13,E
+Kuz3,76,1,E
+Kuz3,77,21,E
+Kuz3,78,21,E
+Kuz3,79,1,E
+Kuz3,80,3,E
+Kuz3,81,21,E
+Kuz3,82,17,E
+Kuz3,83,8,E
+Kuz3,84,3,E
+Kuz3,85,7,E
+Kuz1,1,15,E
+Kuz1,2,14,E
+Kuz1,3,14,E
+Kuz1,4,20,E
+Kuz1,5,70,E
+Kuz1,6,16,E
+Kuz1,7,0,E
+Kuz1,8,11,E
+Kuz1,9,1,E
+Kuz1,10,41,E
+Kuz1,11,4,E
+Kuz1,12,5,E
+Kuz1,13,7,E
+Kuz1,14,4,E
+Kuz1,15,71,E
+Kuz1,16,8,E
+Kuz1,17,80,E
+Kuz1,18,22,E
+Kuz1,19,7,E
+Kuz1,20,9,E
+Kuz1,21,23,E
+Kuz1,22,14,E
+Kuz1,23,5,E
+Kuz1,24,9,E
+Kuz1,25,2,E
+Kuz1,26,19,E
+Kuz1,27,15,E
+Kuz1,28,10,E
+Kuz1,29,0,E
+Kuz1,30,27,E
+Kuz1,31,28,E
+Kuz1,32,29,E
+Kuz1,33,0,E
+Kuz1,34,11,E
+Kuz1,35,2,E
+Kuz1,36,0,E
+Kuz1,37,19,E
+Kuz1,38,4,E
+Kuz1,39,6,E
+Kuz1,40,0,E
+Kuz1,41,0,E
+Kuz1,42,36,E
+Kuz1,43,13,E
+Kuz1,44,8,E
+Kuz1,45,42,E
+Kuz1,46,19,E
+Kuz1,47,6,E
+Kuz1,48,11,E
+Kuz1,49,5,E
+Kuz1,50,2,E
+Kuz1,51,3,E
+Kuz1,52,10,E
+Kuz1,53,26,E
+Kuz1,54,17,E
+Kuz1,55,6,E
+Kuz1,56,0,E
+Kuz1,57,7,E
+Kuz1,58,8,E
+Kuz1,59,20,E
+Kuz1,60,14,E
+Kuz1,61,18,E
+Kuz1,62,14,E
+Kuz1,63,30,E
+Kuz1,64,5,E
+Kuz1,65,5,E
+Kuz1,66,19,E
+Kuz1,67,0,E
+Kuz1,68,1,E
+Kuz1,69,12,E
+Kuz1,70,2,E
+Kuz1,71,15,E
+Kuz1,72,17,E
+Kuz1,73,0,E
+Kuz1,74,41,E
+Kuz1,75,1,E
+Kuz1,76,36,E
+Kuz1,77,0,E
+Kuz1,78,2,E
+Kuz1,79,0,E
+Kuz1,80,0,E
+Kuz1,81,0,E
+Kuz1,82,14,E
+Kuz1,83,4,E
+Kuz1,84,15,E
+Kuz1,85,0,E
+Kuz1,86,0,E
+Kuz1,87,9,E
+Kuz1,88,0,E
+Kuz1,89,0,E
+Kuz1,90,7,E
+Kuz1,91,6,E
+Kuz1,92,3,E
+Buoytrea 1,101,31,E
+Buoytrea 1,102,11,E
+Buoytrea 1,103,12,E
+Buoytrea 1,104,48,E
+Buoytrea 1,105,12,E
+Buoytrea 1,106,16,E
+Buoytrea 1,107,11,E
+Buoytrea 1,108,9,E
+Buoytrea 1,109,43,T
+Buoytrea 1,5,4,T
+Buoytrea 1,45,4,T
+Buoytrea 1,18,19,T
+Buoytrea 1,44,15,T
+Buoytrea 1,50,33,T
+Buoytrea 1,110,3,T
+Buoytrea 1,46,0,T
+Buoytrea 1,10,10,T
+Buoytrea 1,48,5,T
+Buoytrea 1,19,59,T
+Buoytrea 1,2,17,T
+Buoytrea 1,52,15,T
+Buoytrea 1,59,50,T
+Buoytrea 1,9,46,T
+Buoytrea 1,2!,31,T
+Buoytrea 1,6,85,T
+Buoytrea 1,111,0,T
+Buoytrea 1,60,4,T
+Buoytrea 1,12,37,T
+Buoytrea 1,112,23,T
+Buoytrea 1,113,58,T
+Buoytrea 1,7,28,T
+Buoytrea 1,16,7,T
+Buoytrea 1,33,56,T
+Buoytrea 1,1,0,T
+Buoytrea 1,35,22,T
+Buoytrea 1,49,80,T
+Buoytrea 1,32,36,T
+Buoytrea 1,114,6,T
+Buoytrea 1,34,3,T
+Buoytrea 1,20,90,T
+Buoytrea 1,51,33,T
+Buoytrea 1,115,53,T
+Buoytrea 1,55,28,T
+Buoytrea 1,47,38,T
+Buoytrea 1,19!,0,T
+Buoytrea 1,8,15,T
+Buoytrea 1,22,17,T
+Buoytrea 1,36,0,T
+Buoytrea 1,42,6,T
+Buoytrea 1,11,100,T
+Buoytrea 1,30,0,T
+Buoytrea 1,53,26,T
+Buoytrea 1,116,32,T
+Buoytrea 1,117,12,T
+Buoytrea 1,39,12,T
+Buoytrea 1,13,1,T
+Buoytrea 1,41,6,T
+Buoytrea 1,15,27,T
+Buoytrea 1,4,14,T
+Buoytrea 1,26,64,T
+Buoytrea 1,40,3,T
+Buoytrea 1,69,0,T
+Buoytrea 1,118,5,T
+Buoytrea 1,38,22,T
+Buoytrea 1,54,29,T
+Buoytrea 1,27,2,T
+Buoytrea 1,21,26,T
+Buoytrea 1,28,5,T
+Buoytrea 1,119,22,T
+Buoytrea 1,191!,47,T
+Buoytrea 1,37,7,T
+Buoytrea 1,44!,7,T
+Buoytrea 1,24,3,T
+Buoytrea 1,25,17,T
+Buoytrea 1,23,3,T
+Buoytrea 1,120,9,T
+Buoytrea 1,121,57,T
+Buoytrea 1,59,3,T
+Buoytrea 1,25!,8,T
+Buaytred 10,10-4,0,E
+Buaytred 10,10-7,11,E
+Buaytred 10,10-30,9,E
+Buaytred 10,10-10,7,E
+Buaytred 10,10-25,4,E
+Buaytred 10,10-8,0,E
+Buaytred 10,10-28,29,T
+Buaytred 10,10-5,22,T
+Buaytred 10,10-11,2,T
+Buaytred 10,10-24,2,T
+Buaytred 10,10-6,11,T
+Buaytred 10,10-22,37,T
+Buaytred 10,10-21,22,T
+Buaytred 10,10-3,15,T
+Buaytred 10,10-29,1,T
+Buaytred 10,10-18,7,T
+Buaytred 10,10-14,13,T
+Buaytred 10,10-21,32,T
+Buaytred 10,10-19,0,T
+Buaytred 10,10-20,14,T
+Buaytred 10,10-27,0,T
+Buaytred 10,10-13,0,T
+Buaytred 10,10-9,2,T
+Buaytred 10,10-26,2,T
+Buaytred 10,10-12,4,T
+Buaytred 10,10-15,18,T
+Buaytred 10,10-4,2,T
+Buaytred 10,10-16,5,T
+Buaytred 10,10-11,31,T
+Buaytred 10,10-2,2,T
+Buaytred 8,8-9,2,T
+Buaytred 8,8-22,10,T
+Buaytred 8,8-12,15,T
+Buaytred 8,8-29,17,T
+Buaytred 8,8-25,20,T
+Buaytred 8,8-30,39,T
+Buaytred 8,8-2,12,T
+Buaytred 8,8-20,43,T
+Buaytred 8,8-19,10,T
+Buaytred 8,8-13,13,T
+Buaytred 8,8-6,35,T
+Buaytred 8,8-26,2,T
+Buaytred 8,8-8,1,T
+Buaytred 8,8-18,7,T
+Buaytred 8,8-24,11,T
+Buaytred 8,8-10,11,T
+Buaytred 8,8-28,23,T
+Buaytred 8,8-21,21,T
+Buaytred 8,8-3,2,T
+Buaytred 8,8-4,5,T
+Buaytred 8,8-14,4,T
+Buaytred 8,8-5,10,T
+Buaytred 8,8-14,1,T
+Buaytred 8,8-1,14,E
+Buaytred 8,8-15,3,E
+Buaytred 8,8-27,2,E
+Buaytred 8,8-7,3,E
+Buaytred 8,8-16,2,E
+Buaytred 8,8-11,5,E
+Buaytred 8,8-23,0,E

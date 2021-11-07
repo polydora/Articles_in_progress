@@ -336,25 +336,34 @@ kable(tidy(Mod6, parametric = TRUE), caption = "Таблица 8. Результ
 
 
 ```{r fig.cap="Рисунок +. Визуализация модели, построенной на всех данных " }
-My_data <- expand.grid(Ptros = seq(0,1,0.01), Sal_index = seq(min(hybr_pop_riv$Sal_index), max(hybr_pop_riv$Sal_index), 1 ), Region = unique(hybr_pop_riv$Region))
+My_data <- expand.grid(Ptros = seq(0,1,0.01), Sal_index = mean(hybr_pop_riv$Sal_index), Region = unique(hybr_pop_riv$Region))
 
 My_data$Predicted <- predict(Mod5, newdata = My_data, type = "response")
 
-ggplot(My_data, aes(x = Ptros, y = Predicted, color = Sal_index, group = Sal_index)) + geom_line() + scale_color_gradient(low = "yellow", high = "red") + geom_point(data = hybr_pop_riv, aes(y = md_1, fill = Sal_index, shape = Region), shape = 21, color = "black", size = 4) + scale_fill_gradient(low = "yellow", high = "red")  + facet_wrap(~Region) + labs(y = "1-md")
+ggplot(My_data, aes(x = Ptros, y = Predicted, group = Sal_index)) + geom_line() + scale_color_gradient(low = "yellow", high = "red") + geom_point(data = hybr_pop_riv, aes(y = md_1, fill = Sal_index, shape = Region), shape = 21, color = "black", size = 4) + scale_fill_gradient(low = "yellow", high = "red")  + facet_wrap(~Region) + labs(y = "1-md")
 ```
 
 
 ```{r fig.cap="Рисунок +. Визуализация модели, построенной на всех данных " }
-My_data <- expand.grid(Ptros = seq(0,1,0.01), Sal_index = seq(min(hybr_pop_riv$Sal_index), max(hybr_pop_riv$Sal_index), 1 ), Region = unique(hybr_pop_riv$Region))
+My_data <- expand.grid(Ptros = seq(0,1,0.01), Sal_index = mean(hybr_pop_riv$Sal_index), Region = unique(hybr_pop_riv$Region))
 
 My_data$Predicted <- predict(Mod6, newdata = My_data, type = "response")
 
-ggplot(My_data, aes(x = Ptros, y = Predicted, color = Sal_index, group = Sal_index)) + geom_line() + scale_color_gradient(low = "yellow", high = "red") + geom_point(data = hybr_pop_riv, aes(y = P_hybr, fill = Sal_index, shape = Region), shape = 21, color = "black", size = 4) + scale_fill_gradient(low = "yellow", high = "red")  + facet_wrap(~Region) + labs(y = "Доля гибридов в популяции (P_hybr)")
+ggplot(My_data, aes(x = Ptros, y = Predicted, group = Sal_index)) + geom_line() + geom_point(data = hybr_pop_riv, aes(y = P_hybr, fill = Sal_index, shape = Region), shape = 21, color = "black", size = 4) + scale_fill_gradient(low = "yellow", high = "red")  + facet_wrap(~Region) + labs(y = "Доля гибридов в популяции (P_hybr)")
 ```
 
 
 
 
+<!-- ```{r} -->
+<!-- My_data_2 <- expand.grid(Ptros = seq(0,1,0.01), Sal_index = mean(hybr_pop_riv$Sal_index), max(hybr_pop_riv$Sal_index), 0.1 ) -->
+
+
+<!-- My_data_2$Predicted <- predict(Mod5, newdata = My_data_2, type = "response") -->
+
+<!-- ggplot(My_data_2, aes(x = Ptros, y = Sal_index, color = Predicted)) + geom_tile() +   geom_point(data = hybr_pop_riv, aes(x = Ptros, y = Sal_index, fill = md_1), shape = 21, color = "black", size = 4) + scale_fill_gradient(low = "gray20", high = "white") +  scale_color_gradient(low = "gray20", high = "white") -->
+
+<!-- ``` -->
 
 
 
