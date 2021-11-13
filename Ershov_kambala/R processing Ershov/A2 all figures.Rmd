@@ -198,6 +198,8 @@ kable(tidy(Mod_7), caption = "Model parameters")
 
 new_data <- kam %>% group_by(Bay) %>% do(data.frame(L = round(mean(.$L), 1)))
 
+new_data$Bay <- factor(new_data$Bay, levels = c("Onega Bay", "Dvina Bay", "Kandalaksha Bay", "Mezen Bay"))
+
 predicted <- predict(Mod_7, newdata = new_data, se.fit = T, type = "response")
 
 new_data$Predicted <- predicted$fit

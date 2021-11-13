@@ -323,6 +323,10 @@ M <- glm(Side2 ~ Age + Sex , data = onega_cam3, family = "binomial")
 # summary(M)
 # summary(M2)
 
+# nrow(onega_cam3)
+
+# max(onega_cam3$Age)
+
 ```
 
 
