@@ -4,6 +4,7 @@ library(dplyr)
 library(nlme)
 library(car)
 library(lme4)
+library(betareg)
 
 
 
@@ -43,7 +44,51 @@ summer_f$T_alive[1:12] <- summer_f$T_alive[1:12] + exp_mussel$t
 
 summer_f <- summer_f %>% mutate(N_total = E_alive + T_alive)
 
+##############################################################################
+# Зависимость доли погибших мидий (фон+экспериментальные) от структуры поселения
+ggplot(summer_f, aes(x = P_Tr, y = Dead_ratio)) + geom_point(aes(color = Fon_type), size = 3) + geom_smooth(method = "glm", method.args = list(family = "binomial"), se = F)
 
+
+total_condition <- summer_f %>% mutate(dead_T = T_dead/T_alive, dead_E = E_dead/E_alive)
+
+total_condition2 <- melt(total_condition, id.vars = c("Cage_ID", "Experiment", "E_alive", "E_dead", "T_alive", "T_dead",   "P_Tr", "Dead_ratio", "Fon_type", "N_total"), variable.name = "Dead_morph", value.name = "P_dead_morph")
+
+
+ggplot(total_condition2, aes(x = P_Tr, y = P_dead_morph, color = Dead_morph)) + geom_point(aes(color = Fon_type), size = 3) + geom_smooth(method = "glm", method.args = list(family = "binomial"), se = F)
+
+
+# Строим модель на основе beta-distribution
+total_condition2$P_dead_morph[total_condition2$P_dead_morph == 0] = 0.001 #Это нужно для того, чтобы удовлетоворить требование бета-распределения, которое определено на интервале ]0,1[
+total_condition2$P_dead_morph[total_condition2$P_dead_morph == 1] = 0.999
+
+
+model.beta <- betareg(P_dead_morph ~ P_Tr*Dead_morph + N_total, data = total_condition2, link = "logit")
+
+
+plot(model.beta, which = 1)
+
+
+
+# model.beta_dummy <- betareg(P_dead_morph ~ P_Tr + Dead_morph + N_total, data = total_condition2, link = "logit")
+
+# vif(model.beta_dummy)
+
+summary(model.beta)
+
+my_data <- expand.grid(Dead_morph = c("dead_E", "dead_T"), P_Tr = seq(0,1, length.out = 100), N_total = mean(total_condition2$N_total), phi = 4.545)
+
+
+my_data$fit <- predict(model.beta, newdata = my_data, type = "response")
+
+
+library(effects)
+Effects <- as.data.frame(allEffects(model.beta, xlevels=my_data))
+str(Effects)
+
+
+ggplot(my_data, aes(x = P_Tr, y = fit)) + geom_line(aes(color = Dead_morph)) + geom_point(data = total_condition2, aes(y = P_dead_morph, color = Dead_morph), size = 3) + geom_ribbon(data = Effects[[2]], aes(ymin = lower, ymax = upper, group = Dead_morph), alpha=0.2)
+
+##################################################
 
 
 
