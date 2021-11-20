@@ -14,12 +14,13 @@ summer <- read_excel('Data/Mytred_Growth_Summer_2021_Anton_modified.xlsx', sheet
 
 nrow(summer)
 
-summer <- summer %>% filter( (Sample_site == "Tr" & Morphotype == "t") | (Sample_site == "Ed" & Morphotype == "e")) 
+# удаляем тех меченных особей, которые имеют морфотипы не соотвествующие месту взятия мидий
+summer_pure <- summer %>% filter( (Sample_site == "Tr" & Morphotype == "t") | (Sample_site == "Ed" & Morphotype == "e")) 
 
 
 #Only Alive mussels allowed 
 
-summer1 <- summer %>% filter(Status == 'Alive')
+summer1 <- summer_pure %>% filter(Status == 'Alive')
 str(summer1)
 # View(summer1)
 
@@ -28,18 +29,24 @@ str(summer1)
 
 library(reshape2)
 
-exp_mussel <- summer1 %>%  group_by(Cage_ID, Morphotype, Type) %>% summarise(N_alive = n()) %>% dcast(., Cage_ID ~ Morphotype ) %>% filter(! (Cage_ID %in% c("K1", "K2", "K3", "K4")) )
+exp_mussel <- summer %>%  group_by(Cage_ID, Morphotype, Type, Status) %>% summarise(N_alive = n()) %>% dcast(., Cage_ID ~ Morphotype + Status ) %>% filter(! (Cage_ID %in% c("K1", "K2", "K3", "K4")) )
 
 summer_f <- read_excel('Data/Mytred_Growth_Summer_2021_Anton_modified.xlsx', sheet = 'Fone_mussel')
 
+
+# Добавляем к численности фоновых мидий численность меченных 
 summer_f <- summer_f[order(summer_f$Cage_ID), ]
 
-summer_f$E_alive[1:12] <- summer_f$E_alive[1:12] + exp_mussel$e
-summer_f$T_alive[1:12] <- summer_f$T_alive[1:12] + exp_mussel$t
+summer_f$E_alive[1:12] <- summer_f$E_alive[1:12] + exp_mussel$e_Alive
+summer_f$T_alive[1:12] <- summer_f$T_alive[1:12] + exp_mussel$t_Alive
 
+summer_f$E_dead[1:12] <- summer_f$E_dead[1:12] + exp_mussel$e_Dead
+summer_f$T_dead[1:12] <- summer_f$T_dead[1:12] + exp_mussel$t_Dead
 
+summer_f[is.na(summer_f)] <- 0
 
-
+# Пересчитываем Dead_ratio с учетом добавления меченных мидий
+summer_f$Dead_ratio <- with(summer_f, (E_dead + T_dead) / (E_alive + E_dead + T_alive + T_dead))
 
 
 summer_f <- summer_f %>% mutate(N_total = E_alive + T_alive)
@@ -49,12 +56,14 @@ summer_f <- summer_f %>% mutate(N_total = E_alive + T_alive)
 ggplot(summer_f, aes(x = P_Tr, y = Dead_ratio)) + geom_point(aes(color = Fon_type), size = 3) + geom_smooth(method = "glm", method.args = list(family = "binomial"), se = F)
 
 
-total_condition <- summer_f %>% mutate(dead_T = T_dead/T_alive, dead_E = E_dead/E_alive)
+# Датафрейм с общей характеристикой условий в садках
+total_condition <- summer_f %>% mutate(dead_T = T_dead/(T_alive + T_dead), dead_E = E_dead/(E_alive + E_dead))
 
 total_condition2 <- melt(total_condition, id.vars = c("Cage_ID", "Experiment", "E_alive", "E_dead", "T_alive", "T_dead",   "P_Tr", "Dead_ratio", "Fon_type", "N_total"), variable.name = "Dead_morph", value.name = "P_dead_morph")
 
 
-ggplot(total_condition2, aes(x = P_Tr, y = P_dead_morph, color = Dead_morph)) + geom_point(aes(color = Fon_type), size = 3) + geom_smooth(method = "glm", method.args = list(family = "binomial"), se = F)
+ggplot(total_condition2, aes(x = P_Tr, y = P_dead_morph, color = Dead_morph)) + geom_point(size = 3) + geom_smooth(method = "glm", method.args = list(family = "binomial"), se = F)
+
 
 
 # Строим модель на основе beta-distribution
@@ -75,18 +84,19 @@ plot(model.beta, which = 1)
 
 summary(model.beta)
 
-my_data <- expand.grid(Dead_morph = c("dead_E", "dead_T"), P_Tr = seq(0,1, length.out = 100), N_total = mean(total_condition2$N_total), phi = 4.545)
+my_data <- expand.grid(Dead_morph = c("dead_E", "dead_T"), P_Tr = seq(from = min(total_condition2$P_Tr), to = max(total_condition2$P_Tr), length.out = 100))
 
 
-my_data$fit <- predict(model.beta, newdata = my_data, type = "response")
+# my_data$fit <- predict(model.beta, newdata = my_data, type = "response")
 
-
+# Нашел пакетик, который делает расчеты для визуализации более простыми
 library(effects)
 Effects <- as.data.frame(allEffects(model.beta, xlevels=my_data))
-str(Effects)
 
 
-ggplot(my_data, aes(x = P_Tr, y = fit)) + geom_line(aes(color = Dead_morph)) + geom_point(data = total_condition2, aes(y = P_dead_morph, color = Dead_morph), size = 3) + geom_ribbon(data = Effects[[2]], aes(ymin = lower, ymax = upper, group = Dead_morph), alpha=0.2)
+ggplot(Effects[[2]], aes(x = P_Tr, y = fit)) + geom_line(aes(color = Dead_morph)) + geom_point(data = total_condition2, aes(y = P_dead_morph, color = Dead_morph, shape = Fon_type), size = 3) + geom_ribbon(data = Effects[[2]], aes(ymin = lower, ymax = upper, group = Dead_morph), alpha=0.2) + scale_color_manual(values = c("blue", "red"))
+
+ggplot(total_condition, aes(x = P_Tr, y = N_total)) +  geom_point(aes(shape = Fon_type), size = 3, position = position_jitter(width = 0.1)) + ylim(0, 100)
 
 ##################################################
 
@@ -147,9 +157,6 @@ ggplot(data = summer2, aes(x = P_Tr, y = W_sh, colour = Morphotype)) + geom_poin
 
 ggplot(data = summer2, aes(x = P_Tr, y = Fin_size2, colour = Morphotype)) + geom_point() + geom_smooth(method = 'lm') + scale_color_manual(values = c('blue' , 'red'))
 
-ggplot(summer_f, aes(x= P_Tr, y = N_total)) + geom_point()
-
-ggplot(summer_f, aes(x= P_Tr, y = Dead_ratio)) + geom_point()
 
 
 
@@ -179,7 +186,7 @@ Anova(growth_mod2)
 
 summary(growth_mod2)
 
-plot(growth_mod2)
+plot(growth_mod2, which = 1)
 
 
 
@@ -207,9 +214,9 @@ X_growth <- model.matrix(~ Morphotype + P_Tr + N_total + Init_size2, data = myda
 mydata_growth$predicted_growth <- X_growth%*%coe_growth
 
 
-View(mydata_growth)
+# View(mydata_growth)
 
-ggplot(mydata_growth, aes(x = P_Tr, y = predicted_growth, colour = Morphotype)) + geom_line()
+
 
 vcov(growth_mod1)
 
@@ -240,9 +247,14 @@ ggplot(. , aes(x = Morphotype, y = Growth2)) + geom_boxplot(aes(fill = Cage_ID))
 
 ggplot(control_growth3, aes(x = Morphotype, y = Mean_Growth)) + geom_col()
 
+
 # View(control_growth3)
 
 ggplot(mydata_growth, aes(x = P_Tr, y = predicted_growth, colour = Morphotype)) + geom_line() + geom_ribbon(aes(ymin = predicted_growth -1.96*se_growth, ymax = predicted_growth + 1.96*se_growth, group = Morphotype), alpha = 0.2, colour = 'grey') + scale_color_manual(values = c('blue', 'red'))  + ylab('Прирост, мм') + xlab('Доля M.trossulus в садке') + labs(color = 'Вид') + geom_hline(data = control_growth3, aes(yintercept = Mean_Growth, color = Morphotype), linetype = 2)
+
+
+
+
 
 
 
@@ -269,7 +281,7 @@ ggplot(mydata_conin, aes(x = P_Tr, y = predicted_conin, colour = Morphotype)) + 
 
 
 control_conind <- summer %>% filter(Type == 'K')
-View(control_conind)
+# View(control_conind)
 
 str(control_conind)
 
@@ -277,14 +289,14 @@ str(control_conind)
 control_conind$Conind_num <- as.numeric(control_growth$W_tis) / (as.numeric(control_conind$W_tis) + as.numeric(control_conind$W_sh))
 
 control_conind1 <- control_conind %>% filter(Status == 'Alive')
-View(control_conind1)
+# View(control_conind1)
 
 control_conind2 <- control_conind1[complete.cases(control_conind1$Conind_num),]
-View(control_conind2)
+# View(control_conind2)
 
 control_conind3 <- control_conind2 %>% group_by(Morphotype) %>% summarise(Mean_Conind = mean(Conind_num), SE = sd(Conind_num)/sqrt(n()))
 head(control_conind3)
-View(control_conind3)
+# View(control_conind3)
 
 ggplot(mydata_conin, aes(x = P_Tr, y = predicted_conin, colour = Morphotype)) + geom_line() + geom_ribbon(aes(ymin = predicted_conin -1.96*se_conind, ymax = predicted_conin + 1.96*se_conind, group = Morphotype), alpha = 0.2, colour = 'grey') + scale_color_manual(values = c('blue', 'red')) + geom_point(data = summer2, aes(x = P_Tr, y = Conind_num)) + ylab('Condition index') + xlab('Доля M.trossulus в садке') + labs(color = 'Вид') + geom_hline(data = control_conind3, aes(yintercept = Mean_Conind, color = Morphotype), linetype = 2)
 
