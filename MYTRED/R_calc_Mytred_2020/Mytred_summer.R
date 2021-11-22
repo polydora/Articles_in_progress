@@ -21,7 +21,6 @@ summer_pure <- summer %>% filter( (Sample_site == "Tr" & Morphotype == "t") | (S
 #Only Alive mussels allowed 
 
 summer1 <- summer_pure %>% filter(Status == 'Alive')
-str(summer1)
 # View(summer1)
 
 #Adding FON data
@@ -29,7 +28,11 @@ str(summer1)
 
 library(reshape2)
 
-exp_mussel <- summer %>%  group_by(Cage_ID, Morphotype, Type, Status) %>% summarise(N_alive = n()) %>% dcast(., Cage_ID ~ Morphotype + Status ) %>% filter(! (Cage_ID %in% c("K1", "K2", "K3", "K4")) )
+exp_mussel <- summer %>%  group_by(Cage_ID, Morphotype, Type, Status) %>% summarise(N_alive = n()) %>% dcast(., Cage_ID ~ Morphotype + Status ) 
+
+exp_mussel[is.na(exp_mussel)] <- 0
+
+
 
 summer_f <- read_excel('Data/Mytred_Growth_Summer_2021_Anton_modified.xlsx', sheet = 'Fone_mussel')
 
@@ -37,13 +40,14 @@ summer_f <- read_excel('Data/Mytred_Growth_Summer_2021_Anton_modified.xlsx', she
 # Добавляем к численности фоновых мидий численность меченных 
 summer_f <- summer_f[order(summer_f$Cage_ID), ]
 
-summer_f$E_alive[1:12] <- summer_f$E_alive[1:12] + exp_mussel$e_Alive
-summer_f$T_alive[1:12] <- summer_f$T_alive[1:12] + exp_mussel$t_Alive
+summer_f$E_alive[1:12] <- summer_f$E_alive[1:12] + exp_mussel$e_Alive[1:12]
+summer_f$T_alive[1:12] <- summer_f$T_alive[1:12] + exp_mussel$t_Alive[1:12]
 
-summer_f$E_dead[1:12] <- summer_f$E_dead[1:12] + exp_mussel$e_Dead
-summer_f$T_dead[1:12] <- summer_f$T_dead[1:12] + exp_mussel$t_Dead
+summer_f$E_dead[1:12] <- summer_f$E_dead[1:12] + exp_mussel$e_Dead[1:12]
+summer_f$T_dead[1:12] <- summer_f$T_dead[1:12] + exp_mussel$t_Dead[1:12]
 
-summer_f[is.na(summer_f)] <- 0
+
+
 
 # Пересчитываем Dead_ratio с учетом добавления меченных мидий
 summer_f$Dead_ratio <- with(summer_f, (E_dead + T_dead) / (E_alive + E_dead + T_alive + T_dead))
@@ -59,6 +63,8 @@ ggplot(summer_f, aes(x = P_Tr, y = Dead_ratio)) + geom_point(aes(color = Fon_typ
 # Датафрейм с общей характеристикой условий в садках
 total_condition <- summer_f %>% mutate(dead_T = T_dead/(T_alive + T_dead), dead_E = E_dead/(E_alive + E_dead))
 
+
+# Переводим в длинный формат
 total_condition2 <- melt(total_condition, id.vars = c("Cage_ID", "Experiment", "E_alive", "E_dead", "T_alive", "T_dead",   "P_Tr", "Dead_ratio", "Fon_type", "N_total"), variable.name = "Dead_morph", value.name = "P_dead_morph")
 
 
@@ -94,9 +100,25 @@ library(effects)
 Effects <- as.data.frame(allEffects(model.beta, xlevels=my_data))
 
 
+
+# определяем доверительные интервалы для маргинальных эффектов P_tr по фактору Dead_morph
+library(emmeans )
+
+Dead_ratio_trends_by_Dead_morph <- emtrends(model.beta, specs = ~ Dead_morph, var="P_Tr")
+summary(Dead_ratio_trends_by_Dead_morph) 
+
+pairs(Dead_ratio_trends_by_Dead_morph)
+
+
+
+
 ggplot(Effects[[2]], aes(x = P_Tr, y = fit)) + geom_line(aes(color = Dead_morph)) + geom_point(data = total_condition2, aes(y = P_dead_morph, color = Dead_morph, shape = Fon_type), size = 3) + geom_ribbon(data = Effects[[2]], aes(ymin = lower, ymax = upper, group = Dead_morph), alpha=0.2) + scale_color_manual(values = c("blue", "red"))
 
 ggplot(total_condition, aes(x = P_Tr, y = N_total)) +  geom_point(aes(shape = Fon_type), size = 3, position = position_jitter(width = 0.1)) + ylim(0, 100)
+
+
+
+
 
 ##################################################
 
@@ -163,15 +185,74 @@ ggplot(data = summer2, aes(x = P_Tr, y = Fin_size2, colour = Morphotype)) + geom
 #models
 #GROWTH
 
-growth_mod_dummy <- glm(data = summer2, Growth2 ~ Morphotype + P_Tr + N_total + Init_size2)
+growth_mod_dummy <- gls(data = summer2, Growth2 ~ Morphotype + P_Tr + N_total + Init_size2)
 vif(growth_mod_dummy)
 
 
-growth_mod <- glm(data = summer2, Growth2 ~ Morphotype * P_Tr + N_total + Init_size2)
-drop1(growth_mod, test = "Chi")
+growth_mod1 <- gls(data = summer2, Growth2 ~ Morphotype * P_Tr + N_total + Init_size2, weights = varPower(form = ~ N_total))
+
+growth_mod2 <- gls(data = summer2, Growth2 ~ Morphotype * P_Tr + N_total + Init_size2, weights = varPower(form = ~ N_total|Morphotype))
+
+AIC(growth_mod1, growth_mod2)
+
+plot(growth_mod2)
+
+
+growth_mod2_ML <- update(growth_mod2, method = "ML")
+drop1(growth_mod2_ML, test = "Chi") 
+
+# Здесь надо подумать!!! ТАк как после сокращения модели будет считаться, что оба морфотипа реагируют на P_Tr одинаково, что, кажется, не так
+# 
+# growth_mod2_ML_2 <- update(growth_mod2_ML,. ~ . - Morphotype:P_Tr)
+# drop1(growth_mod2_ML_2, test = "Chi") 
+# 
+# growth_mod2_ML_3 <- update(growth_mod2_ML_2,. ~ . - Init_size2)
+# drop1(growth_mod2_ML_3, test = "Chi") 
+# 
+# growth_mod3 <- update(growth_mod2_ML_3, method = "REML")
+
+summary(growth_mod2)
+
+AIC(growth_mod, growth_mod2, growth_mod3)
+
+library(broom.mixed)
+tidy(growth_mod3)
+
+
+##### Визуализация модели прироста ########
+
+mydata_growth <- summer2 %>% group_by(Morphotype) %>% do(data.frame(P_Tr = seq(min(.$P_Tr), max(.$P_Tr), length.out = 10), N_total = mean(.$N_total), Init_size2 = mean(.$Init_size2)))
+
+
+Effects_growth <- as.data.frame(allEffects(growth_mod2, xlevels=mydata_growth))
+
+ggplot(Effects_growth[[3]], aes(x = P_Tr, y = fit)) + geom_line(aes(color = Morphotype))  + geom_ribbon(data = Effects_growth[[3]], aes(ymin = lower, ymax = upper, group = Morphotype), alpha=0.2) + scale_color_manual(values = c("blue", "red")) + geom_point(data = summer2, aes(y = Growth2, color = Morphotype))
+
+# install.packages("devtools")
+# devtools::install_github("cardiomoon/ggiraphExtra")
+
+
+# определяем доверительные интервалы для маргинальных эффектов P_tr по фактору Morphotype
+library(emmeans )
+
+Growth2_trends_morph <- emtrends(growth_mod2, specs = ~ Morphotype, var="P_Tr", mode = "df.error")
+summary(Growth2_trends_morph) 
+
+pairs(Growth2_trends_morph)
 
 
 
+
+
+
+
+
+
+
+
+
+
+##########################################################
 
 growth_mod1 <- update(growth_mod, .~.-Morphotype:P_Tr)
 drop1(growth_mod1, test = "Chi")
@@ -193,8 +274,15 @@ plot(growth_mod2, which = 1)
 
 #CONDITION INDEX
 
+summer3 <- summer2 %>% filter(!is.na(Fin_size2))
 
-conind_mod <- glm(data = summer2, Con_Ind ~ Morphotype * P_Tr + N_total + Fin_size2)
+
+summer2 %>% filter(is.na(Morphotype))
+
+
+conind_mod <- gls(data = summer3, Con_Ind ~ Morphotype * P_Tr + N_total + Fin_size2)
+plot(mod1, which = 1)
+
 drop1(conind_mod, test = "Chi")
 
 
