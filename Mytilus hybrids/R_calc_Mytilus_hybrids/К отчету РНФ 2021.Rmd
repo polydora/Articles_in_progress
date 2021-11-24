@@ -1,0 +1,252 @@
+---
+title: Гибридизация *M.trossulus* и *M.edulis* в локальных поселениях кольской гибридной зоны
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+  opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+
+```{r}
+library(readxl)
+library(ggplot2)
+library(dplyr)
+library(mgcv)
+library(ggrepel)
+
+theme_set(theme_bw())
+
+hybr <- read_excel("Data/hybrids_BS.xlsx")
+hybr$region <- factor(hybr$region)
+
+
+rivers <- read_excel("Data/rivers_BS.xlsx")
+rivers$Drainage_Area <- as.numeric(rivers$Drainage_Area)
+rivers$Lat <- as.numeric(rivers$Lat)
+rivers$Lon <- as.numeric(rivers$Lon)
+
+
+
+# Доля гибридов в сборах
+
+hybr_pop <- hybr %>% group_by(ID) %>% summarise(lat = mean(N), lon = mean(E), Year = mean(year), Region = unique(region), Ptros = mean(str), P_hybr = mean(str > 0.1 & str < 0.9), md = 1 - (sd(str))^2/(Ptros*(1-Ptros)), md_1 = 1-md, Salinity = unique(salinity) ) 
+
+# %>% filter(Ptros<0.9 & Ptros>0.1)
+
+
+
+hybr_pop$Region <- factor(hybr_pop$Region, levels = c("West_coast",  "Kola",  "Tyuva", "East_coast" ))
+
+```
+
+
+```{r}
+
+# Функция для определения расстояния до ближайшего объекта
+nearest_dist <- function(XY, objects = river, x.name = "Lon", y.name = "Lat"){
+  
+  XY1 <-as.numeric(XY[,1])
+  XY2 <- as.numeric(XY[,2])
+  dist <- (acos(sin(XY1*pi/180)*sin(objects[ ,y.name]*pi/180) + cos(XY1*pi/180)*cos(objects[ ,y.name]*pi/180)*cos(XY2*pi/180 - objects[ ,x.name]*pi/180)) * 6371)
+  
+  MD <- data.frame(Min_dist = min(dist))
+  cbind(objects[which(dist == min(dist)), ], MD)
+  
+}
+
+
+#  distance to mouth of the neares river 
+
+df_river <- nearest_dist(XY = hybr_pop[1, c("lat", "lon")], objects = rivers)
+
+df_river[1,] <- NA
+
+for(i in 1:nrow(hybr_pop)) {
+  df_river[i,] <- nearest_dist(XY = hybr_pop[i, c("lat", "lon")], objects = rivers)
+  df_river$ID[i] <- as.character(hybr_pop$ID)[i]
+}
+
+
+names(df_river) <- c( "River",  "Drainage_Area",  "Lat_river", "Lon_river", "Min_dist_river", "ID" )
+
+
+
+hybr_pop_riv <- merge(hybr_pop, df_river, by = "ID")
+
+hybr_pop_riv$Min_dist_river <- round(hybr_pop_riv$Min_dist_river, 2)
+
+hybr_pop_riv$Drainage_Area_1 <- 1/hybr_pop_riv$Drainage_Area
+
+
+hybr_pop_riv$Sal_index <- round( with(hybr_pop_riv, sqrt(rank(Min_dist_river) * rank(Drainage_Area_1)) ))
+```
+
+    
+Для количественной оценки частоты гибридов в поселениях было использовано два индекса. 
+1.Частота гибридов (Phybr), вычисленная как доля особей со значением Structure score в диапазоне от 0.1 до 0.9.
+2. Индекс генетической смешанности (md), предложенный в работе (Kalinowski & Powell, 2015), который вычислялся по формуле 
+
+$$
+md = \frac{\sum(P_i - \overline P)^2}{Ptros(1-Ptros)}
+$$
+Эта величина стремится к 1 в смешанных популяциях, в которых оба сосуществующих вида не вступают в гибридизацию, и к 0, если репродуктивная изоляция между видами полностью отсутствует.
+
+Оценка возраста моллюсков, собранных в губе Тюва в +++ - ++++ годы, позволила проследить степень гибридизации у отдельных генераций в течение нескольких лет. Этот анализ не выявил статистически значимых межгодовых различий в степени генетической смешанности генераций. 
+
+
+
+Для проверки гипотезы о роли солености в регуляции репродуктивной изоляции *M.edulis*  и *M.trossulus* в смещенных поселениях, мы оценили степень опреснения/осолонения в каждом из `r nrow(hybr_pop)` описанных поселений. При этом мы исходили из того, что, чем ближе поселение находится к устью рек, тем больше вероятность опреснения. Согласно данным водного реестра РФ (http://www.mnr.gov.ru/files/part/0306_perechen.rar), в исследованном регионе в акваторию Баренцева моря впадают `r nrow(rivers)` рек. Мы рассчитали расстояние от каждого поселения до устья ближайшей реки. С очевидностью, более крупные водотоки оказывают более сильное влияние на соленость, распространяющееся на большее расстояние от устье реки. В связи с этим, для оценки мощности источника опреснения мы использовали площади водосбора рек, представленные в водном реестре РФ. На основе этих данных мы вычислили индекс солености (Salinity index), учитывающий как расстояние до устья ближайшей реки, так и площадь водосбора (вместо исходных значений были использованы их ранги). 
+
+$$
+Salinity \ index = \sqrt{rank(Distance) \times  rank(Drainage^{-1})}
+$$
+
+Характер изменения индекса солености в пространстве демонстрирует рисунок ++. Прослеживается явный градиент значений этого индекса от кута Кольского залива, куда впадают крупные реки Кола и Тулома, к выходу из залива, не испытывающего опреснения. 
+
+
+
+
+
+```{r }
+
+murm_shape <- read.csv("Data/Murman.csv")
+
+
+Murm_x <-  c(30, 40)
+Murm_y <- c(67.8, 69.8)
+
+
+Murm_region_map <- 
+  ggplot(murm_shape, aes(x=long, y=lat, group=group)) +
+  geom_polygon(fill = "gray90", colour = "gray20") + 
+  coord_map(xlim = Murm_x, ylim = Murm_y) + 
+  theme_bw() +  
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank()) 
+
+
+
+Murm_x_small <-  c(32.5, 34)
+Murm_y_small <- c(68.85, 69.5)
+
+Kola_bay_map <- 
+  ggplot(murm_shape, aes(x=long, y=lat, group=group)) +
+  geom_polygon(fill = "gray90", colour = "gray20") + 
+  coord_map(xlim = Murm_x_small, ylim = Murm_y_small) + 
+  theme_bw() +  
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank()) 
+
+
+
+Tuva_x <-  c(33.55, 33.65)
+Tuva_y <- c(69.17, 69.2)
+
+
+Tuva_map <-
+  ggplot(murm_shape, aes(x=long, y=lat, group=group)) +
+  geom_polygon(fill = "gray90", colour = "gray20") + 
+  coord_map(xlim = Tuva_x, ylim = Tuva_y) + 
+  theme_bw() +  
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank()) 
+
+
+
+
+# + theme(panel.grid = element_blank(), axis.text.x =element_blank(), axis.text.y= element_blank()) + theme(axis.ticks = element_blank()) 
+
+```
+
+```{r fig.cap="Рис. ++. Значения индекса солености в разных точках. Звездочки маркируют устья рек. "}
+
+Pl_Sal_index <- 
+Kola_bay_map + 
+  geom_point(data = rivers, aes(x = Lon, y = Lat, group = 1), shape = 8, size = 3) +
+  geom_point(data = hybr_pop_riv, aes(x = lon, y = lat, group = 1, fill = Sal_index), shape = 21, size = 3) +
+  scale_fill_gradient(low = "white", high = "darkblue") +
+  labs(fill = "Индекс солености")
+  
+Pl_Sal_index +theme(panel.grid = element_blank(), legend.background = element_blank(), legend.position = c(0.8, 0.2))
+```
+
+
+Обе величины, характеризующие степень гибридизации (Phybr и md), зависят от  таксономической структуры смешанного поселения. В связи с этим, в  регрессионную модель была включена ковариата, характеризующая частоту *M.trossulus* в поселении (Ptros). Поскольку указанная связь нелинейна, то были подобраны две обобщенные аддитивные модели (GAM), основанные на бета-биномиальном распределении.   
+
+
+$$
+GAM1: \ Phybr_i = s(Ptros) + b_0 + b_1Sindex + \varepsilon_i 
+$$
+
+
+$$
+GAM2: \ md = s(Ptros) + b_0 + b_1Sindex + \varepsilon_i 
+$$
+
+```{r}
+Mod5 <- gam(md_1 ~ s(Ptros) + Sal_index, data = hybr_pop_riv , family = "betar")
+
+Mod6 <- gam(P_hybr ~ s(Ptros) + Sal_index,  data = hybr_pop_riv , family = "betar"  )
+
+```
+
+
+
+В обеих моделях непараметрическая сглаживающая функция $s(Ptros)$ описывает нелинейную связь зависимой переменной с таксономической структурой смешанного поселения. Характер этой связи демонстрирует рисунок ++. 
+
+
+
+```{r fig.cap="Рисунок +. Связь доли гибридов с таксономической структурой поселения, согласно модели GAM1. Каждая из четырех фасеток рисунка включает данные из одного региона. Сглаживающая функция на всех фасетках одна и та же. Для построения графиков значеине индекса солености было взято, как среднее. " }
+My_data <- expand.grid(Ptros = seq(0,1,0.01), Sal_index = mean(hybr_pop_riv$Sal_index), Region = unique(hybr_pop_riv$Region))
+
+My_data$Predicted <- predict(Mod6, newdata = My_data, type = "response")
+
+My_data$Region <- factor(My_data$Region, labels = c("Западный Мурман", "Кольский залив", "губа Тюва", "Восточный Мурман"))
+
+hybr_pop_riv$Region <- factor(hybr_pop_riv$Region, labels = c("Западный Мурман", "Кольский залив", "губа Тюва", "Восточный Мурман"))
+
+ggplot(My_data, aes(x = Ptros, y = Predicted, group = Sal_index)) + geom_line() + geom_point(data = hybr_pop_riv, aes(y = P_hybr, fill = Sal_index, shape = Region), shape = 21, color = "black", size = 4) + scale_fill_gradient(low = "white", high = "darkblue")  + facet_wrap(~Region) + labs(y = "Доля гибридов в популяции (Phybr)")
+```
+
+
+
+```{r fig.cap="Рисунок +. Связь индекса гибридизации (md) с таксономической структурой поселения, согласно модели GAM2. Обозачения как на предыдущем рисунке." }
+My_data <- expand.grid(Ptros = seq(0,1,0.01), Sal_index = mean(hybr_pop_riv$Sal_index), Region = unique(hybr_pop_riv$Region))
+
+My_data$Predicted <- predict(Mod5, newdata = My_data, type = "response")
+
+My_data$Region <- factor(My_data$Region, labels = c("Западный Мурман", "Кольский залив", "губа Тюва", "Восточный Мурман"))
+
+hybr_pop_riv$Region <- factor(hybr_pop_riv$Region, labels = c("Западный Мурман", "Кольский залив", "губа Тюва", "Восточный Мурман"))
+
+
+ggplot(My_data, aes(x = Ptros, y = Predicted, group = Sal_index)) + geom_line() + scale_color_gradient(low = "yellow", high = "red") + geom_point(data = hybr_pop_riv, aes(y = md_1, fill = Sal_index, shape = Region), shape = 21, color = "black", size = 4) + scale_fill_gradient(low = "white", high = "darkblue")  + facet_wrap(~Region) + labs(y = "md")
+```
+
+
+
+
+Обе модели выявляют статистически значимую связь зависимых переменных с индексом солености (Таблица ++ и ++). При этом, согласно обеим моделям, по мере увеличения индекса солености степень гибридизации падает будь она оценена в  терминах доли гибридов (отрицательный коэффициент при Phybr) или  в терминах индекса смешанности (положительный коэффициент при md). То есть в участках, подвергающихся хроническому опреснению, степень гибридизации между *M.edulis* и *M.trossulus*, выше, чем на участках, удаленных от мощных источников опреснения.  
+
+
+
+
+```{r}
+library(broom)
+kable(tidy(Mod6, parametric = TRUE), caption = "Таблица ++. Результаты регрессионного анализа $Phybr$ в зависимости от индекса солености (модель GAM1).")
+
+
+```
+
+
+
+```{r}
+
+kable(tidy(Mod5, parametric = TRUE), caption = "Таблица ++. Результаты регрессионного анализа $md$ в зависимости от индекса солености (модель GAM2).")
+
+
+```
+
+<br>
+
+<br>
+

@@ -207,7 +207,7 @@ Kola_bay_map +
 Pl_Sal_index
 ```
 
-## Анализ связи степени смешанности с соленостью.
+## Анализ связи степени генетическойсмешанности с соленостью.
 
 Для демонстрации связи зависимых переменных ($md_{inv}$ или $P_{hybr}$) с бинарной оценкой солености были подобраны следующие модели:
 
@@ -326,7 +326,7 @@ kable(tidy(Mod5, parametric = TRUE), caption = "Таблица 7. Результ
 
 
 ```{r}
-Mod6 <- gam(P_hybr ~ s(Ptros) + Sal_index, data = hybr_pop_riv  )
+Mod6 <- gam(P_hybr ~ s(Ptros) + Sal_index,  data = hybr_pop_riv , family = "betar"  )
 
 kable(tidy(Mod6, parametric = TRUE), caption = "Таблица 8. Результаты регрессионного анализа $P_{hybr}$ в зависимости от индекса солености (Анализ основан на всех имеющихся данных)")
 
@@ -467,4 +467,26 @@ plot_grid(Pl_md, Pl_hybr)
 ```
 
 
+```{r}
+Mod5 <- gam(md_1 ~ s(Ptros) + Sal_index, data = hybr_pop_riv , family = "betar")
+
+library(mgcViz)
+b <- getViz(Mod5)
+
+
+
+Pl_sm <- plot(sm(b, 1)) +  l_fitLine(colour = "red")  +l_ciLine(mul = 5, colour = "blue", linetype = 2) + l_points(shape = 19, size = 2) + theme_bw()
+
+
+Pl_term <- plot(pterm(b, 1)) + l_ciPoly() + l_fitLine() + l_points(shape = 19, size = 2)+ theme_bw()
+
+
+library(cowplot)
+gridPrint(Pl_sm, Pl_term, ncol = 2)
+
+
+gridPrint(plot(sm(b, 1)) + labs(title = NULL) + l_points(),
+          plot(pterm(b, 1)) + l_ciPoly() + l_fitLine() + l_points(), ncol = 2)
+
+```
 
