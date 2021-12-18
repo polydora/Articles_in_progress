@@ -364,6 +364,9 @@ ggplot(mydata, aes(x = Age, y = fit, linetype = Sex))  +
   theme(legend.position = "bottom") +
   guides(shape = guide_legend(override.aes = list(fill = 20)))
 
+
+# ggsave(filename = "Model2_Visualisation.tiff", plot = Pl_age_onega, dpi = 600)
+
 ```
 
 

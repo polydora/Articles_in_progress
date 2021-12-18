@@ -1,0 +1,586 @@
+---
+title: "Анализы по проекту MyTrEd"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = TRUE , message = FALSE, warning = FALSE)
+```
+
+
+```{r Packages}
+#### Пакеты 
+library(readxl)
+library(ggplot2)
+library(dplyr)
+library(nlme)
+library(car)
+library(lme4)
+
+library(effects)
+library(reshape2)
+library(betareg)
+
+library(broom)
+library(broom.mixed)
+
+
+
+```
+
+
+
+## Анализ роста и индекса состояния в зависимости от биотического окружения 
+
+```{r}
+
+myt <- read_excel("Data/Mytred_Growth_Winter_2021.xlsx", na = "NA", col_names = T)
+
+
+marked_myt <- myt %>% filter(Status %in% c("Alive", "Dead"))  %>% group_by(Cage_ID, Morphotype, Status) %>% summarise(N = n()) %>% dcast(Cage_ID ~ Morphotype + Status) 
+
+marked_myt[is.na(marked_myt)] <- 0
+marked_myt <- marked_myt[order(marked_myt$Cage_ID), ]
+
+
+
+fone <- read_excel("Data/Mytred_Growth_Winter_2021.xlsx", na = "NA", col_names = T, sheet = "Fone_mussel")
+
+fone <- fone[order(fone$Cage_ID), ]
+
+
+
+fone[1:20,3:6] <- fone[1:20,3:6] + marked_myt[1:20,2:5]
+
+
+
+fone2 <- fone %>% mutate(PropT = T_alive/(E_alive+T_alive), N_total = E_alive+T_alive, P_Dead = (E_dead + T_dead)/(E_alive+T_alive + E_dead + T_dead) )
+
+
+
+
+myt2 <- myt %>% filter( (Sample_site == "2R" & Morphotype == "e") | (Sample_site == "Kanal" & Morphotype == "t")) %>%  filter(Status == "Alive")
+
+
+myt3 <- merge(myt2, fone2, by = "Cage_ID" )
+
+myt4 <- myt3 %>% mutate(DL = Fin_size - Init_size) %>% filter(!is.na(DL)) 
+
+
+myt4$DL[myt4$DL < 0] <- 0
+
+myt5 <- myt4 %>% filter(!(Cage_ID %in% c("K1", "K2", "K3", "K4")))
+
+
+```
+
+
+
+
+```{r}
+myt_summer <- read_excel("Data/Mytred_Growth_Summer_2021.xlsx", na = "NA", col_names = T)
+
+marked_myt_summer <- myt_summer %>% filter(Status %in% c("Alive", "Dead"))  %>% group_by(Cage_ID, Morphotype, Status) %>% summarise(N = n()) %>% dcast(Cage_ID ~ Morphotype + Status)
+
+marked_myt_summer[is.na(marked_myt_summer)] <- 0
+
+fone_summer <- read_excel("Data/Mytred_Growth_Summer_2021.xlsx", na = "NA", col_names = T, sheet = "Fone_mussel")
+
+fone_summer[1:12,3:6] <- fone_summer[1:12,3:6] + marked_myt_summer[1:12,2:5]
+
+
+
+fone_summer2 <- fone_summer %>% mutate(PropT = T_alive/(E_alive+T_alive), N_total = E_alive+T_alive)
+
+
+
+myt_summer2 <- myt_summer %>% filter( (Sample_site == "Ed" & Morphotype == "e") | (Sample_site == "Tr" & Morphotype == "t")) %>% filter(is.na(Comment)) %>% filter(Status == "Alive") %>% filter(Mussel_ID != 898)
+
+
+myt_summer3 <- merge(myt_summer2, fone_summer2, by = "Cage_ID" )
+
+myt_summer4 <- myt_summer3 %>% mutate(DL = Fin_size - Init_size) %>% filter(!is.na(DL)) 
+
+myt_summer4$DL[myt_summer4$DL < 0] <- 0
+
+myt_summer5 <- myt_summer4 %>% filter(!(Cage_ID %in% c("K1", "K2", "K3", "K4")))
+
+
+```
+
+
+```{r}
+# names(myt4)
+myt_wint <- myt4 %>% select(Cage_ID, Mussel_ID, Morphotype, E_alive, E_dead, T_alive, T_dead, PropT, N_total, DL, Init_size, W_tis,  W_sh ) %>% mutate(Experiment = "Winter")
+
+myt_wint$Cage_ID[myt_wint$Cage_ID == "K1"] <- "Kw1"
+
+myt_wint$Cage_ID[myt_wint$Cage_ID == "K2"] <- "Kw2"
+
+myt_wint$Cage_ID[myt_wint$Cage_ID == "K3"] <- "Kw3"
+
+myt_wint$Cage_ID[myt_wint$Cage_ID == "K4"] <- "Kw4"
+
+
+myt_sum <- myt_summer4 %>% select(Cage_ID, Mussel_ID, Morphotype, E_alive, E_dead, T_alive, T_dead, PropT, N_total, DL, Init_size, W_tis,  W_sh ) %>% mutate(Experiment = "Summer")
+
+myt_ws <- rbind(myt_wint, myt_sum)
+
+myt_ws <- myt_ws %>% mutate(RDL = DL/Init_size, P_Dead = (T_dead + E_dead)/(T_dead + E_dead + T_alive + E_alive), CI = W_tis/(W_tis + W_sh)) 
+
+myt_ws$Cage_ID <- factor(myt_ws$Cage_ID) 
+
+# unique(myt_ws$Cage_ID)
+
+myt_ws2 <- myt_ws %>% filter(!Cage_ID %in% c("Kw1", "Kw2", "Kw3", "Kw4", "K1", "K2", "K3", "K4"))
+
+myt_ws3 <- myt_ws %>% filter(!Cage_ID %in% c("40_E1", "40_E2", "40_E3", "40_H1", "40_H2", "40_H3", "40_T1", "40_T2", "40_T3"))
+
+myt_test <- myt_ws %>% filter(Cage_ID %in% c("40_E1", "40_E2", "40_E3", "40_H1", "40_H2", "40_H3", "40_T1", "40_T2", "40_T3")) %>% select(Morphotype, PropT, N_total, Experiment, Init_size, DL, CI)
+
+
+```
+
+
+
+```{r}
+
+
+formula_DL <- log(DL+1) ~   PropT * Morphotype*Experiment + N_total + Init_size 
+ 
+dat <- myt_ws3 
+
+# unique(myt_ws3$Cage_ID)
+  
+# myt_ws %>% filter(Experiment == "Summer") 
+
+# %>% filter(complete.cases(.))
+
+
+
+Model_DL <- gls(formula_DL,data = dat)
+
+Model_DL_ri <- lme(formula_DL,data = dat, random = ~1|Cage_ID)
+
+# plot(Model_DL_ri)
+
+# summary(Model_DL_ri)
+
+# AIC(Model_DL, Model_DL_ri)
+
+library(performance)
+
+# icc(Model_DL_ri) #можно обойтись и без случайного фактора
+
+# plot(Model_DL)
+
+
+
+# Не будем делать коррекцию дисперсии!!!
+
+# Model_DL2 <- gls(formula_DL, data = dat, weights = varExp(form =  ~ N_total))
+# 
+# 
+# Model_DL3 <- gls(formula_DL, data = dat, weights = varComb(varExp(form =  ~ N_total), varIdent(form = ~1|Morphotype)))
+# 
+# 
+# Model_DL4 <- gls(formula_DL, data = dat, weights = varComb(varExp(form =  ~ N_total), varIdent(form = ~1|Morphotype), varIdent(form = ~1|Experiment)))
+# 
+# Model_DL5 <- gls(formula_DL, data = dat, weights = varComb(varExp(form =  ~ N_total|Experiment), varIdent(form = ~1|Morphotype)))
+# 
+# 
+# Model_DL6 <- gls(formula_DL, data = dat, weights = varComb(varExp(form =  ~ N_total|Experiment), varIdent(form = ~1|Morphotype), varIdent(form = ~1|Experiment)))
+# 
+# 
+# AIC(Model_DL, Model_DL2, Model_DL3, Model_DL4, Model_DL5, Model_DL6)
+
+
+
+Model_DL_ML <- update(Model_DL, method = "ML")
+# drop1(Model_DL_ML)
+
+Model_DL_ML2 <- update(Model_DL_ML, .~.-Init_size)
+# drop1(Model_DL_ML2)
+
+# Model_DL_ML3 <- update(Model_DL_ML2, .~.-Init_size )
+# drop1(Model_DL_ML3)
+
+
+
+
+Model_DL_final <- update(Model_DL_ML2, method = "REML")
+
+# plot(Model_DL_final)
+
+kable(tidy(Model_DL_final))
+
+
+```
+
+
+Это финальная модель, описывающая связь DL со всеми предикторами. Ее формула следующая
+
+Model: log(DL + 1) ~ PropT + Morphotype + Experiment + N_total + PropT:Morphotype +     PropT:Experiment + Morphotype:Experiment + PropT:Morphotype:Experiment 
+
+
+Вот визуализация этой модели
+
+```{r}
+my_data <- expand.grid(PropT = seq(min(myt_ws3$PropT), max(myt_ws3$PropT),  0.1), Morphotype = c("e", "t"), N_total = mean(myt_ws3$N_total), Experimnt = c("Winter", "Summer"))
+
+library(effects)
+Effects <- as.data.frame(allEffects(Model_DL_final, xlevels=my_data))
+
+ggplot(Effects[[2]], aes(x = PropT, y = exp(fit),color = Morphotype )) + geom_line() + facet_wrap(~Experiment) + geom_ribbon(aes(ymin = exp(lower), ymax = exp(upper) ), alpha = 0.2) + scale_color_manual(values = c("blue", "red") ) + labs(x = "Доля Т-морфотипа в садке", y = "Прирост раковины (мм)")
+
+```
+
+Для оценки отличия угловых коэффициентов от нуля надо рассмотреть частные эффекты. В таблице, приведенной ниже, видно, что значимое отличие от нуля у отрицательного коэффициента для E-морфотипа в зимнем эксперименте  и положительного частного углового коэффициента T-морфотипа в летнем.  
+
+Ну и сильное влияние, конечно, оказывает плотность поселения. Чем выше плотность, тем ниже прирост (см. таблицу с коэффициентами модели)
+
+```{r}
+library(emmeans)
+
+kable(tidy(emtrends(Model_DL_final, specs = ~ Morphotype*Experiment , var= "PropT")))
+
+```
+
+
+Получается, что в летнем эксперименте мы уловили замедление роста E-морфотипа по мере увеличения PropT, то есть в условиях доминирования T-морфотипа. В зимнем эксперименте мы уловили замедление роста  T-морфотипа в условиях доминирования E.
+
+
+
+
+### Теперь про CI. 
+
+```{r}
+formula_CI <- CI ~   PropT * Morphotype*Experiment + N_total + Init_size 
+ 
+dat <- myt_ws3  %>% filter(complete.cases(.))
+
+
+
+Model_CI <- gls(formula_CI,data = dat)
+
+Model_CI_ri <- lme(formula_CI,data = dat, random = ~1|Cage_ID)
+
+# plot(Model_DL_ri)
+
+# summary(Model_DL_ri)
+
+# AIC(Model_CI, Model_CI_ri)
+
+library(performance)
+
+# icc(Model_CI_ri) #нельзя обойтись без случайного фактора
+
+# plot(Model_CI_ri)
+
+
+# summary(Model_CI_ri)
+
+Model_CI_ri_ML <- update(Model_CI_ri, method = "ML")
+# drop1(Model_CI_ri_ML)
+
+Model_CI_ri_ML2 <- update(Model_CI_ri_ML, .~.-Init_size)
+# drop1(Model_CI_ri_ML2)
+
+# Model_DL_ML3 <- update(Model_DL_ML2, .~.-Init_size )
+# drop1(Model_DL_ML3)
+
+
+
+
+Model_CI_ri_final <- update(Model_CI_ri_ML2, method = "REML")
+
+# summary(Model_CI_ri_final)
+
+```
+
+Вот такая финальная модель получилась. 
+
+СI ~ PropT + Morphotype + Experiment + N_total + PropT:Morphotype +      PropT:Experiment + Morphotype:Experiment + PropT:Morphotype:Experiment 
+
+Здесь нельзя избежать случайного эффекта садка (ICC довольно высоки) так что добавлен random =  ~1 | Cage_ID.  
+
+```{r}
+kable(tidy(Model_CI_ri_final))
+
+```
+
+Вот визуализация этой модели
+
+```{r}
+my_data <- expand.grid(PropT = seq(min(myt_ws3$PropT), max(myt_ws3$PropT),  0.1), Morphotype = c("e", "t"), N_total = mean(myt_ws3$N_total), Experimnt = c("Winter", "Summer"))
+
+library(effects)
+Effects_CI <- as.data.frame(allEffects(Model_CI_ri_final, xlevels=my_data))
+
+ggplot(Effects_CI[[2]], aes(x = PropT, y = fit,color = Morphotype )) + geom_line() + facet_wrap(~Experiment) + geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2) + scale_color_manual(values = c("blue", "red") ) + labs(x = "Доля Т-морфотипа в садке", y = "CI") 
+
+```
+
+
+Вот оценки частных угловых коэффициентов
+
+```{r}
+library(emmeans)
+
+kable(tidy(emtrends(Model_CI_ri_final, specs = ~ Morphotype*Experiment , var= "PropT")))
+
+```
+
+
+В летнем эксперименте показано, что у E-морфотипа СI снижается если в садках доминируют T-морфотипы.
+
+
+
+## Анализ смертности
+
+Здесь изучаем как изменяется доля погибших от общей численности особей данного морфотипа в зависимости от предикторов. Нас интересует связь c PropT. Однако общая численность живых тоже вставлена в качестве ковариаты.  Во формула модели
+
+P_dead_morph ~ PropT * Dead_morph * Experiment + N_total
+
+```{r}
+
+
+total_condition_w <- fone2 %>% mutate(dead_T = T_dead/(T_alive + T_dead), dead_E = E_dead/(E_alive + E_dead)) %>% select(Cage_ID, PropT, N_total, dead_T, dead_E)
+
+
+total_condition_w2 <- melt(total_condition_w, id.vars = c("Cage_ID", "PropT", "N_total"), variable.name = "Dead_morph", value.name = "P_dead_morph") %>% mutate(Experiment = "Winter")
+
+
+total_condition_s <- fone_summer2 %>% mutate(dead_T = T_dead/(T_alive + T_dead), dead_E = E_dead/(E_alive + E_dead))  %>% select(Cage_ID, PropT, N_total, dead_T, dead_E)
+
+total_condition_s2 <- melt(total_condition_s, id.vars = c("Cage_ID", "PropT", "N_total"), variable.name = "Dead_morph", value.name = "P_dead_morph") %>% mutate(Experiment = "Summer")
+
+
+
+total_condition_ws <- rbind(total_condition_w2, total_condition_s2)
+
+
+
+total_condition_ws$P_dead_morph[total_condition_ws$P_dead_morph == 0] <- 0.0001
+
+
+total_condition_ws2 <- total_condition_ws %>%  filter(!Cage_ID %in% c("40_E1", "40_E2", "40_E3", "40_H1", "40_H2", "40_H3", "40_T1", "40_T2", "40_T3"))
+
+
+Mod_Pdead <- betareg(P_dead_morph ~ PropT*Dead_morph*Experiment + N_total, data = total_condition_ws2, link = "logit")
+
+# plot(Mod_Pdead)
+# summary(Mod_Pdead)
+
+```
+
+Вот параметры модели. Зависимость смоделирована с помощью бета-регрессии, поэтому там еще параметр фи появился. 
+
+```{r}
+kable(tidy(Mod_Pdead))
+```
+
+Вот визуализация модели.
+
+```{r}
+my_data <- expand.grid(Dead_morph = c("dead_E", "dead_T"), PropT = seq(from = min(total_condition_ws2$PropT),  max(total_condition_ws2$PropT), length.out = 100))
+
+
+# my_data$fit <- predict(model.beta, newdata = my_data, type = "response")
+
+# Нашел пакетик, который делает расчеты для визуализации более простыми
+library(effects)
+Effects <- as.data.frame(allEffects(Mod_Pdead, xlevels=my_data))
+
+
+ggplot(Effects[[2]], aes(x = PropT, y = fit, color = Dead_morph)) +
+  geom_line()+
+  facet_wrap(~Experiment) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha=0.2) + 
+  scale_color_manual(values = c("blue", "red")) +
+  geom_point(data= total_condition_ws2, aes(y = P_dead_morph  )) +
+  labs(x = "Доля Т-морфотипа в садке", y = "Доля погибших моллюсков") 
+
+
+```
+
+Значимо отличается от нуля только частный угловой коэффициент для Т-морфотипа в Летнем эксперименте.  
+
+```{r}
+
+Dead_ratio_trends_by_Dead_morph <- emtrends(Mod_Pdead, specs = ~ Dead_morph*Experiment, var="PropT")
+kable(tidy(Dead_ratio_trends_by_Dead_morph)) 
+
+```
+
+
+NB! Возможно анализ смертности для зимнего эксперимента не очень адекватен. Там много раковин развалилось в труху. 
+
+
+## Анализ силы прикрепления  в зависимости от биотического окружения
+
+```{r}
+myt_force <- myt4 %>% select(Cage_ID, Force, Weight, Fin_size, Init_size, Morphotype, PropT, N_total, DL) %>% filter(complete.cases(.)) 
+
+myt_force <- myt_force %>% mutate(True_Force = Force - Weight/1000*9.81)
+
+myt_force$True_Force[myt_force$True_Force<0] <- 0
+
+myt_force2 <- myt_force %>% filter(!Cage_ID %in% c("40_E1", "40_E2", "40_E3", "40_H1", "40_H2", "40_H3", "40_T1", "40_T2", "40_T3"))
+
+```
+
+
+```{r}
+formula_Force <- log(True_Force+1) ~ Morphotype*PropT + N_total + Fin_size 
+dat <- myt_force2
+
+Model_Force <- gls(formula_Force, data = dat)
+
+Model_Force_ri <- lme(formula_Force, data = dat, random = ~1|Cage_ID)
+
+# AIC(Model_Force, Model_Force_ri)
+# icc(Model_Force_ri)
+
+# plot(Model_Force)
+# summary(Model_Force)
+# Anova(Model_Force)
+```
+
+Модель была вот такая.
+
+log(True_Force+1) ~ Morphotype*PropT + N_total + Fin_size
+
+Вот параметры модели.
+
+```{r}
+kable(tidy(Model_Force))
+```
+
+
+
+```{r}
+my_data <- expand.grid(PropT = seq(min(dat$PropT), max(dat$PropT),  length.out = 20), Morphotype = c("e", "t"), N_total = mean(dat$N_total))
+
+library(effects)
+Effects_Force <- as.data.frame(allEffects(Model_Force, xlevels=my_data))
+
+ggplot(Effects_Force[[3]], aes(x = PropT, y = (exp(fit) -1), color = Morphotype )) + geom_line()  + geom_ribbon(aes(ymin = (exp(lower)-1), ymax = (exp(upper)-1) ), alpha = 0.2) + scale_color_manual(values = c("blue", "red") ) + geom_point(data = dat, aes(y = log(Force+1), color = Morphotype)) +
+  labs(x = "Доля Т-морфотипа в садке", y = "Сила прикрепления (Ньютоны)") 
+
+```
+
+
+Можно обратить внимание на то, что при малом значении PropT доверительные интервалы перекрываются, а при высоких значениях нет. То есть в условиях доминирования T-морфотипа T крепятся сильнее, чем E. Однако в условиях доминирования E-морфотипа различия в силе прикрепления не столь выражены.   
+
+
+
+## Анализ открытости-закрытости раковин мидий в процессе циклического изменения солености
+
+Здесь я еще не все доделал. Но визуализация более или менее вот такая. Моделируется вероятность быть открыой.  Вместо солености как таковой здесь по оси ОХ отложен номер измерения солености в цикле (в середине самая низкая соленость). Обрати внимание, что с увеличением количества циклов они все более и более открытые. 
+
+
+```{r}
+
+opennes1 <- read_excel("Data/Mytred_2021_Salinity.xlsx", sheet = "Exp1_tidy") 
+
+d1 <- melt(opennes1, id.vars = c("Experiment",	"Tank",	"Plank", 	"Mussel_ID",	"Expected_Morph",	"True_Morph",	"Length",	"Www"), variable.name = "Observation", value.name = "Status")
+
+opennes2 <- read_excel("Data/Mytred_2021_Salinity.xlsx", sheet = "Exp2_tidy") 
+
+d2 <- melt(opennes2, id.vars = c("Experiment",	"Tank",	"Plank", 	"Mussel_ID",	"Expected_Morph",	"True_Morph",	"Length",	"Www"), variable.name = "Observation", value.name = "Status")
+
+opennes3 <- read_excel("Data/Mytred_2021_Salinity.xlsx", sheet = "Exp3_tidy") 
+
+d3 <- melt(opennes3, id.vars = c("Experiment",	"Tank",	"Plank", 	"Mussel_ID",	"Expected_Morph",	"True_Morph",	"Length",	"Www"), variable.name = "Observation", value.name = "Status")
+
+
+d <- rbind(d1, d2, d3)
+
+d$Length <- as.numeric(d$Length)
+d$Www <- as.numeric(d$Www)
+
+
+
+exp_param <- read_excel("Data/Mytred_2021_Salinity.xlsx", sheet = "Exp_Salinity_Total")
+unique(exp_param$Experiment)
+
+
+myt <- merge(exp_param, d)
+
+myt$Experiment <- factor(myt$Experiment)
+myt$True_Morph <- factor(myt$True_Morph)
+
+
+myt2 <- myt %>% filter(Tank != "C")
+
+```
+
+
+
+
+```{r}
+
+myt3 <- myt2 
+# %>% filter(Salinity < 18)
+
+
+
+myt3$Salinity2 <- myt3$Salinity
+
+myt3$Salinity2[myt3$Phase == "Drop"] <- myt3$Salinity[myt3$Phase == "Drop"] * -1
+
+# str(myt3)
+
+myt3$Salinity3 <- ntile(myt3$Salinity2, n = 20)
+
+myt3$Mussel_ID <- factor(myt3$Mussel_ID)
+
+library(mgcv)
+
+library(gratia)
+
+Mod_open_01 <- gam(Status ~ s(Salinity3, bs = "cc") + True_Morph + s(Cycle, bs = "cs", k = 4),  data = myt3, family = binomial())
+
+Mod_open_02 <- gam(Status ~ s(Salinity3, by = True_Morph, bs = "cc") + True_Morph + s(Cycle, bs = "cs", k = 4),  data = myt3, family = binomial())
+
+# plot(Mod_open_02, pages = 1)
+# AIC(Mod_open_01, Mod_open_02)
+
+# draw(Mod_open_02)
+
+Mod_open1 <- gam(Status ~ s(Salinity3, bs = "cc") + True_Morph + s(Cycle, k = 4) + s(Mussel_ID, bs = "re"), data = myt3, family = binomial())
+
+
+Mod_open2 <- gam(Status ~ s(Salinity3, by = True_Morph,  bs = "cc")  + True_Morph + s(Cycle, by = True_Morph, k = 3) + s(Mussel_ID, bs = "re"), data = myt3, family = binomial())
+
+
+# AIC(Mod_open1, Mod_open2)
+
+
+draw(Mod_open2)
+
+
+# Mod_open1 <- gamm(Status ~ s(Salinity3, bs = "cc") + True_Morph + s(Cycle, k = 4),  random = list(Mussel_ID = ~1), data = myt3, family = binomial())
+# 
+# 
+# Mod_open2 <- gamm(Status ~ s(Salinity3, by = True_Morph,  bs = "cc")  + True_Morph + + s(Cycle, k = 4), random = list(Mussel_ID = ~1), data = myt3, family = binomial(), niterPQL = 40)
+
+# AIC(Mod_open1$lme, Mod_open2$lme)
+
+
+
+
+
+
+# plot(Mod_open2, pages = 1)
+
+# summary(Mod_open2)
+
+```
+
+
+## Анализ силы прикрепления мидий в зависимости от стресса, связанного с понижением солености
+
+Здесь еще ничего не причесывал, но можно оставить все как было в коде, который писали совместно.

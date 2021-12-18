@@ -110,10 +110,11 @@ onega_cam_last <- onega_cam_last %>% filter(Sex != "j")
 onega_new <- data.frame(Bay = "Onega_Bay", 
                         Sex = ifelse(onega_cam_last$Sex == "f", "Female", "Male"),
                         Sidedness = ifelse(onega_cam_last$Side == "l", "Left", "Right"),
-                        L = onega_cam_last$L,
-                        Orient = ifelse(onega_cam_last$Side == "l", "Left", "Right")
+                        L = onega_cam_last$L
+                        # ,
+                        # Orient = ifelse(onega_cam_last$Side == "l", "Left", "Right")
                         )
-onega_new$Outcome <- ifelse(onega_new$Orient == "Left", 1, 0)
+# onega_new$Outcome <- ifelse(onega_new$Orient == "Left", 1, 0)
 
 
 kam <- kam %>% filter(Bay != "Onega_Bay")
@@ -124,6 +125,9 @@ kam <- rbind(kam, onega_new)
 # kam$Bay <- factor(kam$Bay, levels = c("Onega_Bay", "Dvina_Bay","Kandalaksha_Bay", "Mezen_Bay" ))
 
 kam$Bay <- factor(kam$Bay, levels = c("Kandalaksha_Bay", "Onega_Bay", "Dvina_Bay", "Mezen_Bay" ), labels = c("Kandalaksha Bay", "Onega Bay", "Dvina Bay", "Mezen Bay" ))
+
+kam$Outcome <- ifelse(kam$Sidedness == "Left", 1, 0)
+
 ```
 
 
@@ -135,7 +139,13 @@ kam$Bay <- factor(kam$Bay, levels = c("Kandalaksha_Bay", "Onega_Bay", "Dvina_Bay
 
 
 
-ggplot(kam, aes(x = Bay, y = L,  fill = Sidedness)) + geom_boxplot(notch = T) + facet_wrap(~Sex) + scale_fill_manual(values = c("gray10", "gray80")) + theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 30, vjust = 0.6)) + labs(x = "Bay", y = "Length, cm", fill = "Morph")
+Pl1 <-
+  ggplot(kam, aes(x = Bay, y = L,  fill = Sidedness)) + geom_boxplot(notch = T) + facet_wrap(~Sex) + scale_fill_manual(values = c("gray10", "gray80")) + theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 30, vjust = 0.6)) + labs(x = "Bay", y = "Length, cm", fill = "Morph")
+
+Pl1
+
+# ggsave(filename = "Fig_sizes.tiff", plot = Pl1, dpi = 600)
+
 ```
 
 
@@ -196,15 +206,19 @@ kable(tidy(Mod_6), caption = "Size Model parameters")
 
 new_data <- kam %>% group_by(Bay) %>% do(data.frame(L = round(mean(.$L), 1)))
 
-predicted <- predict(Mod_6, newdata = new_data, se.fit = T, type = "response")
+predicted <- predict(Mod_7, newdata = new_data, se.fit = T, type = "response")
+
+new_data$Bay <- factor(new_data$Bay, levels = c("Onega Bay", "Dvina Bay", "Kandalaksha Bay", "Mezen Bay"))
+
+predicted <- predict(Mod_7, newdata = new_data, se.fit = T, type = "response")
 
 new_data$Predicted <- predicted$fit
 new_data$SE <- predicted$se.fit
 
+Pl2<-
+ggplot(new_data, aes(x = Bay, y = Predicted)) + geom_col(fill = "gray", color = "gray10") + geom_errorbar(aes(ymin = Predicted - 1.96*SE, ymax = Predicted + 1.96*SE), width = 0.1)  + labs(y = "Probability of left-sided morph")
 
-ggplot(new_data, aes(x = Bay, y = Predicted)) + geom_col(fill = "gray", color = "gray10") + geom_errorbar(aes(ymin = Predicted - 1.96*SE, ymax = Predicted + 1.96*SE), width = 0.1) + geom_text(aes(y = Predicted - 1.96*SE -0.01, label = L)) + labs(y = "Probability of left-sided morph")
-
-
+# ggsave(filename = "Model1_visualisation.tiff", plot = Pl2, dpi = 600)
 ```
 
 

@@ -84,11 +84,10 @@ hybr_tuv_all <- hybr %>%
 hybr_tuv_bank <- hybr %>%
   filter(region == "Tyuva") %>%
   filter((pop %in% c("BN_0.5", "BS_0.5", "BS_-1.5", "BS_1.5-1","BS_1.5-2", "BS_1", "BS_2"))) %>%   group_by(Generation, year) %>% 
-  summarise(N = n(), Ptros = mean(str), P_hybr = mean(str > 0.1 & str < 0.90), md = 1 - (sd(str)^2)/(Ptros*(1-Ptros)), md_1 = 1-md) %>% 
-  filter(N>5)
+  summarise(N = n(), Ptros = mean(str), P_hybr = mean(str > 0.1 & str < 0.90), md = 1 - (sd(str)^2)/(Ptros*(1-Ptros)), md_1 = 1-md)  %>%   filter(N>5)
 
 
-
+# ggplot(hybr_tuv_bank, aes(x = year, y = Generation)) + geom_point(aes(size = N))
 
 
 
