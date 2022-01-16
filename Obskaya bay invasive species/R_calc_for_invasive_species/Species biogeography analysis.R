@@ -62,8 +62,35 @@ write.csv(df_species_full, "native_and_PNIS_occurence.csv", row.names = F)
 ##### Planctonic animals 
 
 
+path = "D:/Data_LMBE/Obskaya Bay additional data/Planctonic species characteristic/"
 
 
+
+files <- list.files(path)
+
+df_species <- NULL
+
+for(name in files){
+  df <- read.table(paste(path, "/",name, sep = ""), sep = ";", header = T)
+  df <- df %>% select(species)
+  df <- unique(df)
+  if(sum (is.na(df$species)) > 0) df$species <- df$genus
+  df_species <- rbind(df_species, df)
+  print(name)
+}
+
+
+library(spocc)
+
+df_add_plancton <- occ2df(occ(query = df_species$species, from = "gbif", limit = 5000, has_coords = TRUE))
+
+
+df_add_plancton <- df_add_plancton %>% select(name, longitude, latitude) %>% unique
+
+names(df_add_plancton) <- c("species", "lon", "lat")
+
+
+write.csv(df_add_plancton, file = "Data/plancton_occurence.csv", row.names = F)
 
 
 
@@ -72,6 +99,14 @@ write.csv(df_species_full, "native_and_PNIS_occurence.csv", row.names = F)
 
 df_species <- read.csv("Data/native_and_PNIS_occurence.csv")
 df_species <- unique(df_species)
+
+
+exclude <- c("Acartia tonsa",
+             "Oithona davisae",
+             "Cercopagis pengoi")
+
+df_species <- df_species %>% filter(!species %in% exclude)
+
 
 native_species <- c("Limnodrilus hoffmeisteri", 
                     "Mysis relicta",

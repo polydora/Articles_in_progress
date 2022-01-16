@@ -34,9 +34,20 @@ native_species <- c("Limnodrilus hoffmeisteri",
 df_species$Status <- ifelse(df_species$species %in% native_species, "Native", "PNIS") 
 
 
-  
-  
-  
+
+
+
+
+## Plancton
+
+df_species <- read.csv("Data/plancton_occurence.csv")
+df_species <- unique(df_species)
+
+df_species$lon <- as.numeric(df_species$lon)
+df_species$lat <- as.numeric(df_species$lat)
+df_species <- df_species[complete.cases(df_species), ]
+
+
   
 library(sdmpredictors)
 library(leaflet)
@@ -49,7 +60,7 @@ environment.bottom <- load_layers( layercodes = c("BO2_tempmean_bdmean" ,  "BO2_
 
 
 
-bathymetry <- load_layers("BO_bathymean")
+# bathymetry <- load_layers("BO_bathymean")
 
 
 my.sites <- data.frame(species = df_species$species, Lon=df_species$lon, Lat= df_species$lat)
@@ -64,7 +75,14 @@ my.sites.environment_marine <- my.sites.environment %>%  filter(!is.na(BO2_tempm
 
 names(my.sites.environment_marine) <- c("species", "Lat", "Lon", "Temp", "Sal")
 
-write.csv(my.sites.environment_marine, "Data/species_environment_marine.csv")
+write.csv(my.sites.environment_marine, "Data/plancton_environment_marine.csv")
+
+
+my.sites.environment_not_marine <- my.sites.environment %>%  filter(is.na(BO2_tempmean_bdmean) & is.na(BO2_salinitymean_bdmean))
+
+my.sites.environment_not_marine <- my.sites.environment_not_marine[,1:3] 
+
+write.csv(my.sites.environment_not_marine, "Data/plancton_occurence_not_marine.csv")
 
 
 
