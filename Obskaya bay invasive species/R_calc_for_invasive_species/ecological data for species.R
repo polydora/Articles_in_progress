@@ -4,20 +4,13 @@ library(dplyr)
 
 # Загрузка данных с координатами встреч видов
 
-path = "D:/Data_LMBE/Obskaya Bay additional data/Species characteristics/"
 
+df_species <- read.csv("Data/native_and_PNIS_occurence.csv")
+df_species <- unique(df_species)
 
-files <- list.files(path)
-
-df_species <- NULL
-
-for(name in files){
-  df <- read.table(paste(path, "/",name, sep = ""), sep = "\t", header = T)
-  df <- df %>% select(-gbifID)
-  df <- unique(df)
-  if(sum (is.na(df$species)) > 0) df$species <- df$genus
-  df_species <- rbind(df_species, df)
-}
+df_species$lon <- as.numeric(df_species$lon)
+df_species$lat <- as.numeric(df_species$lat)
+df_species <- df_species[complete.cases(df_species), ]
 
 
 native_species <- c("Limnodrilus hoffmeisteri", 
@@ -33,18 +26,12 @@ native_species <- c("Limnodrilus hoffmeisteri",
                     "Portlandia aestuariorum",
                     "Marenzelleria",
                     "Ampharete vega",
+                    "Mysis oculata"
 )
 
-# exclude <- c("Paralithodes camtschaticus")
-
-# df_species <- df_species %>% filter(!(species %in% exclude))
 
 
 df_species$Status <- ifelse(df_species$species %in% native_species, "Native", "PNIS") 
-
-
-df_examp <- df_species %>% filter(Status == "PNIS")  
-
 
 
   
@@ -58,30 +45,73 @@ options(sdmpredictors_datadir="C:\\Users\\polyd\\AppData\\Local\\Temp\\RtmpuyXZR
 
 
 # Скачиваем данные по средней температуре воды на срденей глубине и срденей солености на срденей глубине. 
-environment.bottom <- load_layers( layercodes = c("BO2_tempmean_bdmean" ,  "BO2_salinitymean_bdmean",) , equalarea=FALSE, rasterstack=TRUE)
+environment.bottom <- load_layers( layercodes = c("BO2_tempmean_bdmean" ,  "BO2_salinitymean_bdmean") , equalarea=FALSE, rasterstack=TRUE)
+
+
 
 bathymetry <- load_layers("BO_bathymean")
 
 
-my.sites <- data.frame(species = df_examp$species, Lon=df_examp$decimalLongitude, Lat= df_examp$decimalLatitude)
+my.sites <- data.frame(species = df_species$species, Lon=df_species$lon, Lat= df_species$lat)
 my.sites
 
-# m <- leaflet()
-# m <- addTiles(m)
-# m <- addMarkers(m, lng=my.sites$Lon, lat=my.sites$Lat, popup=NULL)
-# m
+
 
 library(raster)
-my.sites.environment <- data.frame(species = my.sites$species, Depth=extract(bathymetry,my.sites[,2:3]) , extract(environment.bottom,my.sites[,2:3]) )
-my.sites.environment
+my.sites.environment <- data.frame(species = my.sites$species, Lat = my.sites$Lat, Lon = my.sites$Lon, extract(environment.bottom,my.sites[,2:3]) )
 
-my.sites.environment <- my.sites.environment %>%  filter(!is.na(BO2_tempmean_bdmean) | !is.na(BO2_salinitymean_bdmean))
+my.sites.environment_marine <- my.sites.environment %>%  filter(!is.na(BO2_tempmean_bdmean) & !is.na(BO2_salinitymean_bdmean))
+
+names(my.sites.environment_marine) <- c("species", "Lat", "Lon", "Temp", "Sal")
+
+write.csv(my.sites.environment_marine, "Data/species_environment_marine.csv")
+
+
+
+# Оценка температуры для тех точек, которые предположитеьно не являются морскими
+
+
+my.sites.environment_not_marine <- my.sites.environment %>%  filter(is.na(BO2_tempmean_bdmean) & is.na(BO2_salinitymean_bdmean))
+
+my.sites.environment_not_marine <- my.sites.environment_not_marine[, 1:3]
+
+
+dir <- "D:/Data_LMBE/Obskaya Bay additional data/freshwater_variables/"
+dir.create(dir)
+setwd(dir)
+
+library(raster); library(ncdf4); library(maps); library(foreach); library(doParallel)
+
+temp_avg <- brick("monthly_tmin_average.nc")
+
+### Check the number of layers
+nlayers(temp_avg)
+
+
+### Check the metadata for units, scale factors etc.
+nc_open("monthly_tmin_average.nc")
+
+### Add layer names. See Table S1 or the ReadMe for the sequence of the single layers 
+names(temp_avg) <- paste(c("temp_avg"), sprintf("%02d", seq(1:12)), sep="_")
+
+
+library(raster)
+my.sites.stream <- data.frame(species = my.sites.environment_not_marine$species, extract(temp_avg,my.sites.environment_not_marine[,2:3]))
+
+
+#######
+
+
+
+
+
+
 
 
 
 library(ggplot2)
 
-ggplot(my.sites.environment, aes(x = BO2_tempmean_bdmean, y = BO2_salinitymean_bdmean)) + geom_point() + geom_density_2d() + facet_wrap(~species)
+ggplot(my.sites.environment_marine, aes(x = Temp, y = Sal)) + geom_point() + geom_density_2d()
 
 
 PNIS_selected <- my.sites.environment %>% filter(BO2_tempmean_bdmean<8 & BO2_salinitymean_bdmean < 10) %>% group_by(species) %>% summarise(N = n())

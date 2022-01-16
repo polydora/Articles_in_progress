@@ -88,7 +88,7 @@ my.sites.environment <- data.frame(Name=my.sites$Name , depth=extract(bathymetry
 my.sites.environment
 
 
-########### Data on strams
+########### Data on streams
 
 
 ### Install the libraries
