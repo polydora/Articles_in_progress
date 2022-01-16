@@ -220,10 +220,12 @@ df_hotspot_2$Port <- case_when(df_hotspot_2$Dist_Sabetta < 1  ~ "Sabetta",
                                  df_hotspot_2$Dist_Sabetta > 1 ~ "Terminal")
 
 
+write.csv(df_hotspot_2, "hydrological modelling data.csc")
+
 
 ggplot(df_hotspot_2, aes(x = Scenario, y = Sal)) + geom_boxplot(notch = T) + facet_grid(Season ~ Port)
 
-ggplot(df_hotspot_2, aes(x = Scenario, y = Temp )) + geom_boxplot(notch = F) + facet_grid(Season~ Port)
+ggplot(df_hotspot_2, aes(x = Scenario, y = Temp )) + geom_boxplot(notch = T) + facet_grid(Season~ Port)
 
 df_hotspot_2  %>%  group_by(Season, Scenario) %>% summarise(Mean_Sal = mean(Sal), Mean_Temp = mean(Temp))
 

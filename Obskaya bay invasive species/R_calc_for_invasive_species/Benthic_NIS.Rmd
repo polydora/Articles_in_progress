@@ -1,0 +1,378 @@
+---
+title: "Potential NIS"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+
+```
+
+
+```{r packages}
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+library(cowplot)
+library(vegan)
+library(e1071)
+
+theme_set(theme_bw())
+```
+
+# Гидрологические условия в акватории Обской губы
+
+### Влияние гидротехничеких работ на гидрологический рещим в районах портов
+Гидрологическая модель (надо дать ей какое-то название) позволила рассмотреть значения двух ключевых гидрологических параметров (температура воды и соленость) в участках расположенных в непосредственной близости от ныне действующего порта ("Сабетта") и проектируемого порта (Терминал "Утренний"). Области, для которых проводится анализ приведены на следующем рисунке. 
+
+
+```{r}
+hydrol_model <- read.csv("data/hydrological modelling data.csv")
+
+
+hydrol_model$Season <- factor(hydrol_model$Season, levels = c("Winter", "Spring", "Summer", "Autumn")) 
+
+forecast_points <- hydrol_model %>% select(lon, lat) %>% unique
+
+
+```
+
+```{r}
+
+Ob_df <- read.csv("Data/Obskaya_bay_map.csv") # Map poligones
+
+
+Ob_x <- c(71, 75)
+Ob_y <- c(70, 73.2)
+
+
+hotspot <- read.table("Data/Obskaya_bay_ports.csv", sep = ",", header = T) 
+
+grid_data <- expand.grid(Lat = seq(from = 70.01, to =72.89, length.out = 100), Long =  seq(from = 71, to =75.2 , length.out = 100))
+
+
+
+
+
+Pl_Obskaya_bay <- 
+  ggplot(Ob_df, aes(x=long, y=lat, group=group)) +
+  geom_polygon(fill = "gray90", colour = "gray20") + 
+  coord_map(xlim = Ob_x, ylim = Ob_y) + 
+  theme_bw() +  
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
+  theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+  theme(axis.ticks = element_blank())
+
+
+Pl_Obskaya_bay + geom_point(data = hotspot,  aes(x = Lon, y = Lat, group =1), size = 4, shape = 22, fill = "yellow") + geom_point(data = forecast_points, aes(x = lon, y = lat, group =1))
+
+
+
+```
+
+
+Модель была рассчитана для двух сценариев: без дноуглубительных работ и после построения гидротехнических сооружений. Следующий рисунок демонстрирует распределение значений температуры и солености для двух режимов.
+
+```{r}
+ggplot(hydrol_model, aes(x = Port, y = Sal, fill = Scenario)) + geom_boxplot(notch = T) + facet_wrap(~Season) + labs(y = "Salinity")
+```
+
+
+```{r}
+ggplot(hydrol_model, aes(x = Port, y = Temp, fill = Scenario)) + geom_boxplot(notch = T) + facet_wrap(~Season) + labs(y = "Temperature")
+```
+
+
+Строительство гидротехнических сооружений, согласно модели, не приводит к значительному изменению солености в районе портов. Вместе с тем, выявляется значимое увеличение температуры воды в летний период в районе терминала "Утренний". 
+
+Поскольку работы по строительству гидротехнических сооружений уже выполнены в дальнейшем анализе будут использованы данные, соответствующие этому сценарию. 
+
+
+### Гидрологические условия в районе портов (сценарий связанный с проведением гидротехнических работ)
+
+T-S диаграммы показывают, что в районе портов зимой и весной присутствует холодная, осолоненная вода. В летний и осенний период осолонение незнаительное, но при этом наблюдается значиетльный прогрев воды.
+
+```{r}
+hydrol_model2 <- hydrol_model %>% filter(Scenario == "Construction present") 
+
+ggplot(hydrol_model2, aes(x = Temp, y = Sal)) + 
+  geom_point(size = 0.1, alpha = 0.1) +
+  facet_wrap(~Season) 
+
+
+```
+
+
+Дополнительную информацию дают частотные распределения гидрологических параметров
+
+```{r}
+ggplot(hydrol_model2, aes(x = Temp)) + geom_histogram()+
+  facet_wrap(~Season, scales = "free_y") + labs(x = "Temperature")
+
+
+ggplot(hydrol_model2, aes(x = Sal)) + geom_histogram()+
+  facet_wrap(~Season, scales = "free_y")+ labs(x = "Salinity")
+
+
+```
+
+
+Наиболее прогретая водная масса представлена в акватории в осенний период. 
+
+С точки зрения вероятности заноса видов из умеренных широт самым опасным периодом, видимо, надо считать осень. 
+
+Для описания границ "экологической лицензии" акватории были вычислены пределы солености и температуры, как значения 0.5% и 99.5% квантилей.
+
+```{r}
+env_limits <- hydrol_model2 %>% group_by(Season) %>% summarise(Sal_low = quantile(Sal, probs = 0.005), Sal_up = quantile(Sal, probs = 0.995), Temp_low = quantile(Temp, probs = 0.005), Temp_up = quantile(Temp, probs = 0.995))
+
+
+ggplot(hydrol_model2, aes(x = Temp, y = Sal)) + 
+  geom_point(size = 0.1, alpha = 0.1) 
+   
+
+ggplot(data = env_limits) +  geom_rect(aes(xmin = Temp_low, xmax = Temp_up, ymin = Sal_low, ymax = Sal_up), fill = "white", color = "black", alpha = 0.1) + facet_wrap(~Season) + geom_point(data = hydrol_model2, aes(x = Temp, y = Sal), size = 0.1, alpha = 0.1) 
+
+
+```
+
+Полученные значения ограничивают гидрологические условия, которые могу быть предоставлены акваторией для вселения NIS. 
+
+## Селекция потенциальных видов-вселенцев (PNIS) по парамтерам их экологических ниш 
+
+Из базы вселенцев, отмеченных на территории России (At! этот список еще дорабатываю, но методология обработки останется такой же) и из видов-вселенцев, отмеченных в Арктическом регионе (Goldsmit et al., +++, ++++ еще досмотрю несколько статей) были отобраны гидробионты, потенциально способные поселяться в эстуариях (список видов с запасом, куда входят и чисто морские виды и чисто пресноводные). Для каждого из видов из базы GBIF были извлечены географические координаты точек, в которых были обнаружены особи данных видов. По этим координатам на основе базы данных https://bio-oracle.org/ производилась оценка солености и температуры воды в точках, где был отмечен данный вид. 
+
+Далее производилась фильтрация тех видов, которые были отмечены в пределах границ экологической лицензии Обской губы. 
+
+
+```{r}
+
+# Загрузка данных с координатами встреч видов
+
+path = "D:/Data_LMBE/Obskaya Bay additional data/Species characteristics/"
+
+
+files <- list.files(path)
+
+df_species <- NULL
+
+for(name in files){
+  df <- read.table(paste(path, "/",name, sep = ""), sep = "\t", header = T)
+  df <- df %>% select(-gbifID)
+  df <- unique(df)
+  if(sum (is.na(df$species)) > 0) df$species <- df$genus
+  df_species <- rbind(df_species, df)
+}
+
+
+native_species <- c("Limnodrilus hoffmeisteri", 
+                    "Mysis relicta",
+                    "Halicryptus spinulosus",
+                    "Saduria entomon",
+                    "Saduria sabini",
+                    "Saduria sibirica",
+                    "Gammaracanthus lacustris",
+                    "Gammaracanthus",
+                    "Monoporeia affinis",
+                    "Pontoporeia femorata",
+                    "Portlandia aestuariorum",
+                    "Marenzelleria",
+                    "Ampharete vega",
+                    "Golfingia"
+)
+
+# exclude <- c("Paralithodes camtschaticus")
+
+# df_species <- df_species %>% filter(!(species %in% exclude))
+
+
+df_species$Status <- ifelse(df_species$species %in% native_species, "Native", "PNIS") 
+
+
+```
+
+
+```{r}
+library(sdmpredictors)
+library(leaflet)
+
+# options(sdmpredictors_datadir="C:\\Users\\polyd\\AppData\\Local\\Temp\\RtmpuyXZRU/sdmpredictors")
+
+# options(sdmpredictors_datadir="D:/Data_LMBE/Obskaya Bay additional data/sdmpredictors")
+
+options(sdmpredictors_datadir=NULL)
+
+
+# Скачиваем данные по средней температуре воды на срденей глубине и срденей солености на срденей глубине. 
+environment.bottom <- load_layers( layercodes = c("BO2_tempmean_bdmean" ,  "BO2_salinitymean_bdmean"), equalarea=FALSE, rasterstack=TRUE)
+
+bathymetry <- load_layers("BO_bathymean")
+
+
+my.sites <- data.frame(species = df_species$species, Lon=df_species$decimalLongitude, Lat= df_species$decimalLatitude, Status = df_species$Status)
+
+library(raster)
+my.sites.environment <- data.frame(species = my.sites$species, Depth=extract(bathymetry,my.sites[,2:3]) , extract(environment.bottom,my.sites[,2:3]), Status = my.sites$Status)
+
+my.sites.environment <- my.sites.environment %>%  filter(!is.na(BO2_tempmean_bdmean) | !is.na(BO2_salinitymean_bdmean))
+
+ggplot(my.sites.environment, aes(x = BO2_tempmean_bdmean, y = BO2_salinitymean_bdmean)) + geom_point(size = 0.1, position = position_jitter(width = 0.1, height = 0.1)) + facet_wrap(~Status) + geom_density2d() + geom_rect(aes(xmin = -0.3, xmax = 0.5, ymin = 0.02, ymax = 8)) + geom_rect(aes(xmin = -0.08, xmax = 7.4, ymin = 0.18, ymax = 2.6))
+
+```
+
+
+
+
+
+
+
+
+```{r}
+
+path = "D:/Data_LMBE/Obskaya Bay additional data/Species characteristics/"
+
+
+files <- list.files(path)
+
+df_species <- NULL
+
+for(name in files){
+  df <- read.table(paste(path, "/",name, sep = ""), sep = "\t", header = T)
+  df <- df %>% select(-gbifID)
+  df <- unique(df)
+  if(sum (is.na(df$species)) > 0) df$species <- df$genus
+  df_species <- rbind(df_species, df)
+}
+
+```
+
+
+
+Коллеги!
+
+Вот некоторые результаты моих изысканий.
+
+Используя базу [данных по инвазивным видам России](http://www.sevin.ru/top100worst/) и публикацию Goldsmit et al. (2019) я вытащил некоторый набор видов, которые обладают следующими признаками:
+
+1. Они потенциально способны выдерживать опреснение (здесь надо еще внимательно фильтровать).
+2. Они уже были отмечены, как инвазивные виды в других местообитаниях, как на территории России, так и в Канадской Арктике (возможно надо еще внимательнее посмотреть и кого-то выкинуть или добавить).
+
+Далее такие виды будут обозначаться как Potentialy Non Indigenous Species (**PNIS**).
+
+Используя данные бентосной съемки в Обской губе, я отфильтровал те виды, которые наиболее обильны на тех участков акватории, где расположены порты или для более опресненных участков, расположенных на юге акватории. Морскую часть сообщества, как мне видится, рассматривать не следует, так как вся морская фауна, будучи завезенной в сильно опресненные акватории портов, однозначно погибнет. 
+Далее местные виды, будут обозначаться как нативные (**Native**).
+
+Для всех этих видов, используя базу [GBIF](https://www.gbif.org/) я вытащил координаты точек, где эти виды были обнаружены. 
+
+Уже простое сравнение частотных распределений широт для видов дает некоторую возможность отфильтровать потенциальных вселенцев. 
+
+```{r}
+
+native_species <- c("Limnodrilus hoffmeisteri", 
+                    "Mysis relicta",
+                    "Halicryptus spinulosus",
+                    "Saduria entomon",
+                    "Saduria sabini",
+                    "Saduria sibirica",
+                    "Gammaracanthus lacustris",
+                    "Gammaracanthus",
+                    "Monoporeia affinis",
+                    "Pontoporeia femorata",
+                    "Portlandia aestuariorum",
+                    "Marenzelleria",
+                    "Ampharete vega",
+                    "Golfingia"
+)
+
+# exclude <- c("Paralithodes camtschaticus")
+
+# df_species <- df_species %>% filter(!(species %in% exclude))
+
+df_species$Status <- ifelse(df_species$species %in% native_species, "Native", "PNIS") 
+
+df_species_native <- df_species %>% filter(Status == "Native")
+
+df_species_PNIS <- df_species %>% filter(Status == "PNIS")
+
+```
+
+```{r}
+
+Pl_native <- ggplot(df_species_native, aes(y = decimalLatitude, x = species)) + geom_boxplot() + facet_wrap(~Status) + geom_hline(yintercept = 66.5622, linetype = 2) + theme(axis.text.x = element_text(angle = 90)) + ylim(-50, 90)
+
+Pl_PNIS <- ggplot(df_species_PNIS, aes(y = decimalLatitude, x = species)) + geom_boxplot() + facet_wrap(~Status) + geom_hline(yintercept = 66.5622, linetype = 2) + theme(axis.text.x = element_text(angle = 90)) + ylim(-50, 90) 
+
+plot_grid(Pl_PNIS, Pl_native, ncol = 2)
+```
+
+
+Пунктирная линия показывает Северный полярный круг.
+
+Видно, что ареал почти у всех нативных видов имеет более северный характер. Хотя некоторые PNIS потенциально могут встречаться и в заполярье. 
+
+
+```{r}
+species_stat <- df_species %>% group_by(species, Status) %>% summarise(Median_lat = median(decimalLatitude), Upper_lat = max(decimalLatitude), Q_low = quantile(decimalLatitude, probs = 0.025), Q_up = quantile(decimalLatitude, probs = 0.975), N_S_skewness = skewness(decimalLatitude, type = 1), N_S_asymmetry = log(abs(Q_up - Median_lat)/abs(Q_low - Median_lat)), Prop_polar = mean(decimalLatitude > 66.5622))
+```
+
+
+
+Каждый вид был охарактеризован несколькими переменными:
+
+
+*Median_lat* - медиана значений широты. Предполагается, что эта величина характеризует широтное "ядро" нативного ареала. 
+
+*Upper_lat* - Максимальное значение широты, на которой встретился вид
+
+*Q_low* - значение 2.5% квантиля широты
+
+*Q_up* - значение 97.5% квантиля широты
+
+*Prop_polar* - отношение количества точек с широтой выше Севарного полярного круга к общему количеству встреч. Предполагается, что чем выше это значение тем с большей вероятностью данный вид встречается в Заполярье. 
+
+*N_S_skewness* - величина асимметрии распределения значений широт. Предполагается, что чем асимметричнее распределение тем более выражена тенденция в смещении вида из нативного ареала. 
+
+*N_S_asymmetry* - величина идейно похожая на предыдущую. Это отношение расстояния от медианы широты до Q_low к расстоянию от медианы до Q_up. 
+
+$$
+asymmetry = \ln(\frac{|Q_{up} - M|}{|Q_{low}-M|})
+$$
+
+
+Все эти характеристики были использованы в компонентном анализе, на основании которого была построена ординация видов.
+
+```{r}
+spec <-  species_stat %>% select(-c(1,2))
+
+
+mod <- rda(spec[ , -1])
+
+scores_rda <- scores(mod)
+
+species_rda <- as.data.frame(scores_rda$sites)
+
+species_rda$species <- species_stat$species 
+species_rda$Status <- species_stat$Status 
+
+ggplot(species_rda, aes(PC1, PC2, color = Status)) + geom_text(aes(label = species), size = 3) + scale_color_manual(values = c("blue", "red"))
+
+
+```
+
+
+Видно, что нативные виды обладают достаточно сходными биогеографическими характеристиками. Исключение составляет  Limnodrillus hoffmeisteri. Либо это ошибка в определнии, либо это космополит. 
+
+По своим биогеографическим параметрам в число близких к нативным видам попадают следующие PNIS: `r species_rda %>% filter((PC1 > -1 & PC2 > -1) & Status == "PNIS" ) %>% pull(species)`. 
+
+Из этих видов явно надо исключать Chionoecetes opilio и Botryllus schlosseri, как виды чисто морские. Остальные же вполне могут заселиться. 
+
+
+Важно отметить, что это картинка получена лишь на основе биогеографических данных. Если дастся добавить сюда еще оценку соленостной и температурной толерантности видов, то она может существенно измениться. 
+
+
+
+
+
+

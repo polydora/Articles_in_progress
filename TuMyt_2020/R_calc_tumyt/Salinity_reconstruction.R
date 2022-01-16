@@ -133,7 +133,8 @@ ggplot(tide_transect, aes(x = Date3, y = Salinity_predicted)) +
   geom_text(data = levels_salinity_2, aes(y = Salinity_predicted + 1, x = mean(tide_transect$Date3), label = "+2 m")) +
   theme(axis.text.x = element_text(angle = 90))
   
-
+write.table(tide_transect, "salinity_prediction.csv", sep = ",", row.names = F)
+write.table(sal_tuv, "observed_salinity.csv", sep = ",", row.names = F)
 
 
 
