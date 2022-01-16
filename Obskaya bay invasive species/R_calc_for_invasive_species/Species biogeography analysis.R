@@ -1,6 +1,30 @@
+
+# install.packages("spocc")
+
+
 library(lubridate)
 library(dplyr)
 library(ggplot2)
+library(spocc)
+
+
+# Пакетное скачивание данных по видам
+
+add_PNIS <- read.csv("Data/additional_PNIS.csv")
+
+
+
+
+df_add_PNIS <- occ2df(occ(query = add_PNIS$species, from = "gbif", limit = 5000, has_coords = TRUE))
+
+
+df_add_PNIS_short <- df_add_PNIS %>% select(name, longitude, latitude) %>% unique
+
+names(df_add_PNIS_short) <- c("species", "lon", "lat")
+
+
+
+
 
 
 path = "D:/Data_LMBE/Obskaya Bay additional data/Species characteristics/"
@@ -20,9 +44,26 @@ for(name in files){
   print(name)
 }
 
-dd <- df_species %>%  filter(species == "Gammarus tigrinus") 
 
-hist(dd$decimalLatitude)
+
+df_species_short <- df_species %>% select(species, decimalLongitude, decimalLatitude) 
+
+names(df_species_short) <- c("species", "lon", "lat")
+
+
+
+df_species_full <- rbind(df_species_short, df_add_PNIS_short)
+
+
+write.csv(df_species_full, "native_and_PNIS_occurence.csv", row.names = F)
+
+
+
+
+##############################
+
+df_species <- read.csv("Data/native_and_PNIS_occurence.csv")
+df_species <- unique(df_species)
 
 native_species <- c("Limnodrilus hoffmeisteri", 
                     "Mysis relicta",
@@ -35,7 +76,9 @@ native_species <- c("Limnodrilus hoffmeisteri",
                     "Monoporeia affinis",
                     "Pontoporeia femorata",
                     "Portlandia aestuariorum",
-                    "Marenzelleria"
+                    "Marenzelleria",
+                    "Ampharete vega",
+                    "Mysis oculata"
                     )
 
 
@@ -47,9 +90,9 @@ df_species_native <- df_species %>% filter(Status == "Native")
 df_species_PNIS <- df_species %>% filter(Status == "PNIS")
 
 
-ggplot(df_species_native, aes(y = decimalLatitude, x = species)) + geom_boxplot() + facet_wrap(~Status) + geom_hline(yintercept = 66, linetype = 2) + theme(axis.text.x = element_text(angle = 90)) 
+ggplot(df_species_native, aes(y = lat, x = species)) + geom_boxplot() + facet_wrap(~Status) + geom_hline(yintercept = 66, linetype = 2) + theme(axis.text.x = element_text(angle = 90)) 
 
-ggplot(df_species_PNIS, aes(y = decimalLatitude, x = species)) + geom_boxplot() + facet_wrap(~Status) + geom_hline(yintercept = 66, linetype = 2) + theme(axis.text.x = element_text(angle = 90)) 
+ggplot(df_species_PNIS, aes(y = lon, x = species)) + geom_boxplot() + facet_wrap(~Status) + geom_hline(yintercept = 66, linetype = 2) + theme(axis.text.x = element_text(angle = 90)) 
 
 
 # Биогеографическая статистика
@@ -58,7 +101,7 @@ ggplot(df_species_PNIS, aes(y = decimalLatitude, x = species)) + geom_boxplot() 
 library(moments)
 library(e1071)
 
-species_stat <- df_species %>% group_by(species, Status) %>% summarise(Median_lat = median(decimalLatitude), Upper_lat = max(decimalLatitude), Q_low = quantile(decimalLatitude, probs = 0.025), Q_up = quantile(decimalLatitude, probs = 0.975), N_S_skewness = skewness(decimalLatitude, type = 1), N_S_asymmetry = log(abs(Q_up - Median_lat)/abs(Q_low - Median_lat)), Prop_polar = mean(decimalLatitude > 66.5622))
+species_stat <- df_species %>% group_by(species, Status) %>% summarise(N_records = n(), Median_lat = median(lat), Upper_lat = max(lat), Q_low = quantile(lat, probs = 0.025), Q_up = quantile(lat, probs = 0.975), N_S_skewness = skewness(lat, type = 1), N_S_asymmetry = log(abs(Q_up - Median_lat)/abs(Q_low - Median_lat)), Prop_polar = mean(lat > 66.5622))
 
 plot(species_stat$N_S_asymmetry, species_stat$N_S_skewness)
 
@@ -66,12 +109,18 @@ plot(species_stat$N_S_asymmetry, species_stat$N_S_skewness)
 library(vegan)
 
 
-spec <-  species_stat %>% select(-c(1,2))
+spec <-  species_stat %>% select(-c(1,2,3))
 
 
 mod <- rda(spec[ , -1])
 
+
+biplot(mod)
+
+
 scores_rda <- scores(mod)
+
+inertcomp(mod)
 
 species_rda <- as.data.frame(scores_rda$sites)
 
@@ -79,4 +128,11 @@ species_rda$species <- species_stat$species
 species_rda$Status <- species_stat$Status 
 
 ggplot(species_rda, aes(PC1, PC2, color = Status)) + geom_text(aes(label = species)) + scale_color_manual(values = c("blue", "red"))
+
+ggplot(species_rda, aes(PC1, PC2, color = Status)) + geom_point(aes(label = species)) + scale_color_manual(values = c("blue", "red"))
+
+
+species_rda %>% filter(PC1 >0 & PC2 <0 )
+
+
 
