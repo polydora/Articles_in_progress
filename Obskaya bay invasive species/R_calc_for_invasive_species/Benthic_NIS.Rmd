@@ -20,6 +20,8 @@ library(vegan)
 library(e1071)
 
 theme_set(theme_bw())
+
+setwd("D:/Text/Article/Articles_in_progress/Obskaya bay invasive species/R_calc_for_invasive_species")
 ```
 
 # Гидрологические условия в акватории Обской губы
@@ -29,7 +31,7 @@ theme_set(theme_bw())
 
 
 ```{r}
-hydrol_model <- read.csv("data/hydrological modelling data.csv")
+hydrol_model <- read.csv("Data/hydrological modelling data.csv")
 
 
 hydrol_model$Season <- factor(hydrol_model$Season, levels = c("Winter", "Spring", "Summer", "Autumn")) 
