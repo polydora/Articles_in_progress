@@ -295,25 +295,33 @@ ggplot(species_rda, aes(x = PC1)) + geom_density(aes(fill = Status), alpha = 0.5
 # Загрузка данных с координатами встреч видов
 
 
-df_species_plancton <- read.csv("Data/plancton_occurence.csv")
+df_species_plancton1 <- read.csv("Data/plancton_occurence.csv")
 
-df_species_plancton <- unique(df_species_plancton)
+df_species_plancton1 <- unique(df_species_plancton1)
 
+
+df_species_plancton2 <- read.csv("Data/plancton_occurence_2.csv")
+df_species_plancton2 <- unique(df_species_plancton2)
+
+df_species_plancton <- rbind(df_species_plancton1, df_species_plancton2) 
 
 
 df_species <- read.csv("Data/native_and_PNIS_occurence.csv")
 df_species <- unique(df_species)
 
+
+
 include <- c("Acartia tonsa",
              "Oithona davisae",
              "Cercopagis pengoi",
              "Beroe ovata",
-             "Mnemiopsis leidyi")
+             "Mnemiopsis leidyi"
+             )
 
 df_species_plancton <- rbind(df_species_plancton, df_species %>% filter(species %in% include))
 
 
-PNIS_plancton <- c(include, "Acanthocyclops robustus", "Acartia bifilosa", "Acartia tonsa")
+PNIS_plancton <- c(include, "Acanthocyclops robustus", "Acartia bifilosa", "Acartia tonsa", "Paracalanus parvus")
 
 
 
@@ -398,19 +406,163 @@ ggplot(species_rda_all, aes(x = PC1)) + geom_density(aes(fill = Status), alpha =
 
 bent_not_marine <- read.csv("Data/species_environment_non_marine.csv")
 
-bent_not_marine$Temp <- bent_not_marine %>% select(temp_avg_06, temp_avg_07, temp_avg_08, temp_avg_09, temp_avg_10, temp_avg_11) %>% 
+bent_not_marine$Temp <-  bent_not_marine %>% select(temp_avg_06, temp_avg_07, temp_avg_08, temp_avg_09, temp_avg_10, temp_avg_11) %>% rowMeans/10
+
+bent_not_marine$Sal <- 0
+
+names(bent_not_marine)
+
+bent_not_marine <- bent_not_marine %>% select( species, Lon, Lat, Temp, Sal)
+
+
+bent_marine <- read.csv("Data/species_environment_marine.csv")
+bent_marine<- bent_marine %>% select( species, Lon, Lat, Temp, Sal)
+
+
+bent_all <- rbind(bent_marine, bent_not_marine)
+bent_all2 <- bent_all 
+
+exclude <- c("Acartia tonsa",
+             "Oithona davisae",
+             "Cercopagis pengoi",
+             "Beroe ovata",
+             "Mnemiopsis leidyi")
+
+bent_all <- bent_all %>% filter(!species %in% exclude)
 
 
 
 
 
+native_species <- c("Limnodrilus hoffmeisteri", 
+                    "Mysis relicta",
+                    "Halicryptus spinulosus",
+                    "Saduria entomon",
+                    "Saduria sabini",
+                    "Saduria sibirica",
+                    "Gammaracanthus lacustris",
+                    "Gammaracanthus",
+                    "Monoporeia affinis",
+                    "Pontoporeia femorata",
+                    "Portlandia aestuariorum",
+                    "Marenzelleria",
+                    "Ampharete vega",
+                    "Mysis oculata"
+                    )
 
-ggplot(my.sites.environment, aes(x = BO2_tempmean_bdmean, y = BO2_salinitymean_bdmean)) + geom_point(size = 0.1, position = position_jitter(width = 0.1, height = 0.1)) + facet_wrap(~Status) + geom_density2d() + geom_rect(aes(xmin = -0.3, xmax = 0.5, ymin = 0.02, ymax = 8)) + geom_rect(aes(xmin = -0.08, xmax = 7.4, ymin = 0.18, ymax = 2.6))
+
+
+bent_all$Status <- ifelse(bent_all$species %in% native_species, "Native", "PNIS") 
+
+
+
+
+ggplot(bent_all, aes(x = Temp, y = Sal)) + 
+  geom_point(size = 0.1, position = position_jitter(width = 0.1, height = 0.5)) +
+  facet_wrap(~Status) + 
+  geom_density2d(color = "green") + 
+  geom_rect(aes(xmin = -0.3, xmax = 0.5, ymin = 0.02, ymax = 8), fill = NA, color = "blue") +
+  geom_rect(aes(xmin = -0.08, xmax = 7.4, ymin = 0.18, ymax = 2.6), fill = NA, color = "blue") +
+  geom_rect(aes(xmin = 0, xmax = 10, ymin = 0, ymax = 10), fill = NA, color = "red", linetype = 2)
 
 ```
 
 
 
+```{r}
+bent_occurence <- bent_all %>% filter(Status == "PNIS") %>% group_by(species) %>% summarise(N_occ_total = n())
+  
+
+
+
+bent_occurence_in_env <- bent_all %>% filter(Status == "PNIS") %>%  filter(Sal <= 10 & Temp <= 10) %>% group_by(species) %>% summarise(N_occ_in_env = n())
+
+bent_occur_probability <- merge(bent_occurence_in_env, bent_occurence)
+
+bent_occur_probability <- bent_occur_probability %>% mutate(Probability = N_occ_in_env/N_occ_total) %>% filter(N_occ_total >= quantile(bent_occurence$N_occ_total, probs = 0.5)) %>% arrange(desc(Probability))
+
+
+
+```
+
+
+
+
+
+```{r}
+
+
+planct_not_marine <- read.csv("Data/plancton_environment_non_marine.csv")
+
+planct_not_marine$Temp <-  planct_not_marine %>% select(temp_avg_06, temp_avg_07, temp_avg_08, temp_avg_09, temp_avg_10, temp_avg_11) %>% rowMeans/10
+
+planct_not_marine$Sal <- 0
+
+# names(planct_not_marine)
+
+planct_not_marine <- planct_not_marine %>% select( species, Lon, Lat, Temp, Sal)
+
+
+planct_marine <- read.csv("Data/plancton_environment_marine.csv")
+planct_marine<- planct_marine %>% select( species, Lon, Lat, Temp, Sal)
+
+
+
+
+planct_all <- rbind(planct_marine, planct_not_marine)
+
+
+
+
+PNIS <- c("Acartia tonsa",
+             "Oithona davisae",
+             "Cercopagis pengoi",
+             "Beroe ovata",
+             "Mnemiopsis leidyi",
+              "Paracalanus parvus"
+          )
+
+
+planct_add <- bent_all2 %>% filter(species %in% PNIS) %>% filter(species != "Acartia tonsa")
+
+planct_all <- rbind(planct_all, planct_add)
+
+
+planct_all$Status <- ifelse(planct_all$species %in% PNIS, "PNIS", "Native")
+
+
+
+
+
+
+ggplot(planct_all, aes(x = Temp, y = Sal)) + 
+  geom_point(size = 0.1, position = position_jitter(width = 0.1, height = 0.5)) +
+  facet_wrap(~Status) + 
+  geom_density2d(color = "green") + 
+  geom_rect(aes(xmin = -0.3, xmax = 0.5, ymin = 0.02, ymax = 8), fill = NA, color = "blue") +
+  geom_rect(aes(xmin = -0.08, xmax = 7.4, ymin = 0.18, ymax = 2.6), fill = NA, color = "blue") +
+  geom_rect(aes(xmin = 0, xmax = 10, ymin = 0, ymax = 10), fill = NA, color = "red", linetype = 2)
+
+```
+
+
+
+
+```{r}
+planct_occurence <- planct_all %>% filter(Status == "PNIS") %>% group_by(species) %>% summarise(N_occ_total = n())
+  
+
+
+
+planct_occurence_in_env <- planct_all %>% filter(Status == "PNIS") %>%  filter(Sal <= 10 & Temp <= 10) %>% group_by(species) %>% summarise(N_occ_in_env = n())
+
+planct_occur_probability <- merge(planct_occurence_in_env, planct_occurence)
+
+planct_occur_probability <- planct_occur_probability %>% mutate(Probability = N_occ_in_env/N_occ_total) %>% filter(N_occ_total >= quantile(planct_occurence$N_occ_total, probs = 0.5)) %>% arrange(desc(Probability))
+
+
+
+```
 
 
 

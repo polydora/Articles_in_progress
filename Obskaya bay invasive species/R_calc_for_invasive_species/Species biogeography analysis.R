@@ -62,7 +62,7 @@ write.csv(df_species_full, "native_and_PNIS_occurence.csv", row.names = F)
 ##### Planctonic animals 
 
 
-path = "D:/Data_LMBE/Obskaya Bay additional data/Planctonic species characteristic/"
+path = "D:/Data_LMBE/Obskaya Bay additional data/Planctonic species characteristic 2/"
 
 
 
@@ -90,7 +90,7 @@ df_add_plancton <- df_add_plancton %>% select(name, longitude, latitude) %>% uni
 names(df_add_plancton) <- c("species", "lon", "lat")
 
 
-write.csv(df_add_plancton, file = "Data/plancton_occurence.csv", row.names = F)
+write.csv(df_add_plancton, file = "Data/plancton_occurence_2.csv", row.names = F)
 
 
 

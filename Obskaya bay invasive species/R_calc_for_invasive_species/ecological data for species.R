@@ -86,6 +86,56 @@ write.csv(my.sites.environment_not_marine, "Data/plancton_occurence_not_marine.c
 
 
 
+
+####################################
+
+df_species <- read.csv("Data/plancton_occurence_2.csv")
+df_species <- unique(df_species)
+
+df_species$lon <- as.numeric(df_species$lon)
+df_species$lat <- as.numeric(df_species$lat)
+df_species <- df_species[complete.cases(df_species), ]
+
+
+
+library(sdmpredictors)
+library(leaflet)
+
+# options(sdmpredictors_datadir="C:\\Users\\polyd\\AppData\\Local\\Temp\\RtmpuyXZRU/sdmpredictors")
+
+
+# Скачиваем данные по средней температуре воды на срденей глубине и срденей солености на срденей глубине. 
+environment.bottom <- load_layers( layercodes = c("BO2_tempmean_bdmean" ,  "BO2_salinitymean_bdmean") , equalarea=FALSE, rasterstack=TRUE, datadir = NULL)
+
+
+
+# bathymetry <- load_layers("BO_bathymean")
+
+
+my.sites <- data.frame(species = df_species$species, Lon=df_species$lon, Lat= df_species$lat)
+my.sites
+
+
+
+library(raster)
+my.sites.environment <- data.frame(species = my.sites$species, Lat = my.sites$Lat, Lon = my.sites$Lon, extract(environment.bottom,my.sites[,2:3]) )
+
+my.sites.environment_marine <- my.sites.environment %>%  filter(!is.na(BO2_tempmean_bdmean) & !is.na(BO2_salinitymean_bdmean))
+
+names(my.sites.environment_marine) <- c("species", "Lat", "Lon", "Temp", "Sal")
+
+write.csv(my.sites.environment_marine, "Data/plancton_environment_marine.csv")
+
+
+my.sites.environment_not_marine <- my.sites.environment %>%  filter(is.na(BO2_tempmean_bdmean) & is.na(BO2_salinitymean_bdmean))
+
+my.sites.environment_not_marine <- my.sites.environment_not_marine[,1:3] 
+
+write.csv(my.sites.environment_not_marine, "Data/plancton_occurence_not_marine.csv")
+
+
+
+
 # Оценка температуры для тех точек, которые предположитеьно не являются морскими
 
 
