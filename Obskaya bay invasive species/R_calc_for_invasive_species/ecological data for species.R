@@ -124,14 +124,14 @@ my.sites.environment_marine <- my.sites.environment %>%  filter(!is.na(BO2_tempm
 
 names(my.sites.environment_marine) <- c("species", "Lat", "Lon", "Temp", "Sal")
 
-write.csv(my.sites.environment_marine, "Data/plancton_environment_marine.csv")
+write.csv(my.sites.environment_marine, "Data/plancton_environment_marine_2.csv")
 
 
 my.sites.environment_not_marine <- my.sites.environment %>%  filter(is.na(BO2_tempmean_bdmean) & is.na(BO2_salinitymean_bdmean))
 
 my.sites.environment_not_marine <- my.sites.environment_not_marine[,1:3] 
 
-write.csv(my.sites.environment_not_marine, "Data/plancton_occurence_not_marine.csv")
+write.csv(my.sites.environment_not_marine, "Data/plancton_occurence_not_marine_2.csv")
 
 
 

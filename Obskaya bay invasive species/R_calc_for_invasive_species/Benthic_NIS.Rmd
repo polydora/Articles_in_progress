@@ -185,6 +185,7 @@ df_species_native <- df_species %>% filter(Status == "Native")
 
 df_species_PNIS <- df_species %>% filter(Status == "PNIS")
 
+# write.csv(df_species, "benthos_occurence_all.csv" )
 
 ```
 
@@ -327,6 +328,9 @@ PNIS_plancton <- c(include, "Acanthocyclops robustus", "Acartia bifilosa", "Acar
 
 df_species_plancton$Status <- ifelse(df_species_plancton$species %in% PNIS_plancton,  "PNIS", "Native") 
 
+
+# write.csv(df_species_plancton, "plancton_occurence_all.csv")
+
 ```
 
 
@@ -394,7 +398,7 @@ ggplot(species_rda_all, aes(x = PC1)) + geom_density(aes(fill = Status), alpha =
 
 
 
-## Селекция потенциальных видов-вселенцев (PNIS) по парамтерам их экологических ниш 
+## Селекция потенциальных видов-вселенцев (PNIS) по параметрам их экологических ниш 
 
 Из базы вселенцев, отмеченных на территории России (At! этот список еще дорабатываю, но методология обработки останется такой же) и из видов-вселенцев, отмеченных в Арктическом регионе (Goldsmit et al., +++, ++++ еще досмотрю несколько статей) были отобраны гидробионты, потенциально способные поселяться в эстуариях (список видов с запасом, куда входят и чисто морские виды и чисто пресноводные). Для каждого из видов из базы GBIF были извлечены географические координаты точек, в которых были обнаружены особи данных видов. По этим координатам на основе базы данных https://bio-oracle.org/ производилась оценка солености и температуры воды в точках, где был отмечен данный вид. 
 
@@ -454,6 +458,7 @@ native_species <- c("Limnodrilus hoffmeisteri",
 
 bent_all$Status <- ifelse(bent_all$species %in% native_species, "Native", "PNIS") 
 
+# write.table(bent_all, "benthos_environment_all.csv")
 
 
 
@@ -494,6 +499,12 @@ bent_occur_probability <- bent_occur_probability %>% mutate(Probability = N_occ_
 
 planct_not_marine <- read.csv("Data/plancton_environment_non_marine.csv")
 
+planct_not_marine2 <- read.csv("Data/plancton_environment_non_marine_2.csv")
+
+planct_not_marine <- rbind(planct_not_marine, planct_not_marine2)
+
+
+
 planct_not_marine$Temp <-  planct_not_marine %>% select(temp_avg_06, temp_avg_07, temp_avg_08, temp_avg_09, temp_avg_10, temp_avg_11) %>% rowMeans/10
 
 planct_not_marine$Sal <- 0
@@ -506,6 +517,10 @@ planct_not_marine <- planct_not_marine %>% select( species, Lon, Lat, Temp, Sal)
 planct_marine <- read.csv("Data/plancton_environment_marine.csv")
 planct_marine<- planct_marine %>% select( species, Lon, Lat, Temp, Sal)
 
+planct_marine2 <- read.csv("Data/plancton_environment_marine_2.csv")
+planct_marine2<- planct_marine2 %>% select( species, Lon, Lat, Temp, Sal)
+
+planct_marine <- rbind(planct_marine, planct_marine2)
 
 
 
@@ -530,7 +545,7 @@ planct_all <- rbind(planct_all, planct_add)
 
 planct_all$Status <- ifelse(planct_all$species %in% PNIS, "PNIS", "Native")
 
-
+write.csv(planct_all, "plancton_environment_all.csv")
 
 
 
