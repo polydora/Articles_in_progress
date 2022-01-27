@@ -70,7 +70,7 @@ for(name in files_selected){
     ) 
   
   # Отбор точек ближайшх к портам
-  df_model <- df_model %>% filter(Dist_Sabetta <= quantile(Dist_Sabetta, probs = 0.001) | Dist_Terminal <= quantile(Dist_Terminal, probs = 0.001) )
+  df_model <- df_model %>% filter(Dist_Sabetta <= quantile(Dist_Sabetta, probs = 0.005) | Dist_Terminal <= quantile(Dist_Terminal, probs = 0.005) )
   
   # df_model <- df_model[c(which.min(df_model$Dist_Sabetta), which.min(df_model$Dist_Terminal)), ]
     
@@ -155,7 +155,7 @@ for(name in files_selected){
   ) 
   
   # Отбор точек ближайшх к портам
-  df_model <- df_model %>% filter(Dist_Sabetta <= quantile(Dist_Sabetta, probs = 0.001) | Dist_Terminal <= quantile(Dist_Terminal, probs = 0.001) )
+  df_model <- df_model %>% filter(Dist_Sabetta <= quantile(Dist_Sabetta, probs = 0.005) | Dist_Terminal <= quantile(Dist_Terminal, probs = 0.005) )
   
   
   # df_model <- df_model[c(which.min(df_model$Dist_Sabetta), which.min(df_model$Dist_Terminal)), ]
@@ -165,6 +165,7 @@ for(name in files_selected){
   setTxtProgressBar(pb,i)
   
 }
+
 
 
 nrow(df_hotspot)
@@ -192,8 +193,8 @@ theme_set(theme_bw())
 
 df_hotspot_2 <- df_hotspot_2  %>% mutate(Temp = rowMeans(select(., starts_with("T_")), na.rm = TRUE), Sal = rowMeans(select(., starts_with("S_")), na.rm = TRUE))
 
-df_hotspot_2 %>% filter(Scenario == "Construction present") %>% 
-  ggplot(., aes(x = Temp, y = Sal)) + geom_point(size =1, alpha = 0.2)  + geom_density2d(n = 1000) 
+# df_hotspot_2 %>% filter(Scenario == "Construction present") %>% 
+#   ggplot(., aes(x = Temp, y = Sal)) + geom_point(size =1, alpha = 0.2)  + geom_density2d(n = 1000) 
 
 
 
@@ -220,7 +221,7 @@ df_hotspot_2$Port <- case_when(df_hotspot_2$Dist_Sabetta < 1  ~ "Sabetta",
                                  df_hotspot_2$Dist_Sabetta > 1 ~ "Terminal")
 
 
-write.csv(df_hotspot_2, "hydrological modelling data.csc")
+write.csv(df_hotspot_2, "hydrological modelling data.csv")
 
 
 ggplot(df_hotspot_2, aes(x = Scenario, y = Sal)) + geom_boxplot(notch = T) + facet_grid(Season ~ Port)

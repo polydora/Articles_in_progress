@@ -40,8 +40,15 @@ df_species$Status <- ifelse(df_species$species %in% native_species, "Native", "P
 
 ## Plancton
 
-df_species <- read.csv("Data/plancton_occurence.csv")
+df_species <- read.csv("Data/plancton_occurence_all_final.csv")
+
+df_species <- df_species %>% filter(species == "Acartia bifilosa") 
+
 df_species <- unique(df_species)
+
+# write.csv(df_species, "Data/Acrtia_bifilosa.csv")
+
+
 
 df_species$lon <- as.numeric(df_species$lon)
 df_species$lat <- as.numeric(df_species$lat)
@@ -52,7 +59,7 @@ df_species <- df_species[complete.cases(df_species), ]
 library(sdmpredictors)
 library(leaflet)
 
-options(sdmpredictors_datadir="C:\\Users\\polyd\\AppData\\Local\\Temp\\RtmpuyXZRU/sdmpredictors")
+# options(sdmpredictors_datadir="C:\\Users\\polyd\\AppData\\Local\\Temp\\RtmpuyXZRU/sdmpredictors")
 
 
 # Скачиваем данные по средней температуре воды на срденей глубине и срденей солености на срденей глубине. 
@@ -75,7 +82,7 @@ my.sites.environment_marine <- my.sites.environment %>%  filter(!is.na(BO2_tempm
 
 names(my.sites.environment_marine) <- c("species", "Lat", "Lon", "Temp", "Sal")
 
-write.csv(my.sites.environment_marine, "Data/plancton_environment_marine.csv")
+write.csv(my.sites.environment_marine, "Data/Acartia_environment_marine.csv")
 
 
 my.sites.environment_not_marine <- my.sites.environment %>%  filter(is.na(BO2_tempmean_bdmean) & is.na(BO2_salinitymean_bdmean))

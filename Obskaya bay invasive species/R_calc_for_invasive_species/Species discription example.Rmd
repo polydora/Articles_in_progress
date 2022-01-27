@@ -1,0 +1,99 @@
+---
+output:
+  word_document:
+    reference_docx: Report_structure.docx
+    fig_width: 8
+    fig_height: 8
+bibliography: invasive_species_Ob_estuary.bib
+csl: chicago_style.csl
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+
+```{r packages}
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+library(cowplot)
+library(vegan)
+library(e1071)
+library(ggmap)
+library(tidyverse)
+library(ggrepel)
+
+
+
+theme_set(theme_bw())
+
+setwd("D:/Text/Article/Articles_in_progress/Obskaya bay invasive species/R_calc_for_invasive_species")
+```
+
+
+
+## Discription of most expected invasive species
+
+```{r}
+world <- map_data("world")
+
+
+ World_map <- 
+  ggplot(world, aes(x=long, y=lat, group=group)) +
+  geom_polygon(fill = "gray70") + 
+  coord_map(xlim = c(-180, 180), ylim = c(-50, 90) ) +
+  theme_bw() +  
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(),  panel.grid = element_blank()) + 
+  theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+  theme(axis.ticks = element_blank()) 
+ # +
+ #   geom_point(data = hotspot, aes(x = Lon, y = Lat, group = 1), size = 3, fill = "yellow", shape = 21, color = "black")
+
+```
+
+
+
+
+```{r}
+taxonomy <- read.csv("Data/taxonomy.csv")
+```
+
+
+<!-- Species discription -->
+
+```{r}
+
+spec <- "Prorocentrum cordatum"
+tax <- taxonomy %>% filter(scientificname == spec)
+
+spec_full <- paste(spec, tax$authority)
+
+```
+
+##### *`r spec_full`*
+
+**Phyllum:**`r tax$phylum`   
+**Class:** `r tax$class`    
+**Order:** `r tax$order`    
+**Family:** `r tax$family`   
+
+![reference for figure](Figure/Prorocentrum.png)
+
+
+
+```{r }
+spec_data <- read.csv("Data/Prorocentrum cordatum.csv")
+
+World_map +   geom_point(data = spec_data, aes(x = lon, y = lat, group = 1), size = 0.5) 
+# + geom_density2d(data = spec_data, aes(x = lon, y = lat, group = 1))
+
+
+```
+
+Figure ++. Worldwide distribution of `r spec` accordingly to GBIF.
+
+*P. cordatum* (minimum) (Dinophyceae) was introduced in the Baltic Sea and caused recognizable environmental effect (Olenina et al., 2010) ^[Olenina, I., Wasmund, N., Hajdu, S., Jurgensone, I., Gromisz, S., Kownacka, J., … Olenin, S. (2010). Assessing impacts of invasive phytoplankton: The Baltic Sea case. Marine Pollution Bulletin, 60(10), 1691–1700.]). This species has wide salinity and temperature tolerance and low-light adaptation (Tyler, Seliger, 1981, Hajdu et al., 2005) ^[Tyler, M. A., & Seliger, H. (1981). Selection for a red tide organism: Physiological responses to the physical environment 1, 2. Limnology and Oceanography, 26(2), 310–324.] ^[Hajdu, S., Pertola, S., & Kuosa, H. (2005). Prorocentrum minimum (Dinophyceae) in the Baltic Sea: morphology, occurrence—a review. Harmful algae, 4(3), 471–480.]. *P. minimum* was found also in the White Sea (Ilyash et al., 2018) ^[Ilyash, L. V., Belevich, T. A., Zhitina, L. S., Radchenko, I. G., & Ratkova, T. N. (2018). Phytoplankton of the White sea. Dalam Biogeochemistry of the atmosphere, ice and water of the White Sea (hlm. 187–222). Springer.], which proves it to be eurybiotic species. Is one of the red-tide-forming toxic species (Heil et al., 2005) ^[Heil, C. A., Glibert, P. M., & Fan, C. (2005). Prorocentrum minimum (Pavillard) Schiller: a review of a harmful algal bloom species of growing worldwide importance. Harmful Algae, 4(3), 449–470.]. Being introduced into Ob Estuary *P. cordatum* may cause poisoning of the local aquatic organisms, especially in case of intensive warming. Besides that, may occupy spatial niches of native planktonic algae.
+
+

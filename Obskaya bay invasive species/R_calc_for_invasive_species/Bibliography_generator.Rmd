@@ -1,0 +1,82 @@
+---
+output:
+  word_document:
+    reference_docx: Report_structure.docx
+    fig_width: 8
+    fig_height: 8
+bibliography: invasive_species_Ob_estuary.bib
+csl: my_csl2.csl
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+@Spocc
+@Worms
+@assis2018bio
+@berezina2007expansion
+@chambers1977population
+@david2004ballast
+@david2004ballast
+@deagle2003development
+@dineen1992interactive
+@dineen1992interactive
+@domisch2015near
+@drake2004global
+@Forster2004
+@Galkin2010
+@Gerasimova2021
+@Goldsmit2020
+@gonccalves2012responses
+@Hansen1996
+@Karatayev2007
+@kauppi2015
+@Makhnovich2018
+@Makhnovich2018en
+@marques2006zooplankton
+@martynova2011seasonal
+@martynova2011seasonal
+@Maximov2011
+@Most_dang_2018
+@Ozerskii2011
+@Powers2006
+@purasjoki1984acanthocyclops
+@Quintana2013
+@sautour1995comparative
+@sautour1995comparative
+@simard2011net
+@simard2011net
+@smith1999invasion
+@Stepanova2007
+@Stepanova2017
+@Stepanova2017en
+@sylvester2011hull
+@tackx2004zooplankton
+@Travina2020
+@Travina2020en
+@tyberghein2012bio
+@Vinogradov1994
+@Zolotarev1996
+@dorit1991zoology
+@dorit1991zoology
+@Integr_2020
+@Most_dang_2018en
+@berger2002biological
+@orlova2002dreissena
+@chu1997biological
+@R_core
+@tyler1981selection
+@hajdu2005prorocentrum
+@heil2005prorocentrum
+@ilyash2018phytoplankton
+@Vegan
+@Olenina2010   
+@Galkin2010en
+
+
+
+
+
+

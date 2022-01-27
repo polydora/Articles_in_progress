@@ -1,0 +1,793 @@
+---
+title: |
+    Что мы знаем об экологии системы  
+    *Mytilus edulis*-*M.trossulus*  
+    в Белом море?
+author: "Вадим Хайтов, Антон Ковалев, Петр Стрелков"
+date: ' '
+output:
+  beamer_presentation:
+    colortheme: "beaver"
+    highlight: tango
+    includes:
+      in_header: ./includes/header.tex
+    latex_engine: xelatex
+    slide_level: 2
+    theme: "Singapore"
+    toc: no
+
+---
+
+
+```{r setup, include = FALSE, purl = FALSE}
+# output options
+options(width = 70, scipen = 6, digits = 3)
+library(knitr)
+# chunk default options
+# opts_chunk$set(fig.align='center', tidy = FALSE, fig.width = 7, fig.height = 3, warning = FALSE)
+opts_chunk$set(fig.show='hold', size='footnotesize', comment="#", warning=FALSE, message=FALSE, dev='cairo_pdf', cache = TRUE, echo = FALSE)
+library("extrafont")
+```
+
+
+
+
+```{r}
+
+library(lattice)
+library(sp)
+library(ggmap)
+library(mapproj)
+library(maps)
+
+library(rgeos) #этот пакет содержит какую-то хрень, которая позволяет обойти проблему пр чтении фалов средсвами maptools.
+#Att! Этот пакет должен быть загружен до maptools
+
+library(mapdata)
+library(maptools) # Rgshhs
+library(PBSmapping)
+library(gridExtra)
+library(grid)
+library(gamm4)
+
+library(akima)
+library(car)
+library(fetchR)
+library(MuMIn)
+
+
+default_theme <- theme_bw() + theme(axis.text = element_text(size = 15), axis.title = element_text(size = 20) )
+
+theme_set(default_theme)
+
+```
+
+# Предыстория
+
+
+## Два вида мидий в Европе (Vainola, Strelkov, 2011)
+
+\columnsbegin
+\column{0.5\textwidth}
+\begin{figure}
+  \centering
+      \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./figure/Vainola_Strelkov.jpg}
+
+\end{figure}
+
+
+\column{0.48\textwidth}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./figure/Map_VS.jpg}
+
+\end{figure}
+
+\columnsend
+
+\small
+* Тихоокеанская мидия (*M.trossulus*) широко распространена вдоль побережья Европы  
+* **Рабочая гипотеза:**: *M.trossulus* была интродуцирована в акваторию Баренцева, а затем и Белого моря, во время II Мировой войны.
+
+## Два вида мидий  в Белом море (Katolikova et al., 2016)
+
+\columnsbegin
+\column{0.48\textwidth}
+\begin{figure}
+  \centering
+      \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./figure/Katolikova.jpg}
+
+\end{figure}
+
+
+\column{0.48\textwidth}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./figure/Map_Katolikova.jpg}
+
+\end{figure}
+
+\columnsend
+
+\small
+
+* Более 1000 мидий из 26 поселений были генотипированы по 4 аллозимным локусам: *Est-D*, *Gpi*, *Pgm*, *Odh*
+* В Кандалакшском заливе представлены смешанные поселения  *M.edulis* и *M.trossulus*
+*  Доля *M.trossulus* варьирует в широких пределах.
+
+
+
+# **История первая**: Использование морфотипов для определения видов
+
+
+## Использование морфотипов для определения видов (Khaitov et al., 2021)
+
+\columnsbegin
+\column{0.4\textwidth}
+\begin{figure}
+  \centering
+      \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./figure/Khaitov_et_al_2021.png}
+
+\end{figure}
+
+
+\column{0.6\textwidth}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./figure/Morphotypes_russ.png}
+
+\end{figure}
+
+\columnsend
+
+
+
+## Использование морфотипов для определения видов (Khaitov et al., 2021)
+
+\centering
+```{r, fig.height=5}
+
+library(reshape2)
+library(ggplot2)
+library(gridExtra)
+library(dplyr)
+library(lme4)
+library(ggrepel)
+
+
+default_theme <- theme_bw() + theme(axis.text = element_text(size = 15), axis.title = element_text(size = 20) )
+
+theme_set(default_theme)
+
+gds <- read.table("data/myt_all.csv", sep = ";", header = T)
+
+gds <- gds[complete.cases(gds), ]
+
+gds$species2 <- ifelse(gds$structure >= 0.5, "M.trossulus", "M.edulis")
+  
+  
+gds$Morph [gds$Z == 0] <- "T-morphotype"
+gds$Morph [gds$Z != 0] <- "E-morphotype"
+
+morph_distribution <- as.data.frame(table(gds$species2, gds$Morph))
+
+
+blank_theme <- theme_minimal()+
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.border = element_blank(),
+    panel.grid=element_blank(),
+    axis.ticks = element_blank(),
+    axis.text.x=element_blank(),
+     axis.text.y=element_blank(),
+    plot.title=element_text(size=14, face="bold")
+  )
+
+
+morph_distribution$Var2 <- factor(morph_distribution$Var2, labels = c("E-морфотип", "T-морфотип"))
+
+Pay_chart_morphotype <- ggplot(morph_distribution, aes(x="", y = Freq, fill = Var1)) + geom_bar(width = 1, stat = "identity",  position = position_fill(), color = "black")+ facet_wrap(~ Var2) + coord_polar("y", start=0) + scale_fill_manual(values = c("blue",  "red"))  + blank_theme +  theme(legend.position = "bottom") + labs(fill = NULL) + ggtitle("Связь между морфотипами и  \nвидами мидий") + theme(plot.title = element_text(hjust = 0.5), legend.text = element_text(size = 15), strip.text = element_text(size = 15) )
+
+
+
+Pay_chart_species <- ggplot(morph_distribution, aes(x="", y = Freq, fill = Var2)) + geom_bar(width = 1, stat = "identity",  position = position_fill(), color = "black")+ facet_wrap(~ Var1) + coord_polar("y", start=0) + scale_fill_manual(values = c("black", "yellow"))  + blank_theme +  theme(legend.position = "bottom") + labs(fill = NULL) + ggtitle("Распределение морфотипов \nмежду видами") + theme(plot.title = element_text(hjust = 0.5), legend.text = element_text(size = 15), strip.text = element_text(size = 15) )
+
+Pay_chart_morphotype
+
+```
+
+* Морфотип -- это *полу*диагностический маркер.
+
+
+## Использование морфотипов для определения видов (Khaitov et al., 2016)
+
+
+В соответствии с теоремой Байеса, вероятность правильного определения вида по морфологическому маркеру зависит от частоты вида в смешанном поселении.
+
+$$
+P(Mt|T) \propto P(T|Mt)P_{Mt}
+$$ 
+
+
+$$
+P(Me|E)  \propto P(E|Me)P_{Me}
+$$ 
+
+
+## Модель, описывающая зависимость между $P(Mt|T)$ и $P(Me|E)$ от распространенности вида 
+
+```{r, fig.height=5}
+
+myt <- gds
+
+
+
+
+myt$Sp [myt$structure > 0.5] <- "M.trossulus" 
+myt$Sp [myt$structure <= 0.5] <- "M.edulis"
+
+myt$morph <- ifelse(myt$Z == 0, "T_m", "E_m")
+
+# Оставляем только мидий, у которых есть оценка морфотипа
+myt2 <- myt[!is.na(myt$Z), ]
+
+# 
+# # Вводим обозначения для морфотипов
+# myt2$morph <- ifelse(myt2$ind == 1, "T_m", "E_m")
+# myt2$morph <- factor(myt2$morph)
+
+myt2$congr <- ifelse((myt2$morph == "T_m" & myt2$Sp == "M.trossulus") | (myt2$morph == "E_m" & myt2$Sp == "M.edulis"), 1, 0   )
+
+
+# Частота M.trossulus в популяции, вычисленная как срденее значение structure
+freq_MT <- myt2 %>% group_by(population) %>% summarise(freq_MT = mean(structure))
+
+myt2 <- merge(myt2, freq_MT)
+
+myt2$Sp2 <- ifelse(myt2$Sp == "M.trossulus", 1, 0)
+
+
+Mod_fT_congr <- glmer(congr ~ Morph * freq_MT + (1 | population), data = myt2, family = binomial(link = "logit"), control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+Mod_fT_congr_fin <- Mod_fT_congr
+
+# library(sjstats)
+# overdisp(Mod_fT_congr)
+
+newdata <- myt2 %>% group_by(Morph) %>% do(data.frame(freq_MT = seq(min(.$freq_MT), max(.$freq_MT), length.out = 100)))
+
+# Предсказанные значеня в шкале вероятностей
+newdata$fit <- predict(Mod_fT_congr_fin, newdata = newdata, type = "response", re.form = NA) 
+
+# Предсказанные значеня в шкале логитов
+newdata$fit_eta <- predict(Mod_fT_congr_fin, newdata = newdata, re.form = NA) 
+
+# Вычисление доверительного инеравала
+
+# formula((Mod_fT_congr_fin)) 
+
+X <- model.matrix(  ~ Morph + freq_MT + Morph:freq_MT, data = newdata) #Модельная матрица для визуализации
+
+
+# Ошибки в шкале логитов
+newdata$se_eta <- sqrt(diag(X %*% vcov(Mod_fT_congr_fin) %*% t(X)))
+
+logit_back <- function(x) exp(x)/(1 + exp(x)) # обратная логит-трансформация
+
+# Границы доверительных интервалов в масштабах вероятностей
+newdata$lwr <- logit_back(newdata$fit_eta - 2 * newdata$se_eta)
+newdata$upr <- logit_back(newdata$fit_eta + 2 * newdata$se_eta)
+
+# newdata$lwr <- probit_back(newdata$fit_eta - 2 * newdata$se_eta)
+# newdata$upr <- probit_back(newdata$fit_eta + 2 * newdata$se_eta)
+
+
+Pl_fit <- ggplot(newdata, aes(x = freq_MT, y = fit)) + geom_ribbon(aes(ymin = lwr, ymax = upr, group = Morph), alpha = 0.2)  + geom_line(aes(color = Morph), size=1) + scale_color_manual(values = c("blue", "red")) + theme_bw() + xlim(0,1)  + labs(y = "Вероятность правильного \nопределения видов", x = "Частота \nM.trossulus в поселении", color = "Morphotype") + theme(legend.position = "right", axis.title = element_text(size = 18), legend.text = element_text(size = 18))
+
+prop_correct <- myt2 %>% group_by(population, Morph) %>% summarise(Prop_correct = mean(congr), freq_MT = mean(freq_MT))
+
+
+
+#Bayesian curve 
+
+MT <- myt2[myt2$Sp == "M.trossulus", ]
+P_T_MT <- mean(MT$Morph == "T-morphotype")
+P_E_MT <- mean(MT$Morph == "E-morphotype")
+
+
+ME <- myt2[myt2$Sp == "M.edulis", ]
+P_T_ME <- mean(ME$Morph == "T-morphotype")
+P_E_ME <- mean(ME$Morph == "E-morphotype")
+
+
+
+bayes <- data.frame(P_MT = seq(0, 1, length.out = 100))
+bayes$P_MT_T <- with(bayes, (P_T_MT*P_MT)/(P_T_MT*P_MT + P_T_ME*(1-P_MT)) )
+bayes$P_ME_E <- with(bayes, (P_E_ME*(1-P_MT))/(P_E_ME*(1-P_MT) + P_E_MT*P_MT) )
+
+
+
+Pl_fit + geom_point(data = prop_correct, aes(x = freq_MT, y = Prop_correct, color=Morph)) 
+# + geom_line(data = bayes, aes(x = P_MT, y = P_MT_T), color = "red", linetype = 2, size = 1.5) + geom_line(data = bayes, aes(x = P_MT, y = P_ME_E), color = "blue", linetype = 2, size = 1.5) 
+
+```
+
+
+
+## Частота *M. trossulus* сильно коррелирует с частотой мидий Т-морфотипа 
+
+<!-- \columnsbegin -->
+<!-- \column{0.6\textwidth} -->
+
+```{r, fig.align='center', fig.height=4}
+
+library(betareg)
+
+prop_T_MT <- myt2 %>% group_by(population)  %>% summarise(Prop_T = mean(Morph == "T-morphotype"),Prop_MT = mean(Sp == "M.trossulus"))
+
+prop_T_MT$Prop_MT_adj <- ifelse(prop_T_MT$Prop_MT == 0, 0.00000001, prop_T_MT$Prop_MT)
+
+Model_T_MT <- betareg(Prop_MT_adj ~ Prop_T, data = prop_T_MT)  
+
+# summary(Model_T_MT)
+
+new_data <- prop_T_MT %>% do(data.frame(Prop_T = seq(min(.$Prop_T), max(.$Prop_T), length.out = 100)))
+
+new_data$fit <- predict(Model_T_MT, newdata = new_data,  type="response")
+
+
+Pl_beta_regr <- ggplot(prop_T_MT, aes(x = Prop_T, y = Prop_MT)) + geom_point()+ theme_bw() + labs(x = "Частота T-морфотипа в поселении", y = "Частота M.trossulus") + theme(axis.title = element_text(size = 15)) + geom_line(data = new_data, aes(x = Prop_T, y = fit), color = "red", size = 2) + geom_abline(color = "blue")
+
+Pl_beta_regr
+
+```
+
+
+\columnsbegin
+
+\column{0.6\textwidth}
+
+\small
+* В смешанных поселениях *M.edulis* и *M.trossulus* доля *M.trossulus* может быть рассчитана на основе доли Т-морфотипа. 
+
+\column{0.4\textwidth}
+
+$$
+P_{Mt} = \frac{e^{-3.0 + 6.2P_T}}{1+e^{-3.0 + 6.2P_T}}
+$$
+\columnsend
+
+<!-- \columnsend -->
+
+## Что мы теперь можем себе позволить?
+
+- Если мы знаем морфотип конкретной мидии, то теперь мы можем с определенной вероятностью отнести к *M.trossulus* (или *M.edulis*). 
+
+\pause
+
+- Мы можем приблизительно оценить генетическую структуру смешанного поселения без дорогостоящей процедуры генотипирования (например, мы можем использовать сухие раковины из старых, даже доисторических сборов).
+
+\pause
+
+- Мы можем проводить экологические исследования смешанных поселений *M.edulis* и *M.trossulus*, которые требуют большого количества особей, включенных в анализ. 
+
+
+# **История вторая**: Где живут *M.trossulus*?
+
+## Тихоокеанские мидии тяготеют к опресненным местообитаниям?
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./figure/Mussel distribution 3.png}
+
+\end{figure}
+
+\small
+(Стрелков, Хайтов, Католикова, 2012)
+
+
+
+## А может быть тип субстрата?
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./figure/Tmorph_on_different_substrates.jpg}
+
+\end{figure}
+
+\small
+(Из Katolikova et al., 2016)
+
+Показано, что на таломах фукоидов частота *M.trossulus* выше, чем на грунте.
+
+
+## Если *M.trossulus* завезли в Белое море, то может их надо искать в районах портов? 
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./figure/lendliz.png}
+
+\end{figure}
+
+\small
+
+Однако порты обычно располагаются в очень затишных районах. 
+
+Может быть дело в степени прибойности?
+
+
+## Распределение частот T-морфотипа
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./figure/MT_distribution_map.png}
+
+\end{figure}
+
+\small
+
+Было собран материал на 95 точках на всем побережье Кандалакшского залива. 
+
+В каждой точке были взяты выборки как с фукоидов, так и с поверхности грунта.
+
+## Регрессионная модель
+
+**Зависимая переменная:** Частота T-морфотипа
+
+**Предикторы:**  
+
+* Тип субстрата (фукоиды VS грунт);    
+* Соленость;   
+* Расстояние до ближайшей реки;   
+* Мощность ближайшей реки (Большой водосборный бассейн VS Малая площадь);   
+* Расстояние до ближайшего порта;   
+* Статус ближайшего порта (Действующий VS Заброшенный);   
+* Степень открытости побережья для волнового воздействия.   
+
+
+## Результаты оценки влияния предикторов
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./figure/Model_1.png}
+
+\end{figure}
+
+
+## Результаты оценки влияния предикторов
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./figure/Model_2.png}
+
+\end{figure}
+
+
+## Результаты оценки влияния предикторов
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./figure/Model_3.png}
+
+\end{figure}
+
+
+## Результаты оценки влияния предикторов
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./figure/Model_4.png}
+
+\end{figure}
+
+
+## Результаты оценки влияния предикторов
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./figure/Model_5.png}
+
+\end{figure}
+
+
+## Результаты оценки влияния предикторов
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./figure/Model_6.png}
+
+\end{figure}
+
+
+## Результаты оценки влияния предикторов
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./figure/Model_7.png}
+
+\end{figure}
+
+## Где живет *M.trossulus*?
+
+* Локально *M.trossulus* и *M.edulis* расходятся по разным нишам. 
+* *M.trossulus* избегают мест с высокой прибойностью.
+* Частота *M.trossulus* выше в районе портов, особенно действующих.
+
+
+
+
+# **История третья**: Кто кого?
+
+
+## Какой из видов более сильный конкурент можно решить только в экспериментах
+
+\columnsbegin
+
+\column{0.3\textwidth}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./figure/Experimental_cages.png}
+
+\end{figure}
+
+
+\column{0.7\textwidth}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth,height=0.6\textheight,keepaspectratio]{./figure/Experiment_results.png}
+
+\end{figure}
+
+\small
+
+* Если в поселении доминируют *M.trossulus*, то скорость роста *M.edulis* замедляется и соотношение веса мягких тканей и веса раковины падает. 
+
+* Значимого ухудшения состояния *M.trossulus* в поселениях, где доминируют *M.edulis* выявлено не было.   
+
+\columnsend
+
+
+## Кто кого?
+
+* *M.trossulus* представляется более сильным конкурентом
+
+* Вероятным механизмом подавления конкурента является более сильное прикрепление биссусом.
+
+
+# **История четвертая**: Хроника нашествия *M.trossulus*
+
+
+## Исторические коллекции мидий из Кандалакшского залива 
+
+* Мы нашли несколько коллекций датированных сухих раковин, собранных в 1970-е - 2000-е годы. 
+
+* Коллекции не были доступны для генотипирования, но можно было оценить морфотип мидий.
+
+* Поскольку местонахождение поселений было известно, мы пересобрали мидий из тех же точек в 2010, 2019 и 2021-м гг. 
+
+## Исторические коллекции мидий и переописанные поселения 
+
+\columnsbegin
+
+\column{0.7\textwidth}
+
+\centering
+
+```{r, fig.height=10}
+library(readxl)
+histor <- read_excel("data/Mytilus old and new samples morphotype count 2021.xlsx")
+
+library(dplyr)
+Prop_T_histor <- histor %>%   group_by(Year, Period, Site) %>% summarise(Prop_T = N_T/(N_T+N_E)) %>% as.data.frame 
+
+
+Prop_T_histor$Year <- as.numeric(Prop_T_histor$Year)
+
+Prop_T_histor <- Prop_T_histor %>% filter(complete.cases(.))
+
+Prop_T_histor$Period <- factor(Prop_T_histor$Period, labels = c("Переописание", "Исторические"))
+
+
+ggplot(Prop_T_histor, aes(x = Year, y = Prop_T, fill = Period)) + 
+  geom_point(shape = 21, size = 4) +
+  scale_fill_manual(values = c("red", "yellow")) +
+  labs(x = "Год сбора коллекции", y = "Частота мидий Т-морфотипа", fill = "") +
+  theme_bw() +
+  theme(legend.position = "bottom", axis.text = element_text(size = 18), axis.title = element_text(size = 18), legend.text = element_text(size = 18)) 
+
+
+
+```
+
+\column{0.3\textwidth}
+
+В коллекциях, собранных после 2010 года, частота T-морфотипа резко увеличивается.
+\columnsend
+
+## Мониторинг четырех поcелений мидий
+
+
+\columnsbegin
+
+\column{0.4\textwidth}
+
+\begin{figure}
+  \centering
+  \vspace*{1cm}
+  \includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{./figure/Monitoring_sites.png}
+
+\end{figure}
+
+* В куту залива частота *M.trossulus* все время наблюдений находилась на высоком уровне (около 80 %)
+
+* На островах, удаленных от кута, наблюдался интенсивный рост частоты *M. trossulus* 
+
+
+\column{0.6\textwidth}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{./figure/Prop_T_dynamics.png}
+
+\end{figure}
+
+\small
+
+
+\columnsend
+
+## Что получается
+
+1. То что *M.trossulus* концентрируется в районах портов хорошо согласуется с гипотезой о недавнем вселении этого вида.
+
+2. Видны признаки конкурентных отношений (локальное разделение ниш) между видом-вселенцем (*M.trossulus*) и нативным видом (*M.edulis*) 
+
+3. За счет более прочного биссусса *M.trossulus* способна подавлять *M.edulis*.
+
+\pause
+
+4. *M.trossulus* можно считать **инвазивным видом**. О последствиях этой инвазии можно пока только догадываться... 
+
+
+# **История пятая**: Вытеснит ли *M.trossulus* нативный вид?
+
+## Распределение *M.trossulus* согласуется с течениями в Кандалакшском заливе 
+
+```{r}
+
+Kand_upper_x <- c(32.2, 36.6)
+Kand_upper_y <- c(65.7, 67.3)
+
+
+ggKand_upper <- read.csv("data/ggKand_upper.csv")
+
+myt <- read.csv("data/Distred_samples_fetch_corrected_2021.csv")
+
+myt_site <- myt %>% group_by(Site, Position) %>% summarise(Lat = mean(Lat), Lon = mean(Lon), N_T = sum(N_T), N_E = sum(N_E)) %>% mutate(Prop_T = N_T/(N_T+N_E), T_dominant = ifelse(Prop_T>0.5, 1, 0))
+
+myt_site$Prop_T[myt_site$Prop_T == 0] <- 0.0001 
+myt_site$Prop_T[myt_site$Prop_T == 1] <- 0.999 
+
+
+
+
+mod_spat <- gam(T_dominant ~ s(Lon, Lat, k = 25), family = "binomial", data = myt_site ) 
+
+my_data <- expand.grid(Lon = seq(Kand_upper_x[1], Kand_upper_x[2], 0.01), Lat =seq(Kand_upper_y[1], Kand_upper_y[2], 0.01))
+
+my_data$Prop_T_fit <- predict(mod_spat, newdata = my_data, type = "response")
+
+Pl_tros_dominant <-
+ggplot(my_data, aes(x = Lon, y = Lat, fill = Prop_T_fit^1)) + 
+  geom_tile() + 
+  scale_fill_gradient(low = "white", high = "red") + 
+  geom_polygon(data = ggKand_upper, aes(x=long, y=lat, group=group), fill = "gray70", colour = "black") + 
+  theme_bw() +
+  theme(axis.text = element_blank(), axis.title = element_blank(),legend.position = c(0.7, 0.7), legend.background = element_blank()) +
+  labs(fill = "Вероятность") + 
+  ggtitle("Вероятность встретить поселение, \nгде частота M.trossulus > 50%") 
+
+```
+
+
+\columnsbegin
+
+\column{0.5\textwidth}
+
+```{r}
+Pl_tros_dominant + theme(title = element_text(size = 18))
+```
+
+
+\small
+
+* Возможно *M.trossulus* разносятся течениями из кута Кандалакшского залива (из окрестностей активно действующих портов). 
+
+* В окрестностях закрытых портов *M.trossulus* их заметно меньше. 
+
+* Вероятно, есть какой-то фактор, сдерживающий расселение *M.trossulus*.
+
+\column{0.5\textwidth}
+
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./figure/White Sea curent.jpg}
+
+\end{figure}
+
+
+\columnsend
+
+## Может быть это хищники?
+
+\columnsbegin
+\column{0.6\textwidth}
+
+\begin{figure}[t]
+  \centering
+      \includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{./figure/Discriminaiting_eaters.png}
+
+\end{figure}
+
+
+\column{0.4\textwidth}
+
+* *Asterias rubens* в смешанных поселениях двух видов мидий с большей вероятностью атакуют *M.trossulus*
+
+
+* Вероятной причиной такого предпочтения является более тонкая и более гибкая раковина *M.trossulus*
+
+\columnsend
+
+
+
+
+## Тактика выжженой земли
+
+\begin{figure}
+  \centering
+      \includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{./figure/Sea_stars_and_results.png}
+
+\end{figure}
+
+
+\small
+
+После атаки со стороны массового скопления морских звезд среди живых остаются преимущественно *M.edulis*.
+
+
+##  На литорали тоже не все просто для *M.trossulus*
+
+\columnsbegin
+\column{0.4\textwidth}
+
+\begin{figure}[t]
+  \centering
+      \includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{./figure/Oystercatchers.png}
+
+\end{figure}
+
+
+\column{0.6\textwidth}
+
+\begin{figure}
+  \centering
+      \includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{./figure/Mussel_bed_after_oystercatcher_feeding.png}
+
+\end{figure}
+
+Кулики-сороки тоже предпочитают *M.trossulus*.
+
+\columnsend
+
+
+
+# Спасибо за внимание! 
+

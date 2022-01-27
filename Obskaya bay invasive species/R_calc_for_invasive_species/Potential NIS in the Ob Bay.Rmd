@@ -1,5 +1,5 @@
 ---
-title: "Non Indigenous Species in benthic and planctonic realm of the Ob Bay"
+title: "Non Indigenous Species in benthic and Planktonic realm of the Ob Bay"
 output: html_document
 ---
 
@@ -27,7 +27,7 @@ setwd("D:/Text/Article/Articles_in_progress/Obskaya bay invasive species/R_calc_
 # Гидрологические условия в акватории Обской губы
 
 ### Влияние гидротехничеких работ на гидрологический рещим в районах портов
-Гидрологическая модель (*надо дать ей какое-то название*) позволила рассмотреть значения двух ключевых гидрологических параметров (температура воды и соленость) в участках расположенных в непосредственной близости от ныне действующего порта ("Сабетта") и проектируемого порта (Терминал "Утренний"). Области, для которых проводится анализ приведены на следующем рисунке. 
+Гидрологическая модель (**надо дать ей какое-то название**) позволила рассмотреть значения двух ключевых гидрологических параметров (температура воды и соленость) в участках расположенных в непосредственной близости от ныне действующего порта ("Сабетта") и проектируемого порта (Терминал "Утренний"). Области, для которых проводится анализ приведены на следующем рисунке. 
 
 
 ```{r}
@@ -106,7 +106,7 @@ ggplot(hydrol_model, aes(x = Port, y = Temp, fill = Scenario)) + geom_boxplot(no
 ```
 
 
-Строительство гидротехнических сооружений, согласно модели, не приводит к значительному изменению солености в районе портов. Вместе с тем, выявляется значимое увеличение температуры воды в летний период в районе терминала "Утренний". 
+Строительство гидротехнических сооружений, согласно модели, не приводит к значительному изменению солености в районе портов. Вместе с тем, выявляется некоторое увеличение температуры воды в летний период в районе терминала "Утренний". 
 
 Поскольку работы по строительству гидротехнических сооружений уже выполнены в дальнейшем анализе будут использованы данные, соответствующие этому сценарию. 
 
@@ -135,20 +135,26 @@ ggplot(data = env_limits) +  geom_rect(aes(xmin = Temp_low, xmax = Temp_up, ymin
 ```
 
 
-Для описания границ "экологической лицензии" биотопа (Ozerskii, 2011) который может быть потенциально заселен NIS,  были вычислены пределы солености и температуры в акватории, прилегающей к районам портов, как значения 0.5% и 99.5% квантилей каждого из параметров. На рисунке эти границы обозначены прмоугольниками. 
+Для описания границ "экологической лицензии" биотопа (Ozerskii, 2011) который может быть потенциально заселен NIS,  были вычислены пределы солености и температуры в акватории, прилегающей к районам портов, как значения 0.5% и 99.5% квантилей каждого из параметров. На рисунке эти границы обозначены прямоугольниками. 
 
 
-Полученные значения ограничивают гидрологические условия, которые могу быть предоставлены акваторией для вселения NIS в настоящее время в районе портов, как наиболее вероятных областей вселения NIS. Однако, согласно прогнозам развития климатических изменений (https://interactive-atlas.ipcc.ch/), температура  поверхности океана в районе Российской Арктики будет постепено повышаться (приблизительно на 2 градуса за столетие. **At! Я не уверен, что это правильно. Может есть и другие прогнозы.**). Стало быть границы экологической лицензии по оси температуры будут смещаться с сторону большей температуры, что будет расширять возможности вселения NIS в будущем. 
+Полученные значения ограничивают гидрологические условия, которые могу быть предоставлены акваторией для вселения NIS в настоящее время в районе портов, как наиболее вероятных областей вселения NIS. Однако, согласно прогнозам развития климатических изменений (https://interactive-atlas.ipcc.ch/), температура  поверхности океана в районе Российской Арктики будет постепенно повышаться (приблизительно на 2 градуса за столетие. **At! Я не уверен, что это правильно. Может есть и другие прогнозы.**). Стало быть границы экологической лицензии по оси температуры будут смещаться с сторону большей температуры, что будет расширять возможности вселения NIS в будущем. 
 
-Кроме того, значения температуры воды закономерно увеличиваются по мере удаления от устья Обской губы вверх по течению (Рис. ++).
+Значения температуры воды закономерно увеличиваются по мере удаления от устья Обской губы вверх по течению (Рис. ++). 
 
 ```{r}
-library(ncdf4)
-library(raster)
+
 
 path = "D:/Data_LMBE/Obskaya Bay additional data/nc_files_from_model/After_construction_building"
 
-name <- "inmom_20161001.nc"
+
+
+##### Данные модели на осень
+
+library(ncdf4)
+library(raster)
+
+name <- "inmom_20161015.nc"
 ncin <- nc_open(paste(path, "/",name, sep = ""))
 
 
@@ -177,15 +183,172 @@ tmp_array <- ncvar_get(ncin,"temp")
   
   df_model <- data.frame(cbind(lonlat, T_0 = as.vector(tmp_slice_0), T_5 = as.vector(tmp_slice_5), T_10 = as.vector(tmp_slice_10), T_15 = as.vector(tmp_slice_15), T_20 = as.vector(tmp_slice_20), S_0 = as.vector(salt_slice_0), S_5 = as.vector(salt_slice_5), S_10 = as.vector(salt_slice_10), S_15 = as.vector(salt_slice_15), S_20 = as.vector(salt_slice_20)), Date = date_from_model)
   
-  df_model <- df_model %>% filter(!is.na(T_0))
-  
 detach("package:raster", unload = TRUE)
 detach("package:dplyr", unload = TRUE)
+
+  library(dplyr)  
+df_model_Spt1<- df_model %>% filter(!is.na(T_0))
+  
+
+
+
+##### Данные модели на зиму
+library(ncdf4)
+library(raster)
+
+
+name <- "inmom_20170115.nc"
+ncin <- nc_open(paste(path, "/",name, sep = ""))
+
+
+lon <- ncvar_get(ncin,"lon")
+lat <- ncvar_get(ncin,"lat")
+time <- ncvar_get(ncin,"time")
+date_from_model <- as.POSIXct(time, origin = "1900-01-01 00:00:00")
+
+tmp_array <- ncvar_get(ncin,"temp")
+  
+  tmp_slice_0 <- tmp_array[,,1]
+  tmp_slice_5 <- tmp_array[,,2]
+  tmp_slice_10 <- tmp_array[,,3]
+  tmp_slice_15 <- tmp_array[,,4]
+  tmp_slice_20 <- tmp_array[,,5]
+  
+ salt_array <- ncvar_get(ncin,"salt")
+  
+  salt_slice_0 <- salt_array[,,1]
+  salt_slice_5 <- salt_array[,,2]
+  salt_slice_10 <- salt_array[,,3]
+  salt_slice_15 <- salt_array[,,4]
+  salt_slice_20 <- salt_array[,,5]
+ lonlat <- as.matrix(expand.grid(lon = lon,lat = lat))
+  
+  
+  df_model <- data.frame(cbind(lonlat, T_0 = as.vector(tmp_slice_0), T_5 = as.vector(tmp_slice_5), T_10 = as.vector(tmp_slice_10), T_15 = as.vector(tmp_slice_15), T_20 = as.vector(tmp_slice_20), S_0 = as.vector(salt_slice_0), S_5 = as.vector(salt_slice_5), S_10 = as.vector(salt_slice_10), S_15 = as.vector(salt_slice_15), S_20 = as.vector(salt_slice_20)), Date = date_from_model)
+
+detach("package:raster", unload = TRUE)
+detach("package:dplyr", unload = TRUE)
+
+library(dplyr)  
+df_model_Dec1<- df_model %>% filter(!is.na(T_0))
+  
+  
+
+  
+  
+  
+  
+##### Данные модели на весну
+library(ncdf4)
+library(raster)
+
+name <- "inmom_20170415.nc"
+ncin <- nc_open(paste(path, "/",name, sep = ""))
+
+
+lon <- ncvar_get(ncin,"lon")
+lat <- ncvar_get(ncin,"lat")
+time <- ncvar_get(ncin,"time")
+date_from_model <- as.POSIXct(time, origin = "1900-01-01 00:00:00")
+
+tmp_array <- ncvar_get(ncin,"temp")
+  
+  tmp_slice_0 <- tmp_array[,,1]
+  tmp_slice_5 <- tmp_array[,,2]
+  tmp_slice_10 <- tmp_array[,,3]
+  tmp_slice_15 <- tmp_array[,,4]
+  tmp_slice_20 <- tmp_array[,,5]
+  
+ salt_array <- ncvar_get(ncin,"salt")
+  
+  salt_slice_0 <- salt_array[,,1]
+  salt_slice_5 <- salt_array[,,2]
+  salt_slice_10 <- salt_array[,,3]
+  salt_slice_15 <- salt_array[,,4]
+  salt_slice_20 <- salt_array[,,5]
+ lonlat <- as.matrix(expand.grid(lon = lon,lat = lat))
+  
+  
+  df_model <- data.frame(cbind(lonlat, T_0 = as.vector(tmp_slice_0), T_5 = as.vector(tmp_slice_5), T_10 = as.vector(tmp_slice_10), T_15 = as.vector(tmp_slice_15), T_20 = as.vector(tmp_slice_20), S_0 = as.vector(salt_slice_0), S_5 = as.vector(salt_slice_5), S_10 = as.vector(salt_slice_10), S_15 = as.vector(salt_slice_15), S_20 = as.vector(salt_slice_20)), Date = date_from_model)
+  
+
+  detach("package:raster", unload = TRUE)
+detach("package:dplyr", unload = TRUE)
+
+library(dplyr)  
+  df_model_Mar1<- df_model %>% filter(!is.na(T_0))
+  
+  
+  
+  
+
+##### Данные модели на лето
+
+library(ncdf4)
+library(raster)
+
+name <- "inmom_20170715.nc"
+ncin <- nc_open(paste(path, "/",name, sep = ""))
+
+
+lon <- ncvar_get(ncin,"lon")
+lat <- ncvar_get(ncin,"lat")
+time <- ncvar_get(ncin,"time")
+date_from_model <- as.POSIXct(time, origin = "1900-01-01 00:00:00")
+
+tmp_array <- ncvar_get(ncin,"temp")
+  
+  tmp_slice_0 <- tmp_array[,,1]
+  tmp_slice_5 <- tmp_array[,,2]
+  tmp_slice_10 <- tmp_array[,,3]
+  tmp_slice_15 <- tmp_array[,,4]
+  tmp_slice_20 <- tmp_array[,,5]
+  
+ salt_array <- ncvar_get(ncin,"salt")
+  
+  salt_slice_0 <- salt_array[,,1]
+  salt_slice_5 <- salt_array[,,2]
+  salt_slice_10 <- salt_array[,,3]
+  salt_slice_15 <- salt_array[,,4]
+  salt_slice_20 <- salt_array[,,5]
+ lonlat <- as.matrix(expand.grid(lon = lon,lat = lat))
+  
+  
+  df_model <- data.frame(cbind(lonlat, T_0 = as.vector(tmp_slice_0), T_5 = as.vector(tmp_slice_5), T_10 = as.vector(tmp_slice_10), T_15 = as.vector(tmp_slice_15), T_20 = as.vector(tmp_slice_20), S_0 = as.vector(salt_slice_0), S_5 = as.vector(salt_slice_5), S_10 = as.vector(salt_slice_10), S_15 = as.vector(salt_slice_15), S_20 = as.vector(salt_slice_20)), Date = date_from_model)
+  
+df_model_Jun1<- df_model %>% filter(!is.na(T_0))
+    
+  
+  
+  
+df_model_Spt1$Season <- "Autumn"
+df_model_Dec1$Season <- "Winter"
+df_model_Mar1$Season <- "Spring"
+df_model_Jun1$Season <- "Summer"
+
+detach("package:raster", unload = TRUE)
+detach("package:dplyr", unload = TRUE)
+library(dplyr)
+df_model <- rbind(df_model_Spt1, df_model_Dec1, df_model_Mar1,df_model_Jun1)
+  
+df_model$Season <- factor(df_model$Season, levels = c("Winter", "Spring", "Summer", "Autumn"))
+  
 ```
 
 ```{r}
-ggplot() + geom_tile(data = df_model, aes(x = lon, y = lat, color = T_0, group = 1)) + scale_color_gradient(low = "blue", high = "red") + geom_polygon(data = Ob_df, aes(x=long, y=lat, group=group), fill = "gray90", colour = "gray20") + labs(color = "Surface temperature")
-# +  coord_map(xlim = Ob_x, ylim = Ob_y)
+
+ggplot(df_model) + geom_tile(aes(x = lon, y = lat, color = T_0, group = 1)) + scale_color_gradient(low = "yellow", high = "red") + geom_polygon(data = Ob_df, aes(x=long, y=lat, group=group), fill = "gray90", colour = "gray20") + labs(color = "Surface water temperature") + theme(legend.position = "bottom") + facet_wrap(~Season)
+
+
+```
+
+
+Соленость в акватории испытывает сезонные колебания (Рис. ++). Наиболее высокая соленость наблюдается весной, когда язык саленой воды заходит далеко вверх по течению.
+
+```{r}
+
+ggplot(df_model) + geom_tile(aes(x = lon, y = lat, color = S_0, group = 1)) + scale_color_gradient(low = "white", high = "blue") + geom_polygon(data = Ob_df, aes(x=long, y=lat, group=group), fill = "gray90", colour = "gray20") + labs(color = "Surface water salinity") + theme(legend.position = "bottom") + facet_wrap(~Season)
+
 
 ```
 
@@ -202,12 +365,12 @@ library(dplyr)
 benthic_species <- read.csv("Data/benthos_occurence_all_final.csv")
 benthic_species <- benthic_species[,-1] 
 
-plancton_species <- read.csv("Data/plancton_occurence_all_final.csv")
+Plankton_species <- read.csv("Data/Plankton_occurence_all_final.csv")
 
 benthic_species$Group <- "Benthos"
-plancton_species$Group <- "Plancton"
+Plankton_species$Group <- "Plankton"
 
-all_species <- rbind(benthic_species, plancton_species)
+all_species <- rbind(benthic_species, Plankton_species)
 
 
 ```
@@ -215,13 +378,13 @@ all_species <- rbind(benthic_species, plancton_species)
 
 ## Селекция видов по их биогеографическим характеристикам
 
-Используя базу [данных по инвазивным видам России](http://www.sevin.ru/top100worst/) и публикацию Goldsmit et al. (2019) я вытащил некоторый набор видов, которые уже были отмечены, как инвазивные (или потенциально инвазивные) виды на территории России. Далее такие виды будут обозначаться как Potentialy Non Indigenous Species (**PNIS**).
+Используя базу [данных по инвазивным видам России](http://www.sevin.ru/top100worst/) и публикацию Goldsmit et al. (2019) был создан список  видов, которые уже были отмечены, как инвазивные (или потенциально инвазивные) виды на территории России. Далее такие виды будут обозначаться как Potentialy Non Indigenous Species (**PNIS**). Всего в этот long list of potential NIS  вошло `r all_species %>% filter(Status == "PNIS") %>%  select(species) %>% unique %>% nrow` видов. 
 
-Используя данные бентосной съемки в Обской губе, я отфильтровал те виды, которые наиболее обильны на тех участках акватории, где расположены порты или для более опресненных участков, расположенных на юге акватории. Морскую часть сообщества, как мне видится, рассматривать не следует, так как вся морская фауна, будучи завезенной в сильно опресненные акватории портов, однозначно погибнет. Далее местные виды, будут обозначаться как нативные (**Native**).
+Данные бентосной съемки в Обской губе (**ссылка на Отчет**), позволили выбрать те виды, которые наиболее обильны на тех участках акватории, где расположены порты или в еще более опресненных участках, расположенных на юге акватории. Морскую часть сообщества нами не рассматривалась, так как вся морская фауна, будучи завезенной в сильно опресненные акватории портов, однозначно погибнет. Далее местные виды, будут обозначаться как нативные (**Native**).
 
-Для всех этих видов, используя базу [GBIF](https://www.gbif.org/) я вытащил координаты точек, где эти виды были обнаружены. 
+Для всех этих видов, используя базу [GBIF](https://www.gbif.org/) были получены координаты локаций, где эти виды были обнаружены.  
 
-Тепература играет существенную роль в распространении NIS (+++). В связи с этим широтные границы ареалов видов позволяют отсечь множество PNIS, центры распространения которых далеки от границ анализируемой акватории. Рисунок ++ демонстрирует распределение значений широт Native species и PNIS. 
+Поскольку температура играет существенную роль в распространении NIS (**ссылки на теоретические работы +++**) и она коррелирует с географической широтой, то анализ широтных границы ареалов видов позволяет отсечь те PNIS, центры распространения которых далеки от географических границ анализируемой акватории.
 
 
 ```{r}
@@ -231,10 +394,10 @@ species_stat <- all_species %>% group_by(species, Status, Group) %>% summarise(M
 
 
 
-Каждый вид был охарактеризован несколькими переменными:
+Каждый вид был охарактеризован несколькими переменными, описывающими их биогеографические характеристики:
 
 
-*Median_lat* - медиана значений широты. Предполагается, что эта величина характеризует широтное "ядро" нативного ареала. 
+*Median_lat* - медиана значений широты. Предполагается, что эта величина характеризует широтное "ядро" ареала. 
 
 *Upper_lat* - Максимальное значение широты, на которой встретился вид
 
@@ -242,17 +405,19 @@ species_stat <- all_species %>% group_by(species, Status, Group) %>% summarise(M
 
 *Q_up* - значение 97.5% квантиля широты
 
-*Prop_polar* - отношение количества точек с широтой выше Севарного полярного круга к общему количеству встреч. Предполагается, что чем выше это значение тем с большей вероятностью данный вид встречается в Заполярье. 
+*Prop_polar* - отношение количества точек с широтой выше Северного полярного круга к общему количеству встреч. Предполагается, что чем выше это значение тем с большей вероятностью данный вид встречается в Заполярье. 
 
-*N_S_skewness* - величина асимметрии распределения значений широт. Предполагается, что чем асимметричнее распределение тем более выражена тенденция в смещении вида из нативного ареала. 
+*N_S_skewness* - величина асимметрии распределения значений широт. Предполагается, что чем асимметричнее распределение тем более выражена тенденция в смещении вида из ареала. 
 
-*N_S_asymmetry* - величина идейно похожая на предыдущую. Это отношение расстояния от медианы широты до Q_low к расстоянию от медианы до Q_up. 
+*N_S_asymmetry* - величина похожая на предыдущую. Это отношение расстояния от медианы широты до Q_low к расстоянию от медианы до Q_up. 
 
 $$
 asymmetry = \ln(\frac{|Q_{up} - M|}{|Q_{low}-M|})
 $$
 
 
+
+Полученная матрица значений этих переменных была использована в анализе главных компонент (Principal component analysis).
 
 
 ```{r}
@@ -270,234 +435,131 @@ species_rda_all$Status <-species_stat$Status
 species_rda_all$Group <-species_stat$Group 
 
 
-Low_PC1 <- species_rda_all %>% group_by(Group) %>% summarise (Q_3 = quantile(PC1, probs = 0.75))
+Low_PC1 <- species_rda_all %>% filter(Status == "Native") %>% group_by(Group) %>% summarise (Q_3 = quantile(PC1, probs = 0.95))
 
-                                                   # ggplot(species_rda_all, aes(PC1, PC2, color = Status)) + geom_point(size = 3) + scale_color_manual(values = c("blue", "red"))
+bent_boundary <- Low_PC1[1,2]
+planct_boundary <- Low_PC1[2,2]
 
+
+# ggplot(species_rda_all, aes(PC1, PC2, color = Status)) + geom_point(size = 3) + scale_color_manual(values = c("blue", "red"))
+
+
+```
+
+Первая главная компонента, описывающая `r round(summary(mod)$cont$importance[3,1]*100,1)`% общего варьирования биогеографических характеристик видов, демонстрирует высокую отрицательную корреляцию с южной границей распространения видов (Q_low), медианой широты (Median_lat) и северной границей распространения видов (Q_up). Таким образом, значения PC1 могут трактоваться как широтный градиент в распространении видов. Меньшие значения PC1 соответствуют более высоким широтам. 
+
+Можно заметить, что нативные формы бентоса имеют несколько более северное распространение, чем нативные планктонные формы. Широтное ядро распространения потенциальных NIS, вовлеченных в анализ, смещено к более  южным широтам как у представителей бентоса, так и у планктонных потенциальных вселенцев. 
+
+
+```{r}
 ggplot(species_rda_all, aes(x = PC1)) + geom_density(aes(fill = Status), alpha = 0.5, bw = "ucv") + geom_vline(data = Low_PC1, aes(xintercept = Q_3), linetype =2) + scale_fill_manual(values = c("blue", "red")) + facet_wrap(~Group, ncol = 1)
 
 ```
 
-Первая главная компонента демонстрирует высокую корреляцию с южной границей распространения видов (Q_low), медианой широты (Median_lat) и северной границей распространения видов (Q_up). Таким образом, значения PC1 могут трактоваться как широтный градиент в распространении видов. Меньшие значения PC1 соответствуют более высоким широтам. Можно заметить, что нативные формы бентоса имеют несколько более северное распространение, чем нативные планктонные формы. Широтное ядро распространения потенциальных NIS, вовлеченных в анализ, смещено к более  южным широтам как у представителей бентоса, так и у планктонных потенциальных вселенцев. Если рассматривать в качестве южной границы распространения нативных видов значение третьего квартиля значений PC1 (вертикальные линии на Рис. ++), то в число видов близких к нативным по своему распространению относятся следующие NIS. Среди бентосных форм в число потенциальных вселенцев попадают `r species_rda_all %>% filter(Group == "Benthos") %>% filter(PC1 < quantile(PC1, probs = 0.75)) %>% filter(Status == "PNIS")%>% nrow `, а среди  планктонных `r species_rda_all %>% filter(Group == "Plancton") %>% filter(PC1 < quantile(PC1, probs = 0.75)) %>% filter(Status == "PNIS")%>% nrow ` вида.
+
+
+Если рассматривать в качестве южной границы распространения нативных видов величину 95% квантиля значений PC1 (вертикальные линии на Рис. ++), то в число видов ареалы которых близки к нативным видам среди бентосных организмов попадает `r species_rda_all %>% filter(Group == "Benthos") %>% filter(PC1 < bent_boundary) %>% filter(Status == "PNIS")%>% nrow `, а среди  планктонных `r species_rda_all %>% filter(Group == "Plankton") %>% filter(PC1 < planct_boundary) %>% filter(Status == "PNIS")%>% nrow ` видов.
 
 Биогеографические характеристики потенциальных NIS приведены в таблице ++.
 
 ```{r}
 
-benthic_PNIS <- species_rda_all %>% filter(Group == "Benthos") %>% filter(PC1 < quantile(PC1, probs = 0.75)) %>% filter(Status == "PNIS")%>% pull(species)
+benthic_PNIS <- species_rda_all %>% filter(Group == "Benthos") %>% filter(PC1 < bent_boundary) %>% filter(Status == "PNIS")%>% pull(species)
 
-planctonic_PNIS <- species_rda_all %>% filter(Group == "Plancton") %>% filter(PC1 < quantile(PC1, probs = 0.75)) %>% filter(Status == "PNIS")%>% pull(species)
+Planktonic_PNIS <- species_rda_all %>% filter(Group == "Plankton") %>% filter(PC1 < planct_boundary) %>% filter(Status == "PNIS")%>% pull(species)
 
 
-dd <- species_stat %>% filter(species %in% c(benthic_PNIS, planctonic_PNIS)) %>% select(species, Group, Q_low, Median_lat, Q_up)
+all_spec_biogeogr <- species_stat %>% filter(species %in% c(benthic_PNIS, Planktonic_PNIS)) %>% select(species, Group, Q_low, Median_lat, Q_up)
 
 
 ```
 
 
-что как в случае бентосных форм, так и в случае планктона PNIS имеют более южное распространение. Однако степень перекрывания распределений PC1 e PNIS и Native несколько выше в случае планктона. То есть биогеографический критерий   
+  Для всех видов, включенных в анализ (нативных и PNIS), производилась оценка значений солености и температуры в точках их встреч, взятых из базы GBIF. Для оценки гидрологических параметров в морских акваториях использовалась ГИС Bio-ORACLE (Tyberghein et al. 2021; Assis et al. 2017). Для каждой точки встреч из этой ГИС извлекали значения Sea water salinity (mean at mean depth) and Sea water temperature (mean at mean depth). Поскольку часть географических локаций видов приходилось на пресноводные акватории, дополнительно проводился поиск данных по температуре с использованием ГИС EarthEnv (Domisch et al., 2015).  Ключевым сезоном потенциального вселения NIS является осень (см. выше), то для оценки температуры в данной локации бралось среднее значение температуры в осенний период. Для локаций, параметры которых оценивались по ГИС EarthEnv значение солености принималось равным нулю.   
 
+Область максимальной концентрации точек, соответствующих нативным видам бентосных организмов, очень хорошо согласуется с границами экологической лицензии акватории Обской губы. В качестве условных границ ниш нативных видов бентоса Обской губы можно рассматривать значения солености в диапазоне 0-10 промилле и 0-10 градусов. В случае нативных видов планктона в указанных границах также представлено некоторое скопление точек. Однако максимальная концентрация точек, хоть и приходится на холдноводный диапазон (меньше 10 градусов), но при этом приходится на нормальные океанические диапазоны солености.
 
-## Селекция потенциальных видов-вселенцев (PNIS) по параметрам их экологических ниш 
+Среди бентосных PNIS отчетливо выделяется зона сгущения точек, попадающая в те же границы, на которые приходится концентрация точек нативных видов. Лишь незначительное количество точек, соответствующих планктонных PNIS попадают в этот диапазон.    
 
-Из базы вселенцев, отмеченных на территории России (At! этот список еще дорабатываю, но методология обработки останется такой же) и из видов-вселенцев, отмеченных в Арктическом регионе (Goldsmit et al., +++, ++++ еще досмотрю несколько статей) были отобраны гидробионты, потенциально способные поселяться в эстуариях (список видов с запасом, куда входят и чисто морские виды и чисто пресноводные). Для каждого из видов из базы GBIF были извлечены географические координаты точек, в которых были обнаружены особи данных видов. По этим координатам на основе базы данных https://bio-oracle.org/ производилась оценка солености и температуры воды в точках, где был отмечен данный вид. 
-
-Далее производилась фильтрация тех видов, которые были отмечены в пределах границ экологической лицензии Обской губы. 
 
 
 ```{r}
 
 
-bent_not_marine <- read.csv("Data/species_environment_non_marine.csv")
 
-bent_not_marine$Temp <-  bent_not_marine %>% select(temp_avg_06, temp_avg_07, temp_avg_08, temp_avg_09, temp_avg_10, temp_avg_11) %>% rowMeans/10
+benthic_env <- read.csv("Data/benthos_environment_all_final.csv")
+benthic_env <- benthic_env[,-1] 
 
-bent_not_marine$Sal <- 0
+Plankton_env <- read.csv("Data/Plankton_environment_all_final.csv")
 
-names(bent_not_marine)
+benthic_env$Group <- "Benthos"
+Plankton_env$Group <- "Plankton"
 
-bent_not_marine <- bent_not_marine %>% select( species, Lon, Lat, Temp, Sal)
-
-
-bent_marine <- read.csv("Data/species_environment_marine.csv")
-bent_marine<- bent_marine %>% select( species, Lon, Lat, Temp, Sal)
+all_species_env <- rbind(benthic_env, Plankton_env)
 
 
-bent_all <- rbind(bent_marine, bent_not_marine)
-bent_all2 <- bent_all 
-
-exclude <- c("Acartia tonsa",
-             "Oithona davisae",
-             "Cercopagis pengoi",
-             "Beroe ovata",
-             "Mnemiopsis leidyi")
-
-bent_all <- bent_all %>% filter(!species %in% exclude)
+env_limits_cold <- env_limits %>% filter(Season %in% c("Winter", "Spring"))
+env_limits_warm <- env_limits %>% filter(Season %in% c("Wummer", "Autumn"))
 
 
-
-
-
-native_species <- c("Limnodrilus hoffmeisteri", 
-                    "Mysis relicta",
-                    "Halicryptus spinulosus",
-                    "Saduria entomon",
-                    "Saduria sabini",
-                    "Saduria sibirica",
-                    "Gammaracanthus lacustris",
-                    "Gammaracanthus",
-                    "Monoporeia affinis",
-                    "Pontoporeia femorata",
-                    "Portlandia aestuariorum",
-                    "Marenzelleria",
-                    "Ampharete vega",
-                    "Mysis oculata"
-                    )
-
-
-
-bent_all$Status <- ifelse(bent_all$species %in% native_species, "Native", "PNIS") 
-
-# write.table(bent_all, "benthos_environment_all.csv")
-
-
-
-ggplot(bent_all, aes(x = Temp, y = Sal)) + 
+ggplot(all_species_env, aes(x = Temp, y = Sal)) + 
   geom_point(size = 0.1, position = position_jitter(width = 0.1, height = 0.5)) +
-  facet_wrap(~Status) + 
+  facet_grid(Status ~ Group) + 
   geom_density2d(color = "green") + 
-  geom_rect(aes(xmin = -0.3, xmax = 0.5, ymin = 0.02, ymax = 8), fill = NA, color = "blue") +
-  geom_rect(aes(xmin = -0.08, xmax = 7.4, ymin = 0.18, ymax = 2.6), fill = NA, color = "blue") +
+  geom_rect(aes(xmin = min(env_limits_cold$Temp_low), xmax = max(env_limits_cold$Temp_up), ymin = min(env_limits_cold$Sal_low), ymax = min(env_limits_cold$Sal_up)), fill = NA, color = "blue") +
+  geom_rect(aes(xmin = min(env_limits_warm$Temp_low), xmax = max(env_limits_warm$Temp_up), ymin = min(env_limits_warm$Sal_low), ymax = min(env_limits_warm$Sal_up)), fill = NA, color = "blue") +  
   geom_rect(aes(xmin = 0, xmax = 10, ymin = 0, ymax = 10), fill = NA, color = "red", linetype = 2)
 
+
 ```
 
 
 
+Для количественной оценки вероятности вселения PNIS в условия Обской губы мы ввели величину P_inv. Для вычисления этой оценки мы вычислили количество локаций, полученных из базы GBIF, для которых соленостно-температурные условия приблизительно соответствуют экологической лицензии акватории Обской губы (Соленость:0-10 промилле, Температура 0-10 градусов). Эта величина была отнесена к общему количеству локаций (отмеченных для данного вида в базе GBIF), для которых была проведена оценка солености и температуры. Значения этих величин приведены в таблице ++.
+
+
+
+
+
 ```{r}
-bent_occurence <- bent_all %>% filter(Status == "PNIS") %>% group_by(species) %>% summarise(N_occ_total = n())
+all_env_stat <- all_species_env %>% filter(Status == "PNIS") %>% group_by(species, Group) %>% summarise(N_occ_total = n())
   
 
+all_env_stat_in_env <- all_species_env %>% filter(Status == "PNIS") %>% filter(Sal <= 10 & Temp <= 10) %>% group_by(species, Group) %>% summarise(N_occ_in_env = n())
 
 
-bent_occurence_in_env <- bent_all %>% filter(Status == "PNIS") %>%  filter(Sal <= 10 & Temp <= 10) %>% group_by(species) %>% summarise(N_occ_in_env = n())
+all_occur_probability <- merge(all_env_stat_in_env, all_env_stat)
 
-bent_occur_probability <- merge(bent_occurence_in_env, bent_occurence)
-
-bent_occur_probability <- bent_occur_probability %>% mutate(Probability = N_occ_in_env/N_occ_total) %>% filter(N_occ_total >= quantile(bent_occurence$N_occ_total, probs = 0.5)) %>% arrange(desc(Probability))
+all_occur_probability <- all_occur_probability %>% mutate(P_inv = round(N_occ_in_env/N_occ_total, 3)) %>% arrange(desc(P_inv)) 
 
 
 
 ```
 
-
-
+```{r}
+PNIS_table <- merge(all_spec_biogeogr, all_occur_probability, all = T ) %>% arrange(desc(P_inv)) 
+```
 
 
 ```{r}
-
-
-planct_not_marine <- read.csv("Data/plancton_environment_non_marine.csv")
-
-planct_not_marine2 <- read.csv("Data/plancton_environment_non_marine_2.csv")
-
-planct_not_marine <- rbind(planct_not_marine, planct_not_marine2)
-
-
-
-planct_not_marine$Temp <-  planct_not_marine %>% select(temp_avg_06, temp_avg_07, temp_avg_08, temp_avg_09, temp_avg_10, temp_avg_11) %>% rowMeans/10
-
-planct_not_marine$Sal <- 0
-
-# names(planct_not_marine)
-
-planct_not_marine <- planct_not_marine %>% select( species, Lon, Lat, Temp, Sal)
-
-
-planct_marine <- read.csv("Data/plancton_environment_marine.csv")
-planct_marine<- planct_marine %>% select( species, Lon, Lat, Temp, Sal)
-
-planct_marine2 <- read.csv("Data/plancton_environment_marine_2.csv")
-planct_marine2<- planct_marine2 %>% select( species, Lon, Lat, Temp, Sal)
-
-planct_marine <- rbind(planct_marine, planct_marine2)
-
-
-
-planct_all <- rbind(planct_marine, planct_not_marine)
-
-
-
-
-PNIS <- c("Acartia tonsa",
-             "Oithona davisae",
-             "Cercopagis pengoi",
-             "Beroe ovata",
-             "Mnemiopsis leidyi",
-              "Paracalanus parvus"
-          )
-
-
-planct_add <- bent_all2 %>% filter(species %in% PNIS) %>% filter(species != "Acartia tonsa")
-
-planct_all <- rbind(planct_all, planct_add)
-
-
-planct_all$Status <- ifelse(planct_all$species %in% PNIS, "PNIS", "Native")
-
-write.csv(planct_all, "plancton_environment_all.csv")
-
-
-
-
-ggplot(planct_all, aes(x = Temp, y = Sal)) + 
-  geom_point(size = 0.1, position = position_jitter(width = 0.1, height = 0.5)) +
-  facet_wrap(~Status) + 
-  geom_density2d(color = "green") + 
-  geom_rect(aes(xmin = -0.3, xmax = 0.5, ymin = 0.02, ymax = 8), fill = NA, color = "blue") +
-  geom_rect(aes(xmin = -0.08, xmax = 7.4, ymin = 0.18, ymax = 2.6), fill = NA, color = "blue") +
-  geom_rect(aes(xmin = 0, xmax = 10, ymin = 0, ymax = 10), fill = NA, color = "red", linetype = 2)
-
+kable(PNIS_table, caption = "Table ++. Potencial NIS for the Ob estuary ecosystem. Biogeographical characteristics: Q_low - 2.5% quantile of latitude, Median_lat - median of latitude, Q_up - 97.5% quantile of latitude. N_occ_in_env - number of references in GBIF with environmental parameters close to those in the Ob estuary. N_occ_total - total number of references in GBIF with salinity and temperature assessed. ")
 ```
-
-
 
 
 ```{r}
-planct_occurence <- planct_all %>% filter(Status == "PNIS") %>% group_by(species) %>% summarise(N_occ_total = n())
-  
-
-
-
-planct_occurence_in_env <- planct_all %>% filter(Status == "PNIS") %>%  filter(Sal <= 10 & Temp <= 10) %>% group_by(species) %>% summarise(N_occ_in_env = n())
-
-planct_occur_probability <- merge(planct_occurence_in_env, planct_occurence)
-
-planct_occur_probability <- planct_occur_probability %>% mutate(Probability = N_occ_in_env/N_occ_total) %>% filter(N_occ_total >= quantile(planct_occurence$N_occ_total, probs = 0.5)) %>% arrange(desc(Probability))
-
-
+PNIS_table_short <- PNIS_table %>% filter(N_occ_total > 100 & P_inv >0.05)
 
 ```
 
 
+Для формирования short list of PNAS из данной таблицы были удалены те виды, у которых число локаций, для которых произведена оценка параметров среды, была меньше 100. Кроме того, были удалены виды, у которых оценка вероятности инвазии (P_inv) была меньше 5%. Всего в short list  наиболее вероятных ивайдеров вошло `r  nrow(PNIS_table_short)` видов: `r paste(PNIS_table_short %>% pull(species), sep = ", ")`. Ниже приводится их описание с оценкой возможных последствий вселения этих видов в экосистему Обской губы.
 
 
 
-```{r}
-
-path = "D:/Data_LMBE/Obskaya Bay additional data/Species characteristics/"
+## Описание наиболее вероятных инвайдеров
 
 
-files <- list.files(path)
 
-df_species <- NULL
 
-for(name in files){
-  df <- read.table(paste(path, "/",name, sep = ""), sep = "\t", header = T)
-  df <- df %>% select(-gbifID)
-  df <- unique(df)
-  if(sum (is.na(df$species)) > 0) df$species <- df$genus
-  df_species <- rbind(df_species, df)
-}
 
-```
+
