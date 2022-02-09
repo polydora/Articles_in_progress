@@ -29,7 +29,7 @@ Spec_abund <- bent_N %>% select(-Station) %>% colSums(.) %>% t() %>% as.vector()
 
 spec_total_abund <- data.frame(Sp = bent_N %>% select(-Station) %>% colnames(), Spec_abund)
 
-N_porog <- 500 
+N_porog <- 200 
 
 spec_selected <- spec_total_abund %>% filter(Spec_abund > N_porog)
 
@@ -39,6 +39,10 @@ bent_short <- bent_N %>% select(Station, spec_selected$Sp)
 bent_short <-
   bent_short %>% mutate(Oligochaeta = Oligochaeta_gen._sp. + Oligochaeta_gen._spp.) %>% 
   select(-c(Oligochaeta_gen._sp., Oligochaeta_gen._spp., Oligochaeta_gen._sp._cocons,Senecella_siberica) )
+
+
+
+
 
 
 
@@ -59,7 +63,7 @@ rownames(xycoords) = 1:n
 
 
 
-Ydata_raw <- bent_short %>% select(-Station) %>% round(., 0) %>% as.matrix(.)
+Ydata <- bent_short %>% select(-Station) %>% round(., 0) %>% as.matrix(.)
 colnames(Ydata) <- names(bent_short)[-1]
 rownames(Ydata) = 1:n
 
@@ -84,7 +88,7 @@ rL.spatial = HmscRandomLevel(sData = xycoords)
 rL.spatial = setPriors(rL.spatial,nfMin=1,nfMax=1) 
 
 
-XFormula = ~ poly(Sal, degree = 2, raw = TRUE)
+XFormula = ~ poly(Sal, degree = 2, raw = TRUE) + poly(Depth, degree = 2, raw = TRUE)
 
 #We limit the model to one latent variables for visualization 
 

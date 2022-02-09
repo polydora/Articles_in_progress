@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.14159265-2.6-0.999992 (TeX Live 2020/W32TeX) (preloaded format=xelatex 2021.3.24)  26 JAN 2022 19:53
+This is XeTeX, Version 3.14159265-2.6-0.999992 (TeX Live 2020/W32TeX) (preloaded format=xelatex 2021.3.24)  2 FEB 2022 11:15
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1667,7 +1667,7 @@ LaTeX Font Info:    Font shape `TU/Verdana(0)/m/it' will be
 
 Overfull \hbox (359.48688pt too wide) detected at line 169
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 LaTeX Font Info:    Font shape `TU/Verdana(0)/m/n' will be
@@ -1683,7 +1683,7 @@ LaTeX Font Info:    Font shape `TU/Verdana(0)/m/n' will be
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [1
@@ -1691,7 +1691,7 @@ Overfull \hbox (359.48688pt too wide) has occurred while \output is active
 ]
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [2
@@ -1763,7 +1763,7 @@ LaTeX Font Info:    Font shape `TU/Verdana(0)/b/n' will be
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [3
@@ -1776,7 +1776,7 @@ File: ./figure/Map_Katolikova.jpg Graphic file (type bmp)
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [4
@@ -1787,7 +1787,7 @@ LaTeX Font Info:    Font shape `TU/Verdana(0)/b/n' will be
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [5
@@ -1800,7 +1800,7 @@ File: ./figure/Morphotypes_russ.png Graphic file (type bmp)
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [6
@@ -1814,7 +1814,7 @@ LaTeX Font Info:    Font shape `TU/Verdana(0)/m/it' will be
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [7
@@ -1822,7 +1822,7 @@ Overfull \hbox (359.48688pt too wide) has occurred while \output is active
 ]
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [8
@@ -1840,7 +1840,7 @@ LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(3)/m/n' will be
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [9
@@ -1852,7 +1852,7 @@ file (type pdf)
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [10
@@ -1860,7 +1860,7 @@ Overfull \hbox (359.48688pt too wide) has occurred while \output is active
 ]
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [11
@@ -1868,7 +1868,7 @@ Overfull \hbox (359.48688pt too wide) has occurred while \output is active
 ]
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [12
@@ -1876,7 +1876,7 @@ Overfull \hbox (359.48688pt too wide) has occurred while \output is active
 ]
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [13
@@ -1884,7 +1884,7 @@ Overfull \hbox (359.48688pt too wide) has occurred while \output is active
 ]
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [14
@@ -1895,7 +1895,7 @@ File: ./figure/Mussel distribution 3.png Graphic file (type bmp)
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [15
@@ -1906,7 +1906,7 @@ File: ./figure/Tmorph_on_different_substrates.jpg Graphic file (type bmp)
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [16
@@ -1917,7 +1917,7 @@ File: ./figure/lendliz.png Graphic file (type bmp)
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [17
@@ -1928,18 +1928,18 @@ File: ./figure/MT_distribution_map.png Graphic file (type bmp)
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [18
 
 ]
 LaTeX Font Info:    Font shape `TU/Verdana(0)/b/n' will be
-(Font)              scaled to size 8.2125pt on input line 454.
+(Font)              scaled to size 8.2125pt on input line 457.
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [19
@@ -1950,7 +1950,7 @@ File: ./figure/Model_1.png Graphic file (type bmp)
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [20
@@ -1961,7 +1961,7 @@ File: ./figure/Model_2.png Graphic file (type bmp)
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [21
@@ -1972,7 +1972,7 @@ File: ./figure/Model_3.png Graphic file (type bmp)
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [22
@@ -1983,7 +1983,7 @@ File: ./figure/Model_4.png Graphic file (type bmp)
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [23
@@ -1994,7 +1994,7 @@ File: ./figure/Model_5.png Graphic file (type bmp)
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [24
@@ -2005,7 +2005,7 @@ File: ./figure/Model_6.png Graphic file (type bmp)
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [25
@@ -2016,7 +2016,7 @@ File: ./figure/Model_7.png Graphic file (type bmp)
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [26
@@ -2024,7 +2024,7 @@ Overfull \hbox (359.48688pt too wide) has occurred while \output is active
 ]
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [27
@@ -2032,7 +2032,7 @@ Overfull \hbox (359.48688pt too wide) has occurred while \output is active
 ]
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [28
@@ -2043,13 +2043,13 @@ File: ./figure/Experimental_cages.png Graphic file (type bmp)
 File: ./figure/Experiment_results.png Graphic file (type bmp)
 <./figure/Experiment_results.png>
 
-Overfull \vbox (0.35318pt too high) detected at line 571
+Overfull \vbox (0.35318pt too high) detected at line 580
  []
 
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [29
@@ -2057,7 +2057,7 @@ Overfull \hbox (359.48688pt too wide) has occurred while \output is active
 ]
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [30
@@ -2065,7 +2065,7 @@ Overfull \hbox (359.48688pt too wide) has occurred while \output is active
 ]
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [31
@@ -2073,7 +2073,7 @@ Overfull \hbox (359.48688pt too wide) has occurred while \output is active
 ]
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [32
@@ -2083,13 +2083,13 @@ File: WSBS_presentation_2022_files/figure-beamer/unnamed-chunk-5-1.pdf Graphic
 file (type pdf)
 <use WSBS_presentation_2022_files/figure-beamer/unnamed-chunk-5-1.pdf>
 
-Overfull \vbox (9.84595pt too high) detected at line 617
+Overfull \vbox (9.84595pt too high) detected at line 626
  []
 
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [33
@@ -2102,7 +2102,7 @@ File: ./figure/Prop_T_dynamics.png Graphic file (type bmp)
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [34
@@ -2110,7 +2110,7 @@ Overfull \hbox (359.48688pt too wide) has occurred while \output is active
 ]
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [35
@@ -2118,7 +2118,7 @@ Overfull \hbox (359.48688pt too wide) has occurred while \output is active
 ]
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [36
@@ -2126,7 +2126,7 @@ Overfull \hbox (359.48688pt too wide) has occurred while \output is active
 ]
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [37
@@ -2138,13 +2138,13 @@ file (type pdf)
 File: ./figure/White Sea curent.jpg Graphic file (type bmp)
 <./figure/White Sea curent.jpg>
 
-Overfull \vbox (3.39003pt too high) detected at line 716
+Overfull \vbox (3.39003pt too high) detected at line 729
  []
 
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [38
@@ -2155,7 +2155,7 @@ File: ./figure/Discriminaiting_eaters.png Graphic file (type bmp)
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [39
@@ -2164,13 +2164,13 @@ Overfull \hbox (359.48688pt too wide) has occurred while \output is active
 File: ./figure/Sea_stars_and_results.png Graphic file (type bmp)
 <./figure/Sea_stars_and_results.png>
 
-Overfull \vbox (2.53014pt too high) detected at line 755
+Overfull \vbox (2.53014pt too high) detected at line 768
  []
 
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [40
@@ -2184,18 +2184,29 @@ p)
 
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [41
 
 ]
+File: ./figure/RSF logo.png Graphic file (type bmp)
+<./figure/RSF logo.png>
+
 Overfull \hbox (359.48688pt too wide) has occurred while \output is active
   [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
-[][] [][][][][][] [][]  
+[][] [][][][][][][] [][]  
  []
 
 [42
+
+]
+Overfull \hbox (359.48688pt too wide) has occurred while \output is active
+  [] [][][][] [][][][][][][][] [][][][][][][][][][][][][][][] [][][][] [][][][]
+[][] [][][][][][][] [][]  
+ []
+
+[43
 
 ]
 \tf@nav=\write5
@@ -2209,12 +2220,12 @@ Overfull \hbox (359.48688pt too wide) has occurred while \output is active
 
 (./WSBS_presentation_2022.aux) ) 
 Here is how much of TeX's memory you used:
- 30589 strings out of 476930
- 597282 string characters out of 5825868
- 1155287 words of memory out of 5000000
- 49871 multiletter control sequences out of 15000+600000
+ 30597 strings out of 476930
+ 597429 string characters out of 5825868
+ 1159211 words of memory out of 5000000
+ 49878 multiletter control sequences out of 15000+600000
  411124 words of font info for 120 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
  131i,19n,132p,527b,831s stack positions out of 5000i,500n,10000p,200000b,80000s
 
-Output written on WSBS_presentation_2022.pdf (42 pages).
+Output written on WSBS_presentation_2022.pdf (43 pages).
