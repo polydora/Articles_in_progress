@@ -50,7 +50,12 @@ xycoords <- stat_full %>% select(Station, Long, Lat) %>% filter(Station %in% ben
 
 stat_included <- stat_full %>%  filter(Station %in% bent_short$Station) 
 
+stat_included_coord <- stat_included[,1:3]
 
+stat_included_coord$Depth <- with(stat_included, (Depth_aug_20 + Depth_sep_20)/2)
+
+
+ 
 
 n <- nrow(bent_short) # Число станций 
 colnames(xycoords) = c("x-coordinate","y-coordinate")
@@ -61,58 +66,131 @@ rownames(xycoords) = 1:n
 
 
 
-# При условии гидротехнически сооружений ################### 
+# При условии, что нет гидротехнических сооружений ################### 
 
 path = "D:/Data_LMBE/Obskaya Bay additional data/nc_files_from_model/No_construction_building"
 
 files <- list.files(path)
 
-files_selected <- "inmom_20170901.nc" 
-  
-name = paste(path, "/", files_selected, sep = "")
-  
-# files[round(seq(1,365, length.out = 365))]
+# Отбираем только данные по августу-сентябрю
+files_selected <- files #[305:365]  
+ 
 
-# pb = txtProgressBar(min = 0, max = length(files_selected), initial = 0) 
-
-# hotspot <- read.table("Data/Obskaya_bay_ports.csv", sep = ",", header = T) 
-
-
-ncin <- nc_open(name)
-
-
-# library(conflicted)
-# conflict_prefer(name = "select", winner = "dplyr")
+# Формируем датафрейм с данными по каждой станции для сценария без гидротехнических сооружений
 
 library(raster)
 
-# Вытягиваем из nc файла данные по слоям 
-Sal_layer <- brick(name, var="salt")
-Sea_level_layer <- brick(name, var="ssh")
+no_construction_salinity <- NULL
 
-Lat_layer <- brick(name, var="latitude_UTM_43N")
-Lon_layer <- brick(name, var="longitude_UTM_43N")
-
-
-Curent_layer <- brick(name, var="vocn")
-
-
-
-Salinity_model <- extract(Sal_layer,xycoords)
-Sea_level_model <- extract(Sea_level_layer,as.data.frame(xycoords))
-Lat_model <- extract(Lat_layer,as.data.frame(xycoords), method = "bilinear")
-Lon_model <- extract(Lon_layer,as.data.frame(xycoords))
-Curent_model <- extract(Curent_layer,as.data.frame(xycoords))
-
-
+for(name in files_selected){
+  name = paste(path, "/", name, sep = "")
+  Sal_layer <- brick(name, var="salt")
+  Salinity_model <- as.data.frame(extract(Sal_layer,xycoords))
+  
+  ncin <- nc_open(name)
+  time <- ncvar_get(ncin,"time")
+  date_from_model <- as.POSIXct(time, origin = "1900-01-01 00:00:00")
+  
+  stat_included_coord$Date <- date_from_model
+  stat_included_coord$Scenario <- "No"
+  df <- cbind(stat_included_coord, Salinity_model)
+  no_construction_salinity <- rbind(no_construction_salinity, df)
+  print(name)
+}
 
 
-plot( stat_included$Bottom_Salinity_Sep_20, (Salinity_model[, 1]) )
-
-qplot( stat_included$Long, (Lon_model/10000) )+ geom_abline(slope = 1) 
-
-qplot( stat_included$Lat, (Lat_model/100000) ) 
 
 
-qplot(Curent_model[,1], stat_included$Bottom_Susp_Sep_20) 
+# При условии, что ЕСТЬ гидротехнические сооружения ################### 
 
+path = "D:/Data_LMBE/Obskaya Bay additional data/nc_files_from_model/After_construction_building"
+
+files <- list.files(path)
+
+# Отбираем только данные по августу-сентябрю
+files_selected <- files #[305:365]  
+
+
+# Формируем датафрейм с данными по каждой станции для сценария, когда построены гидротехнические сооружения
+
+library(raster)
+
+present_construction_salinity <- NULL
+
+for(name in files_selected){
+  name = paste(path, "/", name, sep = "")
+  Sal_layer <- brick(name, var="salt")
+  Salinity_model <- as.data.frame(extract(Sal_layer,xycoords))
+  
+  ncin <- nc_open(name)
+  time <- ncvar_get(ncin,"time")
+  date_from_model <- as.POSIXct(time, origin = "1900-01-01 00:00:00")
+  
+  stat_included_coord$Date <- date_from_model
+  stat_included_coord$Scenario <- "Constructed"
+  df <- cbind(stat_included_coord, Salinity_model)
+  present_construction_salinity <- rbind(present_construction_salinity, df)
+  print(name)
+}
+
+
+present_construction_salinity
+
+
+
+#######################
+
+# detach("package:RStoolbox", unload = TRUE)
+# detach("package:raster", unload = TRUE)
+
+
+all_model_data <- rbind(no_construction_salinity, present_construction_salinity)
+
+
+
+all_model_data <-
+  all_model_data %>% mutate(Sal = case_when(Depth < 2.5 ~ X1, 
+                                          Depth >= 2.5 & Depth < 7.5 ~ X5,
+                                          Depth >= 7.5 & Depth < 12.5 ~ X10,
+                                          Depth >= 12.5 & Depth <17.5 ~ X15, 
+                                          Depth >= 17.5 ~ X20)) 
+  
+
+
+all_model_data <-
+  all_model_data %>% rowwise() %>% mutate(Sal_mean = mean(c(X1, X5, X10, X15, X20), na.rm = T)) 
+
+
+ggplot(all_model_data, aes(x = Sal, y = Sal_mean)) + geom_point() + geom_abline()
+
+all_model_data$Sal_predicted<- all_model_data$Sal
+
+all_model_data$Sal_predicted [is.na(all_model_data$Sal)] = all_model_data$Sal_mean[is.na(all_model_data$Sal)]
+
+
+all_model_data %>% filter(is.nan(Sal_predicted)) %>% pull(Station) %>% table()
+
+
+
+
+
+all_model_data_diff <- all_model_data %>% select(Station, Long, Lat, Scenario, Depth, Date, Sal_predicted)
+
+
+library(reshape2)
+
+all_model_data_diff <- dcast(Station + Long + Lat + Depth + Date ~ Scenario, data = all_model_data_diff, value.var = "Sal_predicted" )
+
+
+all_model_data_diff <-
+all_model_data_diff %>% mutate(R_Sal = (Constructed - No) )
+
+all_model_data_diff_mean <- all_model_data_diff  %>% group_by(Station) %>% summarize(Long = mean(Long), Lat = mean(Lat), R_Sal_mean = mean(R_Sal, na.rm = T), R_Sal_sd = sd(R_Sal, na.rm = T)) 
+
+
+hist(all_model_data_diff_mean$R_Sal_mean)
+
+ggplot(all_model_data_diff_mean, aes(x = Long, y= Lat, color = R_Sal_mean)) + geom_point(size = 4) + scale_color_gradient(low = "yellow", high = "red") 
+
+
+qplot(stat_included$Bottom_Salinity_Aug_20, stat_included$Bottom_Salinity_Aug_20 + all_model_data_diff_mean$R_Sal_mean) + geom_abline()

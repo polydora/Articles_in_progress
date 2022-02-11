@@ -176,7 +176,7 @@ str(tuv_all)
 tuv_all$Period <- factor(tuv_all$Period)
 
 # отделяю нужные для всех анализов данные 
-tuv_all <- tuv_all %>% dplyr::select(Sample_ID, Period, Distance, Transect, Habitat, Depth, Monitoring, Ptros, Age2_3, Age4_6, Age7_9, Age10_12, N, W, OGP, max_L, size_5) %>% as.data.frame()
+tuv_all <- tuv_all %>% dplyr::select(Sample_ID, Period, Year, Distance, Transect, Habitat, Depth, Monitoring, Ptros, Age2_3, Age4_6, Age7_9, Age10_12, N, W, OGP, max_L, size_5) %>% as.data.frame()
 
 colSums(is.na(tuv_all))
 
@@ -258,7 +258,7 @@ ggplot(tuv_all2, aes(x = size_5, y = Log_N_old)) + geom_point(aes(shape = Habita
 ## CA
 
 # отделяю данные
-tuv_all_ca2 <- (tuv_all[ , -c(1:8)])
+tuv_all_ca2 <- (tuv_all[ , -c(1:9)])
 
 tuv_ca <- cca(tuv_all_ca2, scale = TRUE)
 summary(tuv_ca)
@@ -271,14 +271,62 @@ tuv_all$Monitoring <- factor(tuv_all$Monitoring)
 
 tuv_ca_f_site$Monitoring <- tuv_all$Monitoring
 
+tuv_ca_f_site$Period <- tuv_all$Period
+
+tuv_ca_f_site$Year <- tuv_all$Year
+
+
 tuv_ca_f_site$Habitat <- tuv_all$Habitat
 
+tuv_all <- tuv_all %>% mutate(Habitat2 = 
+                     case_when(Habitat == "bed" & Depth < 0 ~ "bed_lit",
+                               Habitat == "bed" & Depth > 0 ~ "bed_sublit")) 
+
+
+tuv_all$Habitat2[is.na(tuv_all$Habitat2)] <- tuv_all$Habitat[is.na(tuv_all$Habitat2)] 
+
+tuv_ca_f_site$Habitat2 <- tuv_all$Habitat2
+
 tuv_ca_f_sp <- as.data.frame(tuv_ca_f$species)
+
 
 library(ggrepel)
 
 ca_itog <- 
   ggplot(tuv_ca_f_site, aes(x = CA1, y = CA2)) +  geom_vline(xintercept = 0) + geom_hline(yintercept = 0) + theme_bw() + geom_point(aes(fill = Monitoring, shape = Habitat), color = "black", size = 5) + scale_fill_manual(values = c("brown2", "black", "azure4","lightgrey", "yellow","cyan2")) + scale_color_manual(values = c("brown2", "black", "azure4","lightgrey", "black", "black")) + scale_shape_manual(values = c(21, 23, 24, 22)) + geom_text_repel(data = tuv_ca_f_sp, aes(label = row.names(tuv_ca_f_sp)), color = "darkviolet", size = 4.5) +  theme(legend.position ="") 
+
+
+# aes(size = (tuv_all$Age2_3))
+
+ggplot(tuv_ca_f_site, aes(x = Year, y = CA1)) + geom_point(size=4) + facet_wrap(~Habitat2) + geom_hline(yintercept = 0, linetype = 2) + geom_smooth(se = F, method = "lm", formula = y~poly(x,2)) + 
+  geom_point(data = tuv_ca_f_site %>% filter(row.names(.) %in% c("BS_0.5_04", "BS_0.5_09", "BS_0.5_10", "BS_0.5_12", "BS_0.5_18")), fill = "yellow", shape = 21, size=5) +
+  geom_point(data = tuv_ca_f_site %>% filter(row.names(.) %in% c("BS_-1.5_04", "BS_-1.5_09", "BS_-1.5_18")), fill = "yellow", shape = 21, size=5) +
+  geom_point(data = tuv_ca_f_site %>% filter(row.names(.) %in% c("MoS_0.5_04", "MoS_0.5_09", "MoS_0.5_12", "MoS_0.5_18")), fill = "yellow", shape = 21, size=5) +
+  geom_point(data = tuv_ca_f_site %>% filter(row.names(.) %in% c("MoS_-1.5_09", "MoS_-1.5_12", "MoS_-1.5_18")), fill = "yellow", shape = 21, size=5) +
+  geom_point(data = tuv_ca_f_site %>% filter(row.names(.) %in% c("MidN_0.5_04", "MidN_0.5_09", "MidN_0.5_12", "MidN_0.5_18")), fill = "green", shape = 21, size=5) +
+  geom_point(data = tuv_ca_f_site %>% filter(row.names(.) %in% c( "MidN_-1.5_09", "MidN_-1.5_12", "MidN_-1.5_18")), fill = "green", shape = 21, size=5) +
+  theme_bw()
+
+
+ggplot(tuv_ca_f_site, aes(x = Year, y = CA2)) + geom_point(size=4) + facet_wrap(~Habitat2) + geom_hline(yintercept = 0, linetype = 2) + geom_smooth(se = F, method = "lm", formula = y~poly(x,2)) + 
+  geom_point(data = tuv_ca_f_site %>% filter(row.names(.) %in% c("BS_0.5_04", "BS_0.5_09", "BS_0.5_10", "BS_0.5_12", "BS_0.5_18")), fill = "yellow", shape = 21, size=5) +
+  geom_point(data = tuv_ca_f_site %>% filter(row.names(.) %in% c("BS_-1.5_04", "BS_-1.5_09", "BS_-1.5_18")), fill = "yellow", shape = 21, size=5) +
+  geom_point(data = tuv_ca_f_site %>% filter(row.names(.) %in% c("MoS_0.5_04", "MoS_0.5_09", "MoS_0.5_12", "MoS_0.5_18")), fill = "yellow", shape = 21, size=5) +
+  geom_point(data = tuv_ca_f_site %>% filter(row.names(.) %in% c("MoS_-1.5_09", "MoS_-1.5_12", "MoS_-1.5_18")), fill = "yellow", shape = 21, size=5) +
+  geom_point(data = tuv_ca_f_site %>% filter(row.names(.) %in% c("MidN_0.5_04", "MidN_0.5_09", "MidN_0.5_12", "MidN_0.5_18")), fill = "green", shape = 21, size=5) +
+  geom_point(data = tuv_ca_f_site %>% filter(row.names(.) %in% c( "MidN_-1.5_09", "MidN_-1.5_12", "MidN_-1.5_18")), fill = "green", shape = 21, size=5) +
+  theme_bw()
+
+
+
+
+
+ggplot(tuv_ca_f_site, aes(x = as.numeric(Period), y = CA2)) + geom_point() + facet_wrap(~Habitat) + geom_hline(yintercept = 0) 
+
+
+ggplot(tuv_ca_f_site, aes(x = Period, y = CA1)) + geom_boxplot() + facet_wrap(~Habitat) + geom_hline(yintercept = 0)
+
+
 
 
 
