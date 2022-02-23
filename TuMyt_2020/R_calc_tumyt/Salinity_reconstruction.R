@@ -53,10 +53,10 @@ sal_tuv$Time
 
 ggplot(tide, aes(x = Date3, y = H)) + geom_line() + geom_point(data = sal_tuv, aes(x = Date_true, y = abs(Height), size = Salinity)) + facet_grid(Transect ~ Depth) + geom_hline(yintercept = c(2, 1.5, 1, 0.5, -0.5, -1.5, -3.5))
 
-ggplot(sal_tuv, aes(x = abs(Height), y = Salinity)) + geom_point()
+ggplot(sal_tuv, aes(x = (Height), y = Salinity)) + geom_point() +  geom_smooth(method = "lm", formula = y ~poly(x, 2))
 
 
-Mod_tide <- lm(Salinity ~ H*Distance, data = sal_tuv)
+Mod_tide <- lm(Salinity ~ H*Distance, data = sal_tuv) 
 
 summary(Mod_tide)
 
@@ -119,6 +119,10 @@ levels_salinity_subtidal <- tide_transect %>% filter(H>=0) %>% group_by(Transect
 
 
 
+mean_salinity <- tide_transect %>% group_by(Transect) %>% summarise(Salinity_predicted = mean(Salinity_predicted))
+
+
+
 ggplot(tide_transect, aes(x = Date3, y = Salinity_predicted)) + 
   geom_line() + 
   facet_wrap(~Transect, nrow = 1) + 
@@ -137,6 +141,18 @@ write.table(tide_transect, "salinity_prediction.csv", sep = ",", row.names = F)
 write.table(sal_tuv, "observed_salinity.csv", sep = ",", row.names = F)
 
 
+
+
+ggplot(tide_transect, aes(x = Date3, y = Salinity_predicted)) + 
+  geom_line(size = 1) + 
+  facet_wrap(~Transect, nrow = 1)+
+  theme_bw() + 
+  geom_point(data = sal_tuv, aes(x= Date_true, y = Salinity, color = Depth), size = 3) + 
+  geom_hline(data = mean_salinity, aes(yintercept = Salinity_predicted)) +
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(color = "Water sampling \ndepth", x = "Date and Time", y = "Salinity") +
+  geom_line(data = tide_transect, aes(y = H)) + geom_text(aes(x = mean(Date3), y = -1, label = "Tide level"), size = 4)
+  
 
 
 
