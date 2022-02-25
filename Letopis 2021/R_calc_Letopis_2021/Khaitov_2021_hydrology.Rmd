@@ -86,12 +86,12 @@ hydr$Air_T <- round(as.numeric(hydr$Air_T, 1))
 hydr$Water_T <- round(as.numeric(hydr$Water_T, 1))
 
 
-hydr_print <- data.frame(Year = 2020, Date = hydr$Date, Air_T = hydr$Air_T, Salinity = hydr$S, Water_T = hydr$Water_T)
+hydr_print <- data.frame(Year = Year, Date = hydr$Date, Air_T = hydr$Air_T, Salinity = hydr$S, Water_T = hydr$Water_T)
 
 hydr_print2 <- hydr_print
 hydr_print[is.na(hydr_print)] <- "нет данных"
 
-col_names <- c("Год", "Дата и время", "T воздуха", "Соленость", "Температура воды")
+col_names <- c("Год", "Дата и время", "Температуа воздуха", "Соленость", "Температуа воды")
 
 
 
