@@ -1,0 +1,252 @@
+---
+title: "Характеристика популяции *Semibalanus balanoides* на литорали острова Ряжкова летом 2020 и 2021 гг. и анализ долговременных процессов в популяции"
+author: "В. М. Хайтов"
+output: 
+      word_document:
+                reference_docx: Letopis_template.docx
+                fig_width: 5
+                fig_height: 5
+
+ 
+abstract: |
+    **Хайтов В. М. Характеристика популяции *Semibalanus balanoides* на литорали острова Ряжкова летом 2020 и 2021 гг. и анализ долговременных процессов в популяции** // Марченков А. В.  (ред.) Летопись природы Кадалакшского заповедника за 2021 год (ежегодный отчет). Кандалакша. Т.1 (Летопись природы Кандалакшского заповедника, кн. ++)
+    Рассматриваются данные по учету обилия сеголеток и взрослых балянусов на литоральных валунах летом 2020 и 2021 гг. Дается оценка тенденций многолетних изменений.   
+    
+    **Khaitov V.M.  Population characteristics of * Semibalanus balanoides* on the intertidal zone  of Ryazhkov Island in the summer of 2020 and 2021 analysis of long-term processes in the population** // Marchenkov A. V. (ed.)  The Chronicle of Nature by the Kandalaksha Reserve for 2021 (Annual report).  Kandalaksha. V.1. (The Chronicle of Nature by the Kandalaksha Reserve, Book N ++)
+     The data on abundance of yearlings and adult barnacls on boulders in summer months of 2020 and 2021 are reviewed. Trends of long-term changes are estimated.  
+      
+---
+
+```{r setup, include=FALSE}
+
+library(reshape2)
+library(knitr)
+library(ggplot2)
+library(ggmap)
+library(dplyr)
+library(cowplot)
+
+opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+
+theme_set(theme_bw())
+options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**" )
+
+
+editor <- "Марченков А. В."
+editor_eng <- "Marchenkov A. V."
+
+# Функция, задающая нумерацию рисунков
+
+figRef <- local({
+    tag <- numeric()
+    created <- logical()
+    used <- logical()
+    function(label, caption, prefix = options("figcap.prefix"), 
+        sep = options("figcap.sep"), prefix.highlight = options("figcap.prefix.highlight")) {
+        i <- which(names(tag) == label)
+        if (length(i) == 0) {
+            i <- length(tag) + 1
+            tag <<- c(tag, i)
+            names(tag)[length(tag)] <<- label
+            used <<- c(used, FALSE)
+            names(used)[length(used)] <<- label
+            created <<- c(created, FALSE)
+            names(created)[length(created)] <<- label
+        }
+        if (!missing(caption)) {
+            created[label] <<- TRUE
+            paste0(prefix.highlight, prefix, " ", i, sep, prefix.highlight, 
+                " ", caption)
+        } else {
+            used[label] <<- TRUE
+            paste(prefix, tag[label])
+        }
+    }
+})
+
+
+```
+
+
+
+На литорали  острова Ряжкова было выделено 4 сайта (Южная губа, Восточный берег, Северная губа и Западный берег), в каждом из них ежегодно выбирается по несколько валунов. Координаты точек расположения валунов засекаются с помощью спутникового навигатора. Если несколько валунов расположены в непосредственной близости друг от друга,  то засекаются координаты только одного из них. Расположение точек сбора материала, обследованных  в 2020 и 2021 году приведено на  `r figRef("Stone")`.
+
+```{r}
+# Читаем данные
+bal <- read.table(file = "data/Balanus_2012_2021.csv", header = T, sep = ",")
+bal$N <- bal$N/60 + 67
+bal$E <- bal$E/60 + 32
+
+# str(bal_20_21)
+# bal_print <- bal
+
+bal$Site <- factor(bal$Site)
+
+levels(bal$Site) <- c("Восточный берег", "Северная губа", "Западный берег", "Южная губа")
+
+
+# ggRyazhkov <- read.table("data/ggRyazhkov.csv", header = T, sep = ";")
+
+load("data/Ryazh_map.RData")
+
+
+bal_20_21 <- bal %>% filter(Year %in% c(2020, 2021))
+
+```
+
+
+
+
+``` {r, fig.cap=figRef("Stone", "Расположение камней, на которых проводился учет балянусов, на побережье о. Ряжкова (2020 и 2021 г.). Position of stones where barnacles were counted on the shore of Ryazhkov island (2020 and 2021)")}
+
+ggmap(Ryazh_map,  base_layer=ggplot(data=bal_20_21, aes(x=E, y=N))) + 
+  geom_point(shape=21, fill="yellow", size = 2) + 
+  theme(axis.text = element_blank(), axis.title = element_blank(), axis.ticks = element_blank()) +
+  facet_wrap(~Year)
+
+```
+
+
+Валуны, использованные в анализе, располагались не выше пояса фукоидов и имели в диаметре не менее 1 метра. Обилие балянусов подсчитывалось на двух сторонах валуна (обращенной к морю (“Sea”) и обращенной к суше (“Land”). На каждой стороне было заложено по три площадки 10х10 см, располагавшихся на высоте 30 см от поверхности грунта. Рамка, ограничивающая площадку, была разбита на 25 квадратов со стороной 2 см. В трех случайно выбранных квадратах было подсчитано обилие балянусов следующих классов: Живые сеголетки, Мертвые сеголетки, Живые особи возрастом 1+ и более (далее взрослые), Мертвые взрослые особи. Данные, по учетам балянусов в 2020 и2021 годах, приведены в таблице +.1. 
+
+
+**Таблица +.1** Обилие сеголеток и взрослых балянусов  на побережье о. Ряжкова в 2020 - 2021 г. (экз. на 4 кв.см.).  Abundance of barnacles juveniles adults on the shore of Ryazhkov island in 2020-2021 (ind. per 4 sq. cm)
+
+```{r}
+colname <- c("Год", "Сайт", "Камень","Направление", "N", "E",  "Рамка", "Квадрат", "Сеголетки живые", "Сеголетки мертвые", "Взрослые живые", "Взрослые мертвые")
+
+
+kable(bal_20_21, digits = c(0,0,0,0, 6,6,0,0,0,0), missing = "нет данных", style = "multiline",  split.tables = Inf, split.cells = 10, col.names = colname)
+
+
+```
+
+
+```{r}
+bal_melt <- melt(bal_20_21, id.vars = c("Year",	"Site",	"N_stone",	"Exposition",	"Core",	"Square", "N", "E"), variable.name = "Stage", value.name = "Abundance")
+
+bal_melt$Stage <- factor(bal_melt$Stage, labels = c("Живые сеголетки", "Мертвые сеголетки", "Живые взрослые", "Мертвые взрослые"))
+
+```
+
+
+`r figRef("Abund20")` демонстрирует обилие разных стадий на разных точках в 2020 г. Самое мощное пополнение в этом году происходило на Западном и Восточном берегу. Меньше всего молоди осело в Северной губе. Обилие взрослых особей не демонстрировало явной вариации между отдельными сайтами. 
+
+
+
+```{r, fig.cap=figRef("Abund20", "Обилие сеголеток и взрослых балянусов (экз. на 4 кв.см.) в 2020 году. Здесь и далее на аналогичных графиках горизонтальная линия в пределах прямоугольника обозначает медиану значений величины, отложенной по оси ординат. Границы прямоугольника обозначают значение 1 и 3 квартилей. Длина усов равна 1.5 межквартильным расстояниям. Точки обозначают отскоки, выходящие за пределы общей тенденции распределения.  Abundanc of juveniles and adult barnacles (ind per 4 sq. cm) in 2020. Here and in similar graphs, the horizontal line within the rectangle indicates the median value of the value along the ordinate axis. The borders of the rectangle denote the value of 1 and 3 quartiles. The length of the whiskers is equal to 1.5 interquartile range. The dots denote outlayers.")}
+
+
+bal_melt2 <-  bal_melt %>% filter(Stage %in% c("Живые сеголетки", "Живые взрослые")) %>% filter(Year == 2020)
+  
+ggplot(bal_melt2, aes(x = Site, y =Abundance)) + 
+  geom_boxplot() +
+  facet_wrap(~Stage, scales = "free_y")+ 
+  labs(x = "", y = "Плотность поселения") + 
+  theme(axis.text.x = element_text(angle = 90))
+
+
+
+```
+
+
+
+
+`r figRef("Abund21")` демонстрирует обилие разных стадий на разных точках в 2021 г. Самое мощное пополнение в этом году происходило на Западном берегу и в Южной губе. Меньше всего молоди осело в Северной губе и на Восточном берегу. Обилие взрослых особей, как и в 2020 г. не демонстрировало явной вариации между отдельными сайтами. 
+
+
+
+```{r, fig.cap=figRef("Abund21", "Обилие сеголеток и взрослых балянусов (экз. на 4 кв.см.) в 2021 году. Abundanc of juveniles and adult barnacles (ind per 4 sq. cm) in 2021.")}
+
+
+bal_melt2 <-  bal_melt %>% filter(Stage %in% c("Живые сеголетки", "Живые взрослые")) %>% filter(Year == 2021)
+  
+ggplot(bal_melt2, aes(x = Site, y =Abundance)) + 
+  geom_boxplot() +
+  facet_wrap(~Stage, scales = "free_y")+ 
+  labs(x = "", y = "Плотность поселения") + 
+  theme(axis.text.x = element_text(angle = 90))
+
+
+
+```
+
+
+
+Многолетние наблюдения показывают, в разные годы максимальное обилие молоди может наблюдаться на разных участках (`r figRef("Abund_long")`). Однако, если рассматривать распределение плотности поселения сеголеток суммарно за все годы (`r figRef("Abund_distr")`), то можно заметить, что обилие молоди на валунах на Восточном берегу и в Северной губе существенно ниже, чем многолетнее среднее значение. Это означает, что на субстраты на этих сайтах оседание происходит, в среднем, хуже, чем на субстраты Западного берега и Южной губы.     
+
+
+
+
+
+```{r, fig.cap=figRef("Abund_long", "Обилие сеголеток в разные годы на разных сайтах. Abundance of juveniles in different years for each site.")}
+
+
+bal_melt <- melt(bal, id.vars = c("Year",	"Site",	"N_stone",	"Exposition",	"Core",	"Square", "N", "E"), variable.name = "Stage", value.name = "Abundance")
+
+bal_melt$Stage <- factor(bal_melt$Stage, labels = c("Живые сеголетки", "Мертвые сеголетки", "Живые взрослые", "Мертвые взрослые"))
+
+
+bal_melt3 <- bal_melt %>% filter(Stage == "Живые сеголетки")
+
+levels(bal_melt3$Site) <- c("Восточный берег", "Северная губа", "Западный берег", "Южная губа")
+
+ggplot(bal_melt3, aes(x = Site, y =Abundance)) + 
+  geom_boxplot() +
+  facet_wrap(~Year, scales = "free_y", ncol = 4)+ 
+  labs(x = "", y = "Плотность поселения") + 
+  theme(axis.text.x = element_text(angle = 90))
+
+```
+
+
+
+
+
+
+```{r, fig.cap=figRef("Abund_distr", "Обилие сеголеток на разных сайтах (обобщенные многолетние данные). Горизонтальная черта указывает многолетнее среднее значение. Abundance of juveniles at different sites (generalized data for all years of observation). The horizontal line indicates the multiyear averaged abundance.")}
+
+
+bal_melt <- melt(bal, id.vars = c("Year",	"Site",	"N_stone",	"Exposition",	"Core",	"Square", "N", "E"), variable.name = "Stage", value.name = "Abundance")
+
+bal_melt$Stage <- factor(bal_melt$Stage, labels = c("Живые сеголетки", "Мертвые сеголетки", "Живые взрослые", "Мертвые взрослые"))
+
+
+bal_melt3 <- bal_melt %>% filter(Stage == "Живые сеголетки")
+
+levels(bal_melt3$Site) <- c("Восточный берег", "Северная губа", "Западный берег", "Южная губа")
+
+ggplot(bal_melt3, aes(x = Site, y =Abundance)) + 
+  geom_boxplot() + 
+  labs(x = "", y = "Плотность поселения") + 
+  theme(axis.text.x = element_text(angle = 90)) + 
+  geom_hline(yintercept = mean(bal_melt3$Abundance), linetype = 2)
+
+```
+
+
+
+Анализ многолетних тенденций (`r figRef("Abund_dynam")`) показал, что в последние годы,  как на Восточном берегу, так и в Северной губе отчетливо прослеживается тенденция к снижению уровня притока молоди. Противоположная тенденция отмечается на Западном берегу и в Южной губе: на этих сайтах в последние годы приток молоди увеличивается. 
+Еще одна тенденция, которая может быть прослежена при анализе многолетних данных - это отрицательная корреляция между обилием сеголеток и взрослых особей. Коэффициент ранговой корреляции Спирмена между обилиями этих двух групп составил `r round(cor(bal$Juveniles_Alive, bal$Adult_Alive, method = "spearman", use = "pairwise.complete.obs"), 3)` (p < 0.01). 
+
+
+
+```{r , fig.cap=figRef("Abund_dynam", "Динамика обилия сеголеток и взрослых  в разные годы на разных участках. The dynamics of the abundance of yearlings and adults (logarithmic scale) in different sites")}
+
+bal_juv_ad <- bal_melt %>% filter(Stage %in% c("Живые сеголетки", "Живые взрослые")) %>% group_by(Year, Site, N_stone, Stage) %>% summarise(N = mean(Abundance, na.rm = T))
+
+ggplot(bal_juv_ad, aes(x = Year, y = log(N+1), group = Stage)) + 
+  facet_wrap(~Site) +
+  geom_smooth(aes(color = Stage)) +
+  geom_point(aes(fill = Stage), shape = 21) + 
+  scale_fill_manual(values = c("black", "white")) +
+  labs(x = "Годы", y = "Логарифм плотности поселения", fill = "", color = "") + 
+  theme(legend.position = "bottom")
+  
+```
+
+
+
+
+
