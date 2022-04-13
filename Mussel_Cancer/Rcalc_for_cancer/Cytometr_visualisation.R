@@ -137,9 +137,9 @@ ggplot(ord_scores, aes(CA1, CA2)) + geom_point() + geom_point(data = ord_scores_
   geom_vline(xintercept = 0) + geom_hline(yintercept = 0)
 
 
-ggplot(ord_scores, aes(PC1)) + geom_density()
+ggplot(ord_scores, aes(CA1)) + geom_density()
 
-ggplot(ord_scores, aes(PC2)) + geom_density()
+ggplot(ord_scores, aes(CA2)) + geom_density()
 
 
 #############################
@@ -221,6 +221,14 @@ for(i in selected_files){
 }
 
 
+healthy_mussel <- c("hemo_japan_17", "hemo_japan_38")
+
+(plot_cytometry("Nuk1_28.fcs")[[1]] + plot_cytometry("Nuk1_28.fcs")[[2]]) / 
+  (plot_cytometry("NUK1-56.fcs")[[1]] + plot_cytometry("NUK1-56.fcs")[[2]]) / 
+  (plot_cytometry("hemo_japan_181(2).fcs")[[1]] + plot_cytometry("hemo_japan_181(2).fcs")[[2]]) /
+  (plot_cytometry("hemo_japan_181(3).fcs")[[1]] + plot_cytometry("hemo_japan_181(3).fcs")[[2]])
+
+cancer_mussel <- c("NUK1-9",  "Nuk1_28", "NUK1-56", "NUK1-60",  "UM36", "UM41", "UM48", "Specimen_001_MChK-29_031", "hemo_japan_161","hemo_japan_54", "hemo_japan_181", "hemo_japan_181(2)", "hemo_japan_181(3)" )
 
 
 (plot_cytometry("NUK1-9.fcs")[[1]] + plot_cytometry("NUK1-9.fcs")[[2]])

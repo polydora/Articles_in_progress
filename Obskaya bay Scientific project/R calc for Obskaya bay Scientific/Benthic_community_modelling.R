@@ -29,7 +29,7 @@ Spec_abund <- bent_N %>% select(-Station) %>% colSums(.) %>% t() %>% as.vector()
 
 spec_total_abund <- data.frame(Sp = bent_N %>% select(-Station) %>% colnames(), Spec_abund)
 
-N_porog <- 200 
+N_porog <- 0#200 
 
 spec_selected <- spec_total_abund %>% filter(Spec_abund > N_porog)
 
@@ -67,7 +67,7 @@ Ydata <- bent_short %>% select(-Station) %>% round(., 0) %>% as.matrix(.)
 colnames(Ydata) <- names(bent_short)[-1]
 rownames(Ydata) = 1:n
 
-Ydata <- log(Ydata_raw + 1)
+Ydata <- log(Ydata + 1)
 
 
 

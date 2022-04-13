@@ -73,7 +73,7 @@ path = "D:/Data_LMBE/Obskaya Bay additional data/nc_files_from_model/No_construc
 files <- list.files(path)
 
 # Отбираем только данные по августу-сентябрю
-files_selected <- files #[305:365]  
+files_selected <- files # [305:365]  
  
 
 # Формируем датафрейм с данными по каждой станции для сценария без гидротехнических сооружений
@@ -99,6 +99,7 @@ for(name in files_selected){
 }
 
 
+no_construction_salinity
 
 
 # При условии, что ЕСТЬ гидротехнические сооружения ################### 
@@ -143,10 +144,12 @@ present_construction_salinity
 # detach("package:RStoolbox", unload = TRUE)
 # detach("package:raster", unload = TRUE)
 
+library(dplyr)
 
 all_model_data <- rbind(no_construction_salinity, present_construction_salinity)
 
 
+# Соленость из одели, соответствующая глубине на ревльных станциях
 
 all_model_data <-
   all_model_data %>% mutate(Sal = case_when(Depth < 2.5 ~ X1, 
@@ -157,18 +160,38 @@ all_model_data <-
   
 
 
+# Вычисление срденей солености по всему столбу воды
 all_model_data <-
   all_model_data %>% rowwise() %>% mutate(Sal_mean = mean(c(X1, X5, X10, X15, X20), na.rm = T)) 
 
 
 ggplot(all_model_data, aes(x = Sal, y = Sal_mean)) + geom_point() + geom_abline()
 
+
+
+
 all_model_data$Sal_predicted<- all_model_data$Sal
 
+# Заменяем NA для солености у дна средней соленостью
 all_model_data$Sal_predicted [is.na(all_model_data$Sal)] = all_model_data$Sal_mean[is.na(all_model_data$Sal)]
 
 
+# Станции за пределами координатной сетки модели
 all_model_data %>% filter(is.nan(Sal_predicted)) %>% pull(Station) %>% table()
+
+
+
+
+# Средняя соленость за август-сентябрь
+
+all_model_data_mean <- all_model_data %>% group_by(Scenario, Station) %>% summarise(Mean_sal_predicted = mean(Sal_predicted))
+
+
+
+# Соотношение наблдаемой солености и смоделированной солености
+
+qplot(stat_included$Bottom_Salinity_Aug_20, all_model_data_mean$Mean_sal_predicted[all_model_data_mean$Scenario== "Constructed"]) + geom_abline()
+
 
 
 
@@ -177,20 +200,49 @@ all_model_data %>% filter(is.nan(Sal_predicted)) %>% pull(Station) %>% table()
 all_model_data_diff <- all_model_data %>% select(Station, Long, Lat, Scenario, Depth, Date, Sal_predicted)
 
 
+
+
+
+
+
+
 library(reshape2)
+
+# Изучаем отклонение предсказанно солености
 
 all_model_data_diff <- dcast(Station + Long + Lat + Depth + Date ~ Scenario, data = all_model_data_diff, value.var = "Sal_predicted" )
 
 
+all_model_data_diff$Month <- month(all_model_data_diff$Date)
+
+# Записываем Файл со средней придонной соленостью,при двух сценариях
+write.csv(all_model_data_diff, file = "data/Bottom_salinity_from_model.csv")
+
+
+
+
+# Различия между смоделированной соленостью при строительстве сооружений и без них 
 all_model_data_diff <-
-all_model_data_diff %>% mutate(R_Sal = (Constructed - No) )
-
-all_model_data_diff_mean <- all_model_data_diff  %>% group_by(Station) %>% summarize(Long = mean(Long), Lat = mean(Lat), R_Sal_mean = mean(R_Sal, na.rm = T), R_Sal_sd = sd(R_Sal, na.rm = T)) 
-
+  all_model_data_diff %>% mutate(R_Sal = (Constructed - No) )
 
 hist(all_model_data_diff_mean$R_Sal_mean)
 
+
+all_model_data_diff_mean <- all_model_data_diff  %>% group_by(Station) %>% summarize(Long = mean(Long), Lat =
+                                                                                       mean(Lat), R_Sal_mean =
+                                                                                       mean(R_Sal, na.rm = T),
+                                                                                     R_Sal_sd = sd(R_Sal, na.rm = T))
+
+
+# Карта распределения различий между смоделированной соленостью для двух сценариев
+
 ggplot(all_model_data_diff_mean, aes(x = Long, y= Lat, color = R_Sal_mean)) + geom_point(size = 4) + scale_color_gradient(low = "yellow", high = "red") 
+
+
+ggplot(all_model_data_diff, aes(x = Depth, y= R_Sal)) + geom_point(size = 1) + geom_hline(yintercept = 0)
+
+
+
 
 
 qplot(stat_included$Bottom_Salinity_Aug_20, stat_included$Bottom_Salinity_Aug_20 + all_model_data_diff_mean$R_Sal_mean) + geom_abline()

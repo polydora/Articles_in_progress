@@ -1,0 +1,437 @@
+---
+title: "Метрики биоразнообразия донных сообществ в условиях изменений экологической лицензии"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE)
+
+```
+
+
+
+## Постановка проблемы
+
+Любое воздействие (антропогенное, климатическое и т.п.), если оно достаточно мощное, приводит изменению струкутры градиентов факторов среды, представленных в том или ином биотопе. Эти градиенты принято называть экологической лицензией биотопа. Структура сообщества, рассматривается как система "упакованных" экологических ниш видов, входящих в состав сообщества. Граница гиперобъема упаковки ниш определяется экологической лицезией. 
+
+В результате воздействия экологическая лицензия изменяется. В соответствии с этим приисходит изменение структры сообществ, которое проявляется не только в изменении обиля популяций отдельных видов в соответствии с их экофизиологическими характеристиками, но и в изменении характера взаиоотношений между членами сообществ. Последнее тоже может привести к существенным изенениям обилия популяций отдельных видов из-за повышения/снижения межвидовой конкуренции или повышения/понижения интенсивности трофических связей (ослабление или повышение пресса хищников или парзитов). Это обстоятельство не позволяет рассматривать в качестве метрики, описывающей воздействие, какой-то простой показатель, описывающий популяцию какого-то одного (или нескольких) видов. Метрика должна описывать сообщество целиком. При этом, метрика должна находиться в некотрой взаимосвязи с теми градиентами, которые форируют экологическую лицензию.    
+
+Указанное обстоятельство заставляет моделировать поведение сообщества целиком, как изменение некоторой многомерной функции в ответ на изменение лицензии. Для построения подобных моделей адаптирована концепция  Joint Species Distribution Modelling (JSDM). 
+
+
+## Теоретические посылки
+
+Характер связи вида с параметрами среды (экологическая ниша) может быть охарактеризован коэффициетами регрессионной модели, описывающей связь обилия вида со значениями факторов среды. В простейшем случае, когда рассмтаривается один фактор среды и один вид экологическая, обилие которго линейно связано с данным фактором, ниша данного вида может быть охарактеризована значениями коэффициентов следующей модели:
+
+$$
+N = b_0 + b_1F + \varepsilon
+$$
+
+$b_0$, или intercept, характеризует общий уровень обилия вида;
+$b_1$, или slope, характеризует связь обилия вида с фактором (F);
+$\varepsilon$ - неучтенные моделью тклонения (остатки).
+
+В более сложных вариантах модель может включать большее число коэффициентов. 
+
+Стало быть для характеристики реализованной ниши отдельного вида в рамках экологической лицензии необходимо указать значения коэффициентов $b_0$ и $b_1$. Графическим выражением этой связи будет являться линия регрессии. 
+
+Представим себе, что коэффициенты  $b_0$ и $b_1$ были оценены в год $T_1$, когда экологическая лицензия данного биотопа, характеризовалась диапазоном единственного фактора  $DF_1$. Если в год $T_2$  значения фактора изменились (например увеличились), то лицензия в данный год будет отражаться величиной $DF_2$. Если при этом коэффициенты $b_0$ и $b_1$ не изменились, то есть характер связи единственного вида с единственным фактором, остался прежним, то это означает, что значительных изменений в отношении данного вида с его биотопом не произошло. Если же значения коэффициентов существенно изменились, то мы можем констатировать существенное влияние этих изменений на реализованную экологическую нишу вида.  Графически это изменение может быть выражено в виде двух регрессионных прямых. При первом сценарии эти прямые совпадают, при втором - нет. 
+
+Такая трактовка экологической ниши (набор коэффициентов регрессионных моделей) позволяет формализовать процедуру прогноза изменений при изменении экологической лицензии (то есть при некоторых воздействиях, повлекщих изменение значений фактора $F$). Если реализованная ниша вида не изменяется, то прогноз строится простой экстраполяцией имеющейся модели на новые значения фактора. Качество прогноза зависит только от качества оценок.  Если же коэффициенты меняются, то прогнозы возможны только если мы знаем (или задаем) правило, по которому происходит это изменение. 
+
+
+Если мы рассматриваем не один вид, а все сообщество целиком, то в рамках концепwии JSDM подбор коэффициентов, описывающих реализованные ниши, осуществляется не для каждого вида в отдельности (как серия независимых линейных моделей), а с учетом связей между видами (матрица корреляций) и учетом дизайна сбора матриала (наличие случайных группирующих факторов и/или факторов, порождающих пространственные или временные автокорреляции). Потенциально в рамках JSDM можно учесть и филогенетические и функциональные характеристики видов. Однако логика анализа будет более или менее сходной с той, что описана выше для случая одного вида и одного фактора. 
+
+
+## Моделирование изменений в Обской губе 
+
+Струткра бентосных сообществ Обской губы аходится в зависимости от множества факторов (см. отчет +++). Потенциально, изменение любого из них может привести к существенным изменения в структуре сообществ. Однако самым важным градиентом, определяющим варьирование структуры сообществ, является соленость. Согласно гидрологической модели акватории ++++, соленость закономерно варьирует вдоль оси Обской губы. При этом данная модель была рассчитана для двух режимов: нативный (Native), то есть без внесения в рельеф дна измененbй, и режим, связанный с дноуглубительными работами (Constricted). 
+
+```{r}
+library(readxl)
+library(ggplot2)
+library(dplyr)
+library(lubridate)
+
+library(ggmap)
+library(mapproj)
+library(maps)
+
+library(rgeos) 
+
+library(mapdata)
+library(maptools) # Rgshhs
+library(PBSmapping)
+library(cowplot)
+library(mgcv)
+library(ggrepel)
+library(png)
+library(broom)
+
+
+
+theme_set(theme_bw())
+
+# данные по солености из модели
+
+
+salmod <- read_excel("data/Bottom_salinity_from_model.xls")
+
+
+salmod <- salmod %>% select(Long, Lat, Depth, Month, Constructed, No) %>% mutate_if(is.character, as.numeric) %>% mutate(Station = salmod$Station, Date = salmod$Date) %>% select(Station, Date, Month, Long, Lat, Depth, Constructed, No)
+
+
+# Средняя соленость для каждого месяца
+
+salmod_mean <- salmod  %>% group_by(Station, Month) %>% summarise(Depth = mean(Depth), Lat = mean(Lat), Long = mean(Long), Sal_Constructed = mean(Constructed), Sal_No = mean(No), Dif = mean(Constructed - No) ) 
+
+salmod_mean2 <- salmod  %>% group_by(Station) %>% summarise(Depth = mean(Depth), Lat = mean(Lat), Long = mean(Long), Sal_Constructed = mean(Constructed), Sal_No = mean(No), Dif = mean(Constructed - No) ) 
+ 
+
+
+
+# Источники антропогенного воздействия
+
+ports <- data.frame(Name = c("Sabetta", "Terminal"), Lat = c(71.235220, 71.010886), Long = c(72.126754, 73.793525))
+
+
+
+
+
+#The function for calculation of neares object and distance to it  
+
+nearest_dist <- function(XY, objects = ports, x.name = "Long", y.name = "Lat"){
+  XY1 <-as.numeric(XY[,1])
+  XY2 <- as.numeric(XY[,2])
+  dist <- (acos(sin(XY1*pi/180)*sin(objects[ ,y.name]*pi/180) + cos(XY1*pi/180)*cos(objects[ ,y.name]*pi/180)*cos(XY2*pi/180 - objects[ ,x.name]*pi/180)) * 6371)
+  
+  MD <- data.frame(Min_dist = min(dist))
+  cbind(objects[which(dist == min(dist)), ], MD)
+  
+}
+
+
+df_ports <- nearest_dist(XY = salmod_mean[1, c("Lat", "Long")], objects = ports)
+
+for(i in 2:nrow(salmod_mean)) {
+  df_ports[i, ] <- nearest_dist(XY = salmod_mean[i, c("Lat", "Long")], objects = ports)
+}
+
+
+salmod_mean$Nearest_Port <- df_ports$Name
+salmod_mean$Min_dist <- df_ports$Min_dist
+
+```
+
+
+
+Согласно этой модели при сценарии "Constructed" патерн распределения солености может несколько отличаться от паттрена распределения солености в режиме "Native". Если для каждой стандартной станции, на которой проводился отбор бентосных проб, произвести вычисления ожидаемой солености при двух сценариях, то величина отклонения значения солености при режиме "Constructed" от солености в режиме "Native" будет характеризовать степень воздействия этого фактора на соленостный режим в данной географической точке. Введем величину $Dif$
+
+$$
+Dif = S_{Constructed} - S_{Native}
+$$
+
+Положительное значение будет означать рост солености при проведении гидротехнических работ, отрицательное значение - падение солености.   
+
+Cущественных изменений значений солености не ожидается (Fig. +++). Модальное значение различия солености между двумя сценариями близко к нулю.
+
+```{r}
+ggplot(salmod_mean, aes(x = Dif)) + 
+  geom_histogram()+
+  labs(x = "Difference in salinity for two scenaries (Dif)")
+```
+
+Вместе с тем, эти различия демонстрируют некоторый пространственный паттерн. Если оценить расстояние от каждой станции до ближайшего крупного берегового сооружения (порт "Сабетта" или терминал "Утренний"), то можно заметить (Fig. ++), что после проведения гидротенических работ соленость в большинстве локаций приближенных к портам возрастет, а в участках, удаленных от портов, она может как возрасти, так и снизиться.  
+
+
+
+```{r}
+# ЗАвисимость различий в солености при разных сценариях от расстояния до ближайшего порта
+ggplot(salmod_mean, aes(x = Min_dist, y = Dif)) + 
+  geom_point() + 
+  geom_hline(yintercept = 0) +
+  labs(x = "Distance to the nearest port", y = "Dif")
+
+
+```
+
+
+Максимальное повышение солености при сценарии "Constructed" по сравнению с соленостью при сценарии "Native" будет наблюдаться в восточой части устья Обской губы. В западной части устья изменения будут минимальны или даже может произойти некоторое опреснение.  
+
+```{r}
+
+
+
+
+# Рисуем карту распределения изменений солености ################
+
+Ob_df <- read.csv("Data/Obskaya_bay_map.csv") # Map poligones
+
+
+# Coordinate limites 
+# Ob_x <- c(71, 79)
+
+Ob_x <- c(71, 75.2)
+Ob_y <- c(70, 73.2)
+
+
+
+# Sabetta
+Sabetta_y <- 71.235220
+Sabetta_x <- 72.126754
+
+# Terminal
+
+Terminal_y <- 71.010886
+Terminal_x <- 73.793525
+
+
+Pl_Obskaya_bay <- 
+  ggplot(Ob_df, aes(x=long, y=lat, group=group)) +
+  geom_polygon(fill = "gray90", colour = "gray20") + 
+  coord_map(xlim = Ob_x, ylim = Ob_y) + 
+  theme_bw() +  
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
+  theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+  theme(axis.ticks = element_blank()) +
+  geom_point(aes(x = Sabetta_x, y = Sabetta_y), size = 3, shape = 21, fill = "red") + 
+  geom_point(aes(x = Terminal_x, y = Terminal_y), size = 3, shape = 22, fill = "yellow") 
+
+
+
+
+my_data <- expand.grid(Lat = seq(from = Ob_y[1], to = 72.8 , length.out = 100), Long =  seq(from = Ob_x[1], to =Ob_x[2] , length.out = 100))
+
+salmod_mean2 <- salmod_mean %>% group_by(Station) %>% summarise_all(.funs = mean)
+
+Mod_Dif <- gam(Dif  ~ s(Long, Lat), data = salmod_mean2)
+
+my_data$Dif_predicted <- predict(Mod_Dif, newdata = my_data)
+
+ggplot(my_data, aes(x = Long, y = Lat)) + 
+  geom_tile(aes(fill = Dif_predicted)) +
+  geom_polygon(data = Ob_df, aes(x=long, y=lat, group=group), fill = "gray90", colour = "gray20") +
+  scale_fill_gradient(low = "white", high = "red") +
+  geom_point(data = salmod_mean2) +
+  labs(fill = "Salinity changes")
+
+
+
+```
+
+
+
+
+
+Продемонстрируем подход, основанный на JSDM, для ответа на вопрос какие изменения с труктуре сообществ ожидаются при сценарии "Constructed" по сравнению со сценарием "Native". Эти два сценария подразумевают некоторые изменения экологической лицензии акватории. Суть изменений описана выше. 
+
+Для анализа нам необходимо смоделировать поведение сообщества в отношении одного единственного фактора - солености. Ход анализа был следующим.  
+
+
+1. Используя подход JSDM, мы построили модель, описывающую связь видов сообщества бентоса с соленостью (Benthos Salinity Model, BSM). Эту связь удобнее описывать не линейными функциями, а полиномами второй степени. Это позволит более реалистично описывать связь с соленостью в соответствии общеэкологическими представлениями о куполе толерантности. То есть экологическая ниша каждого вида будет характеризоваться не двумя коэффициентами, как было описано выше, а тремя, в соответствии со следующей формулой: 
+$$
+ln(N) = b_0 + b_1S + b_2S^2 + \varepsilon
+$$
+Для построения модели в качестве показателя обилия будет использован логарифм от плотности поселения вида, $ln(N)$, (это необходимо для построения модели, основанной на нормальном распределении). 
+Соленость ($S$), которая будет использована для построения модели, соответствует солености, измеренной в момент взятия проб.  Подбор коэффициентов осуществлялся с помощью пакета "Hmsc" (++++). 
+
+2. Для каждой станции, на которой были взяты пробы бентоса, была произведена оценка срднегодовой солености, предсказанной гидрологической моделью +++ для двух сценариев. 
+
+3. В соответствии с моделью BSM были проведены вычисления ожидаемых обилий видов при солености, предсказанной гидрологической моделью для двух сценариев.
+
+4. Было проведено сравнение сообществ, которые ожидаются при солености, которая будет наблюдаться при двух сценариях, с исходным, наблюдаемым сообществом. Для описания поледнего были взяты предсказанные моделью значения (т.е. значения солености были взяты равными наблюдаемым значениям). 
+
+
+```{r}
+bent <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Benthos")
+
+
+bent_B <- bent %>% filter(Type == "Biomass") %>% select(-Type)
+
+bent_N <- bent %>% filter(Type == "Abundance") %>% select(-Type)
+
+
+Spec_abund <- bent_N %>% select(-Station) %>% colSums(.) %>% t() %>% as.vector() 
+
+spec_total_abund <- data.frame(Sp = bent_N %>% select(-Station) %>% colnames(), Spec_abund)
+
+N_porog <- 0 
+
+spec_selected <- spec_total_abund %>% filter(Spec_abund > N_porog)
+
+bent_short <- bent_N %>% select(Station, spec_selected$Sp)
+
+
+bent_short <-
+  bent_short %>% mutate(Oligochaeta = Oligochaeta_gen._sp. + Oligochaeta_gen._spp.) %>% 
+  select(-c(Oligochaeta_gen._sp., Oligochaeta_gen._spp., Oligochaeta_gen._sp._cocons,Senecella_siberica) )
+
+
+
+stations <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Station parameters", na = "NA")
+
+# Stations with biological samples
+stat_full <- stations %>% filter(Exclude == 0)
+
+stat_full <- as.data.frame(stat_full)
+
+
+
+
+
+### Данные для модели ######
+
+
+# Убираем станции с отсутствующими оценками солености
+
+salmod_mean2 <- salmod_mean2 %>% filter(!is.na(salmod_mean2$Sal_No))
+
+bent_short <- bent_short %>% filter(Station %in% salmod_mean2$Station)
+
+
+bent_short <- bent_short %>% select(-Station)
+
+bent_short <- bent_short[, colSums(bent_short) > 0]
+
+
+stat_full <- stat_full %>% filter(Station %in% salmod_mean2$Station)
+
+
+
+
+salmod_mean2 <- salmod_mean2  %>% filter(!is.na(salmod_mean2$Sal_No)) 
+
+
+n <- nrow(bent_short) # Число станций 
+ns <- ncol(bent_short)-1 #Число видов
+
+
+
+
+xycoords <- salmod_mean2 %>% select(Station, Long, Lat) %>% select(-Station) %>% as.matrix(.)
+
+colnames(xycoords) = c("x-coordinate","y-coordinate")
+rownames(xycoords) = 1:n
+
+
+
+
+Ydata <- bent_short  %>% round(., 0) %>% as.matrix(.)
+colnames(Ydata) <- names(bent_short)
+rownames(Ydata) = 1:n
+
+Ydata <- log(Ydata + 1)
+
+# Ydata <- sqrt(Ydata)
+
+
+Xdata_No <- salmod_mean2 %>% select(Sal_No, Depth) 
+
+colnames(Xdata_No) <- c("Sal", "Depth")
+
+
+Xdata_Constructed <- salmod_mean2 %>% select(Sal_Constructed, Depth)
+
+colnames(Xdata_Constructed) <- c("Sal", "Depth", "Dist")
+
+
+Xdata_initial <- stat_full %>% mutate (Sal = (Bottom_Salinity_Aug_20), Depth = (Depth_aug_20 + Depth_sep_20)/2 ) %>% select(Sal, Depth) 
+
+colnames(Xdata_initial) <- c("Sal", "Depth")
+
+
+```
+
+
+
+
+```{r}
+
+library(Hmsc)
+
+load("m.spatial_initial.RData") # Загрузка модели, где предиктором является изначально измеренная соленость 
+
+
+
+Preds.spatial_Init = computePredictedValues(m.spatial_initial)
+
+Predicted_Init <- apply(Preds.spatial_Init, c(1,2), mean)
+
+Predicted_Init <- round(exp(Predicted_Init)-1, 0)
+
+Predicted_Init <- as.data.frame(Predicted_Init)
+Predicted_Init$Type <- "Init"
+
+# Новые значения для предсказания для сценария, когда есть конструкции 
+X_new <- as.matrix(data.frame(intercept = 1, Sal = Xdata_Constructed$Sal, Sal2 = Xdata_Constructed$Sal^2))
+
+Predicted_Constr <- predict(m.spatial_initial, X = X_new)
+
+
+Predicted_Constr_mean <- Reduce("+", Predicted_Constr) / length(Predicted_Constr)
+
+Predicted_Constr_mean <- round(exp(Predicted_Constr_mean) -1, 0)
+Predicted_Constr_mean <- as.data.frame(Predicted_Constr_mean)
+
+Predicted_Constr_mean$Type <- "Constructed"
+
+
+X_new <- as.matrix(data.frame(intercept = 1, Sal = Xdata_No$Sal, Sal2 = Xdata_No$Sal^2))
+
+Predicted_No <- predict(m.spatial_initial, X = X_new)
+
+
+Predicted_No_mean <- Reduce("+", Predicted_No) / length(Predicted_No)
+
+Predicted_No_mean <- round(exp(Predicted_No_mean) -1, 0)
+
+Predicted_No_mean <- as.data.frame(Predicted_No_mean)
+
+Predicted_No_mean$Type <- "Native"
+
+
+
+All_Predicted <- rbind(Predicted_No_mean, Predicted_Constr_mean, Predicted_Init)
+
+
+All_Predicted[All_Predicted<0] <- 0
+
+
+```
+
+
+
+
+```{r}
+library(vegan)
+
+H_raw <- diversity(bent_short)
+
+H_init <- diversity(Predicted_Init[,-ncol(Predicted_Init)])
+
+H_No <- diversity(Predicted_No_mean[,-ncol(Predicted_No_mean)])
+
+H_Constructed <- diversity(Predicted_Constr_mean[,-ncol(Predicted_Constr_mean)])
+
+
+diversity <- data.frame(H = c(H_No, H_Constructed, H_init, H_raw), 
+                        Type = c(All_Predicted$Type, rep("Raw", length(H_raw))), 
+                        Sal = c(Xdata_No$Sal, Xdata_Constructed$Sal, Xdata_initial$Sal, Xdata_initial$Sal),
+                        Station = rep(stat_full$Station, 4))
+
+
+# diversity %>% filter(Type %in% c("Constructed", "Native", "Init")) %>% 
+# ggplot(., aes(x = Sal, y = H, color = Type)) + geom_point() + geom_smooth(se = T)
+
+
+```
+
+
+
+
+
+
+
+
+
