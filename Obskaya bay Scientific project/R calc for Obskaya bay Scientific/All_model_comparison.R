@@ -88,6 +88,19 @@ qplot(H_init, H_No, geom = "text", aes(label = 1:97)) + geom_abline()
 qplot(H_init, H_Constructed, geom = "text", aes(label = 1:97)) + geom_abline()
 
 
+qplot(H_No, H_Constructed, geom = "text", aes(label = 1:97)) + geom_abline()
+
+
+mean((H_No - H_Constructed)/H_No *100)
+
+
+
+
+
+
+
+
+
 qplot(Xdata$Sal,  H_init, geom = "text", aes(label = 1:97)) 
 
 qplot(Xdata_No$Sal,  H_No, geom = "text", aes(label = 1:97)) 
@@ -106,6 +119,9 @@ mds_all_predicted <- All_Predicted %>%   select(-Type)  %>%  metaMDS(., autotran
 
 scores(mds_all_predicted) %>% as.data.frame(.) %>% 
   ggplot(., aes(NMDS1, NMDS2)) + geom_point(aes(color = All_Predicted$Type)) + facet_wrap(~All_Predicted$Type)
+
+
+
 
 
 

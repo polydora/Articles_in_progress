@@ -228,7 +228,7 @@ Model: log(DL + 1) ~ PropT + Morphotype + Experiment + N_total + PropT:Morphotyp
 
 ```{r}
 my_data <- expand.grid(PropT = seq(min(myt_ws3$PropT), max(myt_ws3$PropT),  0.1), Morphotype = c("e", "t"), N_total = mean(myt_ws3$N_total), Experimnt = c("Winter", "Summer"))
-
+  
 library(effects)
 Effects <- as.data.frame(allEffects(Model_DL_final, xlevels=my_data))
 
@@ -476,111 +476,167 @@ ggplot(Effects_Force[[3]], aes(x = PropT, y = (exp(fit) -1), color = Morphotype 
 
 
 
-## Анализ открытости-закрытости раковин мидий в процессе циклического изменения солености
-
-Здесь я еще не все доделал. Но визуализация более или менее вот такая. Моделируется вероятность быть открыой.  Вместо солености как таковой здесь по оси ОХ отложен номер измерения солености в цикле (в середине самая низкая соленость). Обрати внимание, что с увеличением количества циклов они все более и более открытые. 
+### Сила прикрепления и количество бляшек в краткосрочном эксперименте
 
 
 ```{r}
+myt_force_summer <- read_excel("Data/Mytred_2021_byssus_force.xlsx", sheet = "Force_data", na = "NA")
 
-opennes1 <- read_excel("Data/Mytred_2021_Salinity.xlsx", sheet = "Exp1_tidy") 
-
-d1 <- melt(opennes1, id.vars = c("Experiment",	"Tank",	"Plank", 	"Mussel_ID",	"Expected_Morph",	"True_Morph",	"Length",	"Www"), variable.name = "Observation", value.name = "Status")
-
-opennes2 <- read_excel("Data/Mytred_2021_Salinity.xlsx", sheet = "Exp2_tidy") 
-
-d2 <- melt(opennes2, id.vars = c("Experiment",	"Tank",	"Plank", 	"Mussel_ID",	"Expected_Morph",	"True_Morph",	"Length",	"Www"), variable.name = "Observation", value.name = "Status")
-
-opennes3 <- read_excel("Data/Mytred_2021_Salinity.xlsx", sheet = "Exp3_tidy") 
-
-d3 <- melt(opennes3, id.vars = c("Experiment",	"Tank",	"Plank", 	"Mussel_ID",	"Expected_Morph",	"True_Morph",	"Length",	"Www"), variable.name = "Observation", value.name = "Status")
+myt_force_summer_fone <- read_excel("Data/Mytred_2021_byssus_force.xlsx", sheet = "Fone_mussel", na = "NA")
 
 
-d <- rbind(d1, d2, d3)
+myt_force_summer2 <- merge(myt_force_summer_fone, myt_force_summer)
 
-d$Length <- as.numeric(d$Length)
-d$Www <- as.numeric(d$Www)
+myt_force_summer2 <- myt_force_summer2 %>% mutate(N_total = E_alive + T_alive)
 
+myt_force_summer2 <- myt_force_summer2 %>% mutate(True_Force = Force - Weight/1000*9.81)
 
+myt_force_summer2$True_Force[myt_force_summer2$True_Force<0] <- 0
 
-exp_param <- read_excel("Data/Mytred_2021_Salinity.xlsx", sheet = "Exp_Salinity_Total")
-unique(exp_param$Experiment)
+myt_force_summer2 <- myt_force_summer2 %>% filter(complete.cases(.))
 
+myt_force_summer2 <- myt_force_summer2 %>% mutate(PropT = T_alive/(T_alive + E_alive) )
 
-myt <- merge(exp_param, d)
-
-myt$Experiment <- factor(myt$Experiment)
-myt$True_Morph <- factor(myt$True_Morph)
-
-
-myt2 <- myt %>% filter(Tank != "C")
+myt_force_summer2 <- myt_force_summer2 %>% mutate(Fin_size = Size)
 
 ```
 
 
-
-
 ```{r}
+dat <- myt_force_summer2
 
-myt3 <- myt2 
-# %>% filter(Salinity < 18)
+Model_Force <- gls(formula_Force, data = dat)
 
+Model_Force_ri <- lme(formula_Force, data = dat, random = ~1|Cage_ID)
 
+# AIC(Model_Force, Model_Force_ri)
+# icc(Model_Force_ri)
 
-myt3$Salinity2 <- myt3$Salinity
+# plot(Model_Force)
+# summary(Model_Force)
+# Anova(Model_Force)
 
-myt3$Salinity2[myt3$Phase == "Drop"] <- myt3$Salinity[myt3$Phase == "Drop"] * -1
-
-# str(myt3)
-
-myt3$Salinity3 <- ntile(myt3$Salinity2, n = 20)
-
-myt3$Mussel_ID <- factor(myt3$Mussel_ID)
-
-library(mgcv)
-
-library(gratia)
-
-Mod_open_01 <- gam(Status ~ s(Salinity3, bs = "cc") + True_Morph + s(Cycle, bs = "cs", k = 4),  data = myt3, family = binomial())
-
-Mod_open_02 <- gam(Status ~ s(Salinity3, by = True_Morph, bs = "cc") + True_Morph + s(Cycle, bs = "cs", k = 4),  data = myt3, family = binomial())
-
-# plot(Mod_open_02, pages = 1)
-# AIC(Mod_open_01, Mod_open_02)
-
-# draw(Mod_open_02)
-
-Mod_open1 <- gam(Status ~ s(Salinity3, bs = "cc") + True_Morph + s(Cycle, k = 4) + s(Mussel_ID, bs = "re"), data = myt3, family = binomial())
-
-
-Mod_open2 <- gam(Status ~ s(Salinity3, by = True_Morph,  bs = "cc")  + True_Morph + s(Cycle, by = True_Morph, k = 3) + s(Mussel_ID, bs = "re"), data = myt3, family = binomial())
-
-
-# AIC(Mod_open1, Mod_open2)
-
-
-draw(Mod_open2)
-
-
-# Mod_open1 <- gamm(Status ~ s(Salinity3, bs = "cc") + True_Morph + s(Cycle, k = 4),  random = list(Mussel_ID = ~1), data = myt3, family = binomial())
-# 
-# 
-# Mod_open2 <- gamm(Status ~ s(Salinity3, by = True_Morph,  bs = "cc")  + True_Morph + + s(Cycle, k = 4), random = list(Mussel_ID = ~1), data = myt3, family = binomial(), niterPQL = 40)
-
-# AIC(Mod_open1$lme, Mod_open2$lme)
-
-
-
-
-
-
-# plot(Mod_open2, pages = 1)
-
-# summary(Mod_open2)
 
 ```
 
 
-## Анализ силы прикрепления мидий в зависимости от стресса, связанного с понижением солености
+```{r}
+my_data <- expand.grid(PropT = seq(min(dat$PropT), max(dat$PropT),  length.out = 20), Morphotype = c("e", "t"), N_total = mean(dat$N_total))
 
-Здесь еще ничего не причесывал, но можно оставить все как было в коде, который писали совместно.
+library(effects)
+Effects_Force <- as.data.frame(allEffects(Model_Force, xlevels=my_data))
+
+ggplot(Effects_Force[[3]], aes(x = PropT, y = (exp(fit) -1), color = Morphotype )) + geom_line()  + geom_ribbon(aes(ymin = (exp(lower)-1), ymax = (exp(upper)-1) ), alpha = 0.2) + scale_color_manual(values = c("blue", "red") ) + geom_point(data = dat, aes(y = log(Force+1), color = Morphotype)) +
+  labs(x = "Доля Т-морфотипа в садке", y = "Сила прикрепления (Ньютоны)") 
+```
+
+
+
+<!-- ## Анализ открытости-закрытости раковин мидий в процессе циклического изменения солености -->
+
+<!-- Здесь я еще не все доделал. Но визуализация более или менее вот такая. Моделируется вероятность быть открыой.  Вместо солености как таковой здесь по оси ОХ отложен номер измерения солености в цикле (в середине самая низкая соленость). Обрати внимание, что с увеличением количества циклов они все более и более открытые.  -->
+
+
+<!-- ```{r} -->
+
+<!-- opennes1 <- read_excel("Data/Mytred_2021_Salinity.xlsx", sheet = "Exp1_tidy")  -->
+
+<!-- d1 <- melt(opennes1, id.vars = c("Experiment",	"Tank",	"Plank", 	"Mussel_ID",	"Expected_Morph",	"True_Morph",	"Length",	"Www"), variable.name = "Observation", value.name = "Status") -->
+
+<!-- opennes2 <- read_excel("Data/Mytred_2021_Salinity.xlsx", sheet = "Exp2_tidy")  -->
+
+<!-- d2 <- melt(opennes2, id.vars = c("Experiment",	"Tank",	"Plank", 	"Mussel_ID",	"Expected_Morph",	"True_Morph",	"Length",	"Www"), variable.name = "Observation", value.name = "Status") -->
+
+<!-- opennes3 <- read_excel("Data/Mytred_2021_Salinity.xlsx", sheet = "Exp3_tidy")  -->
+
+<!-- d3 <- melt(opennes3, id.vars = c("Experiment",	"Tank",	"Plank", 	"Mussel_ID",	"Expected_Morph",	"True_Morph",	"Length",	"Www"), variable.name = "Observation", value.name = "Status") -->
+
+
+<!-- d <- rbind(d1, d2, d3) -->
+
+<!-- d$Length <- as.numeric(d$Length) -->
+<!-- d$Www <- as.numeric(d$Www) -->
+
+
+
+<!-- exp_param <- read_excel("Data/Mytred_2021_Salinity.xlsx", sheet = "Exp_Salinity_Total") -->
+<!-- unique(exp_param$Experiment) -->
+
+
+<!-- myt <- merge(exp_param, d) -->
+
+<!-- myt$Experiment <- factor(myt$Experiment) -->
+<!-- myt$True_Morph <- factor(myt$True_Morph) -->
+
+
+<!-- myt2 <- myt %>% filter(Tank != "C") -->
+
+<!-- ``` -->
+
+
+
+
+<!-- ```{r} -->
+
+<!-- myt3 <- myt2  -->
+<!-- # %>% filter(Salinity < 18) -->
+
+
+
+<!-- myt3$Salinity2 <- myt3$Salinity -->
+
+<!-- myt3$Salinity2[myt3$Phase == "Drop"] <- myt3$Salinity[myt3$Phase == "Drop"] * -1 -->
+
+<!-- # str(myt3) -->
+
+<!-- myt3$Salinity3 <- ntile(myt3$Salinity2, n = 20) -->
+
+<!-- myt3$Mussel_ID <- factor(myt3$Mussel_ID) -->
+
+<!-- library(mgcv) -->
+
+<!-- library(gratia) -->
+
+<!-- Mod_open_01 <- gam(Status ~ s(Salinity3, bs = "cc") + True_Morph + s(Cycle, bs = "cs", k = 4),  data = myt3, family = binomial()) -->
+
+<!-- Mod_open_02 <- gam(Status ~ s(Salinity3, by = True_Morph, bs = "cc") + True_Morph + s(Cycle, bs = "cs", k = 4),  data = myt3, family = binomial()) -->
+
+<!-- # plot(Mod_open_02, pages = 1) -->
+<!-- # AIC(Mod_open_01, Mod_open_02) -->
+
+<!-- # draw(Mod_open_02) -->
+
+<!-- Mod_open1 <- gam(Status ~ s(Salinity3, bs = "cc") + True_Morph + s(Cycle, k = 4) + s(Mussel_ID, bs = "re"), data = myt3, family = binomial()) -->
+
+
+<!-- Mod_open2 <- gam(Status ~ s(Salinity3, by = True_Morph,  bs = "cc")  + True_Morph + s(Cycle, by = True_Morph, k = 3) + s(Mussel_ID, bs = "re"), data = myt3, family = binomial()) -->
+
+
+<!-- # AIC(Mod_open1, Mod_open2) -->
+
+
+<!-- draw(Mod_open2) -->
+
+
+<!-- # Mod_open1 <- gamm(Status ~ s(Salinity3, bs = "cc") + True_Morph + s(Cycle, k = 4),  random = list(Mussel_ID = ~1), data = myt3, family = binomial()) -->
+<!-- #  -->
+<!-- #  -->
+<!-- # Mod_open2 <- gamm(Status ~ s(Salinity3, by = True_Morph,  bs = "cc")  + True_Morph + + s(Cycle, k = 4), random = list(Mussel_ID = ~1), data = myt3, family = binomial(), niterPQL = 40) -->
+
+<!-- # AIC(Mod_open1$lme, Mod_open2$lme) -->
+
+
+
+
+
+
+<!-- # plot(Mod_open2, pages = 1) -->
+
+<!-- # summary(Mod_open2) -->
+
+<!-- ``` -->
+
+
+<!-- ## Анализ силы прикрепления мидий в зависимости от стресса, связанного с понижением солености -->
+
+<!-- Здесь еще ничего не причесывал, но можно оставить все как было в коде, который писали совместно. -->

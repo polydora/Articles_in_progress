@@ -1,0 +1,208 @@
+---
+title: "Анализы по проекту MyTrEd"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = TRUE , message = FALSE, warning = FALSE)
+```
+
+
+```{r Packages}
+#### Пакеты 
+library(readxl)
+library(ggplot2)
+library(dplyr)
+library(nlme)
+library(car)
+library(lme4)
+
+library(effects)
+library(reshape2)
+library(betareg)
+
+library(broom)
+library(broom.mixed)
+
+
+
+```
+
+
+
+# Подгтовка данных
+
+```{r}
+
+myt <- read_excel("Data/Mytred_Growth_Winter_2021.xlsx", na = "NA", col_names = T)
+
+
+marked_myt <- myt %>% filter(Status %in% c("Alive", "Dead"))  %>% group_by(Cage_ID, Morphotype, Status) %>% summarise(N = n()) %>% dcast(Cage_ID ~ Morphotype + Status) 
+
+marked_myt[is.na(marked_myt)] <- 0
+marked_myt <- marked_myt[order(marked_myt$Cage_ID), ]
+
+
+
+fone <- read_excel("Data/Mytred_Growth_Winter_2021.xlsx", na = "NA", col_names = T, sheet = "Fone_mussel")
+
+fone <- fone[order(fone$Cage_ID), ]
+
+
+
+fone[1:20,3:6] <- fone[1:20,3:6] + marked_myt[1:20,2:5]
+
+
+
+fone2 <- fone %>% mutate(PropT = T_alive/(E_alive+T_alive), N_total = E_alive+T_alive, P_Dead = (E_dead + T_dead)/(E_alive+T_alive + E_dead + T_dead) )
+
+
+
+
+myt2 <- myt %>% filter( (Sample_site == "2R" & Morphotype == "e") | (Sample_site == "Kanal" & Morphotype == "t")) %>%  filter(Status == "Alive")
+
+
+myt3 <- merge(myt2, fone2, by = "Cage_ID" )
+
+myt4 <- myt3 %>% mutate(DL = Fin_size - Init_size) %>% filter(!is.na(DL)) 
+
+
+myt4$DL[myt4$DL < 0] <- 0
+
+myt5 <- myt4 %>% filter(!(Cage_ID %in% c("K1", "K2", "K3", "K4")))
+
+
+```
+
+
+
+## Анализ силы прикрепления  в зависимости от биотического окружения
+
+```{r}
+myt_force <- myt4 %>% select(Cage_ID, Force, Weight, Fin_size, Init_size, Morphotype, PropT, N_total, DL) %>% filter(complete.cases(.)) 
+
+myt_force <- myt_force %>% mutate(True_Force = Force - Weight/1000*9.81)
+
+myt_force$True_Force[myt_force$True_Force<0] <- 0
+
+myt_force2 <- myt_force %>% filter(!Cage_ID %in% c("40_E1", "40_E2", "40_E3", "40_H1", "40_H2", "40_H3", "40_T1", "40_T2", "40_T3"))
+
+```
+
+
+```{r}
+formula_Force <- log(True_Force+1) ~ Morphotype*PropT + N_total + Fin_size 
+dat <- myt_force2
+
+Model_Force <- gls(formula_Force, data = dat)
+
+Model_Force_ri <- lme(formula_Force, data = dat, random = ~1|Cage_ID)
+
+# AIC(Model_Force, Model_Force_ri)
+# icc(Model_Force_ri)
+
+# plot(Model_Force)
+# summary(Model_Force)
+# Anova(Model_Force)
+```
+
+Модель была вот такая.
+
+log(True_Force+1) ~ Morphotype*PropT + N_total + Fin_size
+
+Вот параметры модели.
+
+```{r}
+kable(tidy(Model_Force))
+```
+
+
+
+```{r}
+my_data <- expand.grid(PropT = seq(min(dat$PropT), max(dat$PropT),  length.out = 20), Morphotype = c("e", "t"), N_total = mean(dat$N_total))
+
+library(effects)
+Effects_Force <- as.data.frame(allEffects(Model_Force, xlevels=my_data))
+
+Pl_long_experiment <- 
+ggplot(Effects_Force[[3]], aes(x = PropT, y = (exp(fit) -1), color = Morphotype )) + geom_line()  + geom_ribbon(aes(ymin = (exp(lower)-1), ymax = (exp(upper)-1) ), alpha = 0.2) + scale_color_manual(values = c("blue", "red") ) + geom_point(data = dat, aes(y = log(Force+1), color = Morphotype)) +
+  labs(x = "Доля Т-морфотипа в садке", y = "Сила прикрепления (Ньютоны)") + ggtitle("Долгосрочный эксперимент") 
+
+```
+
+
+Можно обратить внимание на то, что при малом значении PropT доверительные интервалы перекрываются, а при высоких значениях нет. То есть в условиях доминирования T-морфотипа T крепятся сильнее, чем E. Однако в условиях доминирования E-морфотипа различия в силе прикрепления не столь выражены.   
+
+
+
+### Сила прикрепления в краткосрочном эксперименте
+
+
+```{r}
+myt_force_summer <- read_excel("Data/Mytred_2021_byssus_force.xlsx", sheet = "Force_data", na = "NA")
+
+myt_force_summer_fone <- read_excel("Data/Mytred_2021_byssus_force.xlsx", sheet = "Fone_mussel", na = "NA")
+
+
+myt_force_summer2 <- merge(myt_force_summer_fone, myt_force_summer)
+
+myt_force_summer2 <- myt_force_summer2 %>% mutate(N_total = E_alive + T_alive)
+
+myt_force_summer2 <- myt_force_summer2 %>% mutate(True_Force = Force - Weight/1000*9.81)
+
+myt_force_summer2$True_Force[myt_force_summer2$True_Force<0] <- 0
+
+myt_force_summer2 <- myt_force_summer2 %>% filter(complete.cases(.))
+
+myt_force_summer2 <- myt_force_summer2 %>% mutate(PropT = T_alive/(T_alive + E_alive) )
+
+myt_force_summer2 <- myt_force_summer2 %>% mutate(Fin_size = Size)
+
+```
+
+
+```{r}
+dat <- myt_force_summer2
+
+Model_Force <- gls(formula_Force, data = dat)
+
+Model_Force_ri <- lme(formula_Force, data = dat, random = ~1|Cage_ID)
+
+# AIC(Model_Force, Model_Force_ri)
+# icc(Model_Force_ri)
+
+# plot(Model_Force)
+# summary(Model_Force)
+# Anova(Model_Force)
+
+
+```
+
+ Модель имала такую же струкутру, что и для длительного эксперимента
+
+```{r}
+kable(tidy(Model_Force))
+```
+
+
+
+```{r}
+my_data <- expand.grid(PropT = seq(min(dat$PropT), max(dat$PropT),  length.out = 20), Morphotype = c("e", "t"), N_total = mean(dat$N_total))
+
+library(effects)
+Effects_Force <- as.data.frame(allEffects(Model_Force, xlevels=my_data))
+
+Pl_short_experiment <- 
+ggplot(Effects_Force[[3]], aes(x = PropT, y = (exp(fit) -1), color = Morphotype )) + geom_line()  + geom_ribbon(aes(ymin = (exp(lower)-1), ymax = (exp(upper)-1) ), alpha = 0.2) + scale_color_manual(values = c("blue", "red") ) + geom_point(data = dat, aes(y = log(Force+1), color = Morphotype)) +
+  labs(x = "Доля Т-морфотипа в садке", y = "Сила прикрепления (Ньютоны)")  + ggtitle("Краткосрочный эксперимент")
+```
+
+
+```{r}
+library(cowplot)
+library(ggpubr)
+
+plot_grid(Pl_long_experiment, Pl_short_experiment)
+```
+

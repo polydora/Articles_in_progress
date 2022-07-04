@@ -82,25 +82,32 @@ library(raster)
 
 no_construction_salinity <- NULL
 
+name <- NULL
+
 for(name in files_selected){
   name = paste(path, "/", name, sep = "")
   Sal_layer <- brick(name, var="salt")
-  Salinity_model <- as.data.frame(extract(Sal_layer,xycoords))
+  Uocn_layer <- brick(name, var="uocn")
+  Vocn_layer <- brick(name, var="vocn")
   
+  Salinity_model <- as.data.frame(extract(Sal_layer,xycoords))
+  Uocn_model <- as.data.frame(extract(Uocn_layer,xycoords))
+  Vocn_model <- as.data.frame(extract(Vocn_layer,xycoords))
+
   ncin <- nc_open(name)
   time <- ncvar_get(ncin,"time")
   date_from_model <- as.POSIXct(time, origin = "1900-01-01 00:00:00")
   
   stat_included_coord$Date <- date_from_model
   stat_included_coord$Scenario <- "No"
-  df <- cbind(stat_included_coord, Salinity_model)
+  df <- cbind(stat_included_coord, Salinity_model, Uocn_model, Vocn_model)
   no_construction_salinity <- rbind(no_construction_salinity, df)
   print(name)
 }
 
 
 no_construction_salinity
-
+nrow(no_construction_salinity)
 
 # При условии, что ЕСТЬ гидротехнические сооружения ################### 
 
@@ -118,10 +125,17 @@ library(raster)
 
 present_construction_salinity <- NULL
 
+name <- NULL
+
 for(name in files_selected){
   name = paste(path, "/", name, sep = "")
   Sal_layer <- brick(name, var="salt")
+  Uocn_layer <- brick(name, var="uocn")
+  Vocn_layer <- brick(name, var="vocn")
+  
   Salinity_model <- as.data.frame(extract(Sal_layer,xycoords))
+  Uocn_model <- as.data.frame(extract(Uocn_layer,xycoords))
+  Vocn_model <- as.data.frame(extract(Vocn_layer,xycoords))
   
   ncin <- nc_open(name)
   time <- ncvar_get(ncin,"time")
@@ -129,15 +143,17 @@ for(name in files_selected){
   
   stat_included_coord$Date <- date_from_model
   stat_included_coord$Scenario <- "Constructed"
-  df <- cbind(stat_included_coord, Salinity_model)
+  df <- cbind(stat_included_coord, Salinity_model, Uocn_model, Vocn_model)
   present_construction_salinity <- rbind(present_construction_salinity, df)
   print(name)
 }
 
 
 present_construction_salinity
+nrow(present_construction_salinity)
 
 
+table(present_construction_salinity$Scenario)
 
 #######################
 
@@ -148,6 +164,11 @@ library(dplyr)
 
 all_model_data <- rbind(no_construction_salinity, present_construction_salinity)
 
+table(all_model_data$Scenario)
+
+names(all_model_data) <- c("Station", "Long", "Lat", "Depth", "Date", "Scenario", "X1", "X5", "X10", "X15", "X20", "XX1", "XX5","XX10","XX15", "XX20","XXX1", "XXX5", "XXX10", "XXX15", "XXX20" )
+
+
 
 # Соленость из одели, соответствующая глубине на ревльных станциях
 
@@ -156,24 +177,53 @@ all_model_data <-
                                           Depth >= 2.5 & Depth < 7.5 ~ X5,
                                           Depth >= 7.5 & Depth < 12.5 ~ X10,
                                           Depth >= 12.5 & Depth <17.5 ~ X15, 
-                                          Depth >= 17.5 ~ X20)) 
+                                          Depth >= 17.5 ~ X20),
+                            Cur_Zon = case_when(Depth < 2.5 ~ XX1, 
+                                            Depth >= 2.5 & Depth < 7.5 ~ XX5,
+                                            Depth >= 7.5 & Depth < 12.5 ~ XX10,
+                                            Depth >= 12.5 & Depth <17.5 ~ XX15, 
+                                            Depth >= 17.5 ~ XX20),
+                            Cur_Mer = case_when(Depth < 2.5 ~ XXX1, 
+                                                Depth >= 2.5 & Depth < 7.5 ~ XXX5,
+                                                Depth >= 7.5 & Depth < 12.5 ~ XXX10,
+                                                Depth >= 12.5 & Depth <17.5 ~ XXX15, 
+                                                Depth >= 17.5 ~ XXX20)) 
   
 
 
 # Вычисление срденей солености по всему столбу воды
 all_model_data <-
-  all_model_data %>% rowwise() %>% mutate(Sal_mean = mean(c(X1, X5, X10, X15, X20), na.rm = T)) 
+  all_model_data %>% rowwise() %>% mutate(Sal_mean = mean(c(X1, X5, X10, X15, X20), na.rm = T),
+                                          Cur_Zon_mean = mean(c(XX1, XX5, XX10, XX15, XX20), na.rm = T),
+                                          Cur_Mer_mean = mean(c(XXX1, XXX5, XXX10, XXX15, XXX20), na.rm = T)) 
 
+
+
+
+table(all_model_data$Scenario)
 
 ggplot(all_model_data, aes(x = Sal, y = Sal_mean)) + geom_point() + geom_abline()
+
+ggplot(all_model_data, aes(x = Cur_Zon, y = Cur_Zon_mean)) + geom_point() + geom_abline()
+
+ggplot(all_model_data, aes(x = Cur_Mer, y = Cur_Mer_mean)) + geom_point() + geom_abline()
+
+ggplot(all_model_data, aes(x = Cur_Mer, y = Cur_Zon_mean)) + geom_point() + geom_abline()
 
 
 
 
 all_model_data$Sal_predicted<- all_model_data$Sal
+all_model_data$Cur_Zon_predicted <- all_model_data$Cur_Zon
+all_model_data$Cur_Mer_predicted <- all_model_data$Cur_Mer
 
-# Заменяем NA для солености у дна средней соленостью
+
+# Заменяем NA для солености у дна средней соленостью аналогично для течений
 all_model_data$Sal_predicted [is.na(all_model_data$Sal)] = all_model_data$Sal_mean[is.na(all_model_data$Sal)]
+all_model_data$Cur_Zon_predicted [is.na(all_model_data$Cur_Zon)] = all_model_data$Cur_Zon_mean[is.na(all_model_data$Cur_Zon)]
+all_model_data$Cur_Mer_predicted [is.na(all_model_data$Cur_Mer)] = all_model_data$Cur_Mer_mean[is.na(all_model_data$Cur_Mer)]
+
+
 
 
 # Станции за пределами координатной сетки модели
@@ -182,22 +232,22 @@ all_model_data %>% filter(is.nan(Sal_predicted)) %>% pull(Station) %>% table()
 
 
 
-# Средняя соленость за август-сентябрь
+# Средняя соленость и скорости течений
 
-all_model_data_mean <- all_model_data %>% group_by(Scenario, Station) %>% summarise(Mean_sal_predicted = mean(Sal_predicted))
+all_model_data_mean <- all_model_data %>% group_by(Scenario, Station) %>% summarise(Mean_sal_predicted = mean(Sal_predicted), Mean_Cur_Zon_predicted = mean(abs(Cur_Zon_predicted)), Mean_Cur_Mer_predicted = mean(abs(Cur_Mer_predicted)) )
 
 
 
 # Соотношение наблдаемой солености и смоделированной солености
 
-qplot(stat_included$Bottom_Salinity_Aug_20, all_model_data_mean$Mean_sal_predicted[all_model_data_mean$Scenario== "Constructed"]) + geom_abline()
+qplot(stat_included$Bottom_Salinity_Aug_20, all_model_data_mean$Mean_sal_predicted[all_model_data_mean$Scenario== "No"]) + geom_abline()
 
 
 
 
 
 
-all_model_data_diff <- all_model_data %>% select(Station, Long, Lat, Scenario, Depth, Date, Sal_predicted)
+all_model_data_diff <- all_model_data %>% select(Station, Long, Lat, Scenario, Depth, Date, Sal_predicted, Cur_Zon_predicted, Cur_Mer_predicted)
 
 
 
@@ -210,13 +260,13 @@ library(reshape2)
 
 # Изучаем отклонение предсказанно солености
 
-all_model_data_diff <- dcast(Station + Long + Lat + Depth + Date ~ Scenario, data = all_model_data_diff, value.var = "Sal_predicted" )
+# all_model_data_diff <- dcast(Station + Long + Lat + Depth + Date ~ Scenario, data = all_model_data_diff, value.var = "Sal_predicted" )
 
 
 all_model_data_diff$Month <- month(all_model_data_diff$Date)
 
 # Записываем Файл со средней придонной соленостью,при двух сценариях
-write.csv(all_model_data_diff, file = "data/Bottom_salinity_from_model.csv")
+write.csv(all_model_data_diff, file = "data/Bottom_salinity_and_curents_from_model.csv")
 
 
 
