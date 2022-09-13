@@ -490,3 +490,18 @@ gridPrint(plot(sm(b, 1)) + labs(title = NULL) + l_points(),
 
 ```
 
+
+
+
+```{r}
+
+library(raster)
+salinity = raster("D:/Data_LMBE/BIO_Oracle_predictors/Present.Surface.Salinity.Mean.asc")
+
+
+sites.environment <- data.frame(Lon = hybr_pop_riv$lon, Lat = hybr_pop_riv$lat, Sal = extract(salinity,hybr_pop_riv[,3:2]) )
+
+qplot(hybr_pop_riv$Salinity, y = sites.environment$Sal) + geom_boxplot()
+
+```
+

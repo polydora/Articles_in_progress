@@ -16,6 +16,7 @@ library(dplyr)
 library(broom)
 library(car)
 library(reshape2)
+library(readxl)
 
 options(knitr.kable.NA = '')
 
@@ -90,6 +91,7 @@ library(grid)
 library(ggrepel)
 
 
+
 theme_set(theme_bw() + theme(legend.key = element_blank()))
 
 df_europ <- read.csv("Data/Europe_polygon.csv", header = T)
@@ -115,26 +117,33 @@ gg_full <- ggplot(df_europ, aes(x=long, y=lat, group=group)) +
 
 ```{r,  fig.cap= figRef("Left_map", ""), fig.height=5}
 
-left_prop <- read.csv("Data/point_proportion.csv", header = T)
-point_coord <- read.csv("Data/point_coordinates.csv", header = T)
+
+sites <- read_excel("Data/Points_coordinates.xlsx")
+
+sites$Lat <- as.numeric(gsub(",", ".", sites$Lat))
+sites$Lon <- as.numeric(gsub(",", ".", sites$Lon))
+sites$Left_prop <- as.numeric(gsub(",", ".", sites$Left_prop))
+
+
 point_n <- read.csv("Data/point_sample_size.csv", header = T)
 
+points <- data.frame(Point = 1:nrow(sites), Left_prop = sites$Left_prop, Lat = sites$Lat, Long = sites$Lon)
 
 
-point_coord$Lat <- point_coord$Lat + point_coord$Lat_m / 60 
-point_coord$Long <- point_coord$Long + point_coord$Long_m / 60
+ggplot(sites, aes(x = Left_prop)) + geom_histogram(binwidth = 3)
 
-points <- data.frame(Point = 1:nrow(left_prop), left_prop, Lat = point_coord$Lat, Long = point_coord$Long)
 
 Pl_revers <-
   gg_full + 
   geom_point(data = points, aes(x = Long, y = Lat, size = Left_prop, group = 1, fill = Left_prop), shape = 21) + 
   scale_size_continuous(breaks = seq(0, 50, 5)) + 
-  scale_fill_gradient(low = "white", high = "black")+
-  geom_text_repel(data = points, aes(x = Long, y = Lat, group = 1, label = 1:nrow(points)), force = 3, box.padding = 0.5) + 
+  scale_fill_gradient(low = "yellow", high = "red")+
+  geom_text_repel(data = points, aes(x = Long, y = Lat, group = 1, label = Point), force = 3, box.padding = 0.3) + 
   labs(size = "Proportion of Reverse", fill = "Proportion, %") +
   theme(legend.position = c(0.15, 0.81)) +
   guides(size = "none")
+
+
 
 
 ggsave(plot = Pl_revers, filename = "Map_of_reverse_distribution.pdf")
@@ -143,7 +152,13 @@ ggsave(plot = Pl_revers, filename = "Map_of_reverse_distribution.pdf")
 
  ggsave(plot = Pl_revers, filename = "Map_of_reverse_distribution.png")  
 
+ ggsave(plot = Pl_revers, filename = "Map_of_reverse_distribution.svg")  
+
 Pl_revers
+
+
+
+
 
 ws_points <- read.table("Data/White_sea_points.csv", sep = ",", header = T)
 
@@ -238,7 +253,9 @@ frq_Orient2$perc_value <- round(frq_Orient2$value*100,1)
 
 frq_Orient2$lab <- ifelse(frq_Orient2$variable == "Left_prop", paste(frq_Orient2$perc_value), " ")
 
-frq_Orient2$lab <- c("28.3", "26.0",   "5.2",  "3.3",  " ",    " ",    " ",    " "  )
+# frq_Orient2$lab <- c("28.4", "20.6",   "5.2",  "3.3",  " ",    " ",    " ",    " "  )
+
+frq_Orient2$lab <- c(" 28.4", " 20.6",   "5.2",  "3.3",  " ",    " ",    " ",    " "  )
 
 frq_Orient3 <- frq_Orient2 %>% group_by(Bay) %>% mutate(position = cumsum(value) - 0.5*value)
 
