@@ -229,6 +229,8 @@ kam <- read.table("Data/kambala.csv", sep = ",", header = T, dec = ".")
 # str(kam)
 kam$Outcome <- ifelse(kam$Sidedness == "Left", 1, 0)
 
+
+
 kam$Bay <- factor(kam$Bay, levels = c("Kandalaksha_Bay", "Onega_Bay", "Dvina_Bay", "Mezen_Bay" ), labels = c("Kandalaksha Bay", "Onega Bay", "Dvina Bay", "Mezen Bay" ))
 
 
@@ -241,6 +243,9 @@ frq_Orient[frq_Orient$Bay == "Kandalaksha Bay", 2:3] <- frq_Orient[frq_Orient$Ba
 frq_Orient2 <- frq_Orient %>% mutate(Left_prop = Left/(Left + Right), Right_prop = Right/(Left + Right)) %>% select(Bay, Left_prop, Right_prop) %>% melt()
   
 frq_Orient2$perc_value <- round(frq_Orient2$value*100,1)
+
+
+
 
 # library(ggpubr)
 # 
@@ -264,6 +269,10 @@ frq_Orient3$position_y <- frq_Orient3$position + c(-0.1, -0.09, 0.05, 0.05, 0,0,
 
 # str(frq_Orient3)
 frq_Orient3$Bay <- factor(frq_Orient3$Bay, levels = c( "Kandalaksha Bay", "Mezen Bay", "Onega Bay", "Dvina Bay"))
+
+frq_Orient3$value[2] <- 0.206
+frq_Orient3$value[6] <- 1 - 0.206
+
 
 # library(ggrepel)
 Pl_pay_charts <-
