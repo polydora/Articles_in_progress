@@ -220,7 +220,7 @@ library(mgcv)
 
 all_ast_abund$Site <- factor(all_ast_abund$Site)
 
-all_ast_abund$Stage2 <- factor(all_ast_abund$Stage, labels = c("До нашествия",   "Во время нашествия", "После нашествия"))
+all_ast_abund$Stage2 <- factor(all_ast_abund$Stage, labels = c("Intact patch",   "Starfish crowd", "Dead shell patch"))
 
 
 
@@ -255,51 +255,53 @@ ggplot(all_ast_abund, aes(x = Prop_dead)) +
 
 
 
-Mod_PT <- gam(P_T ~ Prop_dead + Site , data = all_ast_abund, family=betar(link="logit"))
+Mod_PT <- gam(P_T ~ Stage2 + s(B_aster, bs = "cs") + s(Site, bs = "re"), data = all_ast_abund, family=betar(link="logit"))
 
-vif(Mod_PT)
 
-plot(Mod_PT)
+# Mod_PT <- gam(P_T ~ Stage2 + s(B_aster, bs = "cs") + Site, data = all_ast_abund, family=betar(link="logit"))
+
 
 summary(Mod_PT)
+
+
+library(multcomp)
+
+
+contr <- matrix(0, nrow = 3, ncol = length(coef(Mod_PT)))
+colnames(contr) <- names(coef(Mod_PT))
+rownames(contr) <- c("Starfish crowd - Intact patch", "Dead shell patch - Intact patch", "Dead shell patch - Starfish crowd")
+contr[, 2:3] <- rbind(c(1, 0), c(0, 1), c(-1, 1))
+
+
+comparison <- glht(Mod_PT, linfct = contr)
+summary(comparison)
+
 
 
 
 # Визуализации ++++
 
 
+theme_set(theme_bw())
 
-# Зависимость доли мертвых от биомассы звезд
-
-
-ggplot(all_ast_abund, aes(x = Prop_dead, y = B_aster, color = Stage2)) + geom_point()
-
-ggplot(all_ast_abund, aes(x = Stage2, y = B_aster)) + geom_boxplot() + facet_wrap(~Site)
-
-
-ggplot(all_ast_abund, aes(x = Stage2, y = P_T)) + geom_boxplot() + facet_wrap(~Site)
+Pl_baster <- ggplot(all_ast_abund, aes(x = Stage2, y = B_aster)) + geom_boxplot() + theme(axis.title.x = element_blank(), axis.text.x = element_blank())
 
 
 
-new_data <- all_ast_abund %>% group_by(Site) %>% do(data.frame(Prop_dead = seq(min(.$Prop_dead), max(.$Prop_dead), length.out = 100)))
-
-  
-predicted <- predict(Mod_PT, newdata = new_data, type = "response", se.fit = T)
+Pl_Prop_dead <- ggplot(all_ast_abund, aes(x = Stage2, y = Prop_dead)) + geom_boxplot() + theme(axis.title.x = element_blank(), axis.text.x = element_blank())
 
 
-new_data$Predicted <- predicted$fit
-new_data$SE <- predicted$se.fit
 
-ggplot(all_ast_abund, aes(x = Prop_dead)) +
-  geom_point(data = all_ast_abund, aes(x = Prop_dead, y= P_T, color = Stage2), size = 3) +
-  facet_wrap(~Site) +
-  geom_ribbon(data = new_data, aes(ymin = Predicted - 1.96*SE, ymax = Predicted + 1.96*SE), alpha = 0.2) +
-  geom_line(data = new_data, aes(x = Prop_dead, y = Predicted),  color = "blue", size = 1) +
-  guides (fill = "none") +
-  labs(x = "Доля мертвых", y = "Доля T-морфотипа среди живых", color = "") +
-  ylim(0, 1) +
-  scale_color_manual(values = c("blue", "red", "gray")) +
-  theme_bw()+
-  theme(legend.position = "bottom")
+Pl_PT <- ggplot(all_ast_abund, aes(x = Stage2, y = P_T)) + geom_boxplot() +  theme(axis.title.x = element_blank())
+
+
+library(cowplot)
+
+
+plot_grid(Pl_baster, Pl_Prop_dead, Pl_PT, ncol = 1)
+
+
+
+
 
 
