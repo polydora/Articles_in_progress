@@ -11,17 +11,38 @@ astr <- read_excel("data/Astred_2017_2018_myt.xls", sheet = "Atred Asterias 2017
 
 myt$Exp <- factor(myt$Exp)
 myt$Morph <- factor(myt$Morph)
+
 astr$Exp <- factor(astr$Exp)
 
 myt <- myt %>% filter(complete.cases(.))
 
-
-# Вычисляем долю T-морфотипа и долю съеденных в садках
-
-myt_1 <- myt %>% group_by(Year, Exp, Box) %>% summarise(P_T = mean(Morph == "t"), t = sum(Morph == "t"), e = sum(Morph == "e"), P_eaten = mean(Status == "eaten"))
+myt %>% group_by(Origin) %>% summarise(PT = mean(Morph == "t"))
 
 
-astr_1 <- astr %>% group_by(Year, Exp, Box) %>% summarise(B_aster = sum(Weight), N_aster = n())
+# Вероятность индивидуальной мидии быть Mt по уравнениям из Khaitov et al. 2021
+
+myt <- myt %>% mutate(P_Mt = case_when(Origin == "vor" & Morph == "e" ~ 1-0.96,
+                                Origin == "vor" & Morph == "t" ~ 0.63,
+                                Origin == "tel" & Morph == "e" ~ 1-0.46,
+                                Origin == "tel" & Morph == "t" ~ 0.94))
+
+
+
+
+
+# Вычисляем долю T-морфотипа, долю съеденных в садках и показатедь смешанности поселений
+
+myt_1 <- myt %>% group_by(Year, Exp, Box) %>% summarise(P_T = mean(Morph == "t"), t = sum(Morph == "t"), e = sum(Morph == "e"), P_eaten = mean(Status == "eaten"), P_pure = mean(P_Mt)*(1 - mean(P_Mt)))
+
+
+hist(myt_1$P_pure)
+
+
+
+ggplot(myt_1, aes(P_T,P_pure)) + geom_point() 
+
+
+astr_1 <- astr %>% group_by(Year, Exp, Box) %>% summarise(B_aster = sum(Weight), N_aster = n(), Size_mean = mean(Diametr))
 
 
 
@@ -29,8 +50,19 @@ myt_aster <- merge(myt_1, astr_1) %>% filter(complete.cases(.))
 
 myt_aster <- myt_aster %>% mutate(N_total = e + t)
 
+ggplot(myt_aster, aes(x = P_T, y = Size_mean)) + geom_point()
 
-myt <- myt %>% filter(!(Exp == "Exp2" & Box == 16))
+
+
+
+
+
+
+
+
+
+
+myt <- myt %>% filter(!(Exp == "Exp2" & Box == 16)) # Удаляем садок с кривым количесвтом высаженных мидий
 
 myt_aster <- myt_aster %>% filter(!(Exp == "Exp2" & Box == 16))
 
@@ -40,11 +72,11 @@ myt_aster_full <- merge(myt, myt_aster) %>% filter(complete.cases(.))
 
 myt_aster_full$Box2 <- paste(myt_aster_full$Box, "_", myt_aster_full$Exp, sep = "")
 
+myt_aster_full$Box2 <- factor(myt_aster_full$Box2)
+
+
 myt_aster_full <- myt_aster_full %>% mutate(Outcome = ifelse(Status == "eaten", 1, 0))
 
-unique(myt_aster_full$Box2)
-
-str(myt_aster_full)
 
 myt_aster_full$Box2 <- factor(myt_aster_full$Box2)
 
@@ -60,6 +92,12 @@ myt_aster_full$Composition <- relevel(myt_aster_full$Composition, ref = "Pure")
 
 myt_aster_full$N_consp <- ifelse(myt_aster_full$Morph == "e", myt_aster_full$e, myt_aster_full$t)
 
+hist(myt_aster_full$N_consp)
+
+
+myt_aster_full %>% group_by(Box2, Composition) %>% summarise(N_consp = mean(N_consp), P_pure = mean(P_pure)) %>% 
+ggplot(., aes(Composition, N_consp)) + geom_boxplot()
+
 
 # Продолжительность экспозиции
 
@@ -70,10 +108,6 @@ myt_aster_full <- myt_aster_full %>% mutate(Dur = case_when(Exp == "Exp1" ~ 61,
 
 
 
-
-
-# Задаем продолжительность экспериментов в часах
-# myt_aster_full$Duration <- ifelse(myt_aster_full$Exp == "Exp1", 61, 121)
 
 
 myt_aster_full_short <- myt_aster_full %>% filter(Exp != "Exp1") 
@@ -88,10 +122,19 @@ myt_aster_full_short <- myt_aster_full %>% filter(Exp != "Exp1")
 library(car)
 
 
-Mod <- glmer(Outcome ~ Morph + scale(N_consp) + scale(P_T) + scale(Dur) + scale(N_total) + scale(L) + scale(B_aster) +   (1|Box2), family = binomial(link = "logit"), data = myt_aster_full )
+Mod <- glmer(Outcome ~ scale(P_Mt) +  scale(N_consp) + scale(P_T)  + scale(N_total) + scale(L) + scale(B_aster) +   (1|Exp/Box2), family = binomial(link = "logit"), data = myt_aster_full )
 
 
 vif(Mod)
+
+# 
+# library(glmmTMB)
+# 
+# Mod <- glmmTMB(Outcome ~ scale(P_Mt) +  scale(N_consp) + scale(P_T)  + scale(N_total) + scale(L) + scale(B_aster) +   (1|Exp/Box2), family = "binomial", data = myt_aster_full, ziformula = ~ Box2 )
+
+
+summary(Mod)
+
 
 
 mod_diagn <- fortify.merMod(Mod)
@@ -109,6 +152,8 @@ ggplot(mod_diagn, aes(B_aster, .scresid)) + geom_point() + geom_smooth()
 
 ggplot(mod_diagn, aes(N_total, .scresid)) + geom_point() + geom_smooth()
 
+ggplot(mod_diagn, aes(P_Mt, .scresid)) + geom_point() + geom_smooth(method = "lm")
+
 
 ggplot(mod_diagn, aes(factor(Dur), .scresid)) + geom_boxplot() 
 
@@ -119,14 +164,9 @@ ggplot(mod_diagn, aes(myt_aster_full$Composition, .scresid)) + geom_boxplot()
 
 ggplot(mod_diagn, aes(myt_aster_full$Origin, .scresid)) + geom_boxplot() 
 
-ggplot(mod_diagn, aes(myt_aster_full$Box2, .scresid)) + geom_boxplot() 
-
-ggplot(mod_diagn, aes(myt_aster_full$Exp, .scresid)) + geom_boxplot() 
 
 
 
-
-summary(Mod)
 
 
 library(broom.mixed)
@@ -134,56 +174,96 @@ library(broom.mixed)
 tidy(Mod)
 
 
-# Модель отдельно для смешанных поселений
 
-myt_aster_full_mix <- myt_aster_full %>% filter(Composition == "Mixed") 
-
-myt_aster_full_pure <- myt_aster_full %>% filter(Composition == "Pure") 
-
-
-Mod_mix <- glmer(Outcome ~ Morph  + scale(P_T) + scale(Dur) + scale(N_total) + scale(L) + scale(B_aster) + (1|Box2), family = binomial(link = "logit"), data = myt_aster_full_mix )
-
-vif(Mod_mix)
-
-summary(Mod_mix)
-
-
-# Модель отдельно для чистых поселений
-
-Mod_pure <- glmer(Outcome ~ Morph  + scale(P_T) + scale(Dur) + scale(N_total) + scale(L) + scale(B_aster) + (1|Box2), family = binomial(link = "logit"), data = myt_aster_full_pure )
-
-vif(Mod_pure)
-
-summary(Mod_pure)
-
-
-
-
-# Возможные визуализации ####
-
-
-# Зависимость смертности от количества конспецификов в садке 
-myt_aster_full %>% group_by(Exp, Composition, Morph, Box2) %>% summarise(P_eaten = mean(Outcome), N_consp = mean(N_consp)) %>% 
-  ggplot(., aes(x = N_consp, y = P_eaten, color = Composition)) + geom_point(size = 2) + facet_wrap(~Morph)
-
-
-
-# Зависимость смертности от состава садка (Смешанные vs Чистые)
-myt_aster_full %>% group_by(Exp, Composition, Box2) %>% summarise(P_eaten = mean(Outcome), P_T = mean(P_T)) %>% 
-  ggplot(., aes(x = Composition, y = P_eaten)) + geom_boxplot() + facet_wrap(~Exp)
-
-# Смертность морфотипов для разного происхождения.
-myt_aster_full %>% group_by(Exp, Box2, Origin, Morph) %>% summarise(P_eaten = mean(Outcome)) %>% 
-  ggplot(., aes(x = Morph, y = P_eaten)) + geom_boxplot() + facet_grid(Origin ~ Exp)
-
-
+# Bизуализации ####
 
 
 # Зависимость числа съеденных моллюсков от обилия звезд
 
-ggplot(myt_aster, aes(x = B_aster, y = P_eaten)) + geom_point()  + facet_grid(~ Exp)
+theme_set(theme_bw())
 
 
+Pl_P_eaten_B_aster <- 
+  ggplot(myt_aster, aes(x = B_aster, y = P_eaten)) + 
+  geom_point() + 
+  # geom_smooth(method = "lm", se = F) + 
+  labs(x = "Starfish biomass", y = "Proportion of eaten") 
+
+
+
+Pl_P_eaten_P_Mt <- 
+myt_aster_full %>% group_by(P_Mt) %>% summarise(P_eaten = mean(Outcome), N = n()) %>% 
+  ggplot(., aes(x = P_Mt, y = P_eaten)) + geom_point(aes(size = N))  + 
+  # geom_smooth(method = "lm", se = F) +
+  labs(x = "Probability to be M.trossulus", y = "Proportion of eaten") +
+  guides(size = "none") +
+  xlim(0,1)
+
+
+Pl_P_eaten_N_total <- 
+  myt_aster_full %>% group_by(Box2) %>% summarise(P_eaten = mean(Outcome), N_total = mean(N_total)) %>% 
+  ggplot(., aes(x = N_total, y = P_eaten)) + geom_point()  + 
+  # geom_smooth(method = "lm", se = F) +
+  labs(x = "Mussel amount", y = "Proportion of eaten") +
+  guides(size = "none") 
+
+
+Pl_P_eaten_L <- 
+  myt_aster_full %>% mutate(L2 = ntile(L, 7)) %>%  group_by(L2) %>% summarise(P_eaten = mean(Outcome), N = n(), L3 = mean(L)) %>% 
+  ggplot(., aes(x = L3, y = P_eaten)) + geom_point(aes(size = N))  + 
+  # geom_smooth(method = "lm", se = F) +
+  labs(x = "Mussel size", y = "Proportion of eaten") +
+  guides(size = "none") 
+
+
+
+Pl_P_eaten_N_consp <- 
+  myt_aster_full %>% group_by(Morph, N_consp) %>% summarise(P_eaten = mean(Outcome), N = n()) %>%  
+  ggplot(., aes(x = N_consp, y = P_eaten)) + geom_point(aes(size = N, color = Morph))  + 
+  # geom_smooth(method = "lm", se = F) +
+  labs(x = "Number of mussels of the same morphotype", y = "Proportion of eaten") +
+  guides(size = "none") +
+  scale_color_manual(values = c("blue", "red"), labels = c("E", "T"), name = "Morphotype") +
+  theme (legend.position = c(0.75, 0.85), legend.box.background = element_rect(colour = "black", fill = NA))
+
+Pl_P_eaten_P_T <- 
+  myt_aster_full %>% group_by(P_T) %>% summarise(P_eaten = mean(Outcome)) %>% 
+  ggplot(., aes(x = P_T, y = P_eaten)) + geom_point()  + 
+  # geom_smooth(method = "lm", se = F) +
+  labs(x = "Proportion of T-morphotype", y = "Proportion of eaten")
+
+
+
+library(cowplot)
+
+plot_grid(Pl_P_eaten_B_aster, Pl_P_eaten_P_Mt,  Pl_P_eaten_N_total,  Pl_P_eaten_L, Pl_P_eaten_N_consp, Pl_P_eaten_P_T, ncol = 2, labels = "AUTO")
+
+
+
+
+ggplot(myt_aster, aes(x = P_eaten)) + geom_histogram(bins = 10) + facet_wrap(~Exp)
+
+## Анализ зависимости размера мидий от состава экспериментального юнита
+
+
+ggplot(myt_aster_full, aes(x = P_T, y = L)) + geom_point()
+
+Mod_myt_L <- lme(L ~ P_T +  N_total,  random = ~1|Exp, method = "REML", data = myt_aster_full)
+
+vif(Mod_myt_L)
+
+summary(Mod_myt_L)
+
+
+aster_size <- myt_aster %>% select(Year, Exp, Box, P_T, P_eaten, N_aster, N_total ) %>% merge(.,astr)
+
+ggplot(aster_size, aes(x = P_T, y =Diametr)) + geom_point()
+
+Mod_ast_siz <- lme(Diametr ~ P_T +  N_aster + N_total, random = ~1|Exp, method = "REML", data = aster_size)
+
+vif(Mod_ast_siz)
+
+summary(Mod_ast_siz)
 
 
 #############################################33
@@ -205,7 +285,7 @@ all_ast_abund <- merge(astfood_myt, asterias_abund, all.x = T)
 
 all_ast_abund[is.na(all_ast_abund)]<- 0
 
-all_ast_abund <- all_ast_abund %>% mutate(Prop_dead = (N_T_dead + N_E_dead)/(N_T_dead + N_E_dead + N_T_alive + N_E_alive), P_T = N_T_alive/(N_T_alive + N_E_alive) )
+all_ast_abund <- all_ast_abund %>% mutate(Prop_dead = (N_T_dead + N_E_dead)/(N_T_dead + N_E_dead + N_T_alive + N_E_alive), P_T = N_T_alive/(N_T_alive + N_E_alive), N_alive =  N_T_alive + N_E_alive)
 
 
 
@@ -220,32 +300,32 @@ library(mgcv)
 
 all_ast_abund$Site <- factor(all_ast_abund$Site)
 
-all_ast_abund$Stage2 <- factor(all_ast_abund$Stage, labels = c("Intact patch",   "Starfish crowd", "Dead shell patch"))
+all_ast_abund$Stage2 <- factor(all_ast_abund$Stage, labels = c("Intact",   "Starfish", "Dead"))
 
 
 
 
 
 
-Mod_ast_1 <- gam(B_aster ~ s(Prop_dead, by = Site) + Site, data = all_ast_abund)
-
-
-new_dat_ast <- all_ast_abund %>% group_by(Site) %>% do(expand.grid(Prop_dead = seq(min(.$Prop_dead), max(.$Prop_dead), by = 0.01)))
-
-
-new_dat_ast$B_ast_predicted <- predict(Mod_ast_1, newdata = new_dat_ast, se.fit = T)$fit
-new_dat_ast$SE <- predict(Mod_ast_1, newdata = new_dat_ast, se.fit = T)$se.fit
-
-
-ggplot(all_ast_abund, aes(x = Prop_dead)) +
-  geom_point(aes (y = B_aster, color = Stage2), size = 4) +
-  facet_wrap(~Site) +
-  labs(x = "Доля мертвых", y = "Биомасса морских звезд", color = "") +
-  geom_line(data = new_dat_ast, aes(y = B_ast_predicted)) +
-  ylim(0, max(all_ast_abund$B_aster)) +
-  scale_color_manual(values = c("blue", "red", "gray")) +
-  theme_bw()+
-  theme(legend.position = "bottom")
+# Mod_ast_1 <- gam(B_aster ~ s(Prop_dead, by = Site) + Site, data = all_ast_abund)
+# 
+# 
+# new_dat_ast <- all_ast_abund %>% group_by(Site) %>% do(expand.grid(Prop_dead = seq(min(.$Prop_dead), max(.$Prop_dead), by = 0.01)))
+# 
+# 
+# new_dat_ast$B_ast_predicted <- predict(Mod_ast_1, newdata = new_dat_ast, se.fit = T)$fit
+# new_dat_ast$SE <- predict(Mod_ast_1, newdata = new_dat_ast, se.fit = T)$se.fit
+# 
+# 
+# ggplot(all_ast_abund, aes(x = Prop_dead)) +
+#   geom_point(aes (y = B_aster, color = Stage2), size = 4) +
+#   facet_wrap(~Site) +
+#   labs(x = "Доля мертвых", y = "Биомасса морских звезд", color = "") +
+#   geom_line(data = new_dat_ast, aes(y = B_ast_predicted)) +
+#   ylim(0, max(all_ast_abund$B_aster)) +
+#   scale_color_manual(values = c("blue", "red", "gray")) +
+#   theme_bw()+
+#   theme(legend.position = "bottom")
 
 
 # +
@@ -255,13 +335,59 @@ ggplot(all_ast_abund, aes(x = Prop_dead)) +
 
 
 
-Mod_PT <- gam(P_T ~ Stage2 + s(B_aster, bs = "cs") + s(Site, bs = "re"), data = all_ast_abund, family=betar(link="logit"))
-
-
-# Mod_PT <- gam(P_T ~ Stage2 + s(B_aster, bs = "cs") + Site, data = all_ast_abund, family=betar(link="logit"))
+Mod_PT <- gam(P_T ~ Stage2 + s(N_aster, bs = "cs") + s(Site, bs = "re"), data = all_ast_abund, family=betar(link="logit"))
+# 
+# Mod_PT2 <- gam(P_T ~ Stage2 + B_aster + s(Site, bs = "re"), data = all_ast_abund, family=betar(link="logit"))
+# 
+# 
+# 
+# AIC(Mod_PT, Mod_PT2)
 
 
 summary(Mod_PT)
+
+library(broom)
+tidy(Mod_PT, parametric = T)
+
+
+
+# Визуализации ++++
+
+
+theme_set(theme_bw())
+
+Pl_baster <- ggplot(all_ast_abund, aes(x = Stage2, y = B_aster)) + geom_boxplot() + theme(axis.title.x = element_blank(), axis.text.x = element_blank()) + labs(y = "Starfish biomass")
+
+
+Pl_N_alive <- ggplot(all_ast_abund, aes(x = Stage2, y = N_alive)) + geom_boxplot() + theme(axis.title.x = element_blank(), axis.text.x = element_blank()) + labs(y = "Abundance of alive mussels")
+ 
+
+Pl_Prop_dead <- ggplot(all_ast_abund, aes(x = Stage2, y = Prop_dead)) + geom_boxplot() + theme(axis.title.x = element_blank(), axis.text.x = element_blank())+ labs(y = "Proportion of dead shells")
+
+
+compar <- all_ast_abund %>% group_by(Stage2) %>% summarize(y = median(P_T) +0.03) %>% mutate(Lab = c("a", "b", "b"))
+
+Pl_PT <- 
+  ggplot(all_ast_abund, aes(x = Stage2, y = P_T)) + 
+  geom_boxplot() +  
+  theme(axis.title.x = element_blank()) + 
+  labs(y = "Proportion of T-morphotype") +
+  geom_text(data = compar, aes(x = Stage2, y = y, label = Lab))
+
+
+
+library(cowplot)
+
+
+plot_grid(Pl_baster, Pl_Prop_dead, Pl_PT, ncol = 1 , labels = "AUTO")
+
+
+library(ggsignif)
+
+
+# plot(Mod_PT)
+
+
 
 
 library(multcomp)
@@ -273,35 +399,14 @@ rownames(contr) <- c("Starfish crowd - Intact patch", "Dead shell patch - Intact
 contr[, 2:3] <- rbind(c(1, 0), c(0, 1), c(-1, 1))
 
 
+
 comparison <- glht(Mod_PT, linfct = contr)
 summary(comparison)
 
 
-
-
-# Визуализации ++++
-
-
-theme_set(theme_bw())
-
-Pl_baster <- ggplot(all_ast_abund, aes(x = Stage2, y = B_aster)) + geom_boxplot() + theme(axis.title.x = element_blank(), axis.text.x = element_blank())
-
-
-
-Pl_Prop_dead <- ggplot(all_ast_abund, aes(x = Stage2, y = Prop_dead)) + geom_boxplot() + theme(axis.title.x = element_blank(), axis.text.x = element_blank())
-
-
-
-Pl_PT <- ggplot(all_ast_abund, aes(x = Stage2, y = P_T)) + geom_boxplot() +  theme(axis.title.x = element_blank())
-
-
-library(cowplot)
-
-
-plot_grid(Pl_baster, Pl_Prop_dead, Pl_PT, ncol = 1)
-
-
-
-
-
+# library(itsabug)
+# 
+# wald_gam(Mod_PT)
+# 
+# plot_parametric(Mod_PT, pred = list(Stage2 = levels(all_ast_abund$Stage2)), rm.ranef = F)
 

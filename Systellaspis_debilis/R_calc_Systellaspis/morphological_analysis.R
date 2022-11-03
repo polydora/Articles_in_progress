@@ -61,6 +61,34 @@ ggplot(ca_unconstr_pred, aes(x = CA1, y = CA2, color = location) ) + geom_point(
 
 #Все разваливается на две группы?
 
+dendr <- 
+ca_unconstr_pred %>% select(CA1, CA2) %>% dist(.) %>% 
+  hclust(., method = "ward.D" )
+
+
+plot(dendr)
+
+str(dendr)
+
+order <- dendr$order
+
+# 4_pereopod_ischium_ant_spines
+# 5_pereopod_ischium_ant_spines
+
+names(sys3)
+
+sys3 <- sys2 %>% mutate(Group = ifelse(ca_unconstr_pred$CA2 >= 0 & ca_unconstr_pred$CA1 > -1.3 , "Group1", "Group2"))
+
+sys3 %>% select(16, 20, 24) %>%  group_by(Group) %>% summarise_all(.funs = mean)
+
+
+sys2_predictors %>%  mutate(Group = ifelse(ca_unconstr_pred$CA2 >= 0 & ca_unconstr_pred$CA1 > -1.3, "Group1", "Group2")) %>% group_by(Group) %>% summarise(Mean_L = mean(length), mean(sex == "f"))
+
+
+
+
+
+
 
 
 
