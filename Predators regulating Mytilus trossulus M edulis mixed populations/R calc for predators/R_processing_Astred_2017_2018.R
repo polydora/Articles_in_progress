@@ -125,7 +125,13 @@ library(car)
 Mod <- glmer(Outcome ~ scale(P_Mt) +  scale(N_consp) + scale(P_T)  + scale(N_total) + scale(L) + scale(B_aster) +   (1|Exp/Box2), family = binomial(link = "logit"), data = myt_aster_full )
 
 
+# Mod_mixed <- glmer(Outcome ~ scale(P_Mt) +  scale(N_consp) + scale(P_T)  + scale(N_total) + scale(L) + scale(B_aster) +   (1|Exp/Box2), family = binomial(link = "logit"), data = myt_aster_full %>% filter(Composition == "Mixed") )
+
+
 vif(Mod)
+
+
+# vif(Mod_mixed)
 
 # 
 # library(glmmTMB)
@@ -135,6 +141,7 @@ vif(Mod)
 
 summary(Mod)
 
+# summary(Mod_mixed)
 
 
 mod_diagn <- fortify.merMod(Mod)
@@ -266,6 +273,7 @@ vif(Mod_ast_siz)
 summary(Mod_ast_siz)
 
 
+
 #############################################33
 #### Часть 2. Регуляция таксономического состава
 
@@ -294,6 +302,7 @@ ggplot(all_ast_abund, aes(x = Prop_dead, y = B_aster)) +
   geom_point() +
   facet_wrap(~Site) +
   labs(x = "Доля мертвых", y = "Биомасса морских звезд")
+
 
 
 library(mgcv)
@@ -335,13 +344,7 @@ all_ast_abund$Stage2 <- factor(all_ast_abund$Stage, labels = c("Intact",   "Star
 
 
 
-Mod_PT <- gam(P_T ~ Stage2 + s(N_aster, bs = "cs") + s(Site, bs = "re"), data = all_ast_abund, family=betar(link="logit"))
-# 
-# Mod_PT2 <- gam(P_T ~ Stage2 + B_aster + s(Site, bs = "re"), data = all_ast_abund, family=betar(link="logit"))
-# 
-# 
-# 
-# AIC(Mod_PT, Mod_PT2)
+Mod_PT <- gam(P_T ~ Stage2 + s(B_aster, bs = "cs") + s(Site, bs = "re"), data = all_ast_abund, family=betar(link="logit"))
 
 
 summary(Mod_PT)
