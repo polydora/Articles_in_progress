@@ -309,7 +309,7 @@ library(mgcv)
 
 all_ast_abund$Site <- factor(all_ast_abund$Site)
 
-all_ast_abund$Stage2 <- factor(all_ast_abund$Stage, labels = c("Intact",   "Starfish", "Dead"))
+all_ast_abund$Stage2 <- factor(all_ast_abund$Stage, labels = c("Intact",   "Starfish", "Dead shells"))
 
 
 
@@ -341,17 +341,26 @@ all_ast_abund$Stage2 <- factor(all_ast_abund$Stage, labels = c("Intact",   "Star
 #   geom_ribbon(data = new_dat_ast, aes(ymin = B_ast_predicted - 1.96*SE, ymax =  B_ast_predicted + 1.96*SE), alpha = 0.3)
 #
 
+# 
+# library(betareg)
+# Mod_PT <- betareg(P_T ~ Stage2 * Site, data = all_ast_abund)
 
 
+Mod_PT <- gam(P_T ~ Stage2 + B_aster +  s(Site, bs = "re"), data = all_ast_abund, family=betar(link="logit"))
 
-Mod_PT <- gam(P_T ~ Stage2 + s(B_aster, bs = "cs") + s(Site, bs = "re"), data = all_ast_abund, family=betar(link="logit"))
 
+# Mod_PT <- gam(P_T ~ Stage2 + s(B_aster, bs = "cs") + s(Site, bs = "re"), data = all_ast_abund, family=betar(link="logit"))
 
+plot(Mod_PT)
 summary(Mod_PT)
+
+gam.check(Mod_PT)
+
+library(car)
+vif(Mod_PT)
 
 library(broom)
 tidy(Mod_PT, parametric = T)
-
 
 
 # Визуализации ++++
@@ -407,9 +416,15 @@ comparison <- glht(Mod_PT, linfct = contr)
 summary(comparison)
 
 
-# library(itsabug)
+
+
+
+
+plot(Mod_PT)
+
+# library(itsadug)
 # 
 # wald_gam(Mod_PT)
 # 
 # plot_parametric(Mod_PT, pred = list(Stage2 = levels(all_ast_abund$Stage2)), rm.ranef = F)
-
+# 

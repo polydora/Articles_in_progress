@@ -1,0 +1,226 @@
+---
+title: "Discriminating Eaters: Sea stars *Asterias rubens*  L. feed preferably on *Mytilus trossulus* Gould in mixed stocks of *M. trossulus* and *M. edulis* L."
+author: "Vadim Khaitov, Anna Makarycheva, Mikhail Gantsevich, Natalia Lentsman, Maria Skazina, Anastasia Gagarina, Marina Katolikova, Petr Strelkov"
+date: ""
+output:
+  word_document:
+    reference_docx: article_template.docx
+    fig_width: 5
+    fig_height: 5
+bibliography: Astred_english_Bibliografy_abriviated.bib
+csl: marine-biology.csl
+
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = TRUE, fig.align ="center")
+
+# set pander table-layout options
+library(pander)
+panderOptions('table.alignment.default', function(df)
+    ifelse(sapply(df, is.numeric), 'right', 'left'))
+panderOptions('table.split.table', Inf)
+panderOptions('big.mark', ",")
+panderOptions('keep.trailing.zeros', TRUE)
+
+```
+
+
+
+Abstract. Sea stars *Asterias rubens* are important natural enemies of blue mussels *Mytilus* in North Atlantic. We asked whether they distinguished between cryptic species *M. edulis* and *M. trossulus* occurring sympatrically in the White Sea. In mixed experimental stocks, the odds of being eaten by sea stars were about four times greater for M. trossulus. We also showed that sea stars preferred smaller mussels to larger ones irrespective of their species affinity. Our findings fit nicely earlier indirect observations from other geographical areas that sea stars recognize *M. trossulus* as a more preferable prey than *M. edulis*. Dramatic differences in the vulnerability to sea star predation can explain the known segregation of habitats between mussel species in contact zones: *M. trossulus* usually tends to occupy habitats where predators are scarce.
+
+
+##Introduction
+
+Blue mussels (*Mytilus* spp.), well-known ecosystem engineers, are an important component of coastal communities  [@seed_population_1992; @buschbaum_mytilid_2009]. The structure and dynamics of their populations is, in many respects, a function of biological interactions between mussels and co-existing organisms  [@tsuchiya_islands_1985; @tsuchiya_islands_1986; @dittmann_mussel_1990;  @khaitov_life_2013]. A powerful biological factor structuring the mussel community is the impact of organisms feeding on mussels such as seabirds, crabs, dog whelks and sea stars  [@seed_population_1992 and references therein]. Predators regulating mussel abundance are keystone species in the system  [@menge_keystone_1994]. 
+
+Struggle for survival between invertebrate predators and their prey in mussel beds is regulated by extremely delicate mechanisms. Invertebrate predators attacking mussels can register their positive waterborne cues [@gagnon_use_2003; @lowen_predator-induced_2013; @zimmer_keystonein:_2016; @zimmer2017keystone] or avoid mussels after receiving a negative signal from their epibionts [@auker_exploring_2014]. Predators may also shift their efforts from mussels overgrown by epibionts to clean ones based on tactile sensations  [@auker_exploring_2014] or from large (and thus more energetically valuable) mussels to smaller ones because the attacks on the latter are associated with a lesser risk of damage to the predator by the valves of the resisting mollusc  [@hummel_small_2011]. On the other hand, mussels under the pressure of predation develop defence reactions reflected in morphological, physiological and ethological changes such as an increased mass of the adductors, thicker shells, strengthened byssus attachments, consolidation in aggregations and even immobilization of predators by byssus  [@davenport_observations_1996;  @reimer_predator-induced_1997; @leonard_crab_1999].  
+
+Ultimately, all these fine mechanisms depend on the genetic constitution of interacting species. This implies, among other things, that studies of mussel-predator interactions may be significantly embarrassed by the cryptic taxonomic diversity of *Mytilus*.
+
+
+*Mytilus edulis* species complex in the Northern Hemisphere consists of three closely related species: *M. edulis* Linnaeus, *M. galloprovincialis* Lamarck and *M. trossulus* Gould [@koehn1991genetics; @seed_systematics_1992]. Mussels of different species coexist and interbreed in many areas as do, for instance, *M. edulis* and *M. trossulus* along both coasts of the North Atlantic [@riginos_local_2005; @vainola_mytilus_2011 and references therein]. For decades, comparative ecological studies of sympatric mussels were aggravated by a virtual absence of credible distinctive morphological characters. They had to be routinely identified with the help of molecular genetic methods  [@mcdonald_allozymes_1991; @riginos_local_2005], which are expensive and time-consuming. In particular, these methodological problems stood in the way of answering an important question: Should studies of mussel interaction with predators take into account the cryptic taxonomic diversity of these mollusks?
+
+
+The first hint about the importance of the taxonomic diversity of mussels in prey-predator interactions emerged in the pioneer experiments with *M. trossulus* from the Baltic Sea acclimated in the North Sea and *M. edulis* from the North Sea. Sea stars let to prey on the mixture of the Baltic and the North Sea mussels preferably attacked *M. trossulus*  [@kautsky_genotypic_1990]. They needed a much shorter handling time to open the shells of the Baltic mussels than the shells of their North Sea counterparts   [@norberg_attack_1995].
+
+Similar interactions were recorded in experiments with *Asterias rubens* and mussels from Eastern Canada  [@lowen_predator-induced_2013]. In that study, *M. edulis* and *M. trossulus* from local populations were kept in two-chamber cages inaccessible for the sea stars crawling outside. Each chamber contained mussels of one species. The sea stars showed an attack stance to the chamber with *M. trossulus* more frequently than to the chamber with *M. edulis*. In their turn, the mussels under attack showed a decreased shell growth, an increased growth of adductor muscle and an increased attachment strength. Defence reactions were generally weaker in *M. trossulus* than in *M. edulis* [@lowen_predator-induced_2013]. Similar species-specific differences in predator-induced plasticity were also reported for the Baltic and the North Sea mussels  [@reimer_predator-inducible_2001]. 
+
+Interpreting the results of the above experiments, we should take into account their methodical limitations. Firstly, while in the experiments of Lowen et al.  [-@lowen_predator-induced_2013]  *M. trossulus* and *M. edulis* were taken from local populations and there were no serious doubts that differences in the defence reactions were species-specific, in the transplantation experiments  [@kautsky_genotypic_1990; @norberg_attack_1995; @reimer_predator-inducible_2001] mussels were taken from different geographical populations. Even though acclimated to the North Sea, the Baltic *M. trossulus* might have had thinner shells and other maladaptive features because they were born and spent their early life in the brackish-water, predator-free environment. This means that one cannot distinguish with certainty the effect of species (i.e. evolutionary) divergence and that of acquired adaptation to the local environment. Secondly, only circumstantial evidence of differences in the predators’ preferences was given in Lowen et al. [-@lowen_predator-induced_2013] since the sea starts were not actually allowed to attack mussels. Finally, equal amounts of size-standardized *M. edulis* and *M. trossulus* were offered to the sea stars in all the experiments. *A. rubens*, being rather a generalist predator [@anger_-situ_1977], is unlikely to make  an unequivocal  choice between *M. trossulus* and *M. edulis* in natural communities. We may only expect some difference in the probability of attacks upon one or another species. Besides, the size of prey is important for the predators [e.g. @hummel_small_2011], and sympatric populations of cryptic mussel species may be quite different in the size structure  [@elliott_differences_2008;  @katolikova_genetic_2016]. 
+
+Setting out to investigate the interactions between sea stars and the two mussel species at the White Sea, we designed the experiments in such a way as to overcome the methodological limitations of previous studies of mussel-predator interactions. The Kandalaksha Bay of the White Sea, where our study was conducted, is a mussel-rich area, with mussel biomass in the beds approaching dozens of kilograms per square metre  [@lukanin1985distribution]. In contrast to most other boreal seas, there are no intertidal crabs and no dog whelks in the White Sea  [@derjugin_fauna_1928]. The only invertebrate predator interested in mussels there is the sea star *A. rubens*, which consumes, by some estimates, 30-40% of adult mussels in populations annually   [@beer1980].  This means that the mussel-predator system is much simpler at the White Sea than in areas where mussels encounter multiple predators and are forced to develop complex adaptations against them   [cf. @freeman_poor_2009]. 
+
+At the top of the Kandalaksha Bay *M. edulis*, *M. trossulus* and their hybrids occurs sympatrically, mostly in the same habitats. The frequency of hybrids in mixed populations is about 18% [@katolikova_genetic_2016]. *M. trossulus* and *M. edulis* in the White Sea can be distinguished with a high accuracy on the basis of a simple morphological trait, “dark strip under the ligament”   [@katolikova_genetic_2016]. Eighty per cent of *M. trossulus* at the White Sea possess an underdeveloped nacre with a distinct “dark strip” of prismatic layer under the ligament nympha, whereas 97% of *M. edulis* lack this stripe. Hybrids cannot be distinguished from purebreds but usually morphologically resemble the species whose genes dominate in their genotypes [@katolikova_genetic_2016]. The use of shell morphology for the identification of *M. edulis* and *M. trossulus* greatly facilitates the processing of large amounts of material needed for ecological investigations.  It proves especially helpful in studies of *Mytilus*–*Asterias* interactions since sea stars usually burnish mussel shells clean without leaving any soft tissues for genotyping (our personal observation). 
+
+The aim of our study was to find out directly whether the sea stars *A. rubens* prefer one mussel species to another when feeding on mixed stocks of *M. trossulus* and *M. edulis*, taking into account the variability of the mussel size structure. 
+
+##Materials and methods
+###Mussels and sea stars for experiments
+Mussels ranging in size from 15 to 39 mm were manually collected from three intertidal populations situated on Oleny Island (#1, 67.106288 N; 32.322558 E), on Ryazhkov Island (#2,  67.006814 N; 32.578677 E) and in the Voronya Inlet (#3, 66.928005 N; 32.491266 E)  (Fig. 1). These three localities are generally characterized by regular semidiurnal tides and salinities usual in the Kandalaksha Bay, 21-22 PSU  [@sukhotin_long-term_2013; @katolikova_genetic_2016]. At low tide population #1 experiences a minor freshening from the Niva River (personal observations). 
+
+The three populations have been recently studied genetically: samples Ol, Vor3 and Rya in  @katolikova_genetic_2016.  *M. trossulus* dominated in Ol sample, while *M. edulis* dominated in Vor3 and Rya samples  [@katolikova_genetic_2016]. Therefore, we used population #1 as a source of *M. trossulus* and populations #2 (in 2015) and #3 (in 2016), as a source of *M. edulis*. 
+  
+
+Mussels collected from each of these populations were kept separately in fishing net cages attached to a floating moorage for one week prior to the experiments, which were conducted at the Biological Station of the Kandalaksha State Nature Reserve on Ryazhkov island (67.007874 N; 32.574808 E, Fig.1, environmental conditions as in sampling localities). Sea stars *A. rubens* of middle size (radius length plus inter-radius length, 40-110 mm) were collected by snorkeling divers from a depth of 0-2 m near the Biological Station. They were kept starving in plastic cages covered with nets (mesh size, 1 mm) on the same moorage as mussels for 2-5 days before the experiments.
+
+
+###Experimental design 
+
+Experiments were conducted in August 2015 and 2016 (Table 1) on an intertidal sand flat at the Biological Station. Plastic containers (length = 38 cm, width = 20 cm, height = 14 cm) were buried in sediment along the shoreline down to the depth of 3/4 of their height at a distance of ca. 1 m from each other. The top of each container was covered with a plastic net (mesh size 1 mm) to allow free water exchange while preventing the animals from escaping. The top of the containers was exposed to air for ca. 1.5– 2 hours at every low tide while they were always filled with water inside. The air temperature during the experiments varied in range 11.5-17.8ºC (in 2015) and 6.7-17.9ºC (in 2016).
+
+We conducted five experiments with equivalent designs differing by the number of containers, the number of mussels per container and duration (see Table 1 for details). A half of mussels (selected randomly) placed in each container were from population #1, another half being from population #2 (in 2015) or #3 (in 2016). At the start of each experiment mussels were put into containers and left for 24 hours in order to let them attach by byssus. After that, unattached mussels were removed (3% of all experimental mussels) and two randomly selected sea stars were placed into each container. We examined the containers for the presence of empty mussel shells at each low tide (i.e. twice per day). The empty shells found were carefully removed. After the end of the experiment, all surviving mussels were opened and their soft tissues were removed. All the sea stars were weighted and then returned to the sea. All the shells collected were individually marked and used for morphological analysis (see below). In 2016 the experiments were shortened because in 2015 we observed that the sea stars mostly stopped eating mussels after the first two days.
+
+
+Fig. 1 The map of the White Sea (a) and top of Kandalaksha Bay (b). Numbered circles - mussel populations sampled; Asterisk – place where experiments were conducted. 
+
+Table 1. Characteristics of experiments.
+
+|                                             |    2015     |    2015     |    2015     |    2016     |    2016     |
+|---------------------------------------------|-------------|-------------|-------------|-------------|-------------|
+|    Experiment                               |    Exp1     |    Exp2     |    Exp3     |    Exp4     |    Exp5     |
+|    Number of containers for modelling data set  |    5        |    7        |    8        |    10       |    10       |
+|    Number of containers for testing data set     |    4        |    1        |    1        |    2        |    2        |
+|    Number of mussels per container                |    70       |    24       |    24       |    30       |    30       |
+|    Mussel   size range, mm                  |    15-39    |    14-38    |    15-37    |    17-30    |    20-31    |
+|    Number of sea stars per container              |    2        |    2        |    2        |    2        |    2        |
+|    Duration   of experiment, days           |    4        |    4        |    4        |    2        |    2        |
+
+
+###Mussels morphometry
+Three morphological parameters (Fig. 2) were measured on the right valve of the shell of each mussel with electronic callipers or microscope eyepiece micrometre to the nearest 0.1 mm: the shell length (L), the distance from the umbo to the posterior boundary of the ligament (l), the distance from the umbo to the anterior boundary of the prismatic layer under the ligament nympha (a). The degree of expression of the morphological trait “dark strip under the ligament”  [@katolikova_genetic_2016] was assessed for each individual by calculating Z-index (Z=a/l). The quantitative interpretation of Z was used in further statistical analysis alongside with the qualitative one: following  @katolikova_genetic_2016 we divided all mussels into two morphotypes. Mussels with Z = 0, i.e. with an unbroken “dark stripe” were classified as T-morphotype (this state of the character was characteristic of 80% of *M. trossulus*), whereas other specimens (Z>0) were classified as E-morphotype (the state characteristic of 97% of *M. edulis*) [@katolikova_genetic_2016].
+
+###Validation of Z index as taxonomic marker
+
+Z-index was validated as a taxonomic marker based on two types of genetic data. Since these analyses are out of the main scope of the present study, their detailed description is given in the electronic supplement. In brief, the analyses were conducted as follows.  
+Katolikova et al [-@katolikova_genetic_2016] analysed the distribution of Z-index and the frequencies of T- and E-morphotypes among three genotypic groups of mussels (*M. edulis*, *M. trossulus* and their hybrids) and showed a high correlation between Z-index and genetic status of mussel (see Introduction).  In this study we additionally proved the power of morphological identification of species-specific genotypes using an independent data set, a sample of mussels  from mixed population in Chupa inlet (66.270043 N, 33.070512 E, material was sampled in 2015) genotyped by the PCR-based nuclear marker ME15/16 [@inoue_interspecific_1995]. This locus, considered to be diagnostic for the blue mussel species, is widely used for their identification in ecological surveys [e.g. @elliott_differences_2008; @brooks_distribution_2013]. 
+
+We also re-analysed the data set from Katolikova et al. [-@katolikova_genetic_2016]: 1048 mussels with known multilocus allozyme genotypes and Z-indexes. Instead of considering three genetic groups — *M. edulis*, *M. trossulus* and hybrids (which morphologically and ecologically resemble the species whose genes dominate in their genotypes   [@katolikova_genetic_2016]), we classified the mussels into two groups: mussels with genotypes dominated by *M. trossulus* genes (thereafter *M. trossulus*-like mussels) and mussels with genotypes dominated by *M. edulis* genes (thereafter *M. edulis*-like mussels).
+
+Basing on this data, we developed a logistic regression model predicting the probability of a mussel being *M. trossulus*-like (PMTL) as a function of Z-index. This function was used to calculate PMTL values for the mussels from experiments.
+
+###Statistical analysis of experimental data
+All the containers pooled from 2015 and 2016 (N=50) were randomly divided into two groups. The first group (modelling data set, 40 containers, Table 1) was used for regression modelling. The second group (testing data set, 10 containers, Table 1) was used for checking the quality of the model’s prediction. Using the functions of the statistical programming language R  [@r_core_team_r:_2016], the following statistical treatments were applied to the first group.
+
+We calculated the proportion of T-morphotype among mussels placed in each container and analysed the frequency distribution of this value. This proportion was analysed in the same way for the eaten and the survived mussels separately. The distribution of these values was visualized by means of box-whiskers plots using the functions from the ggplot2 package [@wickham_ggplot2:_2009].
+
+The logistic mixed effect model  [@zuur_mixed_2009] was constructed to predict the probability of a mussel being eaten as a function of a number of predictors. The dependent variable was coded as 1 for eaten mussels and 0 for survived mussels. We considered Z-index, shell length (L), year of experiment and all interactions between these factors as predictors in the fixed part of the full model. The full model also included three covariates: the initial number of mussels in the container, the proportion of T-morphotypes and the total weight of sear stars in a container. The “Experiment” and “Container” nested into the “Experiment” were considered as random factors in the model, which was constructed as a random intercept one. The model parameters were assessed with glmer() function from the package “lme4”  [@bates_fitting_2015]. After the entire model was constructed, it was simplified using the backward selection protocol  [@zuur_mixed_2009] with the function drop1(). The validity of the final model was visually checked by the analysis of residual plots.
+
+
+The goodness of fit for the final model was assessed by means of marginal and conditional pseudo R2  [@nakagawa_general_2013] using the function r.squaredGLMM() from the package “MuMIn” [@barton_mumin:_2016]. The marginal pseudo R2 describes the goodness of fit when only fixed factors are taken into account, whereas a conditional one assesses the goodness of fit when both fixed and random factors are considered.
+
+Coefficients from the fixed part of the final model were used to predict the probability of being eaten for mussels from the testing data set. We calculated the probability predicted by the model for actually eaten mussels and for survived ones. The frequency distribution of the predicted probabilities were visualized by means of box-whiskers plots using the functions from the ggplot2 package [@wickham_ggplot2:_2009]. 
+
+Finally, we constructed the regression model whose structure was analogous to that of the final model described above but included as a predictor the values of PMTL instead of Z-index. This model was intended to predict the probability of mussels being eaten as a function of their PMTL. We developed this model to assess directly the differences in the ratio of the odds to be eaten for *M. trossulus*-like and *M. edulis*-like mussels.
+
+##Results
+The frequency distribution of Z-index for mussels used in the experiments was obviously bimodal (Fig. 2, B). The first peak was associated with Z=0 and the second one, with Z=1. The mussels with 0 < Z < 0.4 were extremely rare. Thus, two distinct morphotypes, T- (Z=0) and E- (Z>0)  [@katolikova_genetic_2016], could be easily recognized among the experimental mussels (Fig. 2, B). However, the analysis of the genetic data (see electronic supplement) showed that the probability to identify a mussel with Z-index in range of 0<Z<0.6 as *M. trossulus* was rather high. Based on this result, we assumed that a discrete classification of mussels into two morphotypes had to be supported by an assessment in terms of continuous Z-index.
+
+
+
+Fig. 2. Morphological features of experimental mussels. (a) Morphological traits used for assessment of mussel size (length, L) and calculation of Z-index: a – distance from umbo to anterior boundary of prismatic layer under ligament nympha, l –  distance from umbo to posterior boundary of ligament. Z-index calculated as a/l. Insert: scanning electron microscopic picture showing the boundary between the nacreous and the prismatic layer structurally reflected as a seam. (b) Frequency distribution of Z-index for all experimental mussels. Black bars – eaten mussels, gray bars – survived mussels. (c-e) Frequency distributions of the proportion of T-morphotype across containers in different experiments. c – mussels initially placed into containers; d – survived mussels; e – eaten mussels.
+
+###Experiments
+
+In total, sea stars consumed 312 mussels out of 1755. The proportion of eaten mussels varied in a range of 0-42% across individual containers and in a range of 12-29% across experiments.
+
+The range and the median values of the proportion of T-morphotypes among mussels initially placed into boxes, among survived mussels and among eaten ones were 23–58% and 40%, 17–64% and 36% and 14–100% and 67%, correspondingly. In all the five experiments, the mean proportion of T-morphotypes among eaten mussels was higher than among survived ones (Fig. 2). The full logistic regression model describing the probability of being eaten as a function of all predictors included (AIC = 1152) was significantly improved by the procedure of backward selection. This procedure allowed us to drop all the interaction terms as well as year, number of initially placed mussels, the initial proportion of T-morphotype and the total weight of sea stars. Thus, the final model (AIC = 1144.8) included only two main terms in the fixed part: Z-index and L. The drop of the year from the model meant that the model parameters were independent of the year or, in other words, that the results were reproducible. The drop of the initial proportion of T-morphotype meant that the probability of being eaten did not significantly depend on the proportion of morphotypes in the range investigated (23-58%). The drop of all interaction terms meant that Z-index and shell length were independent parameters influencing the predator choice.
+
+The parameters of the final model are presented in Table 2. The goodness of fit in terms of the marginal pseudo R2 (i. e. fixed factors only) and the conditional pseudo R2 (i.e. both fixed and random effects included) were rather near, 0.14 and 0.16, respectively. Therefore, the variation associated with random factors (conditions of particular experiments or experimental containers) did not influence the predator choice considerably. The visualization of the fitted model reflected a clear pattern: mussels with a lower value of Z-index and mussels of smaller size had a higher probability of being eaten (Fig. 3, note also negative slopes in Table 2).
+
+Table 2. Parameters of the model (fixed part of the model) describing the probability of being eaten as a function of Z-index (Z) and mussel size (L). All estimations of the parameters are given in logit-scale.
+
+
+--------------------------------------------------------------
+     &nbsp;        Estimate   Std. Error   z value   p-value 
+----------------- ---------- ------------ --------- ----------
+      *Z*         -1.267       0.1725      -7.343    <0.0001 
+
+      *L*         -0.1089      0.0180      -6.044    <0.0001
+      
+ *(Intercept)*     1.813       0.4639       3.909    <0.0001 
+      
+--------------------------------------------------------------
+
+
+Fig. 3.Visualization of the final model. Lines represent the predictions of being eaten for mussels of median L (thick line) and with L equal to the 1st and the 3rd quartile of size distribution (thin lines). The dots represent the proportion of eaten mussels among mussels with different Z indexes. Experimental mussels were ranged by their Z-indices, the range was split into 10 groups of equal size. The proportion of eaten mussels and mean Z-index were estimated for each group, separately for mussels from the modelling data set (filled dots) and the testing data set (open dots).
+
+We applied the final model to mussels from the testing data set to predict the probability of them being eaten. Z-index and L of individual mussels were used as predictors in the calculation. Frequency distribution of the values calculated (Fig. 4) showed a clear divergence in the values between eaten mussels and survived ones. The probabilities predicted for the former were, on the average, greater (median value 0.26) than those predicted for the latter (median value 0.15). Thus, the model tested on the data set not included into the regression analysis revealed an expectable difference in probability of being eaten between actually eaten and actually survived mussels. Analogously, the data from the testing dataset followed the pattern predicted by the linear model (Fig. 3, open dots). This indicated that the parameters of the final regression model reflected realistic values.
+
+Since we assessed the slope for Z-index as -1.27 (Table 2), we could state that when Z-index increased from 0 (T-morphotype) to 1 (E-morphotype) the ratio of the odds to be eaten changed in $e^{-1.27}$=0.28 times. Therefore, it was higher for mussels with Z=0 than for mussels with Z=1 in $0.28^{-1}$=3.6 times.
+
+Fig. 4. Box-whiskers plot reflecting the distribution of probabilities of being eaten for mussels from the testing data set. Not overlapping notches indicate significantly different medians.
+
+
+
+
+
+##Taxonomic affinities of experimental mussels
+
+
+The independent genetic data sets analysed contained statistical associations between the Z-index and the mussel genotype at the ME15/16 locus and at allozyme loci (see electronic supplement). Mussels with an allele characteristic of *M. edulis* at the ME15/16 mostly had high values of Z while mussels with an allele characteristic of *M. trossulus* had low values. Similarly, *M. edulis*-like mussels mostly had Z close to one while *M. trossulus*-like mussels had Z close to zero. (In quantitative terms, 96% of *M. edulis*-like mussels had E-morphotypes (i.e. Z>0) while 74% of *M. trossulus*-like mussels had T-morphotypes (Z=0)). The dependence of probability of being *M. trossulus*-like (PMTL) on the Z-index is described by the formula:
+
+$$
+PMTL = \frac{e^{1.67 - 5.54Z}}{1 + e^{1.67 - 5.54Z} }
+$$
+
+, where e – base of natural logarithm, Z – Z-index. (See electronic supplement for more details).
+
+Using this formula, we recalculated the Z-index of each mussel from experiments into the PMTL. To assess the association of the probability of a mussel being eaten with its PMTL, we constructed a random intercept mixed effect regression model. The probability of being eaten was a dependent variable, while PMTL and mussel length (L) were predictors (Experiment and Container nested into Experiment were random factors). The parameters of the model estimated (Table 3) revealed a positive slope for the PMTL as a predictor. It meant that the ratio of the odds to be attacked by sea starts for *M. trossulus*-like mussels (PMTL close to 1) was in $e^1.4$=4.1 times higher than for *M. edulis*-like mussels (PMTL close to 0).
+
+Table 3. Parameters of the model (fixed part of the model) describing the probability of being eaten as a function of the probability of being identified as *M. trossulus*-like mussel (PMTL) and shell size (L). Estimations of all parameters are given in logit-scale.
+
+--------------------------------------------------------------
+     &nbsp;        Estimate   Std. Error   z value   p-value 
+----------------- ---------- ------------ --------- ----------   
+      *PMTL*       1.3963      0.1939        7.201    <0.0001   
+
+      *L*         -0.1089     0.0180       -6.044    <0.0001   
+       
+ *(Intercept)*     0.6208     0.4591        1.352    0.176   
+      
+--------------------------------------------------------------    
+
+
+
+
+##Discussion
+In our comparative study we identified cryptic taxa by a morphological rather than genetic criterion. To be entirely confident about identification, we additionally tested and found  a good congruence between the trait under consideration (expressed as Z index) and a “taxonomic” molecular marker ME15/16. Using a more reliable multilocus data set from Katolikova et al.  [-@katolikova_genetic_2016], we also estimated the efficiency of identification of *M. edulis*- and *M. trossulus*-like mussels by the Z-index. In terms of the qualitative Z-index (broken/unbroken dark strip under the ligament), as much as 96% of *M. edulis*-like mussels had E-morphotypes while 74% of *M. trossulus*-like mussels had T-morphotypes. The precision was even better in terms of the quantitative Z-index (see ESM).   
+
+An evident limitation of the morphological method was that hybrids could not be distinguished. They were mostly categorized together with purebreds of the species whose genes dominated in their genotypes. We think, however, that this did not significantly affect our comparisons for the following reasons. (1) Early generation hybrids were not numerous in the populations sampled (about 20%, [@katolikova_genetic_2016]). (2) It is assumed that hybrids do not demonstrate transgressive (i.e. unique) ecological phenotypes but resemble the species whose genes dominate in their genotypes [@katolikova_genetic_2016].  
+
+The main result of our study was that in mixed stocks of *M. edulis* and *M. trossulus* the odds of being eaten by *A. rubens* were about four times higher for *M. trossulus*-like mussels than for *M. edulis*-like mussels.  The predator choice did not depend on the proportion of species in the mixed stock. This, however, we can state only for the range studied (23-58% of T-morphotypes, i.e. ca. 19-47% of *M. trossulus*-like mussels), while in nature the proportion of *M. trossulus*-like mussels varies in broader limits. We also found that the predator choice depended on the prey size: sea stars more readily consumed smaller mussels irrespective of their species affinity. In the range of mussel sizes studied (length 15-39 mm),  the odds of being eaten were approximately 9 times higher for the smallest mussels than for the largest ones (taking Z-index  as the mean, see coefficients in Table 2).  Bearing in mind that *M. trossulus* are, on the average, smaller than *M. edulis* in the White Sea (20% in shell length, [@katolikova_genetic_2016]) we may expect the predation pressure on this species in mixed populations to be even more than four times greater than on *M. edulis*.
+
+As shown in comparative studies of *M. edulis* and *M. trossulus* from other geographic contact zones, the latter has thinner and more flexible shells (which are easier to open for the predator)  [@kautsky_genotypic_1990; @mallet_comparative_1995; @beaumont_three_2008; @penney_genotype-dependent_2008], is less inclined to form aggregations (while consolidation into tight clumps complicates predation)  [@liu_aggregational_2011] and demonstrates weaker plastic defence reactions such as an increase in the growth of the adductor muscle and the strength of attachment in the presence of sea stars  [@lowen_predator-induced_2013]. Moreover, as shown in elegant experiments of Lowen et al. [-@lowen_predator-induced_2013], sea stars identify *M. trossulus* as a more desirable prey by its smell (waterborne chemical cues). These observations indicate that *M. trossulus* is generally more defenceless against sea stars and, apparently, tastes better than *M. edulis*. Unfortunately, no similar comparative studies on these two species have so far been conducted in the White Sea. To note, an underdevelopment of the nacreous layer under the ligament observed in most *M. trossulus* in the White Sea (the character used for species identification in our study) can in itself indicate the fragility of their shells since the nacreous shell layer is mechanically the strongest one  [@currey_mechanical_1974]. 
+
+It is also known that mussel exudates contain a 29.6 kDa glycoprotein named KEYSTONEin, which attracts various predators including sea stars  [@zimmer_keystonein:_2016; -@zimmer2017keystone]. KEYSTONEin has a high homology with a calcium-binding protein in the shell matrix [@zimmer2017keystone]. To venture a guess, the difference in the chemical composition of shells of *M. edulis* and *M. trossulus*, reflected in the differences in the shell properties, may be associated with the differences in quantity or quality of KEYSTONEin secretions. It is unknown whether the exudates of *M. trossulus* and *M. edulis* contain different or the same KEYSTONEins.
+
+The preference for smaller mussels shown by the sea stars may be explained in two ways. (1) We used relatively small sea stars in our experiments (40-110 mm in diameter). *Asterias* stars may reach twice this size at the White Sea (our observations). It may be difficult for small sea stars to cope with large mussels. (2) Sea stars indeed prefer to consume smaller mussels because an attack on smaller prey entails a lesser risk of damage to their soft stomach  [@hummel_small_2011]. 
+
+Our observation that *M. trossulus*-like mussels are selectively predated upon in mixed stocks of *M. trossulus* and *M. edulis* in the White Sea is in accord with the results of earlier experiments on the Baltic and the North Sea mussels. In those experiments sea stars preferably attacked the Baltic *M. trossulus* and opened their shells more quickly than those of the North Sea *M. edulis* [@kautsky_genotypic_1990; @reimer_predator-inducible_2001]. It also agrees with an observation made in Eastern Canada that sea stars are more attracted by waterborne cues from *M. trossulus* than from *M. edulis*  [@lowen_predator-induced_2013].
+
+To note, the history of co-existence (and thus of co-evolution) of *Asterias* and the two mussel species seems to have been quite different in the White Sea, the Western Atlantic and the Baltic Sea. In the Western Atlantic *M. edulis* and *M. trossulus* have probably co-existed with each other and with the sea stars for millennia  [@rawson_colonization_2009]. The history of mussel populations in the White Sea is not very well known  but the present consensus is that *M. edulis* is a native species while *M. trossulus* has been introduced by marine traffic in the middle of the 20th century  [@vainola_mytilus_2011], i.e. a few dozens of *A. rubens* and *Mytilus* generations ago. In the Baltic Sea, the distribution areas of *M. trossulus* and *A. rubens* overlap just a little, if at all, because of their strikingly different salinity preferences  [@stuckas_combining_2017; @casties_salinity_2015, see also below]. In transplantation experiments [@kautsky_genotypic_1990; @reimer_predator-inducible_2001] *M. trossulus* was completely unfamiliar prey for *A. rubens* because sea stars were taken from the *M. trossulus*-free North Sea. Nevertheless, in all experiments *M. trossulus* was a universally preferable prey. This reproducibility of results indicates that the differences in the vulnerability of *M. edulis* and *M. trossulus* to predation by *Asterias rubens* are species-specific traits rather than traits associated with particular geographic regions or populations.Taking into account the global importance of sea stars as mussel predators [@nauen_growth_1978; @beer1980; @seed_population_1992], we could expect the effect of their selective predation on demography and habitat distribution of M. edulis and M. trossulus in different contact zones.
+
+Studies of *M. edulis* and *M. trossulus* in different contact zones have invariably shown their habitat segregation at a local and/or regional scale.  In the Baltic Sea, *M. edulis* dominates in areas with a high salinity while *M. trossulus* keeps to areas with low salinity [@riginos_local_2005; @stuckas_combining_2017]. In the Western Atlantic, *M. trossulus* tends to occupy exposed shores while *M. edulis* is confined to sheltered bays [@innes_morphological_1999]. In Northern Scotland *M. trossulus* invades *en mass* artificial structures such as marina pontoons and, especially, ropes of suspended aquaculture but is rare in natural intertidal habitats [@dias2009survey]. Along the northern coasts of Scandinavia and Russia *M. trossulus* is mainly found in anthropogenically polluted harbour areas, both saline and permanently freshened [@vainola_mytilus_2011; @katolikova_genetic_2016 ]. In addition, in the White Sea *M. trossulus* predominate on fucoid algal substrates while *M. edulis* tend to live directly on the bottom [@katolikova_genetic_2016]. 
+
+Why these two species show so inconsistent patterns of habitat segregation in different zones is a long-standing issue [e.g. @riginos_local_2005; @katolikova_genetic_2016]. What stands out, however, is that the distribution of *M. trossulus* is always confined to areas where *Asterias* sea stars are scarce. In the Baltic Sea, these are areas with a salinity under 12 ppt   [@stuckas_combining_2017] , which is the lower tolerance limit of *Asterias*  [@casties_salinity_2015]. In the Western Atlantic, these are exposed shores, where sea stars as well as other predators are likely to be dislodged by waves  [@reimer_predator-induced_1997; @gagnon_use_2003; @st-pierre_wave_2015]. The preference of *M. trossulus* for polluted harbours may be due to the limited abundance of sea stars there as the latter are more sensitive to pollution than mussels  [@canty2009linking]. Thalli of intertidal fucoids rising above the bottom at high tide and floating substrates such as ropes of suspended aquaculture may grant the mussels an asylum against crawling benthic predators [@dias2009survey; @katolikova_genetic_2016]. 
+
+We hypothesise that *Asterias* and probably other invertebrate predators such as intertidal crabs and dog whelks govern the habitat distribution of *M. trossulus* and *M. edulis* everywhere in their contact zones. While we know less about the relationships between sympatric mussels and predators other than sea stars, indirect evidence  indicates that *M. trossulus* with its thinner and more flexible shells should be less resistant to the crushing claws of crabs  [@lowen_predator-induced_2013], the drilling radulae of dog whelks [@sherker_zt_predator-induced_2017]  and, presumably, the powerful  bills of oystercatchers  [@le2011breaking] than *M. edulis*. 
+
+A relative defencelessness of *M. trossulus* against predators should be compensated by its superiority over *M. edulis* in some other live-history traits. Lowen et al.  [-@lowen_predator-induced_2013] suggested that while *M. edulis* spends much energy for predator-induced plastic defences, *M. trossulus* allocates more resources to reproduction. In this way, its low survival rate is compensated by a high reproductive rate.
+
+
+##Conclusions
+
+We directly demonstrated that *A. rubens* preferably devour *M. trossulus* than *M. edulis* in the White Sea. The odds of being eaten by sea stars are about four times higher for *M. trossulus*. This fits nicely earlier observations that *M. trossulus* is a more preferable prey for sea stars than *M. edulis* [@kautsky_genotypic_1990; @norberg_attack_1995; @lowen_predator-induced_2013]. 
+
+Previously, we have noted that Nordic marine ecologists, in particular those working at the White Sea, often ignore the taxonomic dualism of the “common mussel” and dismiss *M. trossulus* and *M. edulis* as virtual entities recognised only by geneticists  [@katolikova_genetic_2016]. We also provided arguments against this practice. Now we note with satisfaction that at least the sea stars heed the advice, clearly discriminating between *M. edulis* and *M. trossulus* in their eating preferences.
+ 
+
+
+##Acknowledgements
+We would like to thank the students of the Laboratory of Marine Benthic Ecology and the staff of the Kandalaksha State Nature Reserve for their help during fieldwork. We are grateful to Alexey Mirolubov for preparing SEM pictures of the inner surface of mussel shells. Centre for molecular and cell technologies of St. Petersburg State University is acknowledged for technical help. The study was financially supported by the Russian Science Foundation (Grant no. 14-50-00034)
+
+
+##Literature Cited
+
+
