@@ -25,9 +25,9 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      showgrid="false"
-     inkscape:zoom="0.72515432"
-     inkscape:cx="692.95595"
-     inkscape:cy="399.22537"
+     inkscape:zoom="1.0255231"
+     inkscape:cx="882.96404"
+     inkscape:cy="511.44632"
      inkscape:window-width="1920"
      inkscape:window-height="1001"
      inkscape:window-x="-9"
@@ -552,8 +552,9 @@
     <g
        id="g13293"
        inkscape:export-filename="Fig_1.png"
-       inkscape:export-xdpi="600"
-       inkscape:export-ydpi="600">
+       inkscape:export-xdpi="1200"
+       inkscape:export-ydpi="1200"
+       transform="translate(78.947517,0.25799842)">
       <g
          id="g1930"
          transform="translate(14.22973,35.756757)">
@@ -894,14 +895,6 @@
       <g
          id="g10900"
          transform="matrix(1.3397844,0,0,1.3397844,-76.41202,-84.744384)">
-        <path
-           style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.264583"
-           d="m 146.03491,110.9608 h 95.41667 v 74.34867 h -95.41667 z"
-           id="path1935" />
-        <path
-           style="fill:none;stroke:#ffffff;stroke-width:0.152667px;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1"
-           d="m 146.03491,110.9608 h 95.41667 v 74.34867 H 146.03491 V 110.9608"
-           id="path1937" />
         <path
            style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.264583"
            d="m 147.71424,112.02947 h 92.516 v 71.75333 h -92.516 z"
@@ -9837,5 +9830,12 @@
            sodipodi:nodetypes="cc" />
       </g>
     </g>
+    <rect
+       style="opacity:0.995;fill:#ffffff;fill-opacity:0;stroke-width:0.305264;stroke-linecap:round;stroke-miterlimit:10"
+       id="rect2818"
+       width="251.80646"
+       height="120.74326"
+       x="81.527496"
+       y="50.825687" />
   </g>
 </svg>

@@ -103,12 +103,21 @@ myt_individ <- merge(myt_individ, myt, by = "Site", all.x = T )
 
 library(lme4)
 
-Mod_ind <- glm(BTN_presence ~  scale(L) + scale(DL) + scale(S) + scale(Fetch) + Sex_ident, data = myt_individ, family = "binomial")
+myt_individ$Sex <- factor(myt_individ$Sex)
+
+Mod_ind_glmer <- glmer(BTN_presence ~  scale(L) + scale(DL) + scale(S) + scale(Fetch) + Sex + (1|Site), data = myt_individ, family = binomial(link = "logit"))
+
+
+Mod_ind_glm <- glm(BTN_presence ~  scale(L) + scale(DL) + scale(S) + scale(Fetch) + Sex +N_dots      , data = myt_individ, family = binomial(link = "logit"))
+
+AIC(Mod_ind_glmer, Mod_ind_glm)
+
 
 vif(Mod_ind)
 
 
-summary(Mod_ind)
+summary(Mod_ind_glm)
+
 
 
 
