@@ -1,0 +1,343 @@
+---
+title: ""
+author: ""
+date: ''
+output: html_document
+---
+
+# Модель, описывающая динамику RMR в зависисомтси от хода болезни пр заражении птиц разными видами малярии
+
+
+```{r setup, include=FALSE}
+library(knitr)
+  
+opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+```{r}
+library(ggplot2)
+library(mgcv)
+library(dplyr)
+library(readxl)
+
+```
+
+ Читаем данные
+
+```{r}
+
+finch_il <- read_excel("Data/Spinus_2020_parasitemia_IL6_survival_final.xlsx", na = "NA", sheet = "Spinus_2020_parasitemia_IL6_sur")
+finch_il$Experiment <- factor(finch_il$Experiment)
+finch_il$Ring <- factor(finch_il$Ring)
+
+n_obs_il <- finch_il %>% group_by(Ring) %>% summarise(N_il_obs = n())
+
+
+finch <- read_excel("Data/Spinus_2020_parasitemia_IL6_survival_final.xlsx", na = "NA", sheet = "RMR")
+finch_il$Experiment <- factor(finch_il$Experiment)
+finch_il$Ring <- factor(finch_il$Ring)
+
+# n_obs_rmr <- finch %>% group_by(Ring) %>% summarise(N_rmr_obs = n())
+# 
+# n_obs <- merge(n_obs_il, n_obs_rmr, by = "Ring")
+```
+
+
+<!-- ```{r} -->
+
+<!-- ggplot(finch_il, aes(x = Date, y = Ring)) +  -->
+<!--   geom_point() +  -->
+<!--   facet_wrap(~Experiment, scales = "free") +  -->
+<!--   geom_point(data = finch,  color = "blue", shape = 4) -->
+
+<!-- ``` -->
+
+
+
+
+
+## Зависимая переменная и предикторы для модели
+
+Будем изучать две зависимые переменные: log(RMR) и D_RMR = log(RMR) - log(RMR~1~). Вторая величина показывает то, насколько отклоняется наблюдаемое значение RMR от начального уровня.  
+
+
+```{r}
+ggplot(finch, aes(x = DPI, y = log(RMR), group = Ring)) + geom_line() + facet_wrap(~Experiment)
+
+
+```
+
+
+
+```{r}
+D_RMR <- finch %>% group_by(Ring) %>% summarise(D_RMR = log(RMR) - log(RMR)[1]) %>% pull
+
+
+finch$D_RMR <- D_RMR
+
+
+ggplot(finch, aes(x = DPI, y = D_RMR , group = Ring)) + geom_line() + facet_wrap(~Experiment)
+
+```
+
+
+
+
+### Предикторы в модели
+1. Группа птиц (Experiment). Здесь все понятно: Дискретный предиктор с тремя уровнями. Базовый уровень "Cont".
+2. Масса птицы (Mass). Это "техническая" ковариата, необходимая для учет того, что птицы разной массы дышат по-разному.
+
+3. Проблему оценки паразитемии и интерлейкина в день измерения  RMR пока решить не удалоcь. Предложенная Андреем схема оценки по двум соседним от дня измерения RMR точкам пока мне не нравится. Она формально не решается  для первого дня измерения RMR, у которого нет дня измерения паразитемии и интерлейкина до измерения RMR. Впрочем, мне кажется, что предложенная мной схема вычисления по ближайшей временной точке после замера  RMR тоже небезупречна. В качестве паллиатива предлагаю описать поведение каждого из предикторов некой моделью (например loess-регресией) в зависимости от DPI и из нее предсказать значения предиктоов в день измерения RMR. Аппроксиммации выглядят вот так (синие линии)
+
+
+
+```{r}
+finch_il <- finch_il %>% group_by(Ring) %>% arrange(Date) %>% mutate(Cum_Parasitemia = cumsum(Parasitemia), Cum_IL = cumsum(IL6_pg_ml)) %>% arrange(Ring, Date)
+
+
+ggplot(finch_il, aes(x = DPI, y = Parasitemia, group = Ring)) + geom_line() + facet_wrap(~Experiment) + stat_smooth(se = F, method.args = list(span = 0.75, degree = 1), size = 0.5)
+
+
+ggplot(finch_il, aes(x = DPI, y = Cum_Parasitemia, group = Ring)) + geom_line() + facet_wrap(~Experiment) + stat_smooth(se = F, method.args = list(span = 1, degree = 1), size = 0.5)
+
+
+
+ggplot(finch_il, aes(x = DPI, y = IL6_pg_ml , group = Ring)) + geom_line() + facet_wrap(~Experiment) + stat_smooth(se = F, method.args = list(span = 1, degree = 1), size = 0.5)
+
+```
+
+
+
+Это код для подбора оценок по ближайшей дате, которая мне кажется более правильной.
+
+```{r}
+
+# Код для совмещения данных по RMR и измерениям паразитемии и интерлейкинов
+finch$Parasitemia_nearest <- NA
+finch$Parasitemia_M <- NA
+
+finch$IL_nearest <- NA
+finch$IL_M <- NA
+
+finch$Cum_Parasitemia_nearest <- NA
+finch$Cum_Parasitemia_M <- NA
+
+finch$Dif_Date <- NA
+finch$Survival <- NA
+
+for(i in 1:nrow(finch)){
+  df <- finch_il %>% filter(Ring %in% finch$Ring[i])
+
+  dif_dat1 <- (difftime(df$Date, finch$Date[i]))
+  dif_dat1[dif_dat1 < 0 ] <- NA
+  time1 <- df$Date[which.min(dif_dat1)]
+  
+  finch$Parasitemia_nearest[i] <- df$Parasitemia[df$Date == time1]
+  finch$IL_nearest[i] <- df$IL6_pg_ml[df$Date == time1]
+  finch$Cum_Parasitemia_nearest[i] <- df$Cum_Parasitemia[df$Date == time1]
+  finch$Survival[i] <- df$Survival[df$Date == time1]
+
+  finch$Dif_Date[i] <- as.numeric(difftime(time1, finch$Date[i], units = "day"))
+  
+}
+
+
+
+```
+
+
+В коде, приведенном ниже, я пытаюсь описать поведение паразитемии, накопленной паразитемии и интерлейкина в зависимости от DPI. Для описания я использую loess-регрессию, на основе которой *предсказывается* значение паразитемии, накопленной паразитемии и интерлейкина в день измерения RMR. 
+
+Это не супер хорошее решение. Например, лоесс предсказывает отрицательные значения. Их немного и они очень близки к нулям в исходниках (см. графики выше), так что можно объявить их нулями, как это сделано в конце кода, приведенного ниже. Помимо этого, предсказанные по лоэсс значения в среднем ниже, чем наблюдаемые (см. графики выше). 
+
+Однако, нас ведь интересует как будет вести себя зависимая переменная по мере увеличения значения предикторов. В этом смысле  предсказанные по модели значения должны вести себя более или менее аналогично тому, что происходит в первичных данных.  
+
+```{r}
+df_final <- NULL
+
+for(ring in unique(finch$Ring)) {
+  
+  df_predict <- finch %>% filter(Ring %in% ring)
+  
+  
+  df_model <- finch_il %>% filter(Ring %in% ring) %>% filter(complete.cases(.))
+  
+  # Я пытался еще описывать данные полиномами, но по сути дела результаты не отличались.
+  # degr = nrow(df_model) - 1
+  # degr <- ifelse(degr > 5, 5, degr)
+  # 
+  # M_Parasitemia <- lm(Parasitemia ~ poly(DPI, degr), data = df_model)
+  # df_predict$Parasitemia_M <- predict(M_Parasitemia, newdata = df_predict) 
+
+  
+  M_Parasitemia <- loess(Parasitemia ~ DPI, data = df_model, degree = 1)
+  df_predict$Parasitemia_M <- predict(M_Parasitemia, newdata = df_predict) 
+
+  M_Cum_Parasitemia <- loess(Cum_Parasitemia ~ DPI, data = df_model, degree = 1)
+  df_predict$Cum_Parasitemia_M <- predict(M_Cum_Parasitemia, newdata = df_predict)
+
+  M_IL <- loess(IL6_pg_ml ~ DPI, data = df_model, degree = 1)
+  df_predict$IL_M <- predict(M_IL, newdata = df_predict)
+  
+  df_final <- rbind(df_final, df_predict)
+
+}
+
+
+df_final$Parasitemia_M[df_final$Parasitemia_M <0] <- 0
+df_final$Cum_Parasitemia_M[df_final$Cum_Parasitemia_M <0] <- 0
+
+finch <- df_final
+
+```
+
+
+<!-- В качестве даты измерения паразитемии и интерлейкинов берется дата ближайшая к дате измерения RMR, но после того, как измерено значение RMR (Cum_Parasitemia_nearest, IL_nearest). -->
+
+
+## Модель для собственно RMR
+
+```{r}
+
+finch$Experiment <- factor(finch$Experiment)
+finch$Ring <- factor(finch$Ring)
+finch$Survival <- factor(finch$Survival)
+
+finch_reduced <- finch %>%  filter(!is.na(IL_nearest)) %>% filter(Bad != 1) #удаляю из датасета строчки с неизмеренными знаениями и строки с плохим измерением RMR
+
+finch_reduced <- finch_reduced[complete.cases(finch_reduced), ]
+
+
+M1_gam <- gam(log(RMR) ~ s(Cum_Parasitemia_M, by = Experiment) + s(IL_M, by = Experiment) + Experiment + log(Mass)  + s(Ring, k = 53, bs = "re"),  method = "REML", data = finch_reduced)
+
+
+```
+
+Вот ее параметры
+
+```{r}
+summary(M1_gam)
+
+```
+
+Диагностика 
+
+```{r}
+library(mgcViz)
+b <- getViz(M1_gam)
+check.gamViz(b)
+
+```
+
+Особых проблем нет. 
+
+
+## Визуализации модели
+
+```{r}
+library(gratia)
+library(cowplot)
+
+Pl_Cum_Paras_Cont <- draw(M1_gam, select = c(1), scales = "fixed") + geom_hline(yintercept = 0)
+Pl_Cum_Paras_Exp1 <- draw(M1_gam, select = c(2), scales = "fixed") + geom_hline(yintercept = 0)
+Pl_Cum_Paras_Exp2 <- draw(M1_gam, select = c(3), scales = "fixed") + geom_hline(yintercept = 0)
+
+```
+
+
+```{r}
+
+Pl_IL_Cont <- draw(M1_gam, select = c(4), scales = "fixed") + geom_hline(yintercept = 0)
+Pl_IL_Exp1 <- draw(M1_gam, select = c(5), scales = "fixed") + geom_hline(yintercept = 0)
+Pl_IL_Exp2 <- draw(M1_gam, select = c(6), scales = "fixed") + geom_hline(yintercept = 0)
+
+library(patchwork)
+plot_grid(Pl_Cum_Paras_Cont, Pl_Cum_Paras_Exp1, Pl_Cum_Paras_Exp2, nrow = 1) / plot_grid(Pl_IL_Cont, Pl_IL_Exp1, Pl_IL_Exp2, nrow = 1)
+
+
+```
+
+
+На всякий случай смотрим на связь остатаков с DPI
+
+
+```{r}
+
+qplot(x = finch_reduced$DPI, y = residuals(M1_gam, type = "pearson")) + geom_smooth()
+
+
+```
+
+Связи нет, что говорит о том, что ход болезни в терминах накопленной паразитемии вполне описывает процесс. 
+
+
+
+
+## Модель для D_RMR
+
+```{r}
+
+finch$Experiment <- factor(finch$Experiment)
+finch$Ring <- factor(finch$Ring)
+finch$Survival <- factor(finch$Survival)
+
+finch_reduced <- finch %>%  filter(!is.na(IL_nearest)) %>% filter(Bad != 1)
+
+finch_reduced <- finch_reduced[complete.cases(finch_reduced), ]
+
+
+M2_gam <- gam(D_RMR ~ s(Cum_Parasitemia_M, by = Experiment) + s(IL_M, by = Experiment) + Experiment + log(Mass)  + s(Ring, k = 53, bs = "re"),  method = "REML", data = finch_reduced)
+
+
+```
+
+Вот ее параметры
+
+```{r}
+summary(M2_gam)
+
+```
+
+Диагностика 
+
+```{r}
+library(mgcViz)
+b <- getViz(M2_gam)
+check.gamViz(b)
+
+```
+
+
+Не очень.... 
+
+
+
+
+## Визуализации модели
+
+```{r}
+library(gratia)
+library(cowplot)
+
+Pl_Cum_Paras_Cont <- draw(M2_gam, select = c(1), scales = "fixed") + geom_hline(yintercept = 0)
+Pl_Cum_Paras_Exp1 <- draw(M2_gam, select = c(2), scales = "fixed") + geom_hline(yintercept = 0)
+Pl_Cum_Paras_Exp2 <- draw(M2_gam, select = c(3), scales = "fixed") + geom_hline(yintercept = 0)
+
+```
+
+
+```{r}
+
+Pl_IL_Cont <- draw(M2_gam, select = c(4), scales = "fixed") + geom_hline(yintercept = 0)
+Pl_IL_Exp1 <- draw(M2_gam, select = c(5), scales = "fixed") + geom_hline(yintercept = 0)
+Pl_IL_Exp2 <- draw(M2_gam, select = c(6), scales = "fixed") + geom_hline(yintercept = 0)
+
+library(patchwork)
+plot_grid(Pl_Cum_Paras_Cont, Pl_Cum_Paras_Exp1, Pl_Cum_Paras_Exp2, nrow = 1) / plot_grid(Pl_IL_Cont, Pl_IL_Exp1, Pl_IL_Exp2, nrow = 1)
+
+
+```
+
+
+По-моему, это аналог того, что было. Если так, то не стоит вводить лишние сущности. 
+

@@ -1,0 +1,310 @@
+---
+title: ""
+output:
+  word_document:
+    reference_docx: article_template.docx
+    fig_width: 8 
+    fig_height: 8
+# bibliography: Astred_english_Bibliografy_abriviated.bib
+# csl: marine-biology.csl
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+options(knitr.kable.NA = '')
+```
+
+```{r}
+## Packages ######
+
+library(ggplot2)
+library(reshape2)
+library(dplyr)
+library(patchwork)
+library(broom)
+library(broom.mixed)
+library(readxl)
+library(mgcv)
+library(readxl)
+library(tidyr)
+library(lme4)
+library(broom.mixed)
+library(broom)
+library(cowplot)
+library(vegan)
+library(betareg)
+
+
+
+```
+
+
+
+```{r}
+
+theme_set(theme_bw() + theme(legend.key = element_blank()))
+
+```
+
+
+
+**План**
+
+4.1.1. Обработать богатые коллекционные сборы 2021 г. из окрестностей Магадана Охотского моря (карта на рис. 4.2.1). 
+
+
+```{r Data_preparing}
+
+site_param <-read_excel("Data/Magadan_data.xlsx", na = "NA")
+site_param$Fetch <- as.numeric(site_param$Fetch) 
+
+size <- read_excel("Data/Ecological data on mussels.xlsx", na = "NA")
+
+size$L <- round(as.numeric(size$L), 0)
+
+size <- 
+  size %>% mutate(L_class = case_when(
+    L<=5 ~ "L3",
+    L>5 & L<=10 ~ "L8",
+    L>10 & L<=15 ~ "L13",
+    L>15 & L<=20 ~ "L18",
+    L>20 & L<=25 ~ "L23",
+    L>25 & L<=30 ~ "L28",
+    L>30 & L<=35 ~ "L33",
+    L>35 & L<=40 ~ "L38",
+    L>40  ~ "L43"
+  ))
+
+
+
+scam <-
+  size %>% filter(!is.na(L)) %>% group_by(Site, L_class) %>% summarise(N = n(), L_mean = round(mean(L), 0)) %>% dcast(., Site ~ L_class, value.var = "N") 
+
+scam[is.na(scam)] <- 0
+
+
+scam_param <- merge(site_param, scam)
+
+scam_param$Prop_ill <- scam_param$N_ill/scam_param$Sample_size
+
+scam <- scam_param %>% select(L13, L18, L23, L28,  L3, L33, L38, L43,  L8)
+
+
+
+```
+
+
+
+
+В окрестностях Магадана было описано `r nrow(scam_param)` поселений. Каждое из которых было охарактеризовано несколькими популяционными и средовыми параметрами: плотность поселения мидий (N), соленость (S), степень открытости побережья для волнового воздействия (Fetch), расстояние по прямой до центра г. Магадан (Dist). В каждом из поселений была собрана выборка крупных моллюсков, у которых была взята пункция гемолимфы и отобраны образцы мягких тканей. Использование цитометрических и генетических маркеров позволило оценить частоту мидий, страдающих BTN, среди отобранных миди. Доля больных особей среди обследованных моллюсков была рассмотрена нами как зависимая переменная в регрессионном анализе (логистическая регрессионная модель, основанная на бета-распределении, Модель 1), предикторами в котором выступали указанные выше популяционные и средовые параметры поселений (Табл. ++). Результаты показывают статистически значимую положительную связь частоты BTN лишь с уровнем прибойности участка побережья, на котором располагается поселение (Рис ++). 
+
+
+
+```{r Model_1}
+
+scam_param$Prop_ill[scam_param$Prop_ill == 0] <-0.00001 
+
+
+Mod <- betareg(Prop_ill ~   scale(N)  + scale(S) + scale(Fetch) + scale(Dist), data = scam_param)
+
+# library(performance)
+# 
+# check_collinearity(Mod)
+# 
+
+# summary(Mod)
+
+Mod_sum <- tidy(Mod)
+
+Mod_sum <- Mod_sum[,-1]
+```
+
+
+```{r}
+
+Mod_sum$estimate <- round(Mod_sum$estimate, 3) 
+Mod_sum$std.error <- round(Mod_sum$std.error, 4)
+Mod_sum$statistic <- round(Mod_sum$statistic, 2)
+Mod_sum$p.value <-  round(Mod_sum$p.value, 4)
+
+
+Mod_sum$term <- c(
+  "(Intercept)",
+  "Плотность поселения (N)",
+  "Соленость (S)",
+  "Прибойность (Fetch)",
+  "Расстояние от Магадана (Dist)", 
+  "Коэффициенты точности (phi)"
+  ) 
+  
+library(flextable)
+
+
+set_flextable_defaults(
+  font.family = "Times New Roman",
+  keep_with_next = TRUE,
+  font.size = 10, 
+  padding = 10)  
+
+Mod_sum$p.value <- Mod_sum$p.value
+
+Mod_sum$p.value [Mod_sum$p.value < 0.0001] <- "<0.0001"
+
+names(Mod_sum) <- c(
+  "Член модели",
+  "Оценка параметра",
+  "Стандартная ошибка",
+  "z-статистика",
+  "p")
+
+
+ft <- Mod_sum %>% flextable() 
+ft <- align(ft, j = "p", align = "right", part = "all")  
+
+ft <- set_caption(ft, "Таблица ++. Параметры логистической регрессионой модели, описывающей зависимость между частотой BTN и популяционными и средовыми парамтерами (Модель1)")
+
+ft
+
+```
+
+
+Вместе с тем, популяционная структура мидий на побережье в окрестностях Магадана крайне изменчива. Мы не включили величины, описывающие размерную структуру, в Модель 1 (см. выше), так как эти показатели оказались коллинеарны с другими, включенными в модель, предикторами. При этом прослеживается некоторая связь частоты BTN с размерной структурой поселения (Рис. ++, А): самая высокая заболеваемость была обнаружена среди моллюсков, собранных в поселениях с ярко выраженной бимодальной размерной структурой, когда в поселении представлены как молодь, так и старые моллюски.
+
+
+
+
+```{r}
+scam_rel <- decostand(scam, method = "hellinger") 
+
+scam_rel_rda <- rda(scam_rel)
+
+axis.expl <- function(mod, axes = 1:2) {
+  
+  if(is.null(mod$CCA)) {
+    sapply(axes, function(i) {
+    100*mod$CA$eig[i]/mod$tot.chi
+    })
+  } else {
+    sapply(axes, function(i) {
+    100*mod$CCA$eig[i]/mod$tot.chi
+    })
+  }
+    
+}
+
+
+Inert_expl <- axis.expl(scam_rel_rda)
+
+
+PC <- fortify(scam_rel_rda)
+ 
+PC$Label[(ncol(scam)+1):(ncol(scam) + nrow(scam))] <- scam_param$Site
+
+
+PC_site <- PC %>% filter(Score == "sites")
+PC_site$Prop_ill <- scam_param$Prop_ill
+PC_site$Prop_ill[PC_site$Prop_ill == 0] <- 0.00001 
+PC_site$Fetch <- scam_param$Fetch
+
+PC_size_class <- PC %>% filter(Score == "species")
+
+
+
+Pl_PC_site <-
+ggplot(PC_site, aes(PC1, PC2)) + 
+  geom_point(aes(size = Prop_ill),color = "red") + 
+  geom_text_repel(aes(label = Label)) + 
+  geom_hline(yintercept = 0, linetype = 2) + 
+  geom_vline(xintercept = 0, linetype = 2) +
+  guides(size = "none") +
+  labs(x = "PC1 (47%)", y = "PC2 (35%)") + 
+  geom_segment(data = PC_size_class, aes(x = 0, y = 0, xend = PC1, yend = PC2), arrow = arrow(type = "closed", angle = 5), color = "blue") +
+  geom_text_repel(data = PC_size_class, aes(label = Label),  point.padding = 2, color = "blue")
+
+
+
+
+
+size$Site <- factor(size$Site, levels = PC_site$Label[order(PC_site$Prop_ill, decreasing = T)])
+
+PC_site$Site = PC_site$Label
+
+PC_site$Site <- factor(PC_site$Site, levels = PC_site$Label[order(PC_site$Prop_ill, decreasing = T)])
+
+
+Pl_siz_str <- 
+ggplot(size, aes(x = L)) + 
+  geom_histogram() + 
+  facet_wrap(~Site, ncol = 4) + 
+  geom_text(data = PC_site, aes(x = 30, y= 65, label = paste("BTN:", round(PC_site$Prop_ill, 3))), size = 2 ) + 
+  labs(x = "Размер (мм)", y = "Частота")
+
+
+```
+
+
+
+```{r}
+plot_grid(Pl_siz_str, Pl_PC_site,labels = c("A", "Б") )
+```
+
+Рисунок +. Размерная структура поселений мидий в окрестностях Магадана. **А**. Частотные распределения размеров в отдеьных поселениях. Гистограммы упорядочены в соответствии с убыванием частоты BTN. **Б**. Результаты анализа шлавных компонент. Точки отражают поселения. Размер точки пропорционален частоте BTN. Стрелки отражают размерные классы (нруппы выделены с шагом в 5 мм, число в названии класса обозначает медиану размера в данной группе).
+
+
+
+Матрица, описывающая долю моллюсков разных размерных классов в поселении, была подвергнута анализу главных компонент (Рис. ++, Б). Первые две главные компоненты описывают `r round(sum(Inert_expl), 0)`% варьирования размерной структуры. Значения PC1 и PC2 были использованы в качестве предикторов в логистической регрессионной модели (Модель 2, основанная на бета-распределении), в которой зависимой переменной выступала доля обследованных моллюсков, несущих BTN (Табл. ++). Анализ показал значимую отрицательную корреляцию частоты BTN со значениями PC1. Высокие отрицательные нагрузки по PC1 демонстрировали две размерные группы (Рис. ++, Б): самые мелкие моллюски (размеры 1-5 мм, класс L3) и самые крупные особи (размеры более 35 мм, классы L38, L43). Высокие положительные нагрузки по PC1 связаны с моллюсками средних размеров: 10-25 мм (классы L13, L18, L23). Таким образом, наиболее высокой частота BTN была в тех поселениях, где в  была достаточно высока доля крупных (возможно старых) моллюсков и низка там, где в поселениях преобладают моллюски средних размеров. Не исключено, что положительная связь BTN с прибойностью, выявленная в Модели 1, обусловлена более высокой продолжительностью жизни, или более высокой скоростью роста, моллюсков, обитающих на открытых, прибойных побережьях.
+
+
+```{r}
+
+Mod_PC <- betareg(Prop_ill ~   PC1 + PC2, data = PC_site )
+
+
+# check_collinearity(Mod_PC)
+
+Mod_PC_sum <- tidy(Mod_PC)
+
+Mod_PC_sum <- Mod_PC_sum[, -1] 
+
+```
+
+
+
+```{r}
+Mod_PC_sum$term <- c(
+  "(Intercept)",
+  "PC1",
+  "PC2",
+  "Коэффициенты точности (phi)"
+)
+
+
+Mod_PC_sum$estimate <- round(Mod_PC_sum$estimate, 3) 
+Mod_PC_sum$std.error <- round(Mod_PC_sum$std.error, 4)
+Mod_PC_sum$statistic <- round(Mod_PC_sum$statistic, 2)
+Mod_PC_sum$p.value <-  round(Mod_PC_sum$p.value, 4)
+
+
+
+
+
+Mod_PC_sum$p.value [Mod_PC_sum$p.value < 0.0001] <- "<0.0001"
+
+
+names(Mod_PC_sum) <- c(
+  "Член модели",
+  "Оценка параметра",
+  "Стандартная ошибка",
+  "z-статистика",
+  "p"
+) 
+
+
+ft2 <- Mod_PC_sum %>% flextable()
+ft2 <- align(ft2, j = "p", align = "right")
+
+```
+
+
+

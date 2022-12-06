@@ -1,0 +1,446 @@
+---
+title: ""
+output:
+  word_document:
+    reference_docx: article_template.docx
+    fig_width: 8
+    fig_height: 8
+# bibliography: Astred_english_Bibliografy_abriviated.bib
+# csl: marine-biology.csl
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, message = FALSE)
+options(knitr.kable.NA = '')
+```
+
+```{r}
+## Packages ######
+
+library(ggplot2)
+library(reshape2)
+library(dplyr)
+library(patchwork)
+library(broom)
+library(broom.mixed)
+library(readxl)
+library(mgcv)
+library(readxl)
+library(tidyr)
+library(lme4)
+library(broom.mixed)
+library(broom)
+library(cowplot)
+
+
+
+```
+
+
+
+```{r}
+
+theme_set(theme_bw() + theme(legend.key = element_blank()))
+
+```
+
+
+**План**
+
+1.1.1 Динамика видов. В Белом море продолжить наблюдения за таксономической структурой четырех мониторинговых поселений в вершине Кандалакшского залива и переописать состав поселений из точек генетических исследований 2000-2010 гг., не изученных в 2021 году. 
+
+
+
+```{r}
+
+# Все данные
+myt_old_new <- read_excel("Data/Mytilus old and new samples morphotype count 2022.xlsx", na = "NA")
+
+
+myt_old_new <- myt_old_new %>% filter(Site != "ZRS_subtidal")
+
+
+monitoring <- read_excel("Data/nt_ne_monitoring_2002_2022.xlsx", na = "NA")
+
+
+
+# Карта точек 
+
+
+# Мониторинговые точки
+monitoring_points <- data.frame(Site = c("Лупчостров", "Малый", "Овечий", "Ряжков"), Lat = c(67.147790, 67.117923,67.094935,67.020064 ) , Lon =c(32.355051, 32.406971, 32.452459, 32.570831))
+
+
+
+Kand_x <- c(32.2, 34)
+Kand_y <- c(66.2, 67.12)
+
+
+ggWhite_Sea <- read.csv("Data/ggWhite_Sea.csv")
+
+
+Plot_Kand_upper <-
+  ggplot(ggWhite_Sea, aes(x=long, y=lat, group=group)) + 
+  geom_polygon(fill = "gray70", colour = "black") + 
+  coord_map(xlim = Kand_x, ylim = Kand_y) + 
+  theme(axis.ticks=element_blank(), axis.title.x =element_blank(),  axis.title.y= element_blank(), plot.background = element_rect(fill = NULL), panel.grid = element_blank()) +
+  theme(axis.text = element_blank())
+  # annotate (x= 32.410973,  y = 67.154371, geom =  "point", size = 5, shape = 21, color = "black", fill = "black") 
+  # annotate (x= 32.83,  y = 67.154371, geom = "text", label =  "Кандалакша") +
+
+
+
+points <- myt_old_new %>% group_by(Site) %>% summarise(Lat = mean(Lat), Lon = mean(Lon))  
+matrenin <- points %>% filter(Site == "Matrenin") 
+
+Pl_historical_points <- 
+Plot_Kand_upper + 
+  geom_point(data = points, aes(x = Lon, y = Lat, group = 1), size = 4, shape = 21, fill = "yellow") +
+  geom_point(data = matrenin, aes(x = Lon, y = Lat, group = 1), size = 4, shape = 21, fill = "red") +
+  geom_point(data = monitoring_points, aes(x = Lon, y = Lat, group = 1), size = 3, shape = 24, fill ="blue") 
+  # ggtitle("Расположение 'исторических' и \nмониторинговых точек сбора")
+
+
+# Динамика на о.Матренин
+
+matr <- myt_old_new %>% filter(Site == "Matrenin") %>% group_by(Year, Period ) %>% summarise(N_T = sum(N_T), N_E = sum(N_E)) %>% mutate(PropT = N_T / (N_T + N_E))
+
+matr$Year <- as.numeric(matr$Year)
+
+pss_matr <- data.frame(Year = c(2002, 2022), PSS = c(0.03, 0.42))
+
+matr$Period <- factor(matr$Period, labels = c("Переописания", "Исторические сборы") )
+
+fmt_dcimals <- function(decimals=0){
+  # return a function responpsible for formatting the 
+  # axis labels with a given number of decimals 
+  function(x) as.character(round(x,decimals))
+}
+
+
+
+Pl_matr <- 
+ggplot(matr, aes(x = Year, y = PropT)) + 
+  geom_segment(data = pss_matr, aes(x = Year, xend = Year, y = 0,  yend = PSS), color = "gray", size = 5) + 
+  geom_point(aes(fill = Period), shape = 21,  size = 4) +
+  scale_fill_manual(values = c("yellow", "gray20"))+
+  labs(fill = "", x = "Годы сбора", y = "Частота T-морфотипа / Значение PSS") +
+  scale_x_continuous(breaks = seq(min(matr$Year), max(matr$Year), 3)) + 
+  scale_y_continuous(labels = fmt_dcimals(1))+
+  theme(legend.position = c(0.2, 0.85)) 
+
+
+# Остальные точки исторических сборов 
+
+myt_old_new2 <- myt_old_new %>% filter(Site != "Matrenin") %>% group_by(Site, Year, Period) %>% summarise(N_T = sum(N_T), N_E = sum(N_E)) %>% mutate(PropT = N_T / (N_T + N_E))
+
+myt_old_new2$Period <- factor(myt_old_new2$Period, labels = c("Переописания", "Исторические сборы") )
+
+Pl_histor_new <- 
+ggplot(myt_old_new2, aes(x = Year, y = PropT)) + 
+  geom_point(aes(fill = Period), shape = 21, size = 4, position = position_jitter(width = 0.4)) + 
+  labs(fill = "", x = "Годы сбора", y = "Частота T-морфотипа") +
+  scale_fill_manual(values = c("yellow", "gray20")) + 
+  theme(legend.position = c(0.2, 0.85)) +
+  scale_x_continuous(breaks = seq(min(myt_old_new2$Year), max(myt_old_new2$Year), 5))+
+  scale_y_continuous(labels = fmt_dcimals(1))
+
+
+# Динамика в точках мониторинга
+
+monitoring <- monitoring %>% mutate(PropT = Nt / (Nt + Ne))  
+
+monitoring <- monitoring %>% mutate(PropT_adj = case_when(
+PropT == 0 ~ 0.000001,
+PropT == 1 ~ 0.999999,
+PropT != 1 & PropT != 0 ~ PropT))
+ 
+monitoring$Site = factor(monitoring$Site)
+
+Mod_monitor_1 <- gam(PropT_adj ~ s(Year, by = Site, bs = "cr", k = 5) + Site, family = betar(link = "logit"), data = monitoring)
+
+
+
+MyData2 <-  monitoring %>% group_by(Site) %>% do(data.frame(Year = seq(min(.$Year), max(.$Year), 1)))
+  # monitoring %>% group_by(Site) %>% do(data.frame(Year = seq(min(.$Year), max(.$Year), 1)))   
+  # unique(monitoring[,1:2])
+  # expand.grid(Year = seq(2002, max(monitoring$Year, 1)), Site = levels(monitoring$Site))
+
+  
+MyData2$Predict <- predict(Mod_monitor_1, newdata = MyData2, type = "response", se = T)$fit
+
+MyData2$SE <- predict(Mod_monitor_1, newdata = MyData2, type = "response", se = T)$se.fit
+
+# MyData2[MyData2$Site == "Malij",]
+# MyData2[MyData2$Site == "Ovech",]
+# MyData2[MyData2$Site == "Ryashkov",]
+
+
+
+islands <- as_labeller(c(
+  "Lupch" = "остров Б.Лупчостров ",
+  "Malij" = "остров Малый",
+  "Ovech" = "остров Овечий",
+  "Ryashkov" = "остров Ряжков"
+))
+
+Pl_monitor <-  
+  ggplot(MyData2, aes(x = Year, y = Predict)) + 
+  facet_wrap(~ Site, labeller = islands) + 
+  geom_point(data = monitoring, aes(x = Year, y = PropT )) + 
+  geom_line(color = "blue", size = 1) +
+  geom_ribbon(aes(ymin = Predict - 1.96*SE, ymax = Predict + 1.96*SE), alpha = 0.2)+  
+  theme_bw()  + 
+  labs(y= "Частота Т-морфотипа", x = "Годы") + 
+  theme(title = element_text(size =10)) +
+  scale_x_continuous(breaks = seq(min(monitoring$Year), max(monitoring$Year), 4)) +
+  scale_y_continuous(labels = fmt_dcimals(1))
+
+```
+
+
+
+**Что сделано**
+
+На одной из точек (мидиевая банка, расположенная в Керетском архипелаге, Рис. ++, А) на основе анализа исторических коллекций и переописания данного поселения, проведенного в рамках нашего проекта, удалось построить временной ряд оценок таксономического состава поселений (Рис. ++, Б). Анализ проводилось на основе морфотипа мидий, как полудиагностического маркера, Khaitov et al., 2021. Для верификации было проведено генотипирование мидий, собранных в 2022 г. Сопоставление генетических данных, полученных в 2022 г., с результатами генотипирования мидий из этого поселения двадцатилетней давности (Katolikova et al. 2016), полностью подтвердило картину увеличения частоты *M.trossulus* в данном поселении.
+ 
+В дополнение к уже имеющимся историческим коллекциям раковин (Рис. ++, В), в 2022 г. нам  удалось найти материал еще двух, ранее неизвестных, коллекций, которые датируются 1967 годом. На данном этапе, это самые старые исторические коллекции из Белого моря, собранные в периоды, когда таксономическая структура мидий Белого моря еще не подвергалась систематическому анализу. В точках сбора этих двух коллекций, в 2022 г. было произведено переописание поселений (Рис. ++, В), которое выявило значительное увеличение частоты *M.tossulus*.   
+
+В 2022 г. было продолжено изучение динамики таксономической структуры поселений мидий, представленных на четырех мониторинговых точках в вершине Кандалакшского залива Белого моря (Рис. ++, Г). За весь период мониторинга (с 2002 г.) мы наблюдали повсеместное изменение таксономического состава: в поселениях, где ранее доминировали *M.edulis*, в последние два десятилетия абсолютное большинство мидий относится к *M.trossulus*. 
+
+Обобщая результаты анализа исторических коллекций, переописания поселений в местах их сбора (Рис. ++) и результаты мониторинга (Рис. ++) можно утверждать, что в Белом море происходит криптическая инвазия *M.trossulus*. Наши данные позволяют наблюдать этот процесс, практически, в режиме реального времени. 
+
+
+
+```{r}
+
+plot_grid(Pl_historical_points, Pl_matr, Pl_histor_new, Pl_monitor,  labels = c("А", "Б", "В", "Г"))
+  
+```
+
+Рис. ++. Реконструкция многолетней динамики таксономического состава смешанных поселений *M.edulis* и *M.trossulus* в Кандалакшском заливе Белого моря. **А**. Расположение точек сбора исторических коллекций (кружки) и точек мониторнига (треугольники). Красным кружком отмечена мидиевая банка (о. Матренин, Керетский архипелаг), на которой были собраны мидии, вошедшие в самый репрезентативный набор исторических коллекций.  **Б**. Частота мидий, имеющих T-морфотип, характерный для *M.trossulus*, в исторических коллекциях, собранных в разные годы на мидевой банке, расположенной в Керетском архипелаге. Серые столбики отражают средние значения индекса STRUCTURE (PSS, доля генов *M.trossulus* в геноме) для генотипиованных мидий, собранных в разные годы. **В**. Частота мидий T-морфотипа, в исторических коллекциях в Кандалакшском заливе Белого моря. Исторические коллекции (черные кружки) были собранны в разные годы, и переописаны (желтые кружки) в недавние годы. **Г**. Частота мидий  T-морфотипа в поселениях на четырех мониторинговых площадках в вершине Кандалкшского залива.
+
+
+
+
+
+
+
+**Планы**
+1.1.1. Завершить анализ данных о распределении видов в водах Кандалакшского залива, выявить средовые факторы, регулирующие таксономический состав смешанных поселений.
+
+
+```{r}
+
+myt <- read_excel("data/Astred_2017_2018_myt.xls", sheet = "Astred All Mussel 2017 2018", na = "NA")
+astr <- read_excel("data/Astred_2017_2018_myt.xls", sheet = "Atred Asterias 2017 2018", na = "NA")
+
+myt$Exp <- factor(myt$Exp)
+myt$Morph <- factor(myt$Morph)
+
+astr$Exp <- factor(astr$Exp)
+
+myt <- myt %>% filter(complete.cases(.))
+
+
+# Вероятность индивидуальной мидии быть *Mt* по уравнениям из Khaitov et al. 2021
+
+myt <- myt %>% mutate(P_Mt = case_when(Origin == "vor" & Morph == "e" ~ 1-0.96,
+                                Origin == "vor" & Morph == "t" ~ 0.63,
+                                Origin == "tel" & Morph == "e" ~ 1-0.46,
+                                Origin == "tel" & Morph == "t" ~ 0.94))
+
+
+
+
+
+# Вычисляем долю T-морфотипа, долю съеденных в садках и показатедь смешанности поселений
+
+myt_1 <- myt %>% group_by(Year, Exp, Box) %>% summarise(P_T = mean(Morph == "t"), t = sum(Morph == "t"), e = sum(Morph == "e"), P_eaten = mean(Status == "eaten"), P_pure = mean(P_Mt)*(1 - mean(P_Mt)))
+
+
+astr_1 <- astr %>% group_by(Year, Exp, Box) %>% summarise(B_aster = sum(Weight), N_aster = n(), Size_mean = mean(Diametr))
+
+
+
+myt_aster <- merge(myt_1, astr_1) %>% filter(complete.cases(.))
+
+myt_aster <- myt_aster %>% mutate(N_total = e + t)
+
+
+
+myt <- myt %>% filter(!(Exp == "Exp2" & Box == 16)) # Удаляем садок с кривым количесвтом высаженных мидий
+
+myt_aster <- myt_aster %>% filter(!(Exp == "Exp2" & Box == 16))
+
+
+# ggplot(myt_aster, aes(x = P_T  , y = N_aster)) + geom_point() + facet_wrap(~Exp)
+
+
+
+myt_aster_full <- merge(myt, myt_aster) %>% filter(complete.cases(.))
+
+myt_aster_full$Box2 <- paste(myt_aster_full$Box, "_", myt_aster_full$Exp, sep = "")
+
+myt_aster_full$Box2 <- factor(myt_aster_full$Box2)
+
+
+myt_aster_full <- myt_aster_full %>% mutate(Outcome = ifelse(Status == "eaten", 1, 0))
+
+
+myt_aster_full$Box2 <- factor(myt_aster_full$Box2)
+
+
+
+
+
+myt_aster_full <- myt_aster_full %>% mutate(Composition = ifelse(P_T<0.5 & P_T > 0.2, "Mixed", "Pure"))
+
+myt_aster_full$Composition <- factor(myt_aster_full$Composition)
+
+myt_aster_full$Composition <- relevel(myt_aster_full$Composition, ref = "Pure")
+
+myt_aster_full$N_consp <- ifelse(myt_aster_full$Morph == "e", myt_aster_full$e, myt_aster_full$t)
+
+
+myt_aster_full <- myt_aster_full %>% mutate(Dur = case_when(Exp == "Exp1" ~ 61,
+                                                            Exp == "Exp2" ~ 121,
+                                                            Exp == "Exp3" ~ 113))
+
+
+myt_aster_full_short <- myt_aster_full %>% filter(Exp != "Exp1") 
+
+
+
+
+Mod <- glmer(Outcome ~ scale(P_Mt) + scale(P_T)  + scale(L) + scale(B_aster) +   (1|Exp/Box2), family = binomial(link = "logit"), data = myt_aster_full )
+
+# summary(Mod)
+
+Mod_sum <- tidy(Mod)
+
+
+```
+
+
+```{r}
+
+astfood_myt <- read_excel('Data/Astfood_2019.xlsx', sheet = "Astfood_2019", na = "NA")
+
+astfood_aster <- read_excel('Data/Astfood_2019.xlsx', sheet = "Astfood_2019_Asterias", na = "NA")
+
+
+
+asterias_abund <- astfood_aster %>% group_by(Site, Sample) %>% summarise(N_aster = n(), B_aster = sum(B))
+
+
+
+all_ast_abund <- merge(astfood_myt, asterias_abund, all.x = T)
+
+all_ast_abund[is.na(all_ast_abund)]<- 0
+
+all_ast_abund <- all_ast_abund %>% mutate(Prop_dead = (N_T_dead + N_E_dead)/(N_T_dead + N_E_dead + N_T_alive + N_E_alive), P_T = N_T_alive/(N_T_alive + N_E_alive), N_alive =  N_T_alive + N_E_alive)
+
+all_ast_abund$Site <- factor(all_ast_abund$Site)
+
+all_ast_abund$Stage2 <- factor(all_ast_abund$Stage, labels = c("Интактные друзы",   "Атакованные друзы", "Dead shells"))
+
+all_ast_abund <- all_ast_abund %>% filter(Stage2 != "Dead shells")
+
+
+```
+
+
+```{r}
+
+Pl_Prop_dead <- 
+  ggplot(all_ast_abund, aes(x = Stage2, y = Prop_dead)) + 
+  geom_boxplot() + 
+  labs(y = "Доля мертвых мидий в друзе", x="") + 
+  theme(axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15))
+
+
+
+
+Pl_PT <- 
+  ggplot(all_ast_abund, aes(x = Stage2, y = P_T)) + 
+  geom_boxplot() +  
+  labs(y = "Частота T-морфотипа среди живых мидий", x = "") +
+  theme(axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15))
+
+```
+
+
+
+
+Ранее мы изучали влияние абиотических факторов (соленость, прибойность, близость к портам) и роль межвидовой конкуренции в регуляции соотношения численностей *M.edulis* и *M.trossulus*. В 2022 г. мы обобщили результаты экспериментов, посвященных оценке роли хищников, как биотического фактора, регулирующего таксономический состав смешанных поселений. 
+
+Мы проанализировали роль морских звезд, массово уничтожающих мидий на мелководьях Белого моря. Ранее нами было показано, что в условиях *аквариального* эксперимента морские звезды предпочитают атаковать *M.trossulus* (Khaitov et al., 2018). В серии новых экспериментов мы размещали мидий двух видов в разных пропорциях на керамических пластинах, которые далее помещали на участки дна, густо заселенные морскими звездами. В этих условиях вероятность гибели мидий положительно коррелировала с вероятностью, того, что мидия относится к *M.trossulus* (Табл. +). 
+
+Мы сравнили частоту мидий T-морфотипа, характерного для *M.trossulus*, в естественных интактных мидиевых друзах и в естественных агрегациях, подвергшихся атакам хищников (собирали друзы, окруженные скоплениями морских звезд). Атакованные друзы характеризовались заметным увеличением обилия мертвых мидий (Рис. ++, А) и снижением частоты T-морфотипа среди живых особей (Рис. ++, Б). Таким образом, нами показано, что таксономический состав поселений мидий регулируют не только абиотические, но и биотические факторы.
+
+
+```{r}
+Mod_sum$term <- c(
+  "(Intercept)",
+  "Вероятность быть M.trossulus",
+  "Доля M.trossulus среди мидий, высаженных на пластину",
+  "Размер мидии",
+  "Биомасса морских звезд на пластине",
+  "Sd_{Intercept}",
+  "Sd_{Intercept}"
+  )
+
+
+library(flextable)
+
+
+  
+Mod_sum$estimate <- round(Mod_sum$estimate, 3) 
+Mod_sum$std.error <- round(Mod_sum$std.error, 4)
+Mod_sum$statistic <- round(Mod_sum$statistic, 2)
+Mod_sum$p.value <-  round(Mod_sum$p.value, 4)
+
+
+Mod_sum <- Mod_sum %>% filter(effect == "fixed") %>% select(-effect, -group) 
+
+Mod_sum$p <- ifelse(Mod_sum$p > 0.0001, Mod_sum$p, "<0.0001" )
+
+
+names(Mod_sum) <- c(
+  "Член модели",
+  "Оценка параметра",
+  "Стандартная ошибка",
+  "z-статистика",
+  "p"
+) 
+
+
+ft <- Mod_sum %>% flextable() 
+ft <- align(ft, j = "p", align = "right", part = "all")    
+ft <- width(ft, j = "z-статистика",  width = 5)
+ft <- width(ft, j = "Член модели",  width = 5)
+ft <- add_footer_lines(ft, "Вероятность отнесения каждой мидии к M.trossulus, была оценена с помощью уравнений, приведенных в Khaitov et al.(2021)")
+
+ft <- color(ft, i = 2,  color = "red")
+
+ft <- set_caption(ft, "Table +. Параметры смешанной логистической регрессионой модели, описывающей зависимость между шансами для мидии быть съеденной и изученных предикторов. Приведены только параметры фиксированной части модели, случайными факторами были идентификаторы каждого из трех экспериментов и отдальных пластин, использованных для анализа")
+
+ft
+
+```
+
+
+
+```{r}
+plot_grid(Pl_Prop_dead, Pl_PT, nrow = 1, labels = c("A", "Б"))
+```
+
+Рис. ++. Влияние морских звезд на естественные мидиевые друзы в Кандалакшском заливе Белого моря. **А**. Доля мертвых мидий в интактных друзах и друзах подвергшихся атаке морских звезд. **Б**. Частота мидий T-морфотипа, характерного для *M.trossulus* среди живых мидий формирующих друзы до и во время атаки морских звезд. 
+
+
+
+
+
+
