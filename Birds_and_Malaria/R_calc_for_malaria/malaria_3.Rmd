@@ -34,13 +34,32 @@ n_obs_il <- finch_il %>% group_by(Ring) %>% summarise(N_il_obs = n())
 
 
 finch <- read_excel("Data/Spinus_2020_parasitemia_IL6_survival_final.xlsx", na = "NA", sheet = "RMR")
-finch_il$Experiment <- factor(finch_il$Experiment)
-finch_il$Ring <- factor(finch_il$Ring)
+finch$Experiment <- factor(finch$Experiment)
+finch$Ring <- factor(finch$Ring)
 
 # n_obs_rmr <- finch %>% group_by(Ring) %>% summarise(N_rmr_obs = n())
 # 
 # n_obs <- merge(n_obs_il, n_obs_rmr, by = "Ring")
 ```
+
+
+
+
+```{r}
+# Вычисление паразитемии по двум соседним точкам измерения от дня измерения RMR  
+
+df_rmr <- finch %>%  select(Ring, Date, Experiment, RMR) %>% mutate(Type = "RMR", Value = RMR) %>% select(-RMR)
+
+df_il <- finch_il %>% select(Ring, Date, Experiment,Parasitemia) %>% mutate(Type = "Parasitemia", Value = Parasitemia) %>% select(-Parasitemia)
+
+df_all <- rbind(df_rmr, df_il)
+
+df_all %>% group_by(Experiment, Ring) %>% arrange(Date, .by_group = TRUE)   
+
+```
+
+
+
 
 
 <!-- ```{r} -->
@@ -190,6 +209,17 @@ df_final$Cum_Parasitemia_M[df_final$Cum_Parasitemia_M <0] <- 0
 finch <- df_final
 
 ```
+
+
+
+
+```{r}
+
+```
+
+
+
+
 
 
 <!-- В качестве даты измерения паразитемии и интерлейкинов берется дата ближайшая к дате измерения RMR, но после того, как измерено значение RMR (Cum_Parasitemia_nearest, IL_nearest). -->
