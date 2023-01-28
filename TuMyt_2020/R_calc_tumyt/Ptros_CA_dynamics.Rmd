@@ -113,7 +113,16 @@ library(broom)
 tuv_all2 <- tuv_all2 %>% mutate(CA1 = scores(tuv_ca)$sites[,1], CA2 = scores(tuv_ca)$sites[,2])
 
 
+# Mod_dynam_ca1 <- gam(CA1 ~ s(Year, by = Habitat, k = 5, bs="tp", m=2) + s(Habitat, bs="re", k=4), data = tuv_all2, method="REML") 
+
+# Mod_dynam_ca1 <- gam(CA1 ~ s(Year, by = Habitat, k = 5, bs="tp", m=2) + Habitat, data = tuv_all2, method="REML") 
+# 
+# AIC(Mod_dynam_ca1)
+
 Mod_dynam_ca1 <- gam(CA1 ~ s(Year, by = Habitat, k = 5, bs="tp", m=2) + s(Habitat, bs="re", k=4), data = tuv_all2, method="REML") 
+
+# AIC(Mod_dynam_ca1)
+
 
 kable(tidy(Mod_dynam_ca1), caption = "Table ++. Results of regression analysis (GAM) of temporal changes of CA1 scores in different habitats.", digits = c(3, 1, 1, 2))
 

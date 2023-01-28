@@ -14,7 +14,7 @@ library(glmmTMB)
 citation("lme4")
 
 # читаем данные
-tuv <- read.table("Data/TuMyt_0910_itog.csv", header = T, sep = ";")
+tuv <- read.table("Data/TuMyt_0910_itog.csv", header = T, sep = ",")
 
 # отделяем нужные данные
 tuv_demogr3 <- tuv %>% select(Age2_3, Age4_6, Age7_9, Age10_12, Ptros, N, W, OGP, max_L, size_5) %>% as.data.frame()
@@ -54,7 +54,7 @@ plot(tuv_cca4_reduced, scaling = "species")
 plot(tuv_cca4_reduced, scaling = "symmetric")
 
 # поиск множителя для стрелочек
-ordiArrowMul(scores(tuv_cca4_reduced, scaling = "species"), display = c("species"))
+ordiArrowMul(scores(tuv_cca4_reduced, scaling = "symmetric"), display = c("species"))
 
 cca.res <- summary(tuv_cca4_reduced)
 cca.sites <- cca.res$sites
@@ -62,7 +62,7 @@ cca.species <- cca.res$species
 
 mul <- ggvegan:::arrowMul(cca.res$biplot, rbind(cca.sites, cca.species))
 
-mul2 <- ordiArrowMul(cca.res, display = "species")
+mul2 <- ordiArrowMul(cca.res, display = "species", fill = 1)
 
 # создаем датафрейм для графика
 demogr_scores <- fortify(tuv_cca4_reduced, scaling = "symmetric", display = c("sp","wa","bp"))
@@ -72,8 +72,10 @@ demogr_scores_site$Habitat <- tuv_predictors$Habitat
 demogr_scores_sp <- demogr_scores[demogr_scores$Score == "species", ] 
 demogr_scores_cons <- demogr_scores[demogr_scores$Score == "biplot", ] 
 
+library(ggrepel)
 # вариант графика c формой точек и цветом по Habitat
-cca_itog <- ggplot(demogr_scores_site, aes(x = CCA1, y = CCA2)) + 
+cca_itog <- 
+  ggplot(demogr_scores_site, aes(x = CCA1, y = CCA2)) + 
   geom_vline(xintercept = 0) + 
   geom_hline(yintercept = 0) + 
   geom_segment(data = demogr_scores_cons, aes(x = 0, y = 0, xend = CCA1 * mul2, yend = CCA2 * mul2), color = "black", arrow = arrow(type = "closed", angle = 8), size = 1) + 
