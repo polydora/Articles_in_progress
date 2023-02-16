@@ -8,7 +8,7 @@ output:
     fig_width: 9
     fig_height: 9
 bibliography: Predators_bibliography.bib
-csl: derjugin_style.csl
+csl: food and agriculture.csl
 
 
 
