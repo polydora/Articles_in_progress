@@ -11,9 +11,13 @@ hapl <- read_excel("Data/haplogroups.xlsx", na = "NA")
 sys <- merge(sys0, hapl)
 
 
+
+
 tr_excluded <- c("3_pereopod_ischium_ant_spines", "3_pereopod_caprus_ant_spines", "3_pereopod_caprus_post_spines", "4_pereopod_caprus_ant_spines", "4_pereopod_caprus_post_spines", "5_pereopod_caprus_ant_spines", "karina")
 
 sys <- sys %>% select(!tr_excluded)
+
+sys %>% select(-c(sample, coordinates_Lat, coordinates_Long, location,    sex, haplotype )) %>% summarise_all(.funs = function(x) sd(x, na.rm = T)/mean(x, na.rm = T) ) %>% t() %>% hist()
 
 
 
@@ -41,6 +45,10 @@ sys2 <- sys %>% filter(length > 6.5) %>% filter(complete.cases(.))  %>% select(-
 nrow(sys2)
 #### теперь - 54 -- это взрослые особи###
 
+sys2 %>% summarise_all(.funs = function(x) sd(x, na.rm = T)/mean(x, na.rm = T) ) %>% t() %>% hist()
+
+# Ничего формально не выкинуть, надо использовать все признаки
+
 
 mod_cca <- rda(sys2 ~ length  + height, data = sys2_predictors)
 
@@ -57,6 +65,11 @@ cca_unconstr <- scores(mod_cca, choices = c("PC1", "PC2"))$sites %>% as.data.fra
 
 ca_unconstr_pred <- cbind(sys2_predictors, cca_unconstr )
 
+
+cca_unconstr_tr <- scores(mod_cca, choices = c("PC1", "PC2"))$species %>% as.data.frame()
+
+
+
 #добавили локации##
 
 ggplot(ca_unconstr_pred, aes(x = PC1, y = PC2, color = location) ) + geom_point() + geom_vline(xintercept = 0) 
@@ -65,6 +78,8 @@ ggplot(ca_unconstr_pred, aes(x = PC1, y = PC2, color = location) ) + geom_point(
 
 
 
+ca_unconstr_pred$location <- factor(ca_unconstr_pred$location, levels = c("North_Atlantic","South_Atlantic", "Indian" ))
+
 ###Дальше исследуем PC1 и PC2###
 ggplot(ca_unconstr_pred, aes(x = location, y = PC1)) + geom_boxplot() 
 
@@ -72,12 +87,44 @@ ggplot(ca_unconstr_pred, aes(x = location, y = PC1)) + geom_boxplot()
 
 ggplot(ca_unconstr_pred, aes(x = haplotype, y = PC1)) + geom_boxplot() 
 
+
 # PC1 вяжется с гаплотипами !
 
 
-qplot(x = ca_unconstr_pred$length, y = ca_unconstr_pred$PC1) + geom_smooth(method = "lm")
+# Визуализация связи признаков с PCA1 и PCA2
 
-qplot(x = ca_unconstr_pred$length, y = ca_unconstr_pred$PC2) + geom_smooth(method = "lm")
+library(ggrepel) #Пакет, чтобы не наползали подписи на точки
+
+ggplot(cca_unconstr_tr, aes(x = PC1, y = PC2)) + geom_point() + geom_text_repel(aes(label = rownames(cca_unconstr_tr))) + geom_vline(xintercept = 0) 
+
+# Важно! У большинства признаков происходит увеличение их значений при уменьшении  значений PC1, то есть при движении на юг. 
+  
+
+# Можно построить еще карту 
+
+
+library(tidyverse)
+world <- map_data("world")
+
+ggplot() +
+  geom_map(
+    data = world, map = world,
+    aes(long, lat, map_id = region), fill = "gray"
+  ) +
+  geom_point(data = ca_unconstr_pred, aes(coordinates_Long, coordinates_Lat, color = PC1), position = position_jitter(width = 5, height = 5)) + 
+  scale_color_gradient(low = "yellow", high = "red")
+  
+  
+
+# Можно показать широтный градиент и вот так
+
+ggplot(ca_unconstr_pred, aes(x = coordinates_Lat, y = PC1)) + geom_point() + geom_smooth(method = "lm") + geom_hline(yintercept = 0) 
+
+
+
+# qplot(x = ca_unconstr_pred$length, y = ca_unconstr_pred$PC1) + geom_smooth(method = "lm")
+# 
+# qplot(x = ca_unconstr_pred$length, y = ca_unconstr_pred$PC2) + geom_smooth(method = "lm")
 
 
 
@@ -151,6 +198,10 @@ sys4 %>%
   ggplot(., aes(x = location, y = v_teeth)) + geom_boxplot()
 
 # Построй остальные графики сама.
+
+
+
+
 
 
 

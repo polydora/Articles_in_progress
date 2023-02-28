@@ -1,0 +1,584 @@
+---
+title: "Первые результаты анализа сообществ бетоса Финского залива"
+author: "В. М. Хайтов"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+
+opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+```
+
+
+
+```{r}
+library(ggmap)
+library(mapproj)
+library(maps)
+library(rgeos) #этот пакет содержит какую-то хрень, которая позволяет обойти проблему пр чтении фалов средствами maptools. 
+#Att! Этот пакет должен быть загружен до maptools
+library(mapdata)
+library(maptools) # Rgshhs
+library(PBSmapping)
+library(sf)
+
+
+library(readxl)
+library(dplyr)
+library(cowplot)
+library(png)
+library(reshape2)
+library(tibble)
+
+library(mgcv)
+library(vegan)
+
+```
+
+
+```{r}
+biomass <- read_excel("Data/Finnish_gulf_working_data.xlsx", sheet = "Biomass_working") 
+
+biomass <- 
+  biomass %>%
+  `row.names<-`(., NULL) %>% 
+  column_to_rownames(var = "sampling_station_name")
+
+abund <- read_excel("Data/Finnish_gulf_working_data.xlsx", sheet = "Abundance_working")
+abund <- 
+  abund %>%
+  `row.names<-`(., NULL) %>% 
+  column_to_rownames(var = "sampling_station_name")
+```
+
+```{r}
+taxonomy <- read_excel("Data/Finnish_gulf_working_data.xlsx", sheet = "Species Taxonomy")
+```
+
+
+
+
+```{r}
+
+Fin_df <- read.csv("Data/Finnish_Gulf_East.csv") # Map poligones
+
+# Basic map layer####################
+
+theme_set(theme_bw())
+
+
+
+Pl_Finnish_Gulf <- 
+  ggplot(Fin_df, aes(x=long, y=lat, group=group)) +
+  geom_polygon(fill = "gray90", colour = "gray20") + 
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
+  theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+  theme(axis.ticks = element_blank())
+
+
+```
+
+```{r}
+
+# Data reading
+stations <- read_excel("Data/Finnish_gulf_working_data.xlsx", sheet = "Station parameters")
+
+stations <- stations %>% filter(long >= 27.054848)
+
+points <- stations %>% select(sampling_station_name,lat, long) %>% filter(long >= 27.054848)
+
+
+```
+
+## Отбор станций
+
+Для дальнейшей работы будем использовать только те станции, которые лежат в территориальных водах РФ.
+
+
+
+```{r}
+
+Pl_Finnish_Gulf + 
+  geom_point(data = points, aes(group = 1), color = "blue", size = 2)
+
+```
+
+
+**Комментарий**
+
+В анализе, который будет представлен ниже, будут включены все станции, которые приведены на карте. Однако бросается в глаза дефицит станций в Невской губе (восточнее Дамбы) и открытой части залива. Следует обсудить, не стоит ли для детального анализа сосредоточиться только на тех точках, которые располагаются вдоль южного побережья залива, и позиционировать всю работу, как исследование бентосных  сообществ *южной части* Финского залива.  
+
+
+## Проблемные станции
+
+Для дальнейшего анализа необходимо провести проверку базы данных по координатам следующих станций.
+
+```{r}
+points_sf <- st_as_sf(points, coords = c("long", "lat"), crs = 4326 )
+load("Data/Finnish_gulf_East.RData")
+
+point_in_pol <- as.numeric(st_within(points_sf, map))
+
+stations_on_land <- points %>% filter(point_in_pol == 1)
+
+# load("Data/Finnish_gulf.RData")
+
+point_in_pol <- as.numeric(st_within(points_sf, map))
+```
+
+```{r}
+
+stations_on_land <- points %>% filter(point_in_pol == 1)
+
+stations_on_land_print <- stations_on_land %>%  select(sampling_station_name, lat, long) %>% as.data.frame()
+```
+
+
+```{r}
+Pl_Finnish_Gulf + 
+  geom_point(data = stations_on_land, aes(group = 1), color = "blue", size = 2)
+```
+
+
+
+
+```{r}
+kable(stations_on_land_print, caption = "Станции, у которых надо проверить координаты")
+```
+
+
+```{r}
+dubled_stations <- c("D6", "30", "36", "34", "42", "58", "63", "90", "19-GFLuDu-1", "21-GFKhaRi-2", "21-GFLuLu-2", "21-GFLuRi-7")
+```
+
+
+Еще одна проблема, которая всплыла при проверке данных - это нарушение принципа уникальности идентификатора записи. В следующих случаях были найдены двойные строки (по две на численность и биомассу) с одинаковыми обозначениями станций, но разными данным по другим характеристикам. Вот эти станции: `r paste(dubled_stations, sep = ", ")`.  Во всех этих случаях записи были перенумерованы: первая в базе запись получила постфикс "A", вторая - "B". Кроме того, на двух станциях (82, 84) дублирующие строки были идентичны друг другу. В этом случае вторая запись была удалена. Станция с идентификатором "Индиго, борт" была переименована в "Indigo".
+
+
+
+
+
+# Характеристика сообществ бентоса Финского залива
+
+## Пространственное распределение бентоса
+
+Характеристики, используемые для обобщенного описания:
+
+- Общая биомасса бентоса
+
+- Фитомасса (суммарная биомасса фотосинтетиков)
+
+- Количество видов на станции
+
+- Индекс видового разнообразия Шеннона: $H = - \sum{p_i\log_2(p_i)}$, где $p_i=\frac{B_i}{\sum{B_i}}$
+
+
+Для анализа пространственного варьирования всех указанных величин были использованы только те станции, которые располагаются вдоль Южного побережья Финского залива, где плотность сети станций максимальна.
+
+
+```{r }
+
+work_area <- read_sf(dsn = "Data/Work polygon.kml")
+
+```
+
+
+
+
+```{r fig.cap="**Рисунок. ** Расположение станций, вовлеченных в анализ пространственного варьирования интегральных показателей. Синяя линия ограничивает область, на которой будет проводиться экстарполяция предсказаний модели, описывающей постранственное варьирование интегральных показателей "}
+
+work_polygon_sf <- st_as_sf(work_area, coords = c("long","lat"), crs = 4326)
+
+points_in_work_polygon <- points %>% filter(! sampling_station_name %in% stations_on_land) %>% filter(as.numeric(st_within(points_sf, work_polygon_sf)) == 1) 
+
+work_polygon_coordinates <- as.data.frame(st_coordinates(work_polygon_sf)) %>% select(1, 2)
+
+names(work_polygon_coordinates) <- c("long", "lat")  
+  
+ ggplot(data = points, aes(x = long, y = lat)) + 
+   geom_point(size = 0.1) + 
+   geom_polygon(data = work_polygon_coordinates, aes(group = 1), fill = NA, color = "blue" )+
+   geom_polygon(data = Fin_df, aes(group = group), fill = "gray90", colour = "gray20")
+   
+   
+
+```
+
+
+
+Для каждого интегрального показателя были построены отдельные аддитивные обобщенные модели (GAM, гауссово распределение, двумерный сплайн по географическим координатам).
+
+
+### Прострнаственное варьирование суммарной биомассы
+
+
+
+```{r}
+biomass <- biomass %>% filter(row.names(.) %in% points$sampling_station_name)
+abund <- abund %>% filter(row.names(.) %in% points$sampling_station_name)
+
+Phyto <- biomass %>% select(taxonomy$Taxa [taxonomy$Type == "Producent"]) %>% rowSums(.)  
+
+phyto <- data.frame(sampling_station_name = names(Phyto), Phytomass = Phyto)
+
+```
+
+
+```{r}
+B_total <- biomass  %>% 
+  mutate(B_total = rowSums(.)) %>% 
+  select(B_total) %>% 
+  mutate(sampling_station_name = rownames(biomass)) %>% 
+  filter(sampling_station_name %in% points_in_work_polygon$sampling_station_name) %>% 
+  merge(., points_in_work_polygon, all.x = TRUE )
+
+N_total <- abund  %>% 
+  mutate(N_total = rowSums(.)) %>% 
+  select(N_total) %>% 
+  mutate(sampling_station_name = rownames(abund)) %>% 
+  filter(sampling_station_name %in% points_in_work_polygon$sampling_station_name) %>% 
+  merge(., points_in_work_polygon, all.x = TRUE )
+
+
+zero_st <- merge(B_total, N_total) %>% filter(!(N_total > 0 & B_total > 0) ) %>% pull(sampling_station_name)
+
+phyto <- phyto %>% 
+  filter(sampling_station_name %in% points_in_work_polygon$sampling_station_name)%>% 
+  merge(., points_in_work_polygon, all.x = TRUE )
+
+
+H <- diversity(biomass, index = "shannon")
+H <- data.frame(sampling_station_name = row.names(biomass), H = H) %>% 
+  filter(sampling_station_name %in% points_in_work_polygon$sampling_station_name)%>% 
+  merge(., points_in_work_polygon, all.x = TRUE )
+
+
+Sp <- biomass  %>% decostand(., method = "pa" ) %>% 
+  mutate(N_Sp = rowSums(.)) %>% 
+  select(N_Sp) %>%
+  mutate(sampling_station_name = rownames(biomass)) %>% 
+  filter(sampling_station_name %in% points_in_work_polygon$sampling_station_name) %>% 
+  merge(., points_in_work_polygon, all.x = TRUE )
+
+low_B <- B_total %>% select(sampling_station_name, long, lat)
+
+low_B$Low_B <- ifelse(B_total$B_total <= quantile(B_total$B_total, probs = seq(0, 1, 0.1))[2], 1, 0)
+
+```
+
+
+
+
+
+
+
+```{r GAM_Models}
+library(mgcv)
+
+
+Mod_B_total <- gam(log(B_total+1) ~ s(long, lat), data = B_total)
+
+Mod_phyto <- gam(log(Phytomass + 1) ~ s(long, lat), data = phyto)
+
+
+Mod_H <- gam(H ~ s(long, lat), data = H)
+
+Mod_Sp <- gam(log(N_Sp + 1) ~ s(long, lat), data = Sp)
+
+Mod_Low_B <- gam(Low_B ~ s(long, lat), data = low_B, family = "binomial")
+
+
+```
+
+
+
+```{r extrapolation_grids}
+grids <- expand.grid(lat = seq(min(work_polygon_coordinates$lat), max(work_polygon_coordinates$lat), length.out = 100), long = seq(min(work_polygon_coordinates$long), max(work_polygon_coordinates$long), length.out = 100) )
+
+grids_sf <- st_as_sf(grids, coords = c("long","lat"), crs = 4326)
+
+
+grids <- grids %>% filter(as.numeric(st_within(grids_sf, work_polygon_sf)) == 1) 
+
+
+
+```
+
+
+
+
+
+```{r, fig.cap= "**Рисунок. **Пространственное распределение суммарной биомассы"}
+
+grids$fit <- predict(Mod_B_total, newdata = grids)
+
+# grids$fit <- predict(Mod_H, newdata = grids)
+
+ggplot(grids, aes(x = long, y = lat, fill = fit)) + 
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "red") + 
+  geom_polygon(data = Fin_df, aes(x=long, y=lat, group=group), fill = "gray90", colour = "gray20") + 
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
+  theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+  theme(axis.ticks = element_blank()) +
+  geom_point(data = B_total, fill = "black", size = 0.1) +
+  labs(fill = "log(B)")+
+  theme(legend.position = "bottom")
+  
+  
+
+
+```
+
+Видно, что общая биомасса возрастает по мере удаления от кута залива.
+
+
+
+### Прострнаственное варьирование фитомассы
+
+
+```{r, fig.cap="**Рисунок. **Пространственное распределение фитомассы"}
+
+grids$fit <- predict(Mod_phyto, newdata = grids)
+
+# grids$fit <- predict(Mod_H, newdata = grids)
+
+ggplot(grids, aes(x = long, y = lat, fill = fit)) + 
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "darkgreen") + 
+  geom_polygon(data = Fin_df, aes(x=long, y=lat, group=group), fill = "gray90", colour = "gray20") + 
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
+  theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+  theme(axis.ticks = element_blank()) +
+  geom_point(data = B_total, fill = "black", size = 0.1) +
+  labs(fill = "log(Phytomassa)")+
+  theme(legend.position = "bottom")
+  
+  
+
+
+```
+
+
+Надо подумать. Явного пространственного паттерна не видно. Надо сравнить с картой глубин и распределением грунтов. 
+
+
+### Прострнаственное варьирование видового богатсва
+
+
+```{r, fig.cap="**Рисунок. **Пространственное распределение показателей видового богатства"}
+
+grids$fit <- predict(Mod_Sp, newdata = grids)
+
+# grids$fit <- predict(Mod_H, newdata = grids)
+
+ggplot(grids, aes(x = long, y = lat, fill = (exp(fit)-1) )) + 
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "red") + 
+  geom_polygon(data = Fin_df, aes(x=long, y=lat, group=group), fill = "gray90", colour = "gray20") + 
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
+  theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+  theme(axis.ticks = element_blank()) +
+  geom_point(data = B_total, fill = "black", size = 0.1) +
+  labs(fill = "Количество видов") +
+  theme(legend.position = "bottom")
+  
+
+
+```
+
+
+Видовое богатство возрастает по мере удаления от кута залива. Усть тенденция к увеличению видового богатства ближе к берегам. 
+
+
+
+### Прострнаственное варьирование видового разнообразия
+
+
+```{r, fig.cap="**Рисунок. **Пространственное распределение показателей видового разнообразия (индекс Шеннона) "}
+
+grids$fit <- predict(Mod_H, newdata = grids)
+
+# grids$fit <- predict(Mod_H, newdata = grids)
+
+ggplot(grids, aes(x = long, y = lat, fill = fit)) + 
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "blue") + 
+  geom_polygon(data = Fin_df, aes(x=long, y=lat, group=group), fill = "gray90", colour = "gray20") + 
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
+  theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+  theme(axis.ticks = element_blank()) +
+  geom_point(data = B_total, fill = "black", size = 0.1) +
+  labs(fill = "H")+
+  theme(legend.position = "bottom")
+  
+  
+
+
+```
+
+
+Видимо, есть связь с глубиной. Чем ближе к берегу, тем выше разнообразие. Возможно разнообразие возрастает по мере приближения к Дамбе.
+
+
+
+### Распределение "безжизненных" участков
+
+Отдельный полезный анализ -- выявление зон с повышенной вероятностью встречи сообществ с экстремально низкой биомассой. Ниже приведен график частотного распределения значений логарифма суммарной биомассы. В распределении отчетливо выделяется пик малых значений суммарной биомаcсы.   
+
+```{r, fig.cap="**Рисунок. **Частотное распределине значений логарифма суммарной биомассы"}
+ggplot(B_total, aes(x = log(B_total + 1))) +
+  geom_histogram(bins = 20)
+```
+
+Для анализа пространственного распределения вероятности встречи станций с минимальной биомассой (биомасса ниже 10% перцентиля) такие станции были закодированы, как "1", остальные, как "0". Далее была построена аддитивная модель, описывающая вероятность появления единицы в зависимост от географических коодинат (GAM, биномиальное распределение, двумерный сплайн от географических координат).
+
+
+```{r, fig.cap="**Рисунок. **Пространственное распределение вероятности встречи 'безжизненных' станций. Желтые точки - станции с полным отсутствием макробентоса."}
+
+grids$fit <- predict(Mod_Low_B, newdata = grids, type = "response")
+
+# grids$fit <- predict(Mod_H, newdata = grids)
+
+ggplot(grids, aes(x = long, y = lat, fill = fit)) + 
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "red") + 
+  geom_polygon(data = Fin_df, aes(x=long, y=lat, group=group), fill = "gray90", colour = "gray20") + 
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
+  theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+  theme(axis.ticks = element_blank()) +
+  geom_point(data = B_total, fill = "black", size = 0.1) +
+  labs(fill = "Веротяность встречи")+
+  theme(legend.position = "bottom") +
+  geom_point(data = points %>% filter(sampling_station_name %in% zero_st), shape = 21, fill = "yellow", size = 2)
+  
+
+```
+
+
+Видно, что максимальная вероятность встречи "безжизненных" станций приходится на район, прилегающий к Сосновому Бору.   
+
+
+
+
+# Варьирование структуры сообщества
+
+Для анализа были взяты все станции, располагающиеся в территориальных водах РФ.  Из анализа исключены станции с нулевым обилием.
+
+
+```{r}
+zero_B_st <- biomass %>% mutate(B_total = rowSums(.)) %>% filter(B_total == 0) %>% row.names(.)
+
+biomass2 <- biomass %>% filter(!row.names(.) %in% zero_B_st)
+
+log_biomass <- decostand(biomass2, method = "log")
+
+pc_ord <- log_biomass %>%  rda(., scale = T)
+
+
+pc <- as.data.frame(scores(pc_ord)$sites)
+pc$sampling_station_name <- row.names(pc)
+
+pc_points <- merge(pc, points)
+```
+
+
+В основе анализа лежит матрица логарифмов значений биомасс видов. На основе этой матрицы был проведен анализ главных компонент (спектральное разложение матрицы корреляций). Ниже приводится рисунок, отражающий вклад главных компоеннет. Видно, что от предсказаний  случайного распределения собственных значений  (модель сломанной палки) отличается только PC1. Это означает, что общий паттерн варьирования струкутры сообществ очень простой - есть только один выраженный градиент. 
+
+Первая компонента (PC1) описывает лишь  `r round((pc_ord$CA$eig/sum(pc_ord$CA$eig))[1] * 100, 1)`% суммарной дисперсии. Столь малая величина говорит о высоком разнообразии сообществ. Выявленный градиент, таким образом, может трактоваться лишь как общая тенденция. 
+
+```{r, fig.cap="**Рисунок. **Собственные значения главных компоенет. Линия отражает предсказание случайного распределения на основе модели сломанной палки."}
+
+screeplot(pc_ord, bstick = TRUE)
+
+```
+
+Ординация станций в осях первых двух компонент (`r round((pc_ord$CA$eig/sum(pc_ord$CA$eig))[1:2] * 100, 1)`% общей дисперсии, соответственно) показывает, что лишь незначительное количество станций имеют высокие значения PC1. Большая часть станций концентрируется в районе нулевых и слабо отрицательных значений PC1. 
+
+В целом, видно, что анализ полного набора станций вскрывает лишь тривиальные аспекты  $\beta$-разнообразия. То есть на фоне явных различий, описываемых PC1, остается еще некоторое "скрытое" разнообразие.  
+
+Это скрытое разнообразие сообществ требует более детального анализа, который необходимо согласовывать (видимо, надо будет разделять станции по характеру грунтов и отдельно анализировать мягкие и твердые грунты)    
+
+
+```{r}
+plot(pc_ord, display = "sites")
+```
+
+
+```{r}
+sp_scores <- as.data.frame(scores(pc_ord)$species)
+sp_scores <-  sp_scores %>% arrange(PC1)  
+```
+
+
+В таблице, приведенной ниже, даны нагрузки по PC1 для видов. Видно, что максимальные нагрузки демонстрируют, в основном, эпибионты (водоросли, прикрепленные организмы), а минимальные нагрузки - виды инфауны. Это означает, что первая компонента дифференцирует, главным образом, сообщества илистых грунтов (отрицательные значения) и сообщества каменистых субстратов (положительные значения). Это не супер интересный и вполне очевидный результат.   
+
+```{r}
+sp_scores$Taxa <- row.names(sp_scores) 
+sp_scores <- sp_scores %>% select(Taxa, PC1) 
+rownames(sp_scores) <- NULL
+kable(sp_scores, digits = 3, col.names = c("Taxa", "PC1"), caption = "Нагрузки по первым двум главным компонентам")
+```
+
+```{r}
+pc_phyto <-pc %>% merge(., phyto)  
+ 
+  
+  
+```
+
+
+
+Связь PC1 c  обилием растений демонстрирует приведенный ниже рисунок. Отчетливо видна положительная корреляция ($R_{Spearman}=$  `r round(cor(pc_phyto$PC1, pc_phyto$Phytomass), 2)`.
+
+```{r fig.cap="**Рисунок. ** Связь между значениями первой главной компоенеты и фитмассой."}
+  ggplot(pc_phyto, aes(x = PC1, y = log(Phytomass +1))) + geom_point()
+
+```
+
+
+
+
+О пространственном распределении  сообществ можно судить по рисунку, приведенному ниже. Здесь изображены только те станции, которые имеют положительные значения PC1, то есть те сообщества, где высокой биомассой обладают виды, имеющие положительные нагрузки по PC1 (см. таблицу). Видно, что это большей частью прибрежные станции. Наиболее обширные площади это сообщество занимает на отмели возле Кургальского полуострова.
+
+```{r fig.cap="Расположение станций с положиетльными значениями PC1"}
+
+pc_points <-  pc_points %>% arrange(., PC1) %>% filter(PC1>0)
+
+Pl_Finnish_Gulf + 
+  geom_point(data = pc_points, aes(group = 1, color = PC1)) +
+  scale_color_gradient(low = "white", high = "black")+
+  theme(legend.position = "bottom")
+
+
+```
+
+
+
+
+
+
+
+**Предложения**
+
+1. На следующем этапе анализа разделить базу данных на две группы в соответствии с типом пробоотборника (дночерпательные отдельно от водолазных и т.п.). Так мы сможем более детально оценить варьирование сообществ инфауны и сообщест эпибионтов.
+
+2. Нужно согласовать источники, посвященные средовым  предикторам (состав грунта, соленость, и прочее). 
+
+**Вопросы**
+
+3. Как читать данные по грунтам из базы? Это проценты или что? 
+
+4. Может быть следует вытащить что-то из GISовских растров (если они есть). Видел у Валентины растр по солености. Может быть есть еще что-то? 
+
+5. Или может быть попытаться вытащить данные из растров, которые есть в открытом доступе (баз Bio-Oracle). 
+
+6. Что делать с глубиной? Как  вообще  измерялась глубина? Использовали ли эхолот? Вводили ли поправку на нагонный ветер? Может брать не ту глубину, что в базе, а  вытаскивать данные по глубине из растров (для Финского залива такие растры  точно должны быть, причем с высоким разрешением). 
+
+
+
+
+

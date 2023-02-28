@@ -21,9 +21,9 @@ library(vegan)
 
 # Создаем карту по обычным лекалам
 
-# 
-# Fin_x <- c(19, 31)
-# Fin_y <- c(56, 61)
+
+# Fin_x <- c(26.5, 31)
+# Fin_y <- c(59, 61)
 # 
 # gshhs.l.b <- "d:/Data_LMBE/Maps/Gshhs/gshhs_l.b"
 # 
@@ -43,18 +43,18 @@ library(vegan)
 # 
 # Fin_df <- fortify(Fin_f)
 # 
-# write.csv(Fin_df, file = "Data/Finnish_Gulf.csv")
+# write.csv(Fin_df, file = "Data/Finnish_Gulf_East.csv")
 
 
 
-# 
+#
 # map <- esp_get_prov("Asturias") %>%
 #   st_transform(27572) %>%
 #   st_bbox()
 
 map <- st_as_sfc(Fin_f)
 
-save(map, file = "Finnish_gulf.RData")
+save(map, file = "Finnish_gulf_East.RData")
 
 
 # Pl_Finnish_Gulf_1 <-
@@ -63,7 +63,7 @@ save(map, file = "Finnish_gulf.RData")
 
 
 
-Fin_df <- read.csv("Data/Finnish_Gulf.csv") # Map poligones
+Fin_df <- read.csv("Data/Finnish_Gulf_East.csv") # Map poligones
 
 # Basic map layer####################
 
@@ -85,11 +85,11 @@ Pl_Finnish_Gulf <-
 
 stations <- read_excel("Data/Finnish_gulf_working_data.xlsx", sheet = "Station parameters")
 
-points <- stations %>% select(lat, long)
+points <- stations %>% select(lat, long) %>% filter(long >= 27.054848)
 
 
 Pl_Finnish_Gulf + 
-  geom_point(data = stations, aes(group = 1), color = "blue", size = 2)
+  geom_point(data = points, aes(group = 1), color = "blue", size = 2)
 
 
 
