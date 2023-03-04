@@ -45,15 +45,17 @@ Plot_Kand_upper <-
   theme(plot.title = element_text(hjust = 0.5))
 
 
+myt_site2 <- myt_site %>% arrange((Prop_T))
 
 Plot_Kand_upper_PT <-
   Plot_Kand_upper +
-  geom_point(data = myt_site, aes(x = Lon, y = Lat, group = 1, size = Prop_T, fill = Prop_T), shape = 21) +
+  geom_point(data = myt_site2, aes(x = Lon, y = Lat, group = 1, fill = Prop_T), shape = 21, size = 3) +
   scale_fill_gradient(low = "yellow", high = "red") +
   guides(size = "none") +
-  theme(legend.direction = "horizontal", legend.position = c(0.8,0.1), legend.background = element_blank())
+  theme(legend.direction = "horizontal", legend.position = c(0.8,0.1), legend.background = element_blank(), axis.title = element_blank(), axis.text = element_blank(), axis.text.x = element_blank(), axis.ticks = element_blank()) +
+  labs(fill = "PT")
   
-ggsave(filename = "figures/Plot_PT.eps", plot = Plot_Kand_upper_PT)  
+ggsave(filename = "figures/Plot_PT_no_size.svg", plot = Plot_Kand_upper_PT)  
 
 
 
