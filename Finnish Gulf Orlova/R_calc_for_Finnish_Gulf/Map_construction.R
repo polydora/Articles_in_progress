@@ -22,8 +22,8 @@ library(vegan)
 # Создаем карту по обычным лекалам
 
 
-Fin_x <- c(26.5, 31)
-Fin_y <- c(59, 61)
+Fin_x <- c(27.29, 31)
+Fin_y <- c(59.20, 60.13)
 #
 gshhs.l.b <- "d:/Data_LMBE/Maps/Gshhs/gshhs_l.b"
 
@@ -54,7 +54,7 @@ Borders <- Rgshhs(wdb_borders.f.b, xlim = Fin_x, ylim = Fin_y)
 #
 # Fin_df <- fortify(Fin_f)
 #
-# write.csv(Fin_df, file = "Data/Finnish_Gulf_East.csv")
+# write.csv(Fin_df, file = "Data/Finnish_South.csv")
 
 
 
@@ -76,7 +76,7 @@ st_as_sfc(rivers, xmin = Fin_x[1], xmax = Fin_x[2])
 
 plot(rivers)
 
-save(map, file = "Finnish_gulf_East.RData")
+save(map, file = "Finnish_gulf_South.RData")
 
 
 # Pl_Finnish_Gulf_1 <-

@@ -1,0 +1,382 @@
+---
+title: "Анализ частоты разореных гнезд гаги обыкновеной в вершине Кандалакшского залива"
+author: "В. М. Хайтов"
+output: 
+      word_document:
+                reference_docx: Letopis_template.docx
+                fig_width: 6
+                fig_height: 6
+abstract: |
+    **Хайтов В. М. Анализ частоты разореных гнезд гаги обыкновеной в вершине Кандалакшского залива** // Марченков А.В. (ред.) Летопись природы Кадалакшского заповедника за 2022 год (ежегодный отчет). Кандалакша. Т.1 (Летопись природы Кандалакшского заповедника, кн. ++)
+    
+    На основе стандартных данных учета гнездящихся птиц на островах вершины Кандалакшского залива прослежены многолетние изменения доли разоренных гнезд на островах.
+        
+    **Khaitov V.M.     Water test of common eider clutches on the islands of the of the Kandalaksha Bay in 2022. ** // Marchenkov A. V. (ed.)  The Chronicle of Nature by the Kandalaksha Reserve for 2022 (Annual report).  Kandalaksha. V.1. (The Chronicle of Nature by the Kandalaksha Reserve, Book N ++)
+    
+    Based on standard counts of nesting birds on the islands of the upper part of the Kandalaksha Bay,  long-term changes in the proportion of broken nests on the islands were described.
+ 
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+library(reshape2)
+library(knitr)
+library(pander)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(cowplot)
+library(lubridate)
+library(ggmap)
+library(stringr)
+
+library(flextable)
+
+
+editor <- "Марченков А.В."
+editor_eng <- "Marchenkov A.V."
+
+Year <- 2022
+
+# Функция, задающая нумерацию рисунков
+
+figRef <- local({
+    tag <- numeric()
+    created <- logical()
+    used <- logical()
+    function(label, caption, prefix = options("figcap.prefix"), 
+        sep = options("figcap.sep"), prefix.highlight = options("figcap.prefix.highlight")) {
+        i <- which(names(tag) == label)
+        if (length(i) == 0) {
+            i <- length(tag) + 1
+            tag <<- c(tag, i)
+            names(tag)[length(tag)] <<- label
+            used <<- c(used, FALSE)
+            names(used)[length(used)] <<- label
+            created <<- c(created, FALSE)
+            names(created)[length(created)] <<- label
+        }
+        if (!missing(caption)) {
+            created[label] <<- TRUE
+            paste0(prefix.highlight, prefix, " ", i, sep, prefix.highlight, 
+                " ", caption)
+        } else {
+            used[label] <<- TRUE
+            paste(prefix, tag[label])
+        }
+    }
+})
+
+options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**")
+
+theme_set(theme_bw())
+
+library(officer)
+std_border = fp_border(color="gray", width = 1)
+set_flextable_defaults(
+  font.family = "Arial", 
+  font.size = 9, 
+  big.mark = "",
+  theme_fun = "theme_vanilla"
+)
+
+
+```
+
+
+
+```{r}
+
+
+nest <- read_excel("Data/Учет_разорения_2015_2022.xlsx", na = "NA")
+
+nest <-
+  nest %>%
+  filter(! Region %in% "Кемь-лудский арх.")
+
+isl <- read_excel("Data/Kandalaksha_Bay_Islands_2021.xlsx", na = "NA")
+
+isl <- isl %>%  select(-description, -gid)
+
+islands_area <- read_excel("Data/Kandalaksha_islands_area.xlsx")
+
+
+nest <-
+  nest %>%
+  dplyr::mutate(Outcome = case_when(
+    Status == "Broken" ~ 1,
+    Status == "Alive" ~ 0,
+    is.na(Status) ~ NA
+  )) 
+
+nest$Year <- year(nest$Date)
+
+
+nest2 <- merge(nest, isl, all.x = T) 
+
+
+nest3 <- merge(nest2, islands_area, all.x = T)%>%
+  filter(!is.na(Outcome))
+
+
+#  Точка отсчета расстояния до Кандалкши (контора Заповедника)
+Shore_boundary  <- c(67.133129, 32.417849)
+
+# Переводим в радианы
+Shore_boundary <- Shore_boundary*pi/180
+
+
+nest3$Dist_Kand <- with(nest3, acos(sin(Shore_boundary[1])*sin(Lat*pi/180) + cos(Shore_boundary[1])*cos(Lat*pi/180)*cos(Shore_boundary[2] - Long*pi/180))) * 6371
+
+
+nest3$Region <- factor(nest3$Region)
+nest3$Name <- factor(nest3$Name)
+
+
+
+
+```
+
+
+```{r}
+
+Total_prop_broken <- mean(nest3$Outcome)
+
+```
+
+Одним из показателей пресса хищников на гаг, гнездящихся на островах, является доля разоренных гнезд. В данной главе производится оценка многолетних изменений этого показателя и дается сравнение разных районов территории заповедника по частоте разорения. При стандартных учетах, проводящихся на островах вершины Кандалакшского залива, гнезда гаги классифицируются, как "разоренные", если в них присутствует пух, однако яйца разрушены (расклеваны или раздавлены), либо на гнезде или рядом с ним найдена мертвая самка. К числу разоренных не относились те случаи, когда в гнезде  присутствовали холодные неразрушенные яйца. Такие гнезда (всего `r sum(is.na(nest2$Status))` гнезда) были исключены из анализа, так как не были известны причины, по которым кладка была брошена. 
+
+
+Доля разоренных гнезд на всех островах, где проводился учет, приведена в таблице +.3. Всего в анализ было включено `r nrow(nest3)` гнезд на `r length(unique(nest3$Name))` островах в течение `r length(unique(nest3$Year))` лет (с `r min(nest3$Year)` по `r max(nest3$Year)` гг.). В целом, на изученной территории разорению подверглось `r round(Total_prop_broken*100, 1)`% гнезд. Для анализа частоты разорения была построена аддитивная логистическая регрессионная модель со случайными эффектами (Generalized additive mixed effect binomial model). В качестве предикторов в этой модели выступали следующие величины: 
+
+- Регион ($Region$). Дискретный предиктор с четырьмя градациями: `r paste(unique(nest3$Region), sep = ", ")`. В последнюю категорию попадали следующие острова `r nest3 %>% filter(Region == "Незаповедная территория") %>% pull(Name) %>% unique() %>% paste(sep = ", ")`; 
+
+- Год ($Year$); 
+
+- Площадь острова ($Area$); 
+
+- Расстояние от Кандалакши ($Distance$). В качестве условной точки отсчета было взято здание конторы Кандалакшского заповедника, точка с координатами (Lat = `r as.character(Shore_boundary)[1]` N; Long = `r as.character(Shore_boundary)[2]` E); 
+
+- "Остров" ($Island$) рассматривался в качестве случайного, группирующего фактора, контролирующего варьирование свободного члена модели (random intercept). 
+
+Общий вид построенной модели отражает следующая формула.   
+
+
+$$
+Outcome = b_0 + b_1Region_1 + b_2Region_2 + b_3Region_3 + s(Year|Region) + s(Area) + s(Distance) + \alpha(Island) + \varepsilon 
+$$
+где      
+- $Outcome$ - зависимая бинарная переменная (1, если гнездо разорено; 0 - гнездо не разорено);
+
+- $b_0$ - свободный член; 
+
+- $b_1$, $b_2$, $b_3$ - коэффициенты, отражающие эффект регионов (за базовый уровень взят регион "Лувеньгский архипелаг");  
+
+- $s(Year|Region)$ - непараметрические сглаживающие функции (smoother), отражающие эффект года для каждого региона в отдельности;
+
+- $s(Area)$ - эффект площади острова;
+
+- $s(Distance)$ - эффект расстояния от острова до Кандалакши;   
+
+- $\alpha(Island)$ - случайный эффект острова;  
+
+- $\varepsilon$ - остатки.
+
+
+
+
+
+Оценка членов модели (Таблица +.1, Таблица +.2) показала, что статистически значимого влияния на частоту разорения не оказывают ни площадь острова, ни расстояние до Кандалакши. Значимым оказались все непараметрические сглаживающие функции, описывающие эффект года. Построенную модель отражает `r figRef("Model")`. 
+
+Самая высокая частота разорения гнезд наблюдалась на островах Оленьего архипелага (r figRef("Model")`). При этом, самая высокая пространственная изменчивость (варьирование частоты разорения от острова к острову) наблюдается в Лувеньгском архипелаге.  Результаты анализа говорят о том, что во всех регионах наблюдается значимая многолетняя изменчивость частоты разорения, то есть эта величина не остается год от года постоянной. При этом явный многолетний тренд на снижение частоты разорения наблюдается на островах Лувеньгского архипелага. В остальных регионах наблюдаются межгодовые колебания, общим для которых был минимум частоты, отмеченный в 2018-2019 гг.       
+
+
+```{r}
+
+library(mgcv)
+
+
+Mod <- gam(Outcome ~ s(Year, by = Region, k = 5) + Region + s(Dist_Kand) + s(Area_Ga) + s(Name, bs = "re"), method = "REML", data = nest3, family = "binomial")
+
+
+
+```
+
+
+```{r}
+
+library(broom)
+sum_mod <- tidy(Mod, parametric = F)
+
+sum_mod <- sum_mod[-nrow(sum_mod),]
+
+sum_mod$term <- gsub(pattern = "Region", replacement = "", x = sum_mod$term)
+sum_mod$term <- gsub(pattern = "Dist_Kand", replacement = "Distance", x = sum_mod$term)
+sum_mod$term <- gsub(pattern = "Area_Ga", replacement = "Area", x = sum_mod$term)
+
+sum_mod$edf <- round(sum_mod$edf, 2)
+sum_mod$ref.df <- round(sum_mod$ref.df, 2)
+sum_mod$statistic <- round(sum_mod$statistic, 2)
+sum_mod$p.value <- round(sum_mod$p.value, 4)
+```
+
+
+```{r}
+
+colname <- c(
+  "Член аддитивной модели",
+  "EDF",
+  "Ref.DF",
+  "Хи-квадрат",
+  "Уровень значимости"
+)
+
+
+
+sum_mod %>% 
+  flextable() %>% 
+  set_caption("Таблица +.1 Характеристика непараметрических сглаживающих функций в модели, описывающией связь вероятности разорения гнезда с предикторами. Parameters of smoothers from the model describing the relationship between the probability of nest breaking and predictors.") %>% 
+   border_inner_h(border = std_border ) %>% 
+  border_inner_v(border = std_border ) %>% 
+  set_header_labels(values = colname) 
+  
+
+```
+
+
+```{r}
+sum_mod <- tidy(Mod, parametric = T)
+
+sum_mod$term <- gsub(pattern = "Region", replacement = "Region: ", x = sum_mod$term)
+# 
+# sum_mod$edf <- round(sum_mod$edf, 2)
+# sum_mod$ref.df <- round(sum_mod$ref.df, 2)
+# sum_mod$statistic <- round(sum_mod$statistic, 2)
+sum_mod$p.value <- round(sum_mod$p.value, 4)
+
+
+```
+
+
+
+```{r}
+
+colname <- c(
+  "Член модели",
+  "Оценка коэффициента",
+  "DF",
+  "z-статистика",
+  "Уровень значимости"
+)
+
+sum_mod %>% 
+  flextable() %>% 
+  set_caption("Таблица +.1 Параметрические коэффициенты модели, описывающей связь вероятности разорения гнезда с предикторами. Parametric coefficients of the model describing the relationship between the probability of nest breaking and predictors.") %>% 
+   border_inner_h(border = std_border ) %>% 
+  fontsize(size = 10, part = "all") %>% 
+  set_header_labels(values = colname) %>% 
+  colformat_double(j = 2:4,  big.mark = "", digits = 2)
+  
+
+```
+
+```{r}
+result_table <-
+  nest %>% group_by(Region, Name, Year) %>%
+  summarise(Prop_Broken = round(mean(Outcome, na.rm = T) * 100, 1), N_nest = n(), N_na = sum(is.na(Status)))
+
+result_table$Observ <- with(result_table, ifelse(N_na !=0,
+  paste(Prop_Broken,"(",N_nest, "/", N_na, ")", sep = ""),
+  paste(Prop_Broken,"(",N_nest, ")", sep = "")
+  
+))
+```
+
+
+```{r}
+selected_islands <- 
+ result_table %>% 
+  group_by(Name) %>% 
+  summarise(Years = n(), meanN = mean(N_nest)) %>% 
+  filter(meanN >= 100) %>% 
+  filter(Years == length(unique(nest$Year))) %>% 
+  pull(Name)
+
+Pl_dynam_selected <-
+result_table %>%
+  filter(Name %in% selected_islands) %>% 
+  ggplot(., aes(x = Year, y = Prop_Broken)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~Name, ncol = 3) +
+  labs(x = "Годы", y = "Доля (%) разоренных гнезд")
+  
+  
+  
+```
+
+Для иллюстрации трендов локальной динамики частоты разорения на отдельных островах было выбрано `r length(selected_islands)` островов, удовлетворяющих следующим условиям: (1) на них были проведены учеты в каждый из годов наблюдений, (2) число гнезд найденных на них превышало сотню. Графики, демонстрирующие изменения частоты разорения (`r figRef("Select_dynam")`) демонстрируют, скорее, отсутствие какого-то общего многолетнего паттерна. Единственной общей тенденцией, проявляющейся на большинстве островов, является уже упомянутое снижение частоты разорения в 2018-2019 гг. Таким образом, частота разорения определяется, вероятно, какими-то локальными факторами, действующими в масштабах отдельных островов или групп близко расположенных островов. Наиболее вероятным локальным фактором является "заход" и длительное кормление хищников, на тех или иных островах. 
+
+
+
+
+```{r, fig.cap=figRef("Model", "Многолетние изменения частоты разорения гнезд в разных регионах. Бокс-плоты отражают разброс значений в разные годы (горизонтальная линия внутри бокса - медиана за данный год; границы боксов отражают 1-й и 3-й квартили; границы 'усов' отражают 1.5 интерквартильных расстояния; точки за пределами 'усов' - аномально высокие или аномально низкие значения). Линии с доверительными интервалами отражают предсказания регрессионной модели. Пунктирная горизонтальная линия отражает общее для всех регионов среднее значение частоты разорения.Long-term changes in the frequency of the frequency of broken nests in different regions. Boxplots reflect distribution of values in different years (the horizontal line inside the box is the median for a given year; box boundaries reflect the 1st and 3rd quartiles; 'whisker' boundaries reflect 1.5 interquartile range; points outside the 'whisker' reflect outlaiers). Curves with confidence intervals reflect regression model predictions. The dotted horizontal lines reflect the average of the frequency of destroied nests common for all regions.")}
+
+
+My_data <- expand.grid(Year = seq(min(nest3$Year), max(nest3$Year), 0.1), Region = unique(nest3$Region), Dist_Kand = mean(nest3$Dist_Kand), Area_Ga = mean(nest3$Area_Ga))
+
+predicted <- predict(Mod, newdata = My_data, exclude = "s(Name)", newdata.guaranteed=TRUE, se.fit = TRUE, type = "response")
+
+My_data$Fit <- predicted$fit
+My_data$SE <- predicted$se.fit
+
+prop_broken <-
+  nest3 %>%
+  group_by(Region, Name, Year) %>%
+  summarise(Prop_Broken = mean(Outcome))
+
+Total_prop_broken <- mean(nest3$Outcome)
+
+ggplot() +
+geom_boxplot(data = prop_broken, aes(x = Year, y = Prop_Broken *100, group = Year), outlier.size = 1) +
+  facet_wrap(~Region) +
+  geom_line(data = My_data, aes(x = Year, y = Fit*100), size = 1, color = "blue") +
+  geom_ribbon(data = My_data, aes(x = Year, ymin = (Fit - 1.96*SE)*100, ymax = (Fit + 1.96*SE)*100 ), alpha = 0.2) +
+  guides(color = "none") +
+  geom_abline(intercept = Total_prop_broken *100, slope = 0, color = "red", linetype = 2, size = 1) +
+  labs(x = "Годы", y = "Доля разоренных гнезд (%)")
+
+```
+
+
+
+
+```{r, fig.cap=figRef("Select_dynam", "Динамика частоты разорения на отдельных островах Кандалакшского залива. Dynamics of broken nest frequency on several islands of the Kandalaksha Bay. ")}
+
+Pl_dynam_selected
+```
+
+
+
+
+\pagebreak
+
+```{r}
+
+ft <- dcast(result_table, formula = Region + Name  ~ Year, value.var = "Observ") 
+ft[is.na(ft)] <- "-"
+
+ft %>% 
+  flextable() %>%
+  border_inner_h(border = std_border ) %>% 
+  border_inner_v(border = std_border ) %>% 
+  fontsize(size = 8, part = "all") %>% 
+  set_header_labels(Region = "Регион",
+                    Name = "Остров") %>% 
+  set_caption("Таблица +.3 Доля (%) разоренных гнезд на островах в разных регионах в разные годы. Прочерк обозначает отсутствие наблюдений разоренных или неразоренных гнезд. В скобках указано общее количество найденных гнезд, через косую черту приводится количество гнезд, которые не были отнесены ни к категории 'разоренных' ни к категории 'живых' (эти гнезда не учитывались в анализе частоты разорения). Proportion (%) of broken nests on islands in different regions in different years. A dash indicates no observations of 'alive' or 'broken' nests.The total number of nests found is given in parentheses, and the number of nests that were not counted as 'broken' or 'alive' is given across the slash (these nests were not included in the analysis).")
+
+```
+
+
+

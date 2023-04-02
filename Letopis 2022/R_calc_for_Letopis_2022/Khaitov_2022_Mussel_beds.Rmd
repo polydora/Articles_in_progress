@@ -1,0 +1,518 @@
+---
+title: "Многолетняя динамика мидиевых банок"
+author: "В. М. Хайтов"
+output: 
+      word_document:
+                reference_docx: Letopis_template.docx
+                fig_width: 6
+                fig_height: 6
+
+ 
+abstract: |
+    **Хайтов В. М. Многолетняя динамика мидиевых банок ** // Марченков А. В. (ред.) Летопись природы Кадалакшского заповедника за 2022 год (ежегодный отчет). Кандалакша. Т.1 (Летопись природы Кандалакшского заповедника, кн. ++)
+    Рассматриваются данные по обилию и размерной структуре мидий  на пяти мидиевых банках, расположенных в акватории Вороньей губы и в Лувеньгском архипелаге.   
+    
+    **Khaitov V.M. Long-term dynamics of mussel beds** // Martchenkov A. V. (ed.)  The Chronicle of Nature by the Kandalaksha Reserve for 2022 (Annual report).  Kandalaksha. V.1. (The Chronicle of Nature by the Kandalaksha Reserve, Book N ++)
+     The chapter considers the abundance and size structure of mussels  at 5 mussel beds situated in Voronia bay and in Luvenga archipelago.   
+---
+
+```{r setup, include=FALSE}
+
+library(knitr)
+library(reshape2)
+library(pander)
+library(ggplot2)
+library(gridExtra)
+library(ggmap)
+library(readxl)
+library(dplyr)
+
+opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+
+theme_set(theme_bw())
+options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**" )
+
+
+editor <- "Марченков А. В."
+editor_eng <- "Martchenkov A. V."
+
+# Функция, задающая нумерацию рисунков
+
+figRef <- local({
+    tag <- numeric()
+    created <- logical()
+    used <- logical()
+    function(label, caption, prefix = options("figcap.prefix"), 
+        sep = options("figcap.sep"), prefix.highlight = options("figcap.prefix.highlight")) {
+        i <- which(names(tag) == label)
+        if (length(i) == 0) {
+            i <- length(tag) + 1
+            tag <<- c(tag, i)
+            names(tag)[length(tag)] <<- label
+            used <<- c(used, FALSE)
+            names(used)[length(used)] <<- label
+            created <<- c(created, FALSE)
+            names(created)[length(created)] <<- label
+        }
+        if (!missing(caption)) {
+            created[label] <<- TRUE
+            paste0(prefix.highlight, prefix, " ", i, sep, prefix.highlight, 
+                " ", caption)
+        } else {
+            used[label] <<- TRUE
+            paste(prefix, tag[label])
+        }
+    }
+})
+
+
+```
+
+
+
+```{r}
+# Читаем данные
+vor_size_1 <-read_excel("data/Mussel beds data base 96-22.xlsx", na = "NA", sheet = "Vor2, vor4, vor5 1996-2008" )
+
+vor_size_2 <-read_excel("data/Mussel beds data base 96-22.xlsx", na = "NA", sheet = "Vor2, vor4, vor5 2009-2016" )
+
+vor_size_3 <-read_excel("data/Mussel beds data base 96-22.xlsx", na = "NA", sheet = "Vor2, Vor4, Vor5 2017-2021" )
+
+vor_size_4 <-read_excel("data/Mussel beds data base 96-22.xlsx", na = "NA", sheet = "vor2, vor4, vor5 2022" )
+
+
+
+luv_size_1 <- read_excel("data/Mussel beds data base 96-22.xlsx", na = "NA", sheet = "Korg, Mat 1997-2008" )
+
+luv_size_2 <- read_excel("data/Mussel beds data base 96-22.xlsx", na = "NA", sheet = "Korg, Mat 2009-2011" )
+
+luv_size_3 <- read_excel("data/Mussel beds data base 96-22.xlsx", na = "NA", sheet = "Korg, Mat 2012-2016" )
+
+
+luv_size_4 <- read_excel("data/Mussel beds data base 96-22.xlsx", na = "NA", sheet = "Korg, Mat, 2017-2021" )
+
+luv_size_5 <- read_excel("data/Mussel beds data base 96-22.xlsx", na = "NA", sheet = "Korg, Mat 2022" )
+
+
+
+
+# balg <- read.table("data/Algae biomass on mussel beds 1997 2016.csv", header = T, sep = ";")
+# cover <- read.table("data/coverage_2004-2017.csv", header = T, sep = ";")
+
+
+all_size <- rbind(vor_size_1, vor_size_2, vor_size_3, vor_size_4, luv_size_1, luv_size_2, luv_size_3, luv_size_4, luv_size_5)
+
+
+names(all_size) <- c("Year", "Season", "Bank", "Sample", "L", "Status", "Number_of_crushed")
+
+# Убираем лишние периоды взятия проб
+
+all_size <- all_size %>% filter(Season %in% c("August", "July", "June"))
+
+all_size <- all_size %>% filter(!(Bank %in% c("korg", "mat") & (Season == "June" & Year %in% 2008:2012)))
+
+all_size <- all_size %>% filter(!(Bank %in% c("vor2", "vor4", "vor5") & (Season == "June" & Year %in% 2013)))
+
+
+all_size <- all_size %>% filter(!(Bank %in% c("vor2", "vor4", "vor5", "korg", "mat") & (Season == "July" & Year %in% c(2013, 2017))))
+
+
+# table(all_size$Bank, all_size$Year, all_size$Season)
+
+
+all_size_dead <- all_size %>% filter(Status == "dead")
+
+all_size <- all_size %>% filter(Status == "alive")
+
+all_size_no_spat <- all_size %>% filter(L >= 1)
+
+
+# all_size$L_class <- round(all_size$L, 0)
+
+
+```
+
+**Методика сбора материала на мониторинговых точках**
+
+_Обозначения и координаты изученных поселений_
+В базе использованы обозначения мидиевых банок, устоявшиеся в предыдущих изданиях «Летописи природы Кандалакшского заповедника». 
+
+Мидиевая банка *«Korg»*
+N 67 6.655
+E 32 38.523
+Расположена на корге в районе о-вов Малый и Большой Куртяжные (Лувеньгский архипелаг).
+
+Мидиевая банка *«Mat»*
+N 67 6.790
+E 32 38.567
+Расположена на косе, идущей от материка, на расстоянии 260 м от предыдущей банки.
+
+Мидиевая банка *«vor2»*
+N 67 56.460
+E 32 26.056 
+Банка расположена на нижней части литорали острова Воронинского, расположенного  в куту Вороньей губы. 
+
+Мидиевая банка *«vor4»*
+N 67 56.072
+E 32 30.417
+Банка расположена на косе, идущей от материка на расстоянии около 500 м от входа в Воронью губу. 
+
+Мидиевая банка *«vor5»*
+N 67 55.673
+E 32 29.465
+Банка расположена в проливе, соединяющем губу Воронью и губу Белую.  
+
+ 
+
+_Методика описания размерной структуры мидий_
+
+Описание методики взятия проб приведено в аналогичной главе Летописи природы за 2019 год. В данной главе приводятся данные по размерной структуре мидий и их плотности поселения, полученные по той же методике в 2020 - 2022 гг.  
+
+
+
+
+
+**Размерная структура мидий и динамика обилия моллюсков**
+
+
+ Исходные данные по размерной структуре мидий в 1996-2016 гг. приводятся в томе Летописи природы за 2016 г., данные за 2017 г. в Летописи природы за 2017 г. Данные, полученные в летние сезоны (июль, август) 2018-2019 гг  в Летописи природы за 2019 г.
+ 
+Данные по размерной структуре за 2020-2022 гг приведены в таблице +.1, +.2 и +.3. Частотные распределения размеров в разные годы на разных мидиевых банках иллюстрируют рисунки `r figRef("Vor2")`, `r figRef("Vor4")`, `r figRef("Vor5")`, `r figRef("Korg")`, `r figRef("Mat")`. На всех банках прослеживаются характерные многолетние изменения размерной структуры:  унимодальные распределения с доминированием старых особей сменяются бимодальными распределениями или унимодальными распределениями с доминированием молоди. 
+
+ Динамику среднего размера мидий, на мидиевых банках отражает `r figRef("Size_dynam")`. Хорошо заметны периодические колебания среднего размера. Эти колебания происходят асинхронно на разных мидиевых банках (периоды пиков и падений значений среднего размера моллюсков не совпадают друг с другом). Это можно трактовать, как отсутствие строгой согласованности в процессах пополнения банок молодью и отмирания старых особей. На всех банках отчетливо прослеживается тенденция к снижению среднего размера моллюсков. Это свидетельствует об общей тенденции - на всех банках стали доминировать особи мелких размеров. Это может быть следствием увеличения притока молоди на все банки. В пользу этого говорит и явная тенденция к увеличению плотности поселения моллюсков, которая читается на всех банках, кроме банки Mat (`r figRef("N_dynam")`). 
+ 
+ Еще одной тенденцией, свидетельствующей об увеличении притока молоди на банки, является увеличение количества мидий, классифицируемых, как "спат" (`r figRef("Spat_dynam")`). Под спатом понимаются моллюски, только что прошедшие метаморфоз и не имеющие ни одного кольца сезонной остановки роста. В летние месяцы такие моллюски имеют длину раковины меньше 1 мм (они отличаются также по характерной форме и более светлой окраске раковины). Учет обилия спата методами, применяемыми при сборе материала в данном мониторинге, невозможен (часть спата проходит через сито, спат может быть распределен очень неравномерно и т.д.). В связи с этим статистический анализ обилия этой возрастной когорты некорректен. В связи с этим, на `r figRef("Spat_dynam")` приведны только данные тех проб, где спат встречен.  
+ 
+ Присутствие спата на банках зависит, в первую очередь, от сроков размножения мидий. Поскольку взятие проб происходит в более или менее стандартном диапазоне дат (конец июля - начало августа), то наблюдаемый процесс увеличения встречаемости спата может трактоваться, как косвенное свидетельство смещения сроков размножения мидий на более ранние числа. Поскольку процесс увеличения встречаемости спата происходит более или менее синхронно на всех точках наблюдения можно предполагать, что это отражает региональную тенденцию, проявляющуюся в масштабах всей вершины Кандалакшского залива.    
+
+
+
+```{r, fig.cap=figRef("Vor2", "Размерная структура мидий на банке *Vor2* в разные годы. Mussel's size structure at mussel bed *Vor2*")}
+
+options(scipen = 999999)
+
+ggplot(all_size_no_spat [all_size_no_spat $Bank == "vor2", ], aes(x = L)) + 
+  geom_histogram(binwidth = 5, fill = "gray", color = "black") + 
+  facet_wrap(~Year, ncol = 4, scales = "free_y", dir = "v") + 
+  labs(x = "Длина раковины (мм)", y = "Количество особей")
+
+```
+
+
+
+```{r, fig.cap=figRef("Vor4", "Размерная структура мидий на банке *Vor4* в разные годы. Mussel's size structure at mussel bed *Vor4*")}
+ggplot(all_size_no_spat [all_size_no_spat $Bank == "vor4", ], aes(x = L)) + 
+  geom_histogram(binwidth = 5, fill = "gray", color = "black") + 
+  facet_wrap(~Year, ncol = 4, scales = "free_y", dir = "v") + 
+  labs(x = "Длина раковины (мм)", y = "Количество особей")
+
+```
+
+
+```{r, fig.cap=figRef("Vor5", "Размерная структура мидий на банке *Vor5* в разные годы. Mussel's size structure at mussel bed *Vor5*")}
+ggplot(all_size_no_spat [all_size_no_spat $Bank == "vor5", ], aes(x = L)) + 
+  geom_histogram(binwidth = 5, fill = "gray", color = "black") + 
+  facet_wrap(~Year, ncol = 4, scales = "free_y", dir = "v") + 
+  labs(x = "Длина раковины (мм)", y = "Количество особей")
+
+```
+
+
+```{r, fig.cap=figRef("Korg", "Размерная структура мидий на банке *Korg* в разные годы. Mussel's size structure at mussel bed *Korg*")}
+
+ggplot(all_size_no_spat [all_size_no_spat $Bank == "korg", ], aes(x = L)) + 
+  geom_histogram(binwidth = 5, fill = "gray", color = "black") + 
+  facet_wrap(~Year, ncol = 4, scales = "free_y", dir = "v") + 
+  labs(x = "Длина раковины (мм)", y = "Количество особей")
+
+```
+
+
+```{r, fig.cap=figRef("Mat", "Размерная структура мидий на банке *Mat* в разные годы. Mussel's size structure at mussel bed *Mat*")}
+
+ggplot(all_size_no_spat [all_size_no_spat $Bank == "mat", ], aes(x = L)) + 
+  geom_histogram(binwidth = 5, fill = "gray", color = "black") + 
+  facet_wrap(~Year, ncol = 4, scales = "free_y", dir = "v") + 
+  labs(x = "Длина раковины (мм)", y = "Количество особей")
+
+```
+
+
+
+
+
+
+```{r, fig.cap=figRef("Size_dynam", "Многолетние изменения среднего размера мидий на разных мидиевых банках. Кривая линия - сглаживающая непараметрическая функция.Long-term changes in average mussel size at different mussel beds. Curve line represents fitted smoother.")}
+
+all_size_no_spat$Region <- ifelse(all_size_no_spat$Bank %in% c("mat", "korg"), "Лувеньгский архипелаг", "Воронья губа" )
+
+
+ggplot(data = all_size_no_spat, aes(x = Year, y = L, linetype = Bank, color = Bank)) + 
+  facet_wrap(~ Region)  + 
+  theme(axis.text.x = element_text(angle =90)) + 
+  geom_smooth(size = 1) + labs(x = "Годы", y = "Средний размер (мм)") + 
+  scale_color_manual(values = c("black", "blue", "red", "black", "blue")) +  scale_x_continuous(breaks=seq(min(all_size_no_spat$Year), max(all_size_no_spat$Year),2)) + 
+  theme(axis.text.x = element_text(angle = 90))
+
+
+```
+
+
+
+
+
+```{r, fig.cap=figRef("N_dynam", "Многолетние изменения средней плотности поселения мидий на разных мидиевых банках. Кривая линия - сглаживающая непараметрическая функция.Long-term changes in average mussel abundance at different mussel beds. Curve line represents fitted smoother.")}
+
+
+Abund <- all_size_no_spat %>% group_by(Region, Bank, Year, Sample) %>% summarise(Abund = n())
+
+Abund_mean <- Abund %>% group_by(Region, Bank, Year) %>% summarise(Mean_N = mean(Abund)) 
+
+ggplot(data = Abund, aes(x = Year, y = (Abund * 182))) +
+  facet_wrap(~ Bank, scale = "free_y", dir = "v")  + 
+  geom_line(data = Abund_mean, aes(y = Mean_N * 182), color = "black", linetype = 1)+
+  theme(axis.text.x = element_text(angle =90)) + 
+  geom_smooth(size = 1) + 
+  labs(x = "Годы", y = "Плотность поселения (экз./кв.м)") + 
+  scale_color_manual(values = c("black", "blue", "red", "black", "blue")) +
+  scale_x_continuous(breaks=seq(min(all_size_no_spat$Year), max(all_size_no_spat$Year), 2)) + 
+  theme(axis.text.x = element_text(angle = 90))
+
+
+```
+
+
+
+
+```{r, fig.cap=figRef("Spat_dynam", "Многолетние изменения средней плотности спата.  Long-term changes in average spat abundance at different mussel beds.")}
+
+
+Abund <- all_size %>% filter(L == 0.5) %>%  group_by( Bank, Year, Sample) %>% summarise(Abund = n())
+
+Abund_mean <- Abund %>% group_by(Bank, Year) %>% summarise(Mean_N = mean(Abund)) 
+
+ggplot(data = Abund, aes(x = Year, y = (Abund * 182))) +
+  facet_wrap(~ Bank, scale = "free_y", dir = "v")  + 
+  geom_point(color = "black") +
+  theme(axis.text.x = element_text(angle =90)) +
+  labs(x = "Годы", y = "Плотность поселения (экз./кв.м)")  +
+  scale_x_continuous(breaks=seq(min(all_size_no_spat$Year), max(all_size_no_spat$Year), 2)) + 
+  theme(axis.text.x = element_text(angle = 90))
+
+
+```
+
+
+
+\pagebreak 
+
+
+
+```{r}
+
+all_size <- all_size %>% filter(!is.na(L))
+
+all_size <- all_size %>% filter(L != 0)
+
+
+
+# all_size$L <- ifelse(all_size$L == 0.5, "спат", all_size$L)
+
+freq_size <- all_size %>% filter(Bank != "mat") %>% filter(Year %in% 2020:2022)  %>% group_by(Year, Bank, Sample, L) %>% summarise(N = n())
+
+freq_size_sample <- dcast(freq_size, Year + Bank + L ~ Sample, value.var = "N")
+
+freq_size_sample[is.na(freq_size_sample)] <- 0
+
+freq_size_sample$L <- ifelse(freq_size_sample$L < 1, "Спат", round(freq_size_sample$L, 0))
+
+# col_names <- c("Год", "Банка", "Размер (мм)", "1", "2", "3", "4", "5", "6") 
+
+# kable(freq_size_sample,  
+#       col.names = col_names, 
+#       caption = "**Таблица +.1** Размерная структура мидий в отдельных пробах в 2020-2022 гг на мидиевых банках  Vor2, Vor4, Vor5 и Кorg. Size structure of mussels in samples at mussel bed in 2018-2019 at mussel beds Vor2, Vor4, Vor5 and Korg.")
+
+
+```
+
+```{r}
+library(flextable)
+freq_size_sample$Year <- as.character(freq_size_sample$Year)
+
+ft <- flextable(freq_size_sample)
+
+
+ft <- set_header_labels(ft,
+  Year = "Год",
+  Bank = "Банка", 
+  L = "Размер, мм",
+  "1" = "Проба 1",
+  "2" = "Проба 2",
+  "3" = "Проба 3",
+  "4" = "Проба 4",
+  "5" = "Проба 5",
+  "6" = "Проба 6"
+)
+
+
+library(officer)
+std_border = fp_border(color="gray", width = 1)
+
+ft <- border_inner_h(ft, border = std_border )
+ft <- border_inner_v(ft, border = std_border )
+
+ft <- set_caption(ft, "Таблица +.1 Размерная структура мидий в отдельных пробах в 2020-2022 гг на мидиевых банках  Vor2, Vor4, Vor5 и Кorg. Size structure of mussels in samples at mussel bed in 2020-2022 at mussel beds Vor2, Vor4, Vor5 and Korg.")
+
+ft
+
+```
+**Примечание** Категорией *Спат* обозначаются мидии с длиной раковины меньше 1 мм. При анализе динамики размерной структуры и обилия моллюски этой категории не учитываются.   
+
+\pagebreak 
+
+
+```{r}
+
+
+freq_size <- all_size %>% filter(Bank == "mat") %>% filter(Year == 2020)  %>% group_by(Year, Bank, Sample, L) %>% summarise(N = n())
+
+freq_size_sample <- dcast(freq_size, Year + Bank + L ~ Sample, value.var = "N")
+
+freq_size_sample[is.na(freq_size_sample)] <- 0
+
+freq_size_sample$L <- ifelse(freq_size_sample$L == 0.5, "Спат", round(freq_size_sample$L, 0))
+
+
+# kable(freq_size_sample,  
+#       col.names = col_names, 
+#       caption = "**Таблица +.1** Размерная структура мидий в отдельных пробах в 2018-2019 гг на мидиевой банке Mat. Size structure of mussels in samples at mussel bed in 2018-2019 at mussel bed Mat.")
+
+
+```
+
+\pagebreak 
+
+```{r}
+freq_size_sample$Year <- as.character(freq_size_sample$Year)
+
+
+ft <-  
+  freq_size_sample %>% 
+  select(Year, Bank, L, "1", "2", "3", "4", "5", "6") %>% 
+  flextable()
+
+
+ft <- set_header_labels(ft,
+  Year = "Год",
+  Bank = "Банка", 
+  L = "Размер, мм",
+  "1" = "Пр. 1",
+  "2" = "Пр. 2",
+  "3" = "Пр. 3",
+  "4" = "Пр. 4",
+  "5" = "Пр. 5",
+  "6" = "Пр. 6"
+)
+
+
+ft <- border_inner_h(ft, border = std_border )
+ft <- border_inner_v(ft, border = std_border )
+
+ft <- set_caption(ft, "Таблица +.3. Размерная структура мидий в отдельных пробах в 2020 г. на мидиевой банке Mat. Size structure of mussels in samples at mussel bed in 2020 at mussel bed Mat.")
+
+
+ft <- autofit(ft)
+
+ft 
+```
+
+
+\pagebreak 
+
+```{r}
+freq_size_sample$Year <- as.character(freq_size_sample$Year)
+
+
+ft <-  
+  freq_size_sample %>% 
+  select(Year, Bank, L, "7", "8", "9", "10", "11", "12") %>% 
+  flextable()
+
+
+ft <- set_header_labels(ft,
+  Year = "Год",
+  Bank = "Банка", 
+  L = "Размер, мм",
+  "7" = "Пр. 7",
+  "8" = "Пр. 8",
+  "9" = "Пр. 9",
+  "10" = "Пр. 10",
+  "11" = "Пр. 11",
+  "12" = "Пр. 12"
+)
+
+
+ft <- border_inner_h(ft, border = std_border )
+ft <- border_inner_v(ft, border = std_border )
+
+ft <- set_caption(ft, "Таблица +.3. Продолжение. Continue")
+
+
+ft <- autofit(ft)
+
+ft 
+```
+
+
+**Примечания:**     
+На мидиевой банке Mat в 2020 г. пробы 1-6 взяты на той части банки, которая не была смыта во врем шторма в 2010 году, пробы 7-12 взяты на той части банки, которая была смыта во время шторма (см. аналогичную главу Летописи природы за 2016 г.). 
+
+
+\pagebreak 
+
+
+```{r}
+
+freq_size <- all_size %>% filter(Bank == "mat") %>% filter(Year %in% 2021:2022)  %>% group_by(Year, Bank, Sample, L) %>% summarise(N = n())
+
+freq_size_sample <- dcast(freq_size, Year + Bank + L ~ Sample, value.var = "N")
+
+freq_size_sample[is.na(freq_size_sample)] <- 0
+
+freq_size_sample$L <- ifelse(freq_size_sample$L == 0.5, "Спат", round(freq_size_sample$L, 0))
+
+
+
+```
+
+```{r}
+freq_size_sample$Year <- as.character(freq_size_sample$Year)
+
+
+ft <- flextable(freq_size_sample)
+
+
+ft <- set_header_labels(ft,
+  Year = "Год",
+  Bank = "Банка", 
+  L = "Размер, мм",
+  "1" = "Пр. 1",
+  "2" = "Пр. 2",
+  "3" = "Пр. 3",
+  "4" = "Пр. 4",
+  "5" = "Пр. 5",
+  "6" = "Пр. 6"
+  )
+
+
+ft <- border_inner_h(ft, border = std_border )
+ft <- border_inner_v(ft, border = std_border )
+
+ft <- set_caption(ft, "Таблица +.3. Размерная структура мидий в отдельных пробах в 2021-2022 гг. на мидиевой банке Mat. Size structure of mussels in samples at mussel bed in 2021-2022 at mussel bed Mat.")
+
+ft
+```
+
+
+

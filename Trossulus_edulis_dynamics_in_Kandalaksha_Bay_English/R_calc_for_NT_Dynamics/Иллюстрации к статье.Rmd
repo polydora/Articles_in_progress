@@ -1,0 +1,203 @@
+---
+title: ""
+output:
+  word_document:
+    reference_docx: article_template.docx
+    fig_width: 8 
+    fig_height: 8
+# bibliography: Astred_english_Bibliografy_abriviated.bib
+# csl: marine-biology.csl
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+options(knitr.kable.NA = '')
+```
+
+```{r}
+## Packages ######
+
+library(ggplot2)
+library(reshape2)
+library(dplyr)
+library(patchwork)
+library(broom)
+library(broom.mixed)
+library(readxl)
+library(mgcv)
+library(readxl)
+library(tidyr)
+library(lme4)
+library(broom.mixed)
+library(broom)
+library(cowplot)
+
+
+
+```
+
+
+
+```{r}
+
+theme_set(theme_bw() + theme(legend.key = element_blank()))
+
+```
+
+
+
+```{r}
+
+# Все данные
+myt_old_new <- read_excel("Data/Mytilus old and new samples morphotype count 2023.xlsx", na = "NA")
+
+
+myt_old_new <- myt_old_new %>% filter(Site != "ZRS_subtidal")
+
+
+monitoring <- read_excel("Data/nt_ne_monitoring_2002_2022.xlsx", na = "NA")
+
+
+
+# Карта точек 
+
+
+# Мониторинговые точки
+monitoring_points <- data.frame(Site = c("Лупчостров", "Малый", "Овечий", "Ряжков"), lat = c(67.147790, 67.117923,67.094935,67.020064 ) , long =c(32.355051, 32.406971, 32.452459, 32.570831))
+
+
+
+Kand_x <- c(32.2, 34)
+Kand_y <- c(66.2, 67.12)
+
+
+ggWhite_Sea <- read.csv("Data/ggWhite_Sea_2021.csv")
+
+
+Plot_Kand_upper <-
+  ggplot(ggWhite_Sea, aes(x=long, y=lat, group=group)) + 
+  geom_polygon(fill = "gray70", colour = "black") + 
+  coord_map(xlim = Kand_x, ylim = Kand_y) + 
+  theme(axis.ticks=element_blank(), axis.title.x =element_blank(),  axis.title.y= element_blank(), plot.background = element_rect(fill = NULL), panel.grid = element_blank()) +
+  theme(axis.text = element_blank())
+  # annotate (x= 32.410973,  y = 67.154371, geom =  "point", size = 5, shape = 21, color = "black", fill = "black") 
+  # annotate (x= 32.83,  y = 67.154371, geom = "text", label =  "Кандалакша") +
+
+
+
+points <- myt_old_new %>% group_by(Site) %>% summarise(lat = mean(lat), long = mean(long))  
+matrenin <- points %>% filter(Site == "Matrenin") 
+
+Pl_historical_points <- 
+Plot_Kand_upper + 
+  geom_point(data = points, aes(x = long, y = lat, group = 1), size = 4, shape = 21, fill = "yellow") +
+  geom_point(data = matrenin, aes(x = long, y = lat, group = 1), size = 4, shape = 21, fill = "red") +
+  geom_point(data = monitoring_points, aes(x = long, y = lat, group = 1), size = 3, shape = 24, fill ="blue") 
+  # ggtitle("Расположение 'исторических' и \nмониторинговых точек сбора")
+
+
+# Динамика на о.Матренин
+
+matr <- myt_old_new %>% filter(Site == "Matrenin") %>% group_by(Year, Period ) %>% summarise(N_T = sum(N_T), N_E = sum(N_E)) %>% mutate(PropT = N_T / (N_T + N_E))
+
+matr$Year <- as.numeric(matr$Year)
+
+pss_matr <- data.frame(Year = c(2002, 2022), PSS = c(0.03, 0.42))
+
+matr$Period <- factor(matr$Period, labels = c("Переописания", "Исторические сборы") )
+
+fmt_dcimals <- function(decimals=0){
+  # return a function responpsible for formatting the 
+  # axis labels with a given number of decimals 
+  function(x) as.character(round(x,decimals))
+}
+
+
+
+Pl_matr <- 
+ggplot(matr, aes(x = Year, y = PropT)) + 
+  geom_segment(data = pss_matr, aes(x = Year, xend = Year, y = 0,  yend = PSS), color = "gray", size = 5) + 
+  geom_point(aes(fill = Period), shape = 21,  size = 4) +
+  scale_fill_manual(values = c("yellow", "gray20"))+
+  labs(fill = "", x = "Годы сбора", y = "Частота T-морфотипа / Значение PSS") +
+  scale_x_continuous(breaks = seq(min(matr$Year), max(matr$Year), 11)) + 
+  scale_y_continuous(labels = fmt_dcimals(1))+
+  theme(legend.position = c(0.2, 0.85)) 
+
+
+# Остальные точки исторических сборов 
+
+myt_old_new2 <- myt_old_new %>% filter(Site != "Matrenin") %>% group_by(Site, Year, Period) %>% summarise(N_T = sum(N_T), N_E = sum(N_E)) %>% mutate(PropT = N_T / (N_T + N_E))
+
+myt_old_new2$Period <- factor(myt_old_new2$Period, labels = c("Переописания", "Исторические сборы") )
+
+Pl_histor_new <- 
+ggplot(myt_old_new2, aes(x = Year, y = PropT)) + 
+  geom_point(aes(fill = Period), shape = 21, size = 4,  position = position_jitter(width = 0.4)) + 
+  labs(fill = "", x = "Годы сбора", y = "Частота T-морфотипа") +
+  scale_fill_manual(values = c("yellow", "gray20")) + 
+  theme(legend.position = c(0.2, 0.85)) +
+  scale_x_continuous(breaks = seq(min(myt_old_new2$Year), max(myt_old_new2$Year), 11))+
+  scale_y_continuous(labels = fmt_dcimals(1))
+
+
+# Динамика в точках мониторинга
+
+monitoring <- monitoring %>% mutate(PropT = Nt / (Nt + Ne))  
+
+monitoring <- monitoring %>% mutate(PropT_adj = case_when(
+PropT == 0 ~ 0.000001,
+PropT == 1 ~ 0.999999,
+PropT != 1 & PropT != 0 ~ PropT))
+ 
+monitoring$Site = factor(monitoring$Site)
+
+Mod_monitor_1 <- gam(PropT_adj ~ s(Year, by = Site, bs = "cr", k = 5) + Site, family = betar(link = "logit"), data = monitoring)
+
+
+
+MyData2 <-  monitoring %>% group_by(Site) %>% do(data.frame(Year = seq(min(.$Year), max(.$Year), 1)))
+  # monitoring %>% group_by(Site) %>% do(data.frame(Year = seq(min(.$Year), max(.$Year), 1)))   
+  # unique(monitoring[,1:2])
+  # expand.grid(Year = seq(2002, max(monitoring$Year, 1)), Site = levels(monitoring$Site))
+
+  
+MyData2$Predict <- predict(Mod_monitor_1, newdata = MyData2, type = "response", se = T)$fit
+
+MyData2$SE <- predict(Mod_monitor_1, newdata = MyData2, type = "response", se = T)$se.fit
+
+# MyData2[MyData2$Site == "Malij",]
+# MyData2[MyData2$Site == "Ovech",]
+# MyData2[MyData2$Site == "Ryashkov",]
+
+
+
+islands <- as_labeller(c(
+  "Lupch" = "остров Б.Лупчостров ",
+  "Malij" = "остров Малый",
+  "Ovech" = "остров Овечий",
+  "Ryashkov" = "остров Ряжков"
+))
+
+Pl_monitor <-  
+  ggplot(MyData2, aes(x = Year, y = Predict)) + 
+  facet_wrap(~ Site, labeller = islands) + 
+  geom_point(data = monitoring, aes(x = Year, y = PropT )) + 
+  geom_line(color = "blue", size = 1) +
+  geom_ribbon(aes(ymin = Predict - 1.96*SE, ymax = Predict + 1.96*SE), alpha = 0.2)+  
+  theme_bw()  + 
+  labs(y= "Частота Т-морфотипа", x = "Годы") + 
+  theme(title = element_text(size =10)) +
+  scale_x_continuous(breaks = seq(min(monitoring$Year), max(monitoring$Year), 10)) +
+  scale_y_continuous(labels = fmt_dcimals(1))
+
+```
+
+
+
+```{r}
+
+plot_grid(Pl_historical_points, Pl_matr, Pl_histor_new, Pl_monitor,  labels = c("А", "Б", "В", "Г"))
+  
+```

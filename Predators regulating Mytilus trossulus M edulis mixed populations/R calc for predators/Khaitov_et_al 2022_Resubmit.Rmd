@@ -641,24 +641,39 @@ Mod_PT <- gam(P_T ~ Stage2 + B_aster + s(Site, bs = "re"), data = all_ast_abund,
 
 ```{r}
 
-Pl_baster <- ggplot(all_ast_abund, aes(x = Stage2, y = B_aster)) + geom_boxplot() + theme(axis.title.x = element_blank(), axis.text.x = element_blank()) + labs(y = "Starfish biomass (g )")
+Pl_baster <- ggplot(all_ast_abund, aes(x = Stage2, y = B_aster)) + 
+  geom_boxplot(fill = "gray") + 
+  theme(axis.title.x = element_blank(), axis.text.x = element_blank()) + 
+  labs(y = "Starfish biomass (g )") +
+  theme(axis.text.x = element_blank(), axis.text.y = element_text(size = 14), axis.title.y = element_text(size = 15))
 
 
-Pl_N_alive <- ggplot(all_ast_abund, aes(x = Stage2, y = N_alive)) + geom_boxplot() + theme(axis.title.x = element_blank(), axis.text.x = element_blank()) + labs(y = "Abundance of alive mussels")
+
+Pl_N_alive <- ggplot(all_ast_abund, aes(x = Stage2, y = N_alive)) + 
+  geom_boxplot(fill = "gray") + 
+  theme(axis.title.x = element_blank(), axis.text.x = element_blank()) + 
+  labs(y = "Abundance of alive mussels") +
+  theme(axis.text.x = element_blank(), axis.text.y = element_text(size = 14), axis.title.y = element_text(size = 15))
+
  
 
-Pl_Prop_dead <- ggplot(all_ast_abund, aes(x = Stage2, y = Prop_dead)) + geom_boxplot() + theme(axis.title.x = element_blank(), axis.text.x = element_blank())+ labs(y = "Proportion of dead shells")
+Pl_Prop_dead <- ggplot(all_ast_abund, aes(x = Stage2, y = Prop_dead)) + 
+  geom_boxplot(fill = "gray") + 
+  theme(axis.title.x = element_blank(), axis.text.x = element_blank())+ 
+  labs(y = "Proportion of dead shells") +
+  theme(axis.text.x = element_blank(), axis.text.y = element_text(size = 14), axis.title.y = element_text(size = 15))
+
 
 
 compar <- all_ast_abund %>% group_by(Stage2) %>% summarize(y = median(P_T) +0.03) %>% mutate(Lab = c("a", "b", "b"))
 
 Pl_PT <- 
   ggplot(all_ast_abund, aes(x = Stage2, y = P_T)) + 
-  geom_boxplot() +  
+  geom_boxplot(fill = "gray") +  
   theme(axis.title.x = element_blank()) + 
   labs(y = "Proportion of T-morphotype") +
-  geom_text(data = compar, aes(x = Stage2, y = y, label = Lab)) +
-  theme(axis.text.x = element_text(size = 14))
+  geom_text(data = compar, aes(x = Stage2, y = y, label = Lab), size = 9) +
+  theme(axis.text.x = element_text(size = 20), axis.text.y = element_text(size = 14), axis.title.y = element_text(size = 15))
 
 
 

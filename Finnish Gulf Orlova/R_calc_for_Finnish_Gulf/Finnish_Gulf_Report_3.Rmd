@@ -1,0 +1,1098 @@
+---
+title: "Cообществ бетоса Финского залива"
+author: "В. М. Хайтов"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+
+opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+```
+
+
+
+```{r}
+library(ggmap)
+library(mapproj)
+library(maps)
+library(rgeos) #этот пакет содержит какую-то хрень, которая позволяет обойти проблему пр чтении фалов средствами maptools. 
+#Att! Этот пакет должен быть загружен до maptools
+library(mapdata)
+library(maptools) # Rgshhs
+library(PBSmapping)
+library(sf)
+
+
+library(readxl)
+library(dplyr)
+library(cowplot)
+library(png)
+library(reshape2)
+library(tibble)
+
+library(mgcv)
+library(vegan)
+
+```
+
+
+```{r}
+biomass <- read_excel("Data/Finnish_gulf_working_data.xlsx", sheet = "Biomass_working") 
+
+biomass <- 
+  biomass %>%
+  `row.names<-`(., NULL) %>% 
+  column_to_rownames(var = "sampling_station_name")
+
+abund <- read_excel("Data/Finnish_gulf_working_data.xlsx", sheet = "Abundance_working")
+abund <- 
+  abund %>%
+  `row.names<-`(., NULL) %>% 
+  column_to_rownames(var = "sampling_station_name")
+```
+
+```{r}
+taxonomy <- read_excel("Data/Finnish_gulf_working_data.xlsx", sheet = "Species Taxonomy")
+```
+
+
+
+
+```{r}
+
+Fin_df <- read.csv("Data/Finnish_South.csv") # Map poligones
+
+# Basic map layer####################
+
+theme_set(theme_bw())
+
+
+
+Pl_Finnish_Gulf <- 
+  ggplot(Fin_df, aes(x=long, y=lat, group=group)) +
+  geom_polygon(fill = "gray90", colour = "gray20") + 
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
+  theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+  theme(axis.ticks = element_blank()) 
+
+
+```
+
+```{r}
+
+# Data reading
+stations <- read_excel("Data/Finnish_gulf_working_data.xlsx", sheet = "Station parameters")
+
+stations <- stations %>% filter(long >= 27.054848)
+
+points <- stations %>% select(sampling_station_name,lat, long) 
+
+```
+
+```{r}
+points_sf <- st_as_sf(points, coords = c("long", "lat"), crs = 4326 )
+
+load("Data/Finnish_gulf_South.RData")
+
+point_in_pol <- as.numeric(st_within(points_sf, map))
+
+stations_on_land <- points %>% filter(point_in_pol == 1)
+
+# load("Data/Finnish_gulf.RData")
+
+point_in_pol <- as.numeric(st_within(points_sf, map))
+```
+
+
+
+
+# Общая характеристика сообществ бентоса Финского залива и паттерны пространственного распределения
+
+## Пространственное распределение бентоса
+
+Характеристики, используемые для обобщенного описания:
+
+- Общая биомасса бентоса
+
+- Фитомасса (суммарная биомасса фотосинтетиков)
+
+- Количество видов на станции
+
+- Индекс видового разнообразия Шеннона: $H = - \sum{p_i\log_2(p_i)}$, где $p_i=\frac{B_i}{\sum{B_i}}$
+
+- Индекс олигомиксности Наумова.
+
+
+Для анализа пространственного варьирования всех указанных величин были использованы только те станции, которые располагаются вдоль Южного побережья Финского залива, где плотность сети станций максимальна.
+
+
+```{r }
+
+work_area <- read_sf(dsn = "Data/Work polygon.kml")
+
+```
+
+
+
+
+```{r fig.cap="**Рисунок. ** Расположение станций, вовлеченных в анализ пространственного варьирования интегральных показателей. Синяя линия ограничивает область, на которой будет проводиться экстарполяция предсказаний модели, описывающей постранственное варьирование интегральных показателей "}
+
+work_polygon_sf <- st_as_sf(work_area, coords = c("long","lat"), crs = 4326)
+
+points_in_work_polygon <- points %>% filter(! sampling_station_name %in% stations_on_land) %>% filter(as.numeric(st_within(points_sf, work_polygon_sf)) == 1) 
+
+work_polygon_coordinates <- as.data.frame(st_coordinates(work_polygon_sf)) %>% select(1, 2)
+
+names(work_polygon_coordinates) <- c("long", "lat")  
+  
+ ggplot(data = points_in_work_polygon, aes(x = long, y = lat)) + 
+   geom_point(size = 0.1, color = "blue") + 
+   geom_polygon(data = work_polygon_coordinates, aes(group = 1), fill = NA, color = "blue", linetype = 2 )+
+   geom_polygon(data = Fin_df, aes(group = group), fill = "gray90", colour = "gray20")
+   
+   
+
+```
+
+
+
+Для каждого интегрального показателя были построены отдельные аддитивные обобщенные модели (GAM, гауссово распределение, двумерный сплайн по географическим координатам), позволяющие экстраполировать данные, полученные на станциях на все пространство рабочего полигона.
+
+
+### Прострнаственное варьирование суммарной биомассы
+
+
+```{r}
+biomass <- biomass %>% filter(row.names(.) %in% points$sampling_station_name)
+abund <- abund %>% filter(row.names(.) %in% points$sampling_station_name)
+
+Phyto <- biomass %>% select(taxonomy$Taxa [taxonomy$Type == "Producent"]) %>% rowSums(.)  
+
+phyto <- data.frame(sampling_station_name = names(Phyto), Phytomass = Phyto)
+
+```
+
+
+```{r}
+B_total <- biomass  %>% 
+  mutate(B_total = rowSums(.)) %>% 
+  select(B_total) %>% 
+  mutate(sampling_station_name = rownames(biomass)) %>% 
+  filter(sampling_station_name %in% points_in_work_polygon$sampling_station_name) %>% 
+  merge(., points_in_work_polygon, all.x = TRUE )
+
+N_total <- abund  %>% 
+  mutate(N_total = rowSums(.)) %>% 
+  select(N_total) %>% 
+  mutate(sampling_station_name = rownames(abund)) %>% 
+  filter(sampling_station_name %in% points_in_work_polygon$sampling_station_name) %>% 
+  merge(., points_in_work_polygon, all.x = TRUE )
+
+
+zero_st <- merge(B_total, N_total) %>% filter(!(N_total > 0 & B_total > 0) ) %>% pull(sampling_station_name)
+
+phyto <- phyto %>% 
+  filter(sampling_station_name %in% points_in_work_polygon$sampling_station_name)%>% 
+  merge(., points_in_work_polygon, all.x = TRUE )
+
+
+H <- diversity(biomass, index = "shannon")
+H <- data.frame(sampling_station_name = row.names(biomass), H = H) %>% 
+  filter(sampling_station_name %in% points_in_work_polygon$sampling_station_name)%>% 
+  merge(., points_in_work_polygon, all.x = TRUE )
+
+
+
+
+Sp <- biomass  %>% decostand(., method = "pa" ) %>% 
+  mutate(N_Sp = rowSums(.)) %>% 
+  select(N_Sp) %>%
+  mutate(sampling_station_name = rownames(biomass)) %>% 
+  filter(sampling_station_name %in% points_in_work_polygon$sampling_station_name) %>% 
+  merge(., points_in_work_polygon, all.x = TRUE )
+
+
+
+oligomix <-   
+  biomass  %>%
+    mutate(B_total = rowSums(.), S = apply(., MARGIN = 1, FUN = function(x) sum(x!=0)),  SD = apply(., MARGIN = 1, FUN = sd )) %>%  
+  select(B_total, S, SD) %>%
+  mutate(I = (SD/B_total)*sqrt(S)*100) %>% 
+  mutate(sampling_station_name = rownames(biomass)) %>% 
+  filter(sampling_station_name %in% points_in_work_polygon$sampling_station_name) %>% 
+  merge(., points_in_work_polygon, all.x = TRUE ) %>% 
+  filter(S > 0)
+
+
+low_B <- B_total %>% select(sampling_station_name, long, lat)
+
+low_B$Low_B <- ifelse(B_total$B_total <= quantile(B_total$B_total, probs = seq(0, 1, 0.1))[2], 1, 0)
+
+```
+
+
+
+
+
+
+
+```{r GAM_Models}
+library(mgcv)
+
+
+Mod_B_total <- gam(log(B_total+1) ~ s(long, lat), data = B_total)
+
+Mod_phyto <- gam(log(Phytomass + 1) ~ s(long, lat), data = phyto)
+
+
+Mod_H <- gam(H ~ s(long, lat), data = H)
+
+Mod_Sp <- gam(log(N_Sp + 1) ~ s(long, lat), data = Sp)
+
+Mod_Low_B <- gam(Low_B ~ s(long, lat), data = low_B, family = "binomial")
+
+Mod_I <- gam(I ~ s(long, lat), data = oligomix)
+
+```
+
+
+
+```{r extrapolation_grids}
+grids <- expand.grid(lat = seq(min(work_polygon_coordinates$lat), max(work_polygon_coordinates$lat), length.out = 100), long = seq(min(work_polygon_coordinates$long), max(work_polygon_coordinates$long), length.out = 100) )
+
+grids_sf <- st_as_sf(grids, coords = c("long","lat"), crs = 4326)
+
+
+grids <- grids %>% filter(as.numeric(st_within(grids_sf, work_polygon_sf)) == 1) 
+
+
+
+```
+
+
+
+
+
+```{r, fig.cap= "**Рисунок. **Пространственное распределение суммарной биомассы"}
+
+grids$fit <- predict(Mod_B_total, newdata = grids)
+
+# grids$fit <- predict(Mod_H, newdata = grids)
+
+ggplot(grids, aes(x = long, y = lat, fill = fit)) + 
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "red") + 
+  geom_polygon(data = Fin_df, aes(x=long, y=lat, group=group), fill = "gray90", colour = "gray20") + 
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
+  theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+  theme(axis.ticks = element_blank()) +
+  geom_point(data = B_total, fill = "black", size = 0.1) +
+  labs(fill = "log(B)")+
+  theme(legend.position = "bottom")
+  
+  
+
+
+```
+
+
+
+### Прострнаственное варьирование фитомассы
+
+
+```{r, fig.cap="**Рисунок. **Пространственное распределение фитомассы"}
+
+grids$fit <- predict(Mod_phyto, newdata = grids)
+
+# grids$fit <- predict(Mod_H, newdata = grids)
+
+ggplot(grids, aes(x = long, y = lat, fill = fit)) + 
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "darkgreen") + 
+  geom_polygon(data = Fin_df, aes(x=long, y=lat, group=group), fill = "gray90", colour = "gray20") + 
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
+  theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+  theme(axis.ticks = element_blank()) +
+  geom_point(data = B_total, fill = "black", size = 0.1) +
+  labs(fill = "log(Phytomassa)")+
+  theme(legend.position = "bottom")
+  
+  
+
+
+```
+
+
+
+### Прострнаственное варьирование видового богатсва
+
+
+```{r, fig.cap="**Рисунок. **Пространственное распределение показателей видового богатства"}
+
+grids$fit <- predict(Mod_Sp, newdata = grids)
+
+# summary(Mod_Sp)
+# grids$fit <- predict(Mod_H, newdata = grids)
+
+ggplot(grids, aes(x = long, y = lat, fill = (exp(fit)-1) )) + 
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "red") + 
+  geom_polygon(data = Fin_df, aes(x=long, y=lat, group=group), fill = "gray90", colour = "gray20") + 
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
+  theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+  theme(axis.ticks = element_blank()) +
+  geom_point(data = B_total, fill = "black", size = 0.1) +
+  labs(fill = "Количество видов") +
+  theme(legend.position = "bottom")
+  
+
+
+```
+
+
+
+
+### Прострнаственное варьирование видового разнообразия
+
+
+```{r, fig.cap="**Рисунок. **Пространственное распределение показателей видового разнообразия (индекс Шеннона) "}
+
+grids$fit <- predict(Mod_H, newdata = grids)
+
+# grids$fit <- predict(Mod_H, newdata = grids)
+
+ggplot(grids, aes(x = long, y = lat, fill = fit)) + 
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "blue") + 
+  geom_polygon(data = Fin_df, aes(x=long, y=lat, group=group), fill = "gray90", colour = "gray20") + 
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
+  theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+  theme(axis.ticks = element_blank()) +
+  geom_point(data = B_total, fill = "black", size = 0.1) +
+  labs(fill = "H")+
+  theme(legend.position = "bottom")
+  
+  
+
+
+```
+
+
+
+### Прострнаственное варьирование индекса олигомиксности Наумова
+
+
+```{r, fig.cap="**Рисунок. **Пространственное распределение показателей олигомиксности"}
+
+grids$fit <- predict(Mod_I, newdata = grids)
+
+# grids$fit <- predict(Mod_H, newdata = grids)
+
+ggplot(grids, aes(x = long, y = lat, fill = fit)) + 
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "purple") + 
+  geom_polygon(data = Fin_df, aes(x=long, y=lat, group=group), fill = "gray90", colour = "gray20") + 
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
+  theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+  theme(axis.ticks = element_blank()) +
+  geom_point(data = B_total, fill = "black", size = 0.1) +
+  labs(fill = "I")+
+  theme(legend.position = "bottom")
+  
+  
+
+
+```
+
+
+
+
+
+### Распределение "безжизненных" участков
+
+```{r, fig.cap="**Рисунок. **Частотное распределине значений логарифма суммарной биомассы"}
+
+ggplot(B_total, aes(x = log(B_total + 1))) +
+  geom_histogram(bins = 20)
+
+```
+
+
+```{r, fig.cap="**Рисунок. **Пространственное распределение вероятности встречи 'безжизненных' станций. Желтые точки - станции с полным отсутствием макробентоса."}
+
+grids$fit <- predict(Mod_Low_B, newdata = grids, type = "response")
+
+# grids$fit <- predict(Mod_H, newdata = grids)
+
+ggplot(grids, aes(x = long, y = lat, fill = fit)) + 
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "red") + 
+  geom_polygon(data = Fin_df, aes(x=long, y=lat, group=group), fill = "gray90", colour = "gray20") + 
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
+  theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+  theme(axis.ticks = element_blank()) +
+  geom_point(data = B_total, fill = "black", size = 0.1) +
+  labs(fill = "Веротяность встречи")+
+  theme(legend.position = "bottom") +
+  geom_point(data = points %>% filter(sampling_station_name %in% zero_st), shape = 21, fill = "yellow", size = 2)
+  
+
+```
+
+
+
+# Варьирование структуры сообщества
+
+
+```{r}
+zero_B_st <- biomass %>% mutate(B_total = rowSums(.)) %>% filter(B_total == 0) %>% row.names(.)
+
+biomass2 <- biomass %>% filter(!row.names(.) %in% zero_B_st)
+
+log_biomass <- decostand(biomass2, method = "log")
+
+pc_ord <- log_biomass %>%  rda(., scale = F)
+
+
+pc <- as.data.frame(scores(pc_ord)$sites)
+pc$sampling_station_name <- row.names(pc)
+
+pc_points <- merge(pc, points)
+
+pc_points_gear_type <-merge(pc_points, stations %>% select(1, 4) )
+
+
+```
+
+
+
+В основе анализа лежит матрица логарифмов значений биомасс видов. На основе этой матрицы был проведен анализ главных компонент (спектральное разложение матрицы ковариации). Ниже приводится рисунок, отражающий вклад главных компонент. Первая компонента (PC1) описывает лишь  `r round((pc_ord$CA$eig/sum(pc_ord$CA$eig))[1] * 100, 1)`% суммарной дисперсии. Столь малая величина говорит о высоком разнообразии сообществ. Выявленный градиент, таким образом, может трактоваться лишь как общая тенденция. 
+
+```{r, fig.cap="**Рисунок. **Собственные значения главных компоенет. Линия отражает предсказание случайного распределения на основе модели сломанной палки."}
+
+screeplot(pc_ord, bstick = F, main = "Собственные числа главных компонент")
+
+```
+
+
+Пр этом есть явная корреляция между значениями первой главной компоненты и орудием сбора (Рис. ++). Последние были разделены на две группы:
+
+
+1. Группа *soft* включала в себя сборы, сделанные с помощью следующих орудий лова: `r stations %>% filter(gear_type == "soft") %>% pull(sampling_gear) %>% unique()` 
+
+2. Группа *hard* включала в себя сборы, сделанные с помощью следующих орудий лова: `r stations %>% filter(gear_type == "hard") %>% pull(sampling_gear) %>% unique()` 
+
+
+```{r fig.cap="**Рисунок. ** Значения первой главной компоненты (PC1) для двух груп станций, различающийхся орудиями сбора."}
+
+ggplot(pc_points_gear_type, aes(x = gear_type, y = PC1)) + geom_boxplot()
+
+```
+
+
+
+```{r}
+pc_soft <- pc_points_gear_type %>% filter(PC1 >= 0)
+
+pc_hard <- pc_points_gear_type %>% filter(PC1 < 0)
+
+biomass_soft_reduced <- 
+  biomass %>%  
+  filter(rownames(.) %in% pc_soft$sampling_station_name)
+
+biomass_hard_reduced <- 
+  biomass %>%  
+  filter(rownames(.) %in% pc_hard$sampling_station_name)
+
+
+```
+
+
+
+Для дальнейшего анализа варьирования структуры сообществ из массива данных, соответствующих станциям группы *soft*, были удалены станции, имеющие положительные значения PC1, аналогично для станций группы *hard* - удалены станции, имеющие отрицательные значения PC1. Соответственно, первая группа станций будет характеризовать сообщества мягких грунтов, а второй -- твердых. 
+
+### Сообщества мягких грунтов
+
+```{r}
+log_biomass_soft_reduced <- decostand(biomass_soft_reduced, method = "log")
+
+
+predictors_soft_reduced <- stations %>% select(sampling_station_name, depth, mud, clay, fine_sand, medium_sand, coarse_sand, gravel, stone_small, stone_large) %>% filter(sampling_station_name %in% row.names(log_biomass_soft_reduced))
+
+
+# выравнивание по станциям без пропусков
+predictors_soft_reduced <- predictors_soft_reduced %>% filter(complete.cases(.))
+
+log_biomass_soft_reduced <- log_biomass_soft_reduced %>% filter(row.names(.) %in% predictors_soft_reduced$sampling_station_name)
+
+
+rda_soft <-
+  rda(log_biomass_soft_reduced ~ depth + mud  + clay + fine_sand +  medium_sand + coarse_sand + gravel +  stone_small + stone_large , data =  predictors_soft_reduced[,-1])
+
+VIF_rda_soft <- vif.cca(rda_soft)
+
+```
+
+
+
+Для анализа варьирования структуры сообществ мягких грунтов был применен анализ избыточности (Redundany analysis, RDA). В качестве предикторов для анализа были использованы следующие параметры: `r paste(names(predictors_soft_reduced))`. Однако, анализ коллинеарности предикторов (вычислен фактор раздутия дисперсии, variance inflation factor, VIF) показал, что процентное содержание ила (mud) и  тонкого песка (fine_sand) имеют VIF > 10. Это означает, что эти два предиктора высоко коррелируют с полным набором других предикторов.  
+
+```{r}
+print(VIF_rda_soft)
+
+```
+
+Поскольку процентное соотношение илистых частиц несет значительную экологическую информацию, из модели был удален только fine_sand. Сокращенная модель уже не имела признаков коллинеарности предикторов.
+
+```{r}
+rda_soft <-
+  rda(log_biomass_soft_reduced ~ depth + mud  + clay  +  medium_sand + coarse_sand + gravel +  stone_small +  stone_large, data =  predictors_soft_reduced[,-1])
+
+VIF_rda_soft <- vif.cca(rda_soft)
+
+```
+
+
+```{r}
+print(VIF_rda_soft)
+
+```
+
+
+```{r}
+
+rda_soft_zero <- rda(log_biomass_soft_reduced ~ 1, data = predictors_soft_reduced[,-1]) 
+
+
+rda_soft_optimal <- ordistep(rda_soft, trace = F)
+# 
+# plot(rda_soft_optimal, display = c("sp","cn"), type ="t")
+# vif.cca(rda_soft_optimal)
+```
+
+
+
+```{r}
+# результаты rda в удобном формате
+
+
+
+library(broom)
+anova_rda_soft <- tidy(anova(rda_soft_optimal))
+
+anova_predictors_rda_soft <- tidy(anova(rda_soft_optimal, by = "margin"))
+
+anova_axis_rda_soft <- tidy(anova(rda_soft, by = "axis"))
+
+
+```
+
+
+
+Далее была методом пошагового упрощения модели была подобрана оптимальная модель. В оптимальной модели остались следующие предикторы: `r paste(anova_predictors_rda_soft$term[-nrow(anova_predictors_rda_soft)])`. 
+Оптимальная модель была статистически значима.
+
+```{r}
+kable(anova_rda_soft, 
+      caption = "Таблица ++. Пермутациоанная оценка статистической значимости оптимальной модели анализа избыточности.")
+```
+
+```{r}
+rda_soft_sum <- summary(rda_soft_optimal)
+
+
+```
+
+
+Статистически значимыми были первые две канонические оси (первая ось описывает `r round(rda_soft_sum$cont$importance[2,1] * 100 ,1)`%, вторая -- `r round(rda_soft_sum$cont$importance[2,2] * 100 ,1)`% суммарной дисперсии).
+
+```{r}
+kable(anova_axis_rda_soft, 
+      caption = "Таблица ++. Пермутациоанная оценка статистической значимости канонических осей оптимальной модели анализа избыточности.")
+```
+
+
+Из оставшихся  в оптимальной модели предикторов статистически значимое влияние было отмечено для `r anova_predictors_rda_soft %>% filter(p.value < 0.05) %>% pull(term) %>% paste(.) `.
+
+```{r}
+kable(anova_predictors_rda_soft, 
+      caption = "Таблица ++. Пермутациоанная оценка статистической значимости влияния отдельных предикторов, включенных в оптимальную модель анализа избыточности.")
+
+```
+
+```{r, results='hide'}
+
+plot_rda <- plot(rda_soft_optimal)
+
+```
+
+
+```{r }
+
+mult <- attr(plot_rda$biplot,which = "arrow.mul")
+
+```
+
+
+
+```{r}
+library(ggvegan)
+library(ggrepel)
+
+rda_soft_optimal_scores <- fortify(rda_soft_optimal, scaling = "species")
+rda_soft_optimal_species <- rda_soft_optimal_scores %>% filter(Score == "species") 
+rda_soft_optimal_sites <- rda_soft_optimal_scores %>% filter(Score == "sites") 
+rda_soft_optimal_biplot <- rda_soft_optimal_scores %>% filter(Score == "biplot") 
+
+rda_soft_optimal_species <- 
+  rda_soft_optimal_species %>% 
+  mutate(Label_selected =
+           case_when(
+             RDA1 < quantile(RDA1, probs = c(0.05, 0.95))[1] ~ Label,
+             RDA1 > quantile(RDA1, probs = c(0.05, 0.95))[2] ~ Label,
+             RDA2 < quantile(RDA2, probs = c(0.05, 0.95))[1] ~ Label,
+             RDA2 > quantile(RDA2, probs = c(0.05, 0.95))[2] ~ Label
+        ))
+
+
+
+
+Pl_rda_species <- 
+ggplot(rda_soft_optimal_species, aes(RDA1, RDA2)) +
+  geom_hline(yintercept = 0, alpha = 0.4) +
+  geom_vline(xintercept = 0, alpha = 0.4)+
+  geom_text_repel(aes(label = Label_selected)) +
+  geom_point(data = rda_soft_optimal_species %>% filter(is.na(Label_selected)), size = 1, alpha = 0.2) +
+  geom_segment(data = rda_soft_optimal_biplot, aes(x = 0, xend = RDA1 * mult, y = 0, yend = RDA2 * mult), color = "blue", arrow = arrow(type = "closed", angle = 10)) +
+  geom_text_repel(data = rda_soft_optimal_biplot, aes(label = Label, x = RDA1*mult, y = RDA2 *mult), color = "gray30")
+
+
+
+
+Pl_rda_sites <- 
+ggplot(rda_soft_optimal_sites, aes(RDA1, RDA2)) +
+  geom_hline(yintercept = 0, alpha = 0.4) +
+  geom_vline(xintercept = 0, alpha = 0.4) +
+  geom_point(size = 0.5) +
+  geom_segment(data = rda_soft_optimal_biplot, aes(x = 0, xend = RDA1 * mult, y = 0, yend = RDA2 * mult), color = "blue", arrow = arrow(type = "closed", angle = 10)) +
+  geom_text_repel(data = rda_soft_optimal_biplot, aes(label = Label, x = RDA1 * mult, y = RDA2 *mult), color = "gray30")
+
+```
+
+
+```{r fig.cap="Рисунок . Ординация видов в пространстве первых двух канонических осей. Приведены названия видов, иеющих высокие нагрузки по RDA1 и RDA2 (нагрузки попадают в 5% и 95% перцентили, т.е. 10% от всего списка видов), остальные виды обозначены точками."}
+
+Pl_rda_species 
+```
+
+
+Первая каноническая ось связанна с глубиной. По мере увеличения глубины возрастает процентное содержание ила (mud) и глины (clay). По мере увеличения глубины возрастает биомасса следующих видов: *Marenzelleria* sp. *Macoma balthica*, *Saduria entomon*, *Monoporeia affinis*. На меньших глубинах, где ила и глины меньше, в сообществах высокую биомассу демонстрируют Oligochaeta и Chironomidae. 
+
+Вторая канноническая ось коррелирует с обилием гравия.  Таким образом, вторая каноническая ось демонстрирует примесь сообществ эпифауны, вкрапленных в мягкие осадки. 
+
+В таблице приведенной ниже, даны виды сообщества мягких грунтов, ранжированные в соответствии с их нагрузками по первой канонической оси. Виды имеющие высокие нагрузки (положиетльные или отрицательные) демонстрируют высокую корреляцию с градиентом, который отражают канонические оси.  
+
+```{r}
+kable(rda_soft_optimal_species %>% select(Label, RDA1, RDA2) %>% arrange(desc(RDA1)), caption = "Таблица . Нагрузки по первой и второй канонической оси для видов сообщества мягких грунтов")
+```
+
+
+
+
+
+```{r fig.cap="Рисунок . Ординация станций в пространстве первых двух канонических осей."}
+
+Pl_rda_sites
+```
+
+
+Полученная ординация станций говорит, скорее, о градиентном характере $\beta$-разнообразия. Четких групп станций не выделяется.  Формально можно выделить две группы станций: 
+
+- Cообщества мягких грунтов, формирующиеся на большой глубине с высоким заилением и высоким содержанием глины (Community_1: станции с положительными нагрузками по RDA1);
+
+- Сообщества мягких грунтов мелководий с меньшим содержанием тонких фракций грунта, но с большей долей песка  (Community_2:станции с отрицательными нагрузками по RDA1).
+
+В таблице, приведенной ниже, даны средние биомассы видов в двух выделенных группах. 
+
+```{r}
+df1 <-
+  biomass_soft_reduced %>% 
+  mutate(sampling_station_name = row.names(.))
+
+df2 <-
+  rda_soft_optimal_sites %>% 
+  select(Label, RDA1) %>% 
+  mutate(sampling_station_name = Label) %>% 
+  select(-Label)
+
+
+df3 <- merge(df1, df2) 
+
+df3$Community <- ifelse(df3$RDA1 > 0, "Community_1", "Community_2")
+
+transpose_df <- function(df) {
+  t_df <- data.table::transpose(df)
+  colnames(t_df) <- rownames(df)
+  rownames(t_df) <- colnames(df)
+  t_df <- t_df %>%
+    tibble::rownames_to_column(.data = .) %>%
+    tibble::as_tibble(.)
+  return(t_df)
+}
+
+
+
+
+Communities <- 
+df3 %>% 
+  select(-sampling_station_name, -RDA1) %>% 
+  group_by(Community) %>% 
+  summarise_all(.funs = mean) %>%
+  select(-1) %>% 
+  transpose_df(.) 
+
+names(Communities) <- c("Taxa", "Community_1", "Community_2")
+
+Communities %>% 
+  filter(Community_1 >0 | Community_2 >0) %>% 
+  arrange(desc(Community_1)) %>% 
+  kable()
+
+```
+
+
+В первом сообществе суммарная биомасса значительно выше, чем во втором.  
+
+```{r fig.cap= "Рисунок . Суммарная биомасса (логаифм) в станциях двух групп: глубоководные (Community_1) и мелководные (Community_2)."}
+Total_B <- 
+df3 %>% 
+  select(-sampling_station_name, -RDA1, -Community) %>% 
+  rowSums() 
+
+
+df3 %>% 
+  select(Community) %>% 
+  mutate(Total_B = Total_B) %>% 
+  ggplot(., aes(x = Community, y = log(Total_B) )) +
+  geom_boxplot()
+
+```
+
+
+
+
+
+
+
+
+### Сообщества твердых грунтов
+
+```{r}
+log_biomass_hard_reduced <- decostand(biomass_hard_reduced, method = "log")
+
+
+predictors_hard_reduced <- stations %>% select(sampling_station_name, depth, mud, clay, fine_sand, medium_sand, coarse_sand, gravel, stone_small, stone_large) %>% filter(sampling_station_name %in% row.names(log_biomass_hard_reduced))
+
+
+# выравнивание по станциям без пропусков
+predictors_hard_reduced <- predictors_hard_reduced %>% filter(complete.cases(.))
+
+log_biomass_hard_reduced <- log_biomass_hard_reduced %>% filter(row.names(.) %in% predictors_hard_reduced$sampling_station_name)
+
+
+rda_hard <-
+  rda(log_biomass_hard_reduced ~ depth + mud  + clay + fine_sand +  medium_sand + coarse_sand + gravel +  stone_small + stone_large , data =  predictors_hard_reduced[,-1])
+
+VIF_rda_hard <- vif.cca(rda_hard)
+
+```
+
+
+
+Анализ коллинеарности предикторов (VIF) выявил значительную коллинеарность предикторов.
+
+```{r}
+print(VIF_rda_hard)
+```
+
+После удаления из модели fine_sand заметной коллинеарности предикторов не наблюдалось.
+
+
+```{r}
+rda_hard <-
+  rda(log_biomass_hard_reduced ~ .- fine_sand, data =  predictors_hard_reduced[,-1])
+
+VIF_rda_hard <- vif.cca(rda_hard)
+
+```
+
+
+```{r}
+print(VIF_rda_hard)
+
+```
+
+
+```{r}
+
+rda_hard_zero <- rda(log_biomass_hard_reduced ~ 1, data = predictors_hard_reduced[,-1]) 
+
+
+rda_hard_optimal <- ordistep(rda_hard, trace = F)
+# 
+# plot(rda_hard_optimal, display = c("sp","cn"), type ="t")
+# vif.cca(rda_hard_optimal)
+```
+
+
+
+```{r}
+# результаты rda в удобном формате
+
+library(broom)
+anova_rda_hard <- tidy(anova(rda_hard_optimal))
+
+anova_predictors_rda_hard <- tidy(anova(rda_hard_optimal, by = "margin"))
+
+anova_axis_rda_hard <- tidy(anova(rda_hard, by = "axis"))
+
+```
+
+
+
+Далее методом пошагового упрощения модели была подобрана оптимальная модель. В оптимальной модели остались следующие предикторы: `r paste(anova_predictors_rda_hard$term[-nrow(anova_predictors_rda_hard)])`. 
+Оптимальная модель была статистически значима.
+
+```{r}
+kable(anova_rda_hard, 
+      caption = "Таблица ++. Пермутациоанная оценка статистической значимости оптимальной модели анализа избыточности сообществ твердых грунтов.")
+```
+
+```{r}
+rda_hard_sum <- summary(rda_hard_optimal)
+
+
+```
+
+
+Статистически значимыми были первые две канонические оси (первая ось описывает `r round(rda_hard_sum$cont$importance[2,1] * 100 ,1)`%, вторая -- `r round(rda_hard_sum$cont$importance[2,2] * 100 ,1)`% суммарной дисперсии).
+
+```{r}
+kable(anova_axis_rda_hard, 
+      caption = "Таблица ++. Пермутациоанная оценка статистической значимости канонических осей оптимальной модели анализа избыточности.")
+```
+
+
+Из оставшихся  в оптимальной модели предикторов статистически значимое влияние было отмечено для `r anova_predictors_rda_soft %>% filter(p.value < 0.05) %>% pull(term) %>% paste(.) `.
+
+```{r}
+kable(anova_predictors_rda_hard, 
+      caption = "Таблица ++. Пермутациоанная оценка статистической значимости влияния отдельных предикторов, включенных в оптимальную модель анализа избыточности сообществ твердых грунтов.")
+
+```
+
+```{r results='hide' }
+
+plot_rda <- plot(rda_hard_optimal)
+
+```
+
+
+```{r }
+
+mult <- attr(plot_rda$biplot,which = "arrow.mul")
+
+```
+
+
+
+```{r}
+library(ggvegan)
+library(ggrepel)
+
+rda_hard_optimal_scores <- fortify(rda_hard_optimal, scaling = "species")
+rda_hard_optimal_species <- rda_hard_optimal_scores %>% filter(Score == "species") 
+rda_hard_optimal_sites <- rda_hard_optimal_scores %>% filter(Score == "sites") 
+rda_hard_optimal_biplot <- rda_hard_optimal_scores %>% filter(Score == "biplot") 
+
+rda_hard_optimal_species <- 
+  rda_hard_optimal_species %>% 
+  mutate(Label_selected =
+           case_when(
+             RDA1 < quantile(RDA1, probs = c(0.025, 0.975))[1] ~ Label,
+             RDA1 > quantile(RDA1, probs = c(0.025, 0.975))[2] ~ Label,
+             RDA2 < quantile(RDA2, probs = c(0.025, 0.975))[1] ~ Label,
+             RDA2 > quantile(RDA2, probs = c(0.025, 0.975))[2] ~ Label
+        ))
+
+
+
+
+Pl_rda_species_hard <- 
+ggplot(rda_hard_optimal_species, aes(RDA1, RDA2)) +
+  geom_hline(yintercept = 0, alpha = 0.4) +
+  geom_vline(xintercept = 0, alpha = 0.4)+
+  geom_text(aes(label = Label_selected)) +
+  geom_point(data = rda_hard_optimal_species %>% filter(is.na(Label_selected)), size = 1, alpha = 0.2) +
+  geom_segment(data = rda_hard_optimal_biplot, aes(x = 0, xend = RDA1 * mult, y = 0, yend = RDA2 * mult), color = "blue", arrow = arrow(type = "closed", angle = 10)) +
+  geom_text_repel(data = rda_hard_optimal_biplot, aes(label = Label, x = RDA1*mult, y = RDA2 *mult), color = "gray30")
+
+
+
+
+Pl_rda_sites_hard <- 
+ggplot(rda_hard_optimal_sites, aes(RDA1, RDA2)) +
+  geom_hline(yintercept = 0, alpha = 0.4) +
+  geom_vline(xintercept = 0, alpha = 0.4) +
+  geom_point(size = 0.5) +
+  geom_segment(data = rda_hard_optimal_biplot, aes(x = 0, xend = RDA1 * mult, y = 0, yend = RDA2 * mult), color = "blue", arrow = arrow(type = "closed", angle = 10)) +
+  geom_text_repel(data = rda_hard_optimal_biplot, aes(label = Label, x = RDA1 * mult, y = RDA2 *mult), color = "gray30")
+
+```
+
+
+```{r fig.cap="Рисунок . Ординация видов сообществ твердых грунтов в пространстве первых двух канонических осей. Приведены названия видов, иеющих высокие нагрузки по RDA1 и RDA2 (нагрузки попадают в 2.5% и 97.5% перцентили, т.е. 5% от всего списка видов), остальные виды обозначены точками."}
+
+Pl_rda_species_hard
+```
+
+Полученная ординация не позволяет дать однозначной трактовки для самих канонически осей. Судя по расположению *stone_large*, *stone_small* и *gravel*  в положительном диапазоне первой оси (I и IV квадранты ординации), а *clay* и *mud* -- в отрицательном (II и III квадранты), первую каноническую ось можно трактовать, как степень заиленности. Наиболее характерными видами для сообществ твердых грунтов без заметного заиления являются *Dreissena polymorpha*, *Chelicorophium curvispinum* и *Amphibalanus improvisus*. В сообществах твердого грунта со значительной примесью глины в состав сообществ входят Oligochaeta, Chironomidae. Вторая ось в значительной степени связана глубиной. На мелководьях при минимальном заилении (I и II квадранты ордниации) обильны *Cladophora glomerata* и *Cl.vagabunda*.   При большей глубине и некоторой заиленности (III и IV квадранты) в сообществах твердых грунтов могут быть примешaны *Marenzelleria* sp., *Macoma balthica* и Pisidiidae.  
+
+
+ 
+
+
+```{r fig.cap="Рисунок . Ординация станций в пространстве первых двух канонических осей."}
+
+Pl_rda_sites_hard
+```
+
+
+### Общие замечания о сообществах изученной части Финского залива.
+
+В целом организация биоценотического покрова достаточно проста. Существует два основных типа сообществ - одно представлено на твердых грунтах, второе на мягких. Структура этих сообществ различна, пересечения возникают за счет того, что применяемые орудия отбора проб захватывают, как правило, участки как твердого, так и мягкого грунта. В обеих сообществах присутствуют градиентные паттерны, связанные с глубиной. В сообществах твердых грунтов на мелководьях доминируют нитчатые водоросли. По мере увеличения глубины заросли водорослей сменяются сообществами, в которых доминируют *D.polymorpha* и *A.improvisus*. Сообщества твердых грунтов представлены на гравийных, каменистых и валунных субстратах, которые "вкраплены" в мягкие грунты, которые занимают большую часть дна изученной акватории.  В сообществах мягких грунтов также существует ярко выраженный глубинный градиент. В глубоководной части акватории представлено типичное для илистых грунтов Балтики сообщество с доминированием  *Macoma balthica*, *Saduria entomon* и *Monoporeia affinis*. Значительную роль в этих сообществах играет *Marenzelleria* sp. демонстрирующая в последние десятилетия экспансию в этом регионе. На мелководных мягких грунтах представлено сообщество с домиированием пресноводных форм Oligochaeta и Chironomidae. 
+
+
+## Распределение инвазивных видов
+
+```{r}
+invaders <- c("Dreissena polymorpha", "Potamopyrgus antipodarum","Amphibalanus improvisus", "Gammarus tigrinus")
+
+invaders_biomass <- 
+biomass %>% select(invaders)
+
+invaders_biomass$sampling_station_name <- row.names(invaders_biomass) 
+
+invaders_biomass <- merge(invaders_biomass, points)
+
+```
+
+
+```{r}
+# биомасса инвазивных видов
+
+invaders_B_total <-  biomass  %>%
+  select(invaders) %>% 
+  mutate(Inv_B_total = rowSums(.)) %>% 
+  select(Inv_B_total) %>% 
+  mutate(sampling_station_name = rownames(biomass)) %>% 
+  filter(sampling_station_name %in% points_in_work_polygon$sampling_station_name) %>% 
+  merge(., points_in_work_polygon, all.x = TRUE )
+
+
+invaders_B_total <- merge(invaders_B_total, B_total)
+
+invaders_B_total <- 
+  invaders_B_total %>% 
+  mutate(Inv_Prop = Inv_B_total/ B_total )     
+
+```
+
+
+К числу инвазивных видов были отнесены следующие формы: `r paste(invaders, sep = ", ")`. Эти организмы включены в топ-лист самых агрессивных вселенцев (Петросян В. Г. и др. Самые опасные инвазионные виды России (ТОП-100). – 2018). Биомасса этих видов достаточно велика, она может превышать `r round(as.numeric(quantile(invaders_B_total$Inv_Prop, probs = 0.75, na.rm = T))*100, 2)`% (3-й квартиль) от суммарной биомассы.  Наиболее высокое обилие видов-вселенцев (в целом) приходится на восточное побережье Рижского залива.  
+
+
+```{r}
+Mod_Inv_Prop <- gam(Inv_Prop ~ s(long, lat), data = invaders_B_total, family = "betar")
+```
+
+
+
+
+```{r, fig.cap="**Рисунок. **Пространственное распределение общей биомассы видов-вселенцев."}
+
+grids$fit <- predict(Mod_Inv_Prop, newdata = grids, type = "response")
+
+# grids$fit <- predict(Mod_H, newdata = grids)
+
+ggplot(grids, aes(x = long, y = lat, fill = fit)) + 
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "red") + 
+  geom_polygon(data = Fin_df, aes(x=long, y=lat, group=group), fill = "gray90", colour = "gray20") + 
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
+  theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+  theme(axis.ticks = element_blank()) +
+  theme(legend.position = "bottom") +
+  geom_point(data = invaders_B_total, aes(color = log(Inv_B_total+1), fill = NULL)) +
+  scale_color_gradient(low = "gray", high = "black")+
+  labs(fill = "Доля видов вселенцев", color = "Биомасса вселенцев (Log)")
+  
+
+```
+
+ 
+ 
+```{r}
+
+Fin_df <- read.csv("Data/Finnish_Gulf_East.csv") # Map poligones
+
+```
+ 
+ 
+```{r}
+plot_distribution <- function(df, sp){
+  df<-
+  df %>% 
+    select(lat, long, sampling_station_name, sp) 
+  names(df)[4] <- "B"
+  
+  df <- 
+    df %>% 
+    arrange(B) 
+  
+  df  %>% 
+    ggplot(aes(x = long, y = lat, color = log(B + 1)))+
+    geom_point(aes(size =log(B + 1)  )) +
+    geom_polygon(data = Fin_df, aes(group = group), fill = "gray90", colour = "gray20")+
+    ggtitle(sp) +
+    scale_color_gradient(low = "gray90", high = "red") + 
+    guides(size = "none", color = "none")
+}
+
+```
+ 
+### Распределение отдельных видов
+
+
+```{r}
+plot_distribution(df = invaders_biomass, sp = invaders[1])
+```
+
+
+
+```{r}
+plot_distribution(df = invaders_biomass, sp = invaders[2])
+```
+
+
+```{r}
+plot_distribution(df = invaders_biomass, sp = invaders[3])
+```
+
+
+```{r}
+plot_distribution(df = invaders_biomass, sp = invaders[4])
+```
