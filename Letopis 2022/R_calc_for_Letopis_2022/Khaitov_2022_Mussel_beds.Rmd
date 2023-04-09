@@ -269,6 +269,8 @@ Abund <- all_size_no_spat %>% group_by(Region, Bank, Year, Sample) %>% summarise
 
 Abund_mean <- Abund %>% group_by(Region, Bank, Year) %>% summarise(Mean_N = mean(Abund)) 
 
+
+
 ggplot(data = Abund, aes(x = Year, y = (Abund * 182))) +
   facet_wrap(~ Bank, scale = "free_y", dir = "v")  + 
   geom_line(data = Abund_mean, aes(y = Mean_N * 182), color = "black", linetype = 1)+
@@ -278,6 +280,19 @@ ggplot(data = Abund, aes(x = Year, y = (Abund * 182))) +
   scale_color_manual(values = c("black", "blue", "red", "black", "blue")) +
   scale_x_continuous(breaks=seq(min(all_size_no_spat$Year), max(all_size_no_spat$Year), 2)) + 
   theme(axis.text.x = element_text(angle = 90))
+
+# 
+# ggplot(data = Abund, aes(x = Year, y = (Abund * 182), color = Bank, linetype = Bank)) +
+#   facet_wrap(~ Region, scale = "free_y", dir = "v", nrow = 1)  +
+#   theme(axis.text.x = element_text(angle =90)) + 
+#   geom_smooth(size = 1) + 
+#   labs(x = "Годы", y = "Плотность поселения (экз./кв.м)") + 
+#   scale_color_manual(values = c("black", "blue", "red", "black", "blue")) +
+#   scale_x_continuous(breaks=seq(min(all_size_no_spat$Year), max(all_size_no_spat$Year), 2)) + 
+#   theme(axis.text.x = element_text(angle = 90)) +
+#   guides(color = "none")
+# 
+
 
 
 ```

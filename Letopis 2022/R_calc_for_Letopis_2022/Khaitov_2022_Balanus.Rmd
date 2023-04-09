@@ -217,6 +217,7 @@ hydr_mean <- hydr %>%  filter (month(hydr$Date2) %in% c(6:8)) %>% filter(Year >=
 Pl_Bal <- 
 bal %>%
   mutate(Total_N = Juveniles_Alive) %>%
+  filter (Site == "Южная губа") %>% 
   group_by(Year) %>%
   summarise(N_total = mean(Total_N, na.rm = T)) %>% 
   ggplot(., aes(Year, N_total))+
@@ -243,6 +244,25 @@ ggplot(hydr_mean, aes(Year, Mean_Water_T)) +
   geom_hline(yintercept = mean(hydr_mean$Mean_Water_T, na.rm = T), linetype = 2)
 
 
+
+```
+
+```{r}
+```
+
+
+```{r}
+df <- 
+bal %>%
+  mutate(Total_N = Juveniles_Alive) %>%
+  filter (Site == "Южная губа") %>% 
+  group_by(Year) %>%
+  summarise(N_total = mean(Total_N, na.rm = T))
+
+
+df <- merge(df, hydr_mean)
+
+cor.test(df$Mean_S, df$N_total)
 
 ```
 
