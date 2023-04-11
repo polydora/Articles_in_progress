@@ -241,8 +241,6 @@ ggplot(all_size_no_spat [all_size_no_spat $Bank == "mat", ], aes(x = L)) +
 
 
 
-
-
 ```{r, fig.cap=figRef("Size_dynam", "Многолетние изменения среднего размера мидий на разных мидиевых банках. Кривая линия - сглаживающая непараметрическая функция.Long-term changes in average mussel size at different mussel beds. Curve line represents fitted smoother.")}
 
 all_size_no_spat$Region <- ifelse(all_size_no_spat$Bank %in% c("mat", "korg"), "Лувеньгский архипелаг", "Воронья губа" )

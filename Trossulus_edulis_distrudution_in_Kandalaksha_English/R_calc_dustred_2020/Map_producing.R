@@ -6,6 +6,9 @@ library(mapproj)
 ggWhite_Sea <- read.csv("data/ggWhite_Sea_2021.csv")
 ggKand_upper <- read.csv("data/ggKand_upper_2021.csv")
 
+ggKand_upper2 <- read.csv("data/ggKand_upper.csv")
+
+
 ## Coordinates for maps
 
 Full_x <- c(3, 43)
@@ -44,6 +47,13 @@ Plot_Kand_upper <-
   theme(panel.grid = element_blank(), panel.background = element_rect(fill = "white")) +
   theme(plot.title = element_text(hjust = 0.5))
 
+Plot_Kand_upper_2 <- 
+  ggplot(ggKand_upper2, aes(x=long, y=lat, group=group)) + 
+  geom_polygon(fill = "gray70", colour = "black") + 
+  theme(panel.grid = element_blank(), panel.background = element_rect(fill = "white")) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
 
 myt_site2 <- myt_site %>% arrange((Prop_T))
 
@@ -54,8 +64,28 @@ Plot_Kand_upper_PT <-
   guides(size = "none") +
   theme(legend.direction = "horizontal", legend.position = c(0.8,0.1), legend.background = element_blank(), axis.title = element_blank(), axis.text = element_blank(), axis.text.x = element_blank(), axis.ticks = element_blank()) +
   labs(fill = "PT")
+
+
+
+Kand_upper_x2 <- c(32.2, 33.06)
+Kand_upper_y2 <- c(66.85, 67.16)
+
+Plot_Kand_upper_PT_2 <-
+  Plot_Kand_upper +
+  geom_point(data = myt_site2, aes(x = Lon, y = Lat, group = 1, fill = Prop_T), shape = 21, size = 3) +
+  coord_map(xlim = Kand_upper_x2, ylim = Kand_upper_y2)+
+  scale_fill_gradient(low = "yellow", high = "red") +
+  guides(size = "none") +
+  theme(legend.direction = "horizontal", legend.position = c(0.8,0.1), legend.background = element_blank(), axis.title = element_blank(), axis.text = element_blank(), axis.text.x = element_blank(), axis.ticks = element_blank()) +
+  labs(fill = "PT") +
+  guides(fill = "none")
+
+
+ggsave(filename = "figures/Plot_PT_no_size_insertion.svg", plot = Plot_Kand_upper_PT_2)  
+
   
 ggsave(filename = "figures/Plot_PT_no_size.svg", plot = Plot_Kand_upper_PT)  
+
 
 
 
