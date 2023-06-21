@@ -22,8 +22,12 @@ library(vegan)
 # Создаем карту по обычным лекалам
 
 
-Fin_x <- c(27.29, 31)
-Fin_y <- c(59.20, 60.13)
+# Fin_x <- c(27.29, 31)
+# Fin_y <- c(59.20, 60.13)
+
+Fin_x <- c(28.06, 29.9)
+Fin_y <- c(59.61, 60.11)
+
 #
 gshhs.l.b <- "d:/Data_LMBE/Maps/Gshhs/gshhs_l.b"
 
@@ -54,7 +58,7 @@ Borders <- Rgshhs(wdb_borders.f.b, xlim = Fin_x, ylim = Fin_y)
 #
 # Fin_df <- fortify(Fin_f)
 #
-# write.csv(Fin_df, file = "Data/Finnish_South.csv")
+# write.csv(Fin_df, file = "Data/Finnish_South_2023_plan.csv")
 
 
 
