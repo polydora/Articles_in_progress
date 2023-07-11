@@ -1,0 +1,1054 @@
+---
+title: "Рисунки для статьи"
+author: ""
+date: ''
+output: html_document
+---
+
+
+
+
+```{r setup, include=FALSE}
+library(knitr)
+  
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+```{r}
+library(ggplot2)
+library(mgcv)
+library(dplyr)
+library(readxl)
+library(cowplot)
+
+
+theme_set(theme_bw())
+```
+
+
+```{r}
+
+finch_il <- read_excel("Data/Spinus_2020_parasitemia_IL6_survival_final.xlsx", na = "NA", sheet = "Spinus_2020_parasitemia_IL6_sur")
+finch_il$Experiment <- factor(finch_il$Experiment, labels = c("Control", "pSGS1", "pGRW2"))
+finch_il$Ring <- factor(finch_il$Ring)
+
+n_obs_il <- finch_il %>% group_by(Ring) %>% summarise(N_il_obs = n())
+
+
+finch <- read_excel("Data/Spinus_2020_parasitemia_IL6_survival_final.xlsx", na = "NA", sheet = "RMR")
+finch$Experiment <- factor(finch$Experiment, labels = c("Control", "pSGS1", "pGRW2"))
+finch$Ring <- factor(finch$Ring)
+
+# n_obs_rmr <- finch %>% group_by(Ring) %>% summarise(N_rmr_obs = n())
+# 
+# n_obs <- merge(n_obs_il, n_obs_rmr, by = "Ring")
+
+finch_il <- finch_il %>% group_by(Ring) %>% arrange(Date) %>% mutate(Cum_Parasitemia = cumsum(Parasitemia), Cum_IL = cumsum(IL6_pg_ml)) %>% arrange(Ring, Date)
+
+
+```
+
+
+
+
+```{r}
+# Вычисление паразитемии по двум соседним точкам измерения от дня измерения RMR  
+
+
+
+df_rmr <- finch %>%  select(Ring, Date, Experiment, RMR) %>% mutate(Type = "RMR", Value = RMR) %>% select(-RMR)
+
+df_par <- finch_il %>% select(Ring, Date, Experiment,Parasitemia) %>% mutate(Type = "Parasitemia", Value = Parasitemia) %>% select(-Parasitemia)
+
+df_all <- rbind(df_rmr, df_par)
+
+df_all <- df_all %>% group_by(Experiment, Ring) %>% arrange(Date, .by_group = TRUE)   
+
+df_all_check <- df_all %>% group_by(Ring) %>% summarise(RMR_count = sum(Type == "RMR"))
+
+# Удаляем птиц, у которых не измеряли RMR
+exclude_Ring <- df_all_check %>% filter(RMR_count == 0) %>% pull(Ring)
+
+df_all <- df_all %>% filter(!Ring %in% exclude_Ring)
+
+
+df_final <- NULL
+
+for(Selected_Ring in unique(df_all$Ring)){
+  df <- df_all %>% filter(Ring == Selected_Ring)
+  df <- df %>% arrange(Date)
+  
+  k <- 1
+  df_estim <- data.frame(Ring = rep(NA, nrow(df)), Date = df$Date[1], Experiment = NA, RMR = NA, Parasitemia = NA )
+  
+  for(i in 1:nrow(df)){
+    if(df$Type[i] == "RMR"){
+      
+      paras <- df[c(i-1, i+1), ]
+      
+      if(nrow(paras) == 1){
+      df_estim$Ring[k] <- as.character(Selected_Ring)
+      df_estim$RMR [k] <- df$Value[i]
+      df_estim$Date [k] <- (df$Date[i])
+      df_estim$Experiment [k] <- as.character(df$Experiment[i])
+      df_estim$Parasitemia [k] <- 0  
+      }
+      else
+      {
+      mod <- lm(Value ~ Date, data = paras)
+      df_estim$Ring[k] <- as.character(Selected_Ring)
+      df_estim$RMR [k] <- df$Value[i]
+      df_estim$Date [k] <- (df$Date[i])
+      df_estim$Experiment [k] <- as.character(df$Experiment[i])
+      df_estim$Parasitemia [k] <- predict(mod, newdata = df[i,])  
+      }
+      k <- k + 1
+    }
+  }
+  
+  df_estim <- df_estim %>% filter(complete.cases(.)) 
+
+  df_final <- rbind(df_final, df_estim)  
+  
+}
+
+
+
+
+```
+
+
+
+
+```{r}
+# Вычисление Интерлейкина по двум соседним точкам измерения от дня измерения RMR, для первой точки измерения RMR берется первое измерение интерлейкина, следующее после измерения RMR  
+
+
+
+df_rmr <- finch %>%  select(Ring, Date, Experiment, RMR) %>% mutate(Type = "RMR", Value = RMR) %>% select(-RMR)
+
+df_il <- finch_il %>% select(Ring, Date, Experiment,IL6_pg_ml) %>% mutate(Type = "IL", Value = IL6_pg_ml) %>% select(-IL6_pg_ml)
+
+df_all2 <- rbind(df_rmr, df_il)
+
+df_all2 <- df_all2 %>% group_by(Experiment, Ring) %>% arrange(Date, .by_group = TRUE)   
+
+df_all2_check <- df_all2 %>% group_by(Ring) %>% summarise(RMR_count = sum(Type == "RMR"))
+
+# Удаляем птиц, у которых не измеряли RMR
+exclude_Ring2 <- df_all2_check %>% filter(RMR_count == 0) %>% pull(Ring)
+
+df_all2 <- df_all2 %>% filter(!Ring %in% exclude_Ring2)
+
+
+df_final2 <- NULL
+
+for(Selected_Ring in unique(df_all2$Ring)){
+  df <- df_all2 %>% filter(Ring == Selected_Ring)
+  df <- df %>% arrange(Date)
+  
+  k <- 1
+  df_estim <- data.frame(Ring = rep(NA, nrow(df)), Date = df$Date[1], Experiment = NA, RMR = NA, IL = NA )
+  
+  for(i in 1:nrow(df)){
+    if(df$Type[i] == "RMR"){
+      
+      IL <- df[c(i-1, i+1), ]
+      
+      if(nrow(IL) == 1){
+      df_estim$Ring[k] <- as.character(Selected_Ring)
+      df_estim$RMR [k] <- df$Value[i]
+      df_estim$Date [k] <- as.POSIXct(df$Date[i])
+      df_estim$Experiment [k] <- as.character(df$Experiment[i])
+      df_estim$IL [k] <- df$Value[i+1]  
+      }
+      else
+      {
+      mod <- lm(Value ~ Date, data = IL)
+      df_estim$Ring[k] <- as.character(Selected_Ring)
+      df_estim$RMR [k] <- df$Value[i]
+      df_estim$Date [k] <- as.POSIXct(df$Date[i])
+      df_estim$Experiment [k] <- as.character(df$Experiment[i])
+      df_estim$IL [k] <- predict(mod, newdata = df[i,])  
+      }
+      k <- k + 1
+    }
+  }
+  
+  df_estim <- df_estim %>% filter(complete.cases(.)) 
+
+  df_final2 <- rbind(df_final2, df_estim)  
+  
+}
+
+
+
+
+```
+
+
+
+
+```{r}
+# Вычисление накопленной паразитемии по двум соседним точкам измерения от дня измерения RMR  
+
+
+
+df_rmr <- finch %>%  select(Ring, Date, Experiment, RMR) %>% mutate(Type = "RMR", Value = RMR) %>% select(-RMR)
+
+df_cum_par <- finch_il %>% select(Ring, Date, Experiment,Cum_Parasitemia) %>% mutate(Type = "Cum_Parasitemia", Value = Cum_Parasitemia) %>% select(-Cum_Parasitemia)
+
+df_all3 <- rbind(df_rmr, df_cum_par)
+
+df_all3 <- df_all3 %>% group_by(Experiment, Ring) %>% arrange(Date, .by_group = TRUE)   
+
+df_all3_check <- df_all3 %>% group_by(Ring) %>% summarise(RMR_count = sum(Type == "RMR"))
+
+# Удаляем птиц, у которых не измеряли RMR
+exclude_Ring <- df_all3_check %>% filter(RMR_count == 0) %>% pull(Ring)
+
+df_all3 <- df_all3 %>% filter(!Ring %in% exclude_Ring)
+
+
+df_final3 <- NULL
+
+for(Selected_Ring in unique(df_all3$Ring)){
+  df <- df_all3 %>% filter(Ring == Selected_Ring)
+  df <- df %>% arrange(Date)
+  
+  k <- 1
+  df_estim <- data.frame(Ring = rep(NA, nrow(df)), Date = df$Date[1], Experiment = NA, RMR = NA, Cum_Parasitemia = NA )
+  
+  for(i in 1:nrow(df)){
+    if(df$Type[i] == "RMR"){
+      
+      cum_paras <- df[c(i-1, i+1), ]
+      
+      if(nrow(cum_paras) == 1){
+      df_estim$Ring[k] <- as.character(Selected_Ring)
+      df_estim$RMR [k] <- df$Value[i]
+      df_estim$Date [k] <- (df$Date[i])
+      df_estim$Experiment [k] <- as.character(df$Experiment[i])
+      df_estim$Cum_Parasitemia [k] <- 0  
+      }
+      else
+      {
+      mod <- lm(Value ~ Date, data = cum_paras)
+      df_estim$Ring[k] <- as.character(Selected_Ring)
+      df_estim$RMR [k] <- df$Value[i]
+      df_estim$Date [k] <- (df$Date[i])
+      df_estim$Experiment [k] <- as.character(df$Experiment[i])
+      df_estim$Cum_Parasitemia [k] <- predict(mod, newdata = df[i,])  
+      }
+      k <- k + 1
+    }
+  }
+  
+  df_estim <- df_estim %>% filter(complete.cases(.)) 
+
+  df_final3 <- rbind(df_final3, df_estim)  
+  
+}
+
+
+
+
+```
+
+
+
+
+
+```{r}
+# Вычисление накопленного инртерлейкина по двум соседним точкам измерения от дня измерения RMR  
+
+
+
+df_rmr <- finch %>%  select(Ring, Date, Experiment, RMR) %>% mutate(Type = "RMR", Value = RMR) %>% select(-RMR)
+
+df_cum_il <- finch_il %>% select(Ring, Date, Experiment,Cum_IL) %>% mutate(Type = "Cum_IL", Value = Cum_IL) %>% select(-Cum_IL)
+
+df_all4 <- rbind(df_rmr, df_cum_il)
+
+df_all4 <- df_all4 %>% group_by(Experiment, Ring) %>% arrange(Date, .by_group = TRUE)   
+
+df_all4_check <- df_all4 %>% group_by(Ring) %>% summarise(RMR_count = sum(Type == "RMR"))
+
+# Удаляем птиц, у которых не измеряли RMR
+exclude_Ring <- df_all4_check %>% filter(RMR_count == 0) %>% pull(Ring)
+
+df_all4 <- df_all4 %>% filter(!Ring %in% exclude_Ring)
+
+
+# Удаляем даты, когда Cum_IL == NA
+
+df_all4 <- df_all4 %>% filter(!is.na(Value))
+
+
+df_final4 <- NULL
+
+for(Selected_Ring in unique(df_all4$Ring)){
+  df <- df_all4 %>% filter(Ring == Selected_Ring)
+  df <- df %>% arrange(Date)
+  
+  k <- 1
+  df_estim <- data.frame(Ring = rep(NA, nrow(df)), Date = df$Date[1], Experiment = NA, RMR = NA, Cum_IL = NA )
+  
+  for(i in 1:nrow(df)){
+    if(df$Type[i] == "RMR"){
+      
+      cum_IL <- df[c(i-1, i+1), ]
+      
+      if(nrow(cum_IL) == 1){
+      df_estim$Ring[k] <- as.character(Selected_Ring)
+      df_estim$RMR [k] <- df$Value[i]
+      df_estim$Date [k] <- (df$Date[i])
+      df_estim$Experiment [k] <- as.character(df$Experiment[i])
+      df_estim$Cum_IL [k] <- df$Value[i+1]
+      }
+      else
+      {
+      mod <- lm(Value ~ Date, data = cum_IL)
+      df_estim$Ring[k] <- as.character(Selected_Ring)
+      df_estim$RMR [k] <- df$Value[i]
+      df_estim$Date [k] <- (df$Date[i])
+      df_estim$Experiment [k] <- as.character(df$Experiment[i])
+      df_estim$Cum_IL [k] <- predict(mod, newdata = df[i,])  
+      }
+      k <- k + 1
+    }
+  }
+  
+  df_estim <- df_estim %>% filter(complete.cases(.)) 
+
+  df_final4 <- rbind(df_final4, df_estim)  
+  
+}
+
+
+
+
+```
+
+
+
+
+
+```{r}
+# data.frame с оценками паразитемии и интерлейкина по соседним точкам
+rmr_paras_il <- merge(df_final, df_final2) %>% merge(., df_final3) %>% merge(., df_final4) 
+
+rmr_paras_il <- rmr_paras_il %>% group_by(Ring, Experiment) %>% arrange(Date, .by_group = T)
+
+
+```
+
+
+
+
+
+```{r}
+D_RMR <- finch %>% group_by(Ring) %>% summarise(D_RMR = log(RMR) - log(RMR)[1]) %>% pull
+
+
+finch$D_RMR <- D_RMR
+
+
+# ggplot(finch, aes(x = DPI, y = D_RMR , group = Ring)) + geom_line() + facet_wrap(~Experiment)
+
+```
+
+
+
+
+
+
+```{r}
+
+# Код для совмещения данных по RMR и измерениям паразитемии и интерлейкинов
+finch$Parasitemia_nearest <- NA
+finch$Parasitemia_M <- NA
+
+finch$IL_nearest <- NA
+finch$IL_M <- NA
+
+finch$Cum_Parasitemia_nearest <- NA
+finch$Cum_Parasitemia_M <- NA
+
+finch$Dif_Date <- NA
+finch$Survival <- NA
+
+for(i in 1:nrow(finch)){
+  df <- finch_il %>% filter(Ring %in% finch$Ring[i])
+
+  dif_dat1 <- (difftime(df$Date, finch$Date[i]))
+  dif_dat1[dif_dat1 < 0 ] <- NA
+  time1 <- df$Date[which.min(dif_dat1)]
+  
+  finch$Parasitemia_nearest[i] <- df$Parasitemia[df$Date == time1]
+  finch$IL_nearest[i] <- df$IL6_pg_ml[df$Date == time1]
+  finch$Cum_Parasitemia_nearest[i] <- df$Cum_Parasitemia[df$Date == time1]
+  finch$Survival[i] <- df$Survival[df$Date == time1]
+
+  finch$Dif_Date[i] <- as.numeric(difftime(time1, finch$Date[i], units = "day"))
+  
+}
+
+
+
+```
+
+ 
+
+```{r}
+df_final <- NULL
+
+for(ring in unique(finch$Ring)) {
+  
+  df_predict <- finch %>% filter(Ring %in% ring)
+  
+  
+  df_model <- finch_il %>% filter(Ring %in% ring) %>% filter(complete.cases(.))
+  
+  # Я пытался еще описывать данные полиномами, но по сути дела результаты не отличались.
+  # degr = nrow(df_model) - 1
+  # degr <- ifelse(degr > 5, 5, degr)
+  # 
+  # M_Parasitemia <- lm(Parasitemia ~ poly(DPI, degr), data = df_model)
+  # df_predict$Parasitemia_M <- predict(M_Parasitemia, newdata = df_predict) 
+
+  
+  M_Parasitemia <- loess(Parasitemia ~ DPI, data = df_model, degree = 1)
+  df_predict$Parasitemia_M <- predict(M_Parasitemia, newdata = df_predict) 
+
+  M_Cum_Parasitemia <- loess(Cum_Parasitemia ~ DPI, data = df_model, degree = 1)
+  df_predict$Cum_Parasitemia_M <- predict(M_Cum_Parasitemia, newdata = df_predict)
+
+  M_IL <- loess(IL6_pg_ml ~ DPI, data = df_model, degree = 1)
+  df_predict$IL_M <- predict(M_IL, newdata = df_predict)
+  
+  df_final <- rbind(df_final, df_predict)
+
+}
+
+
+df_final$Parasitemia_M[df_final$Parasitemia_M <0] <- 0
+df_final$Cum_Parasitemia_M[df_final$Cum_Parasitemia_M <0] <- 0
+
+df_final5 <- df_final
+
+```
+
+```{r}
+finch_final <- merge(df_final5, rmr_paras_il)
+
+
+
+
+```
+
+
+
+
+
+```{r}
+
+finch_final$Experiment <- factor(finch_final$Experiment)
+finch_final$Ring <- factor(finch_final$Ring)
+finch_final$Survival <- factor(finch_final$Survival)
+
+finch_reduced <- finch_final %>% filter(Bad != 1) #удаляю из датасета строчки с неизмеренными значениями и строки с плохим измерением RMR
+
+finch_reduced <- finch_reduced[complete.cases(finch_reduced), ]
+
+```
+
+
+
+
+
+
+
+## Динамика паразитемии
+
+```{r, echo=TRUE}
+
+finch_il_2 <- finch_il %>% filter(Experiment != "Control")
+
+M1_Par_gam <- gam(Parasitemia ~ s(DPI) + Experiment  + s(Ring, k = 53, bs = "re"),  method = "REML", data = finch_il_2, family = "nb")
+
+M2_Par_gam <- gam(Parasitemia ~ s(DPI, by = Experiment) + Experiment  + s(Ring, k = 53, bs = "re"),  method = "REML", data = finch_il_2, family = "nb")
+
+
+```
+
+<!-- Обратите внимание, что в моделях используется отрицательное биномиальное распределение, так как моделируем *число* мерозоитов (то есть дискретную величину, которая не может быть ниже нуля). -->
+
+```{r, echo=TRUE}
+AIC(M1_Par_gam, M2_Par_gam)
+```
+
+<!-- Разные смузеры для групп лучше. То есть ход развития инфекции несколько различен в разных группах -->
+
+
+Проверка валидности
+```{r}
+library(gratia)
+appraise(M2_Par_gam)
+```
+
+
+Table ++. GAM parameters characterizing the course of parasetemia after parasite inoculation.
+
+Parametric terms
+```{r}
+library(broom)
+kable(tidy(M2_Par_gam, parametric = T ))
+```
+
+smoothers
+
+```{r}
+kable(tidy(M2_Par_gam,parametric = F ))
+```
+
+
+
+
+Визуализация модели
+
+```{r}
+My_data <- expand.grid(Experiment = c("pSGS1", "pGRW2"), DPI = seq(0, max(finch_final$DPI)))
+
+predicted <- predict(M2_Par_gam, newdata = My_data, exclude = "s(Ring)", newdata.guaranteed=TRUE, se.fit = TRUE, type = "response")
+
+My_data$Fit <- predicted$fit
+My_data$SE <- predicted$se.fit
+
+Pl_parasetemia <-
+ggplot(My_data, aes(x = DPI, y = Fit)) + 
+  geom_line(aes(color = Experiment), size = 1) + 
+  geom_ribbon(aes(ymin = Fit - 1.96*SE, ymax = Fit + 1.96*SE, group = Experiment), alpha = 0.2) +
+  geom_point(data = finch_il_2, aes(y = Parasitemia, color = Experiment)) +
+  labs(y = "Parasitemia", color = "Lineage") + 
+  scale_color_manual(values = c("red", "blue")) +
+  theme(legend.position = c(0.8, 0.9))
+  
+
+```
+
+
+<!-- ### Попарное сравнение смузеров.  -->
+<!-- На картинках, показанных ниже, приведены смузеры для разниц между группами. Если  CI не включает ноль, то это означает, что разница значимая (в принципе, это все можно увидеть и на визуализации модели, которая приведена выше).  -->
+
+<!-- **NB!** Для longitudinal survey, которым является данное исследование, простые постхоки годятся лишь ограниченно (в принципе, можно сравнить попарно друг с другом  Cont, Exp1 и Exp2, как бы вынеся динамику за скобки). Гораздо более правильным является сравнение  смузеров для каждой из групп. Имея коэффициенты модели, можно построить "модель" поведения разности двух смузеров. Идея рисовать смузеры с CI для разностей - штука очевидная, но как это написать, чтобы получить картинки, я понял только сейчас. Техническая суть идеи изложена вот этом посте небезызвестного Симпсона https://fromthebottomoftheheap.net/2017/10/10/difference-splines-i/.  -->
+
+<!-- Вот еще очень внятная статья, в которой хорошо, со всеми ссылками, рассказано про применение GAM в медицинских longitudinal survey и дается сравнение с традиционными для медицины методами:  https://doi.org/10.1002/sim.9505. *By the way*... Обратите внимание, что статья совсем свежая. То есть в человеческой медицине методы, которые мы предлагаем в работе с заболеваниями птиц - это новые идеи (что странно). Но этот аспект может быть нелишним для упоминания в статье.        -->
+
+
+<!-- Картинки получились, по-моему, внятные, но пока смотрим на них с осторожным оптимизмом, так как я еще не до конца понял теорию их построения. Пока еще изучаю матчасть. Может все не так просто и где-то я еще не усмотрел второе дно.   -->
+
+
+```{r}
+smooth_diff <- function(model, newdata, f1, f2, var, alpha = 0.05,
+                        unconditional = FALSE) {
+    xp <- predict(model, newdata = newdata, type = 'lpmatrix', exclude = "s(Ring)", newdata.guaranteed=TRUE)
+    c1 <- grepl(f1, colnames(xp))
+    c2 <- grepl(f2, colnames(xp))
+    r1 <- newdata[[var]] == f1
+    r2 <- newdata[[var]] == f2
+    ## difference rows of xp for data from comparison
+    X <- xp[r1, ] - xp[r2, ]
+    ## zero out cols of X related to splines for other lochs
+    X[, ! (c1 | c2)] <- 0
+    ## zero out the parametric cols
+    X[, !grepl('^s\\(', colnames(xp))] <- 0
+    dif <- X %*% coef(model)
+    se <- sqrt(rowSums((X %*% vcov(model, unconditional = unconditional)) * X))
+    crit <- qt(alpha/2, df.residual(model), lower.tail = FALSE)
+    upr <- dif + (crit * se)
+    lwr <- dif - (crit * se)
+    data.frame(pair = paste(f1, f2, sep = '-'),
+               diff = dif,
+               se = se,
+               upper = upr,
+               lower = lwr)
+}
+
+
+```
+
+
+
+
+```{r}
+comp1 <- smooth_diff(M2_Par_gam, My_data, 'pSGS1', 'pGRW2', 'Experiment', unconditional = TRUE)
+
+comp <- cbind(DPI = seq(0, max(finch_final$DPI)),
+              rbind(comp1))
+
+signif_diff <- comp %>% filter((upper > 0 & lower > 0) | (upper < 0 & lower <0))
+
+
+
+Pl_Parasitemia_difference <-
+ggplot(comp, aes(x = DPI, y = diff, group = pair)) +
+    geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2) +
+    geom_line() +
+    facet_wrap(~ pair, ncol = 2)  +
+    labs(x = "DPI", y = 'Smoothers difference') +  
+    geom_hline(yintercept = 0, linetype = 2) + 
+    geom_point(data = signif_diff, aes(x = DPI, y = 0), shape = 15, color = "black", fill = "black", size = 2)
+  
+```
+
+<!-- **NB!** По-моему, с этой части лучше начать изложение результатов в статье, чтобы дать описание того, как изменяется обилие паразитов в зависисомсти от DPI. А уже потом перейти к динамике физиологических характеристик (которая в данном документе описана выше).  -->
+
+
+```{r}
+plot_grid(Pl_parasetemia, Pl_Parasitemia_difference, labels = "AUTO")
+```
+
+Figure +. Parasitemia at different days after inoculation (DPI) in two Plasmodium species. Panel A represents the observed number of merozoites (dots) and predicted GAM (lines, gray areas around the lines represent 95% CI). Panel B represents the difference between smoothers. Time periods when the difference between smoothers is significantly different from zero are marked by black rectangles.       
+
+
+
+
+
+
+## Динамика RMR на фоне развития заболевания
+
+
+```{r echo=TRUE}
+
+M1_RMR_gam <- gam(log10(RMR) ~ s(DPI) + Experiment + log10(Mass)  + s(Ring, k = 53, bs = "re"),  method = "REML", data = finch_reduced)
+
+
+M2_RMR_gam <- gam(log10(RMR) ~ s(DPI, by = Experiment) + Experiment + log10(Mass)  + s(Ring, k = 53, bs = "re"),  method = "REML", data = finch_reduced)
+
+
+
+```
+
+
+```{r echo=TRUE}
+AIC(M1_RMR_gam, M2_RMR_gam)
+
+```
+
+Будем рассматривать модель №2.
+
+Проверка ее валидности 
+
+```{r}
+library(gratia)
+appraise(M2_RMR_gam)
+
+```
+
+
+### Описание модели
+
+Table +++. GAM parameters characterizing the course of RMR after parasite inoculation.
+
+Parametric terms "Control" was taken as reference level for the factor “Group”
+```{r}
+kable(tidy(M2_RMR_gam, parametric = T))
+```
+
+Smoothers
+
+
+```{r}
+kable(tidy(M2_RMR_gam, parametric = F))
+```
+
+
+
+### Визуализации модели 
+
+<!-- ```{r} -->
+<!-- library(gratia) -->
+<!-- library(cowplot) -->
+
+<!-- Pl_Cont <- draw(M2_RMR_gam, select = c(1), scales = "fixed") + geom_hline(yintercept = 0, linetype = 2) -->
+<!-- Pl_Exp1 <- draw(M2_RMR_gam, select = c(2), scales = "fixed") + geom_hline(yintercept = 0, linetype = 2) -->
+<!-- Pl_Exp2 <- draw(M2_RMR_gam, select = c(3), scales = "fixed") + geom_hline(yintercept = 0, linetype = 2) -->
+
+<!-- ``` -->
+
+
+
+
+
+```{r}
+My_data <- expand.grid(Experiment = levels(finch_final$Experiment), DPI = seq(0, max(finch_final$DPI)))
+  # finch_final %>% select(Experiment, DPI) %>% unique(.)
+My_data$Mass <- mean(finch_final$Mass)
+  
+predicted <- predict(M2_RMR_gam, newdata = My_data, exclude = "s(Ring)", newdata.guaranteed=TRUE, se.fit = TRUE)
+
+My_data$Fit <- predicted$fit
+My_data$SE <- predicted$se.fit
+
+Pl_RMR <-
+ggplot(My_data, aes(x = DPI, y = 10^(Fit) )) + 
+  geom_line(aes(color = Experiment), size = 1) + 
+  geom_ribbon(aes(ymin = 10^(Fit - 1.96*SE), ymax = 10^(Fit + 1.96*SE)), alpha = 0.2) +
+  geom_point(data = finch_final, aes(y = (RMR), color = Experiment)) +
+  labs(y = "RMR") +
+  facet_wrap(~Experiment, ncol = 1) + 
+  scale_color_manual(values = c("black", "red", "blue")) +
+  guides(color = "none")
+
+```
+
+
+
+<!-- Парные сравнения RMR в трех группах. **Важно!** Это сравнение неких условных средних, без учета временной динамики (она в данном случае, как бы за скобками). В принципе, так тоже можно, но лучше сравнивать не условные средние, а сами смузеры (см. ниже).    -->
+
+<!-- ```{r} -->
+<!-- library(multcomp) -->
+
+<!-- contr <- matrix(0, nrow = 3, ncol = length(coef(M2_RMR_gam))) -->
+<!-- colnames(contr) <- names(coef(M2_RMR_gam)) -->
+<!-- rownames(contr) <- c("Exp1 - Cont", "Exp2 - Cont", "Exp2 - Exp1") -->
+<!-- contr[, 2:3] <- rbind(c(1, 0), c(0, 1), c(-1, 1)) -->
+
+<!-- compar <- glht(M2_RMR_gam, linfct = contr) -->
+<!-- summary(compar) -->
+
+<!-- ``` -->
+
+### Попарное сравнение смузеров. 
+
+```{r}
+
+comp1 <- smooth_diff(M2_RMR_gam, My_data, 'Control', 'pSGS1', 'Experiment',unconditional = TRUE)
+
+comp2 <- smooth_diff(M2_RMR_gam, My_data, 'Control', 'pGRW2', 'Experiment',unconditional = TRUE)
+
+comp3 <- smooth_diff(M2_RMR_gam, My_data, 'pSGS1', 'pGRW2', 'Experiment',unconditional = TRUE)
+
+comp <- cbind(DPI = seq(0, max(finch_final$DPI)),
+              rbind(comp1, comp2, comp3))
+
+comp$pair <- factor(comp$pair, levels = c("Control-pSGS1", "Control-pGRW2", "pSGS1-pGRW2"))
+
+signif_diff <- comp %>% filter((upper > 0 & lower > 0) | (upper < 0 & lower <0))
+
+
+Pl_RMR_difference <-
+ggplot(comp, aes(x = DPI, y = diff, group = pair)) +
+    geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2) +
+    geom_line() +
+    facet_wrap(~ pair, ncol = 1)  +
+    labs(x = "DPI", y = 'Difference in RMR') +
+    geom_hline(yintercept = 0, linetype = 2) + 
+    geom_point(data = signif_diff, aes(x = DPI, y = 0), shape = 15, color = "black", fill = "black", size = 2)  
+
+```
+
+```{r}
+plot_grid(Pl_RMR, Pl_RMR_difference, labels = "AUTO")
+
+```
+
+Figure +. RMR at different days after inoculation (DPI) in different birds' groups.  Panel A represents the observed RMR level (dots) and GAM predictions (lines and 95% CI). Panel B represents the difference between smoothers. Time periods when the difference between smoothers is significantly different from zero are marked by black rectangles.       
+
+
+
+
+
+```{r}
+cont_exp1 <- comp %>% filter(pair == "Control-pSGS1") %>% filter(upper > 0 & lower > 0) %>% pull(DPI) %>% range()
+
+cont_exp2 <- comp %>% filter(pair == "Control-pGRW2") %>% filter(upper > 0 & lower > 0) %>% pull(DPI) %>% range()
+
+
+exp1_exp2 <- comp %>% filter(pair == "pSGS1-pGRW2") %>% filter(upper < 0 & lower < 0) %>% pull(DPI) %>% range()
+```
+
+
+## Динамика интрелейкина
+
+```{r, echo=TRUE}
+
+M1_IL_gam <- gam(log10(IL6_pg_ml) ~ s(DPI, k = 5) + Experiment  + s(Ring, k = 53, bs = "re"),  method = "REML", data = finch_il)
+
+M2_IL_gam <- gam(log10(IL6_pg_ml) ~ s(DPI, by = Experiment, k = 5) + Experiment  + s(Ring, k = 53, bs = "re"),  method = "REML", data = finch_il)
+
+```
+
+```{r, echo=TRUE}
+AIC(M1_IL_gam, M2_IL_gam)
+```
+
+
+Аналогично, оптимальной будет модель с разными смузерами для каждой из групп.
+
+Вот проверка ее валидности 
+
+```{r}
+appraise(M2_IL_gam)
+```
+
+
+Table +++. GAM parameters characterizing the course of IL-6 concentration after parasite inoculation.
+
+Parametric terms. "Control" was taken as reference level for the factor “Group”
+
+```{r}
+kable(tidy(M2_IL_gam, parametric = T))
+```
+
+Smoothers
+
+```{r}
+kable(tidy(M2_IL_gam, parametric = F))
+```
+
+
+
+Визуализация этой модели
+
+```{r}
+My_data <- expand.grid(Experiment = levels(finch_final$Experiment), DPI = seq(0, max(finch_final$DPI)))
+
+predicted <- predict(M2_IL_gam, newdata = My_data, exclude = "s(Ring)", newdata.guaranteed=TRUE, se.fit = TRUE)
+
+My_data$Fit <- predicted$fit
+My_data$SE <- predicted$se.fit
+
+
+Pl_IL <- 
+ggplot(My_data, aes(x = DPI, y = 10^Fit)) + 
+  geom_line(aes(color = Experiment), size = 1) + 
+  geom_ribbon(aes(ymin = 10^(Fit - 1.96*SE), ymax = 10^(Fit + 1.96*SE)), alpha = 0.2) +
+  geom_point(data = finch_il, aes(y = (IL6_pg_ml), color = Experiment)) +
+  labs(y = "IL concentration") +
+  facet_wrap(~Experiment, ncol = 1, scales = "free_y") +
+  guides(color = "none") +
+  scale_color_manual(values = c("black", "red", "blue"))
+  
+
+```
+
+
+```{r}
+comp1 <- smooth_diff(M2_IL_gam, My_data, 'Control', 'pSGS1', 'Experiment', unconditional = TRUE)
+
+comp2 <- smooth_diff(M2_IL_gam, My_data, 'Control', 'pGRW2', 'Experiment', unconditional = TRUE)
+
+comp3 <- smooth_diff(M2_IL_gam, My_data, 'pSGS1', 'pGRW2', 'Experiment', unconditional = TRUE)
+
+comp <- cbind(DPI = seq(0, max(finch_final$DPI)),
+              rbind(comp1, comp2, comp3))
+
+comp$pair <- factor(comp$pair, levels = c("Control-pSGS1", "Control-pGRW2", "pSGS1-pGRW2"))
+
+signif_diff <- comp %>% filter((upper > 0 & lower > 0) | (upper < 0 & lower <0))
+
+Pl_IL_difference <-
+ggplot(comp, aes(x = DPI, y = diff, group = pair)) +
+    geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2) +
+    geom_line() +
+    facet_wrap(~ pair, ncol = 1)  +
+    labs(x = "DPI", y = 'Difference in IL-6 concentration') +
+  geom_hline(yintercept = 0) +
+      geom_hline(yintercept = 0, linetype = 2) + 
+    geom_point(data = signif_diff, aes(x = DPI, y = 0), shape = 15, color = "black", fill = "black", size = 2)  
+
+  
+```
+
+
+```{r}
+plot_grid(Pl_IL, Pl_IL_difference, labels = "AUTO")
+```
+
+Figure +. IL-6 at different days after inoculation (DPI) in different birds’ groups. Panel A represents the observed IL-6 concentration (dots) and GAM predictions (lines and 95% CI). Panel B represents the difference between smoothers. Time periods when the difference between smoothers is significantly different from zero are marked by black rectangles.
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- # Третий этап анализа  -->
+<!-- Описание связи физиолгических характеристик птиц с "популяционными" процессами паразита -->
+
+<!-- ## Связь RMR с накопленной паразитемией -->
+
+<!-- ```{r , echo=TRUE} -->
+
+<!-- M1_RMR_Par_gam <- gam(log(RMR) ~ s(Cum_Parasitemia, k = 4) + Experiment + log(Mass)  + s(Ring, k = 53, bs = "re"),  method = "REML", data = finch_reduced %>% filter(Experiment != "Cont")) -->
+
+<!-- M2_RMR_Par_gam <- gam(log(RMR) ~ s(Cum_Parasitemia, by = Experiment, k = 4) + Experiment + log(Mass)  + s(Ring, k = 53, bs = "re"),  method = "REML", data = finch_reduced %>% filter(Experiment != "Cont")) -->
+
+<!-- ``` -->
+
+
+<!-- ```{r, echo=TRUE} -->
+<!-- AIC(M1_RMR_Par_gam, M2_RMR_Par_gam) -->
+<!-- ``` -->
+
+<!-- В данном случае получается, что модель с общим смузером для двух групп оказывается лучше. -->
+
+<!-- Проверка валидности -->
+
+<!-- ```{r, echo=TRUE} -->
+<!-- appraise(M1_RMR_Par_gam) -->
+<!-- ``` -->
+
+<!-- Описание модели -->
+<!-- ```{r} -->
+<!-- summary(M1_RMR_Par_gam) -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+
+<!-- My_data <- expand.grid(Experiment = c("Exp1", "Exp2"), Cum_Parasitemia = seq(0, max(finch_il$Cum_Parasitemia, na.rm = T)) ) -->
+
+<!-- My_data$Mass <- mean(finch_final$Mass) -->
+
+<!-- predicted <- predict(M1_RMR_Par_gam, newdata = My_data, exclude = "s(Ring)", newdata.guaranteed=TRUE, se.fit = TRUE) -->
+
+<!-- My_data$Fit <- predicted$fit -->
+<!-- My_data$SE <- predicted$se.fit -->
+
+<!-- My_data$Experiment <- factor(My_data$Experiment) -->
+
+
+<!-- ggplot(My_data, aes(x = Cum_Parasitemia, y = exp(Fit) )) +  -->
+<!--   geom_line(aes(color = Experiment), size = 1) +  -->
+<!--   geom_ribbon(aes(ymin = exp(Fit - 1.96*SE), ymax = exp(Fit + 1.96*SE), group = Experiment), alpha = 0.2) + -->
+<!--   geom_point(data = finch_final, aes(y = (RMR), color = Experiment)) + -->
+<!--   labs(y = "RMR", x = "Cumulated parasitemia") -->
+
+<!-- ``` -->
+
+<!-- Что видно.    -->
+
+<!-- 1. При заражении Exp2, в среднем, RMR *немного* выше, чем чем при заражении Exp1. -->
+
+<!-- 2. По мере увеличения циклов мерогонии (накопленная паразитемия) при заражении и тем, и другим видом паразитов RMR не остается постоянным (смузеры не нулевые). То есть RMR *зависит* от накопленной парзитемии.  -->
+
+<!-- 3. RMR на первых этапах заболевания возрастает, но потом остается более или менее стабильным.      -->
+
+
+
+
+<!-- ## Связь IL с накопленной паразитемией -->
+
+<!-- ```{r , echo=TRUE} -->
+
+<!-- M1_IL_Par_gam <- gam(log(IL) ~ s(Cum_Parasitemia, k = 4) + Experiment + log(Mass)  + s(Ring, k = 53, bs = "re"),  method = "REML", data = finch_reduced %>% filter(Experiment != "Cont")) -->
+
+<!-- M2_IL_Par_gam <- gam(log(IL) ~ s(Cum_Parasitemia, by = Experiment, k = 4) + Experiment + log(Mass)  + s(Ring, k = 53, bs = "re"),  method = "REML", data = finch_reduced %>% filter(Experiment != "Cont")) -->
+
+<!-- ``` -->
+
+
+<!-- ```{r, echo=TRUE} -->
+<!-- AIC(M1_IL_Par_gam, M2_IL_Par_gam) -->
+<!-- ``` -->
+
+<!-- В данном случае, что модель с общим для двух групп смузером оказывается лучше. -->
+
+<!-- Проверка валидности -->
+
+<!-- ```{r} -->
+<!-- appraise(M1_IL_Par_gam) -->
+<!-- ``` -->
+
+<!-- Описание модели -->
+<!-- ```{r} -->
+<!-- summary(M1_IL_Par_gam) -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+
+<!-- My_data <- expand.grid(Experiment = c("Exp1", "Exp2"), Cum_Parasitemia = seq(0, max(finch_il$Cum_Parasitemia, na.rm = T)) ) -->
+
+<!-- My_data$Mass <- mean(finch_final$Mass) -->
+
+<!-- predicted <- predict(M1_IL_Par_gam, newdata = My_data, exclude = "s(Ring)", newdata.guaranteed=TRUE, se.fit = TRUE) -->
+
+<!-- My_data$Fit <- predicted$fit -->
+<!-- My_data$SE <- predicted$se.fit -->
+
+<!-- My_data$Experiment <- factor(My_data$Experiment) -->
+
+
+<!-- ggplot(My_data, aes(x = Cum_Parasitemia, y = exp(Fit) )) +  -->
+<!--   geom_line(aes(color = Experiment), size = 1) +  -->
+<!--   geom_ribbon(aes(ymin = exp(Fit - 1.96*SE), ymax = exp(Fit + 1.96*SE), group = Experiment), alpha = 0.2) + -->
+<!--   geom_point(data = finch_final, aes(y = (IL), color = Experiment)) + -->
+<!--   labs(y = "IL concentration", x = "Cumulated parasitemia") -->
+
+<!-- ``` -->
+
+
+<!-- Что видно.    -->
+<!-- 1. При заражении Exp1, в среднем, концентрация IL выше, чем чем при заражении Exp2. -->
+
+<!-- 2. По мере увеличения циклов мерогонии (накопленная паразитемия) при заражении и тем, и другим видом паразитов концентрация IL остается более или менее постоянной (нулевой смузер).  -->
+
+<!-- Этот анализ более внятно показывает, что концентрация интерлейкинов зависит от вида паразита.  -->
+
+<!-- Надо подумать теперь, как поженить этот результат с тем, где разница в концентрациях интерлейкина у Exp1 vs Exp2 меняется в зависимости от DPI (см. выше). Возможно тут надо апеллировать к тому, что накопленная паразитемия лучше отражает *индивидуальный* ход заболевания, в то время как DPI характеризует, скорее, *групповой* (то есть видоспецифический в отношении вида птицы) ответ.     -->
+
+<!-- #### Дополнение -->
+<!-- Не лишним будет описать связь между концентрацией IL и паразитемией (не накопленной, а просто, в данный момент).   -->
+
+<!-- Вот так выглядит эта связь (это визуализация LMM модели).  -->
+
+<!-- ```{r} -->
+<!-- library(lme4) -->
+<!-- finch_il2 <-   -->
+<!--   finch_il %>% filter(Experiment != "Cont") %>% filter(!is.na(IL6_pg_ml)) %>% filter(!is.na(Parasitemia)) -->
+
+<!-- ``` -->
+
+
+
+<!-- ```{r} -->
+<!-- M_IL_Par <- lmer(log(IL6_pg_ml) ~ log(Parasitemia + 1) *  Experiment + (1|Ring), data = finch_il2) -->
+<!-- ``` -->
+
+
+
+
+<!-- ```{r} -->
+
+<!-- My_data <- expand.grid(Experiment = c("Exp1", "Exp2"), Parasitemia = seq(0, max(finch_il2$Cum_Parasitemia, na.rm = T)) ) -->
+
+<!-- My_data$Fit <- predict(M_IL_Par, newdata = My_data, re.form = ~0) -->
+
+<!-- X <- model.matrix(~ log(Parasitemia + 1) *  Experiment, data = My_data) -->
+
+<!-- My_data$SE <- sqrt(diag(X %*% vcov(M_IL_Par) %*% t(X) )) -->
+
+
+<!-- ggplot(My_data, aes(x = log(Parasitemia + 1), y = Fit)) +  -->
+<!--   geom_line(aes(color = Experiment), size = 1) +  -->
+<!--   geom_ribbon(aes(ymin = (Fit - 1.96*SE), ymax = (Fit + 1.96*SE), group = Experiment), alpha = 0.2) + -->
+<!--   geom_point(data = finch_il %>% filter(Experiment != "Cont"), aes(y = log(IL6_pg_ml), color = Experiment)) + -->
+<!--   labs(y = "log(IL concentration)", x = "log(Parasitemia)") -->
+
+<!-- ``` -->
+
+
+<!-- Видно, что при разных видах паразитов связь концентрации интерлейкинов с паразитемией разная. В случае с Exp2 связи не наблюдается. В случае с Exp1 прослеживается отрицательная зависимость. То есть, чем больше мерозоитов, тем меньше интерлейкинов. Может быть здесь надо эту связь читать наоборот - высокая паразитемия может быть только при низком интерлейкине, когда иммунитет не тормозит мерогонию.  -->
+
+<!-- Надо думать...  -->
+
