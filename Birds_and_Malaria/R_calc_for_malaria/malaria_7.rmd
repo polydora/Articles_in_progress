@@ -29,14 +29,14 @@ theme_set(theme_bw())
 ```{r}
 
 finch_il <- read_excel("Data/Spinus_2020_parasitemia_IL6_survival_final.xlsx", na = "NA", sheet = "Spinus_2020_parasitemia_IL6_sur")
-finch_il$Experiment <- factor(finch_il$Experiment, labels = c("Control", "pSGS1", "pGRW2"))
+finch_il$Experiment <- factor(finch_il$Experiment, labels = c("Control", "SGS1", "GRW2"))
 finch_il$Ring <- factor(finch_il$Ring)
 
 n_obs_il <- finch_il %>% group_by(Ring) %>% summarise(N_il_obs = n())
 
 
 finch <- read_excel("Data/Spinus_2020_parasitemia_IL6_survival_final.xlsx", na = "NA", sheet = "RMR")
-finch$Experiment <- factor(finch$Experiment, labels = c("Control", "pSGS1", "pGRW2"))
+finch$Experiment <- factor(finch$Experiment, labels = c("Control", "SGS1", "GRW2"))
 finch$Ring <- factor(finch$Ring)
 
 # n_obs_rmr <- finch %>% group_by(Ring) %>% summarise(N_rmr_obs = n())
@@ -518,7 +518,7 @@ kable(tidy(M2_Par_gam,parametric = F ))
 Визуализация модели
 
 ```{r}
-My_data <- expand.grid(Experiment = c("pSGS1", "pGRW2"), DPI = seq(0, max(finch_final$DPI)))
+My_data <- expand.grid(Experiment = c("SGS1", "GRW2"), DPI = seq(0, max(finch_final$DPI)))
 
 predicted <- predict(M2_Par_gam, newdata = My_data, exclude = "s(Ring)", newdata.guaranteed=TRUE, se.fit = TRUE, type = "response")
 
@@ -529,10 +529,12 @@ Pl_parasetemia <-
 ggplot(My_data, aes(x = DPI, y = Fit)) + 
   geom_line(aes(color = Experiment), size = 1) + 
   geom_ribbon(aes(ymin = Fit - 1.96*SE, ymax = Fit + 1.96*SE, group = Experiment), alpha = 0.2) +
-  geom_point(data = finch_il_2, aes(y = Parasitemia, color = Experiment)) +
+  geom_point(data = finch_il_2, aes(y = Parasitemia, fill = Experiment), shape = 21, color = "black") +
   labs(y = "Parasitemia", color = "Lineage") + 
+  scale_fill_manual(values = c("red", "blue")) +
   scale_color_manual(values = c("red", "blue")) +
-  theme(legend.position = c(0.8, 0.9))
+  theme(legend.position = c(0.8, 0.9)) +
+  guides(color = "none", fill = "none")
   
 
 ```
@@ -582,7 +584,7 @@ smooth_diff <- function(model, newdata, f1, f2, var, alpha = 0.05,
 
 
 ```{r}
-comp1 <- smooth_diff(M2_Par_gam, My_data, 'pSGS1', 'pGRW2', 'Experiment', unconditional = TRUE)
+comp1 <- smooth_diff(M2_Par_gam, My_data, 'SGS1', 'GRW2', 'Experiment', unconditional = TRUE)
 
 comp <- cbind(DPI = seq(0, max(finch_final$DPI)),
               rbind(comp1))
@@ -691,15 +693,27 @@ predicted <- predict(M2_RMR_gam, newdata = My_data, exclude = "s(Ring)", newdata
 My_data$Fit <- predicted$fit
 My_data$SE <- predicted$se.fit
 
+My_data2 <- expand.grid(Experiment = levels(finch_final$Experiment), DPI = seq(0, max(finch_final$DPI), 0.1))
+
+My_data2$Fit [My_data2$Experiment != "Control"] <- predict(M2_Par_gam, newdata = My_data2[My_data2$Experiment != "Control", ], exclude = "s(Ring)", newdata.guaranteed=TRUE, type = "response") 
+
+My_data2$Fit [My_data2$Experiment == "Control"] <- 0
+
+
 Pl_RMR <-
 ggplot(My_data, aes(x = DPI, y = 10^(Fit) )) + 
   geom_line(aes(color = Experiment), size = 1) + 
   geom_ribbon(aes(ymin = 10^(Fit - 1.96*SE), ymax = 10^(Fit + 1.96*SE)), alpha = 0.2) +
-  geom_point(data = finch_final, aes(y = (RMR), color = Experiment)) +
+  geom_point(data = finch_final, aes(y = (RMR), fill = Experiment), shape = 21, color = "black") +
   labs(y = "RMR") +
   facet_wrap(~Experiment, ncol = 1) + 
   scale_color_manual(values = c("black", "red", "blue")) +
-  guides(color = "none")
+  scale_fill_manual(values = c("black", "red", "blue")) +
+  guides(color = "none", fill = "none")
+
+
+# Pl_RMR + 
+#   geom_segment(data = My_data2, aes(x = DPI, xend = DPI, y=12, yend = 13, alpha = Fit))
 
 ```
 
@@ -724,16 +738,16 @@ ggplot(My_data, aes(x = DPI, y = 10^(Fit) )) +
 
 ```{r}
 
-comp1 <- smooth_diff(M2_RMR_gam, My_data, 'Control', 'pSGS1', 'Experiment',unconditional = TRUE)
+comp1 <- smooth_diff(M2_RMR_gam, My_data, 'Control', 'SGS1', 'Experiment',unconditional = TRUE)
 
-comp2 <- smooth_diff(M2_RMR_gam, My_data, 'Control', 'pGRW2', 'Experiment',unconditional = TRUE)
+comp2 <- smooth_diff(M2_RMR_gam, My_data, 'Control', 'GRW2', 'Experiment',unconditional = TRUE)
 
-comp3 <- smooth_diff(M2_RMR_gam, My_data, 'pSGS1', 'pGRW2', 'Experiment',unconditional = TRUE)
+comp3 <- smooth_diff(M2_RMR_gam, My_data, 'SGS1', 'GRW2', 'Experiment',unconditional = TRUE)
 
 comp <- cbind(DPI = seq(0, max(finch_final$DPI)),
               rbind(comp1, comp2, comp3))
 
-comp$pair <- factor(comp$pair, levels = c("Control-pSGS1", "Control-pGRW2", "pSGS1-pGRW2"))
+comp$pair <- factor(comp$pair, levels = c("Control-SGS1", "Control-GRW2", "SGS1-GRW2"))
 
 signif_diff <- comp %>% filter((upper > 0 & lower > 0) | (upper < 0 & lower <0))
 
@@ -761,12 +775,12 @@ Figure +. RMR at different days after inoculation (DPI) in different birds' grou
 
 
 ```{r}
-cont_exp1 <- comp %>% filter(pair == "Control-pSGS1") %>% filter(upper > 0 & lower > 0) %>% pull(DPI) %>% range()
+cont_exp1 <- comp %>% filter(pair == "Control-SGS1") %>% filter(upper > 0 & lower > 0) %>% pull(DPI) %>% range()
 
-cont_exp2 <- comp %>% filter(pair == "Control-pGRW2") %>% filter(upper > 0 & lower > 0) %>% pull(DPI) %>% range()
+cont_exp2 <- comp %>% filter(pair == "Control-GRW2") %>% filter(upper > 0 & lower > 0) %>% pull(DPI) %>% range()
 
 
-exp1_exp2 <- comp %>% filter(pair == "pSGS1-pGRW2") %>% filter(upper < 0 & lower < 0) %>% pull(DPI) %>% range()
+exp1_exp2 <- comp %>% filter(pair == "SGS1-GRW2") %>% filter(upper < 0 & lower < 0) %>% pull(DPI) %>% range()
 ```
 
 
@@ -825,27 +839,29 @@ Pl_IL <-
 ggplot(My_data, aes(x = DPI, y = 10^Fit)) + 
   geom_line(aes(color = Experiment), size = 1) + 
   geom_ribbon(aes(ymin = 10^(Fit - 1.96*SE), ymax = 10^(Fit + 1.96*SE)), alpha = 0.2) +
-  geom_point(data = finch_il, aes(y = (IL6_pg_ml), color = Experiment)) +
-  labs(y = "IL concentration") +
+  geom_point(data = finch_il, aes(y = (IL6_pg_ml), fill = Experiment), shape = 21, color = "black") +
+  labs(y = "IL-6 concentration") +
   facet_wrap(~Experiment, ncol = 1, scales = "free_y") +
   guides(color = "none") +
-  scale_color_manual(values = c("black", "red", "blue"))
+  scale_color_manual(values = c("black", "red", "blue")) + 
+  scale_fill_manual(values = c("black", "red", "blue"))+
+  guides(color = "none", fill = "none")
   
 
 ```
 
 
 ```{r}
-comp1 <- smooth_diff(M2_IL_gam, My_data, 'Control', 'pSGS1', 'Experiment', unconditional = TRUE)
+comp1 <- smooth_diff(M2_IL_gam, My_data, 'Control', 'SGS1', 'Experiment', unconditional = TRUE)
 
-comp2 <- smooth_diff(M2_IL_gam, My_data, 'Control', 'pGRW2', 'Experiment', unconditional = TRUE)
+comp2 <- smooth_diff(M2_IL_gam, My_data, 'Control', 'GRW2', 'Experiment', unconditional = TRUE)
 
-comp3 <- smooth_diff(M2_IL_gam, My_data, 'pSGS1', 'pGRW2', 'Experiment', unconditional = TRUE)
+comp3 <- smooth_diff(M2_IL_gam, My_data, 'SGS1', 'GRW2', 'Experiment', unconditional = TRUE)
 
 comp <- cbind(DPI = seq(0, max(finch_final$DPI)),
               rbind(comp1, comp2, comp3))
 
-comp$pair <- factor(comp$pair, levels = c("Control-pSGS1", "Control-pGRW2", "pSGS1-pGRW2"))
+comp$pair <- factor(comp$pair, levels = c("Control-SGS1", "Control-GRW2", "SGS1-GRW2"))
 
 signif_diff <- comp %>% filter((upper > 0 & lower > 0) | (upper < 0 & lower <0))
 
