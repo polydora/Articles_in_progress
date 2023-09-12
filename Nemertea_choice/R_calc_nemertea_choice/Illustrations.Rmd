@@ -1,0 +1,199 @@
+---
+title: "Nemert_choce_article"
+author: "ВМ"
+date: '2022-09-06'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE)
+```
+
+
+
+
+```{r}
+
+#Пакеты
+library(ggplot2)
+library(lme4)
+library(multcomp)
+library(nlme)
+library(car)
+library(gamm4)
+library(dplyr)
+library(broom)
+
+```
+
+
+```{r}
+# Читаем данные
+shel <- read.table("Data/Shell.csv", header = T, sep = ";")
+
+nem <- read.table("Data/Nemert 2016.csv", header = T, sep = ";")
+
+nem <- nem %>% filter(Exp != "Pilot")
+
+nem$O2_depl <- (nem$O2_in - nem$O2_out)/nem$O2_in
+
+nem$Signal_type <- factor(nem$Signal_type)
+
+nem$Signal_type <- relevel(nem$Signal_type, ref = "Water")
+
+
+nem$W <- nem$W_signal
+
+# nem$W[nem$Signal_type == "Mytilus"] <-   coef(Mod_shell)[1] + coef(Mod_shell)[2] *  nem$W[nem$Signal_type == "Mytilus"]
+
+
+```
+
+
+
+
+Связь веса мягких тканей мидий с весом моллюска с раковиной
+
+```{r}
+
+Mod_shell <- lm(Soft ~ Shell, data = shel)
+
+kable(tidy(Mod_shell))
+```
+
+
+
+Вес мягких тканей животных в разных типах садков
+
+```{r}
+ggplot(nem, aes(x = Signal_type, y = log(W+1) )) + 
+  geom_boxplot() 
+  
+```
+
+
+Потери кислорода в разных садках
+
+```{r}
+ggplot(nem, aes(x = Signal_type, y = O2_depl )) + 
+  geom_boxplot() 
+
+
+```
+
+
+```{r}
+library(betareg)
+
+mod_O2 <- betareg(O2_depl ~ Signal_type, data = nem)
+
+summary(mod_O2)
+
+kable(tidy(mod_O2))
+```
+
+Статистически значимых отличий в потери кислорода в разных типах садков не выявлено.
+
+
+
+Доля немертин, заползших в разные источники сигнала
+
+```{r}
+nem$P <- nem$N_in_signal/(nem$N_in_signal + nem$N_in_zero)
+
+ggplot(nem, aes(x = Signal_type, y = P, fill = Exp )) + 
+  geom_boxplot() +
+  geom_hline(yintercept = 0.5) +
+  facet_wrap(~Exp)
+
+
+```
+
+Модель, описывающее поведение доли немертин, заползших в садки с сигналом, в зависимости от типа сигнала
+
+
+```{r}
+
+
+overdisp_fun <- function(model) {
+  ## number of variance parameters in
+  ##   an n-by-n variance-covariance matrix
+  vpars <- function(m) {
+    nrow(m)*(nrow(m)+1)/2
+  }
+  model.df <- sum(sapply(VarCorr(model),vpars))+length(fixef(model))
+  rdf <- nrow(model.frame(model))-model.df
+  rp <- residuals(model,type="pearson")
+  Pearson.chisq <- sum(rp^2)
+  prat <- Pearson.chisq/rdf
+  pval <- pchisq(Pearson.chisq, df=rdf, lower.tail=FALSE)
+  c(chisq=Pearson.chisq,ratio=prat,rdf=rdf,p=pval)
+}
+
+```
+
+
+```{r}
+
+nem$Exp <- factor(nem$Exp)
+
+# model <- glmmADMB::glmmadmb(cbind(N_in_signal, N_in_zero ) ~ Signal_type  + (1|Exp),  data = nem, family = "betabinomial")
+
+nem$OLE <- factor(1:nrow(nem))
+
+nem <- nem %>% filter(!(OLE %in% c(12))) 
+
+hist(nem$W)
+
+
+model_1 <- glmer.nb(N_in_signal ~ Signal_type + W  + (1|Exp),  data = nem)
+
+model_2 <- glmer.nb(N_in_signal ~ Signal_type  + (1|Exp),  data = nem)
+
+AIC(model_1, model_2)
+
+
+overdisp_fun(model_2)
+
+summary(model_2)
+
+qplot(x = fitted(model), y = resid(model)) + geom_smooth()
+
+
+
+
+
+library(mgcv)
+library(gratia)
+
+
+model_gam <- gam(N_in_signal ~  Signal_type + s(Exp, bs = "re"), data = nem, family = "nb"  )
+
+draw(model_gam, parametric = T)
+
+appraise(model_gam)
+
+summary(model_gam)
+
+
+
+qplot(x=fitted(model_gam), y = resid(model_gam)) + geom_smooth()
+
+summary(model)
+
+```
+
+```{r}
+
+M_sign_tuk <- glht(model_2, linfct = mcp(Signal_type = "Dunnett"))
+
+
+summary(M_sign_tuk)
+
+```
+
+
+
+
+

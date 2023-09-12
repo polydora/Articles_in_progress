@@ -67,12 +67,15 @@ Plot_Kand_upper_PT <-
 
 
 
+
+
+
 Kand_upper_x2 <- c(32.2, 33.06)
 Kand_upper_y2 <- c(66.85, 67.16)
 
 Plot_Kand_upper_PT_2 <-
   Plot_Kand_upper +
-  geom_point(data = myt_site2, aes(x = Lon, y = Lat, group = 1, fill = Prop_T), shape = 21, size = 3) +
+  geom_point(data = myt_site2, aes(x = Lon, y = Lat, group = 1, fill = Prop_T), shape = 21, size = 5) +
   coord_map(xlim = Kand_upper_x2, ylim = Kand_upper_y2)+
   scale_fill_gradient(low = "yellow", high = "red") +
   guides(size = "none") +

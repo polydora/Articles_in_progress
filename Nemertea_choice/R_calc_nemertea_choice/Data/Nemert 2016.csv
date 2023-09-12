@@ -1,0 +1,82 @@
+Exp;Exp_type;Date;Date_end;Day;T_air;Signal;Signal_type;W_signal;N_in_signal;N_in_zero;O2_in;O2_out;Nemertini_L;Nemertini_R
+Nemert 1;Oligochaeta;02.08.2016;04.08.2016;1;16.2;Control;Water;0;4;16;NA;NA;NA;NA
+Nemert 1;Oligochaeta;02.08.2016;04.08.2016;1;16.2;Control;Water;0;6;14;NA;NA;NA;NA
+Nemert 1;Oligochaeta;02.08.2016;04.08.2016;1;16.2;Control;Water;0;11;9;NA;NA;NA;NA
+Nemert 1;Oligochaeta;02.08.2016;04.08.2016;1;16.2;Animal;Oligochaeta;0.261;19;1;NA;NA;NA;NA
+Nemert 1;Oligochaeta;02.08.2016;04.08.2016;1;16.2;Animal;Oligochaeta;0.167;18;2;NA;NA;NA;NA
+Nemert 1;Oligochaeta;02.08.2016;04.08.2016;1;16.2;Animal;Oligochaeta;0.973;18;2;NA;NA;NA;NA
+Nemert 1;Oligochaeta;02.08.2016;04.08.2016;1;16.2;Animal;Oligochaeta;0.571;5;15;NA;NA;NA;NA
+Nemert 1;Oligochaeta;02.08.2016;04.08.2016;1;16.2;Animal;Oligochaeta;0.625;3;17;NA;NA;NA;NA
+Nemert2;Oligochaeta;05.08.2016;07.08.2016;2;17.7;Animal;Oligochaeta;2.268;5;15;7.7;3.7;0.174;0.845
+Nemert2;Oligochaeta;05.08.2016;07.08.2016;2;17.7;Animal;Oligochaeta;0.325;8;12;7.7;3.3;0.256;0.367
+Nemert2;Oligochaeta;05.08.2016;07.08.2016;2;17.7;Animal;Oligochaeta;0.87;12;8;7.7;4.7;0.405;0.199
+Nemert2;Oligochaeta;05.08.2016;07.08.2016;2;17.7;Animal;Oligochaeta;4.896;2;18;7.7;3.9;0.032;0.358
+Nemert2;Oligochaeta;05.08.2016;07.08.2016;2;17.7;Animal;Oligochaeta;0.344;15;5;7.7;4.9;0.37;0.09
+Nemert2;Oligochaeta;05.08.2016;07.08.2016;2;17.7;Control;Water;0;7;13;7.7;5.2;0.378;0.488
+Nemert2;Oligochaeta;05.08.2016;07.08.2016;2;17.7;Control;Water;0;8;12;7.7;4.7;0.287;0.561
+Nemert2;Oligochaeta;05.08.2016;07.08.2016;2;17.7;Control;Water;0;5;15;7.7;5.8;0.208;0.77
+Nemert3;Oligochaeta;07.08.2016;09.08.2016;3;18.3;Animal;Oligochaeta;0.135;15;5;12;7.1;0.714;0.248
+Nemert3;Oligochaeta;07.08.2016;09.08.2016;3;18.3;Animal;Oligochaeta;0.42;15;5;12;7;0.56;0.109
+Nemert3;Oligochaeta;07.08.2016;09.08.2016;3;18.3;Animal;Oligochaeta;0.484;9;11;12;6.2;0.216;0.656
+Nemert3;Oligochaeta;07.08.2016;09.08.2016;3;18.3;Animal;Oligochaeta;0.479;14;6;12;5;0.458;0.37
+Nemert3;Oligochaeta;07.08.2016;09.08.2016;3;18.3;Animal;Oligochaeta;0.199;7;13;12;7.9;0.27;0.34
+Nemert3;Oligochaeta;07.08.2016;09.08.2016;3;18.3;Control;Water;0;17;3;12;4.8;0.815;0.191
+Nemert3;Oligochaeta;07.08.2016;09.08.2016;3;18.3;Control;Water;0;1;19;12;4.6;0.03;0.84
+Nemert3;Oligochaeta;07.08.2016;09.08.2016;3;18.3;Control;Water;0;19;1;12;6.6;0.867;0.03
+Nemert4;Mytilus;09.08.2016;11.08.2016;4;18.2;Animal;Mytilus;1.409;16;4;8.8;6;0.742;0.213
+Nemert4;Mytilus;09.08.2016;11.08.2016;4;18.2;Animal;Mytilus;1.387;14;6;8.8;4.1;0.135;0.693
+Nemert4;Mytilus;09.08.2016;11.08.2016;4;18.2;Animal;Mytilus;1.513;5;15;8.8;6.3;0.5;NA
+Nemert4;Mytilus;09.08.2016;11.08.2016;4;18.2;Animal;Mytilus;1.567;10;10;8.8;2.9;0.329;0.529
+Nemert4;Mytilus;09.08.2016;11.08.2016;4;18.2;Animal;Mytilus;1.429;14;6;8.8;4.4;0.226;0.381
+Nemert4;Mytilus;09.08.2016;11.08.2016;4;18.2;Control;Water;0;10;10;8.8;5.3;0.234;0.377
+Nemert4;Mytilus;09.08.2016;11.08.2016;4;18.2;Control;Water;0;10;10;8.8;4.6;0.412;0.286
+Nemert4;Mytilus;09.08.2016;11.08.2016;4;18.2;Control;Water;0;15;5;8.8;2.9;0.299;0.17
+Nemert5;Mytilus;11.08.2016;13.08.2016;5;16.2;Animal;Mytilus;1.521;13;7;9.2;5.8;0.408;0.157
+Nemert5;Mytilus;11.08.2016;13.08.2016;5;16.2;Animal;Mytilus;1.795;14;6;9.2;5.4;0.585;0.18
+Nemert5;Mytilus;11.08.2016;13.08.2016;5;16.2;Animal;Mytilus;1.457;15;5;9.2;5.7;0.418;0.109
+Nemert5;Mytilus;11.08.2016;13.08.2016;5;16.2;Animal;Mytilus;1.757;14;6;9.2;4.4;0.481;0.182
+Nemert5;Mytilus;11.08.2016;13.08.2016;5;16.2;Animal;Mytilus;1.453;14;6;9.2;5.2;0.425;0.141
+Nemert5;Mytilus;11.08.2016;13.08.2016;5;16.2;Control;Water;0;10;10;9.2;5.8;0.365;0.12
+Nemert5;Mytilus;11.08.2016;13.08.2016;5;16.2;Control;Water;0;13;7;9.2;4.7;0.556;0.355
+Nemert5;Mytilus;11.08.2016;13.08.2016;5;16.2;Control;Water;0;15;5;9.2;5.9;0.36;0.254
+Nemert6;Mytilus;13.08.2016;15.08.2016;6;14.3;Animal;Mytilus;1.378;10;10;9.1;5.7;0.231;0.133
+Nemert6;Mytilus;13.08.2016;15.08.2016;6;14.3;Animal;Mytilus;1.52;10;10;9.1;7.3;0.234;0.191
+Nemert6;Mytilus;13.08.2016;15.08.2016;6;14.3;Animal;Mytilus;1.227;14;6;9.1;4.1;0.571;0.048
+Nemert6;Mytilus;13.08.2016;15.08.2016;6;14.3;Animal;Mytilus;1.541;12;8;9.1;6.1;0.235;0.568
+Nemert6;Mytilus;13.08.2016;15.08.2016;6;14.3;Animal;Mytilus;1.36;13;7;9.1;5;0.536;0.097
+Nemert6;Mytilus;13.08.2016;15.08.2016;6;14.3;Control;Water;0;11;9;9.1;5.1;0.426;0.215
+Nemert6;Mytilus;13.08.2016;15.08.2016;6;14.3;Control;Water;0;8;12;9.1;7.3;0.3;0.425
+Nemert6;Mytilus;13.08.2016;15.08.2016;6;14.3;Control;Water;0;10;10;9.1;2.3;0.193;0.279
+Nemert7;Oligochaeta;15.08.2016;17.08.2016;7;16.4;Animal;Oligochaeta;0.598;7;13;8.4;2;0.329;0.627
+Nemert7;Oligochaeta;15.08.2016;17.08.2016;7;16.4;Animal;Oligochaeta;0.508;13;7;8.4;4.4;0.415;0.135
+Nemert7;Oligochaeta;15.08.2016;17.08.2016;7;16.4;Animal;Oligochaeta;0.546;10;10;8.4;3.7;0.357;0.361
+Nemert7;Oligochaeta;15.08.2016;17.08.2016;7;16.4;Animal;Oligochaeta;0.419;10;10;8.4;1.7;0.39;0.583
+Nemert7;Oligochaeta;15.08.2016;17.08.2016;7;16.4;Animal;Oligochaeta;0.622;15;5;8.4;2.8;0.489;0.138
+Nemert7;Oligochaeta;15.08.2016;17.08.2016;7;16.4;Control;Water;0;10;10;8.4;4.2;0.139;0.197
+Nemert7;Oligochaeta;15.08.2016;17.08.2016;7;16.4;Control;Water;0;18;2;8.4;5.5;0.651;0.094
+Nemert7;Oligochaeta;15.08.2016;17.08.2016;7;16.4;Control;Water;0;10;10;8.4;4.3;0.332;0.779
+Nemert8;Oligochaeta;17.08.2016;19.08.2016;8;13.8;Animal;Oligochaeta;0.12;13;7;10.9;4.7;0.391;0.14
+Nemert8;Oligochaeta;17.08.2016;19.08.2016;8;13.8;Animal;Oligochaeta;0.161;8;12;10.9;5.9;0.395;0.083
+Nemert8;Oligochaeta;17.08.2016;19.08.2016;8;13.8;Animal;Oligochaeta;0.146;15;5;10.9;7;0.471;0.31
+Nemert8;Oligochaeta;17.08.2016;19.08.2016;8;13.8;Animal;Oligochaeta;0.201;14;6;10.9;6.4;0.181;0.09
+Nemert8;Oligochaeta;17.08.2016;19.08.2016;8;13.8;Animal;Oligochaeta;0.126;12;8;10.9;6.9;0.356;0.149
+Nemert8;Oligochaeta;17.08.2016;19.08.2016;8;13.8;Control;Water;0;5;15;10.9;5.8;0.096;0.252
+Nemert8;Oligochaeta;17.08.2016;19.08.2016;8;13.8;Control;Water;0;5;15;10.9;4.7;0.062;0.405
+Nemert8;Oligochaeta;17.08.2016;19.08.2016;8;13.8;Control;Water;0;7;13;10.9;5.9;0.181;0.163
+Nemert9;Oligochaeta;19.08.2016;21.08.2016;9;17.5;Animal;Oligochaeta;0.141;9;11;9;3.3;0.447;0.388
+Nemert9;Oligochaeta;19.08.2016;21.08.2016;9;17.5;Animal;Oligochaeta;0.175;8;12;9;3.1;0.384;0.375
+Nemert9;Oligochaeta;19.08.2016;21.08.2016;9;17.5;Animal;Oligochaeta;0.137;8;12;9;5.1;0.299;0.56
+Nemert9;Oligochaeta;19.08.2016;21.08.2016;9;17.5;Animal;Oligochaeta;0.116;13;7;9;3.4;0.804;0.23
+Nemert9;Oligochaeta;19.08.2016;21.08.2016;9;17.5;Animal;Oligochaeta;0.121;8;12;9;2.4;0.279;0.534
+Nemert9;Oligochaeta;19.08.2016;21.08.2016;9;17.5;Control;Water;0;7;13;9;1.9;0.27;0.615
+Nemert9;Oligochaeta;19.08.2016;21.08.2016;9;17.5;Control;Water;0;10;10;9;2.7;0.756;0.442
+Nemert9;Oligochaeta;19.08.2016;21.08.2016;9;17.5;Control;Water;0;8;12;9;1.9;0.35;0.457
+Pilot;Oligochaeta;13.07.2016;14.07.2016;0;17.6;Control;Water;0;3;17;NA;NA;NA;NA
+Pilot;Oligochaeta;13.07.2016;14.07.2016;0;17.6;Animal;Oligochaeta;1.29;5;15;NA;NA;NA;NA
+Pilot;Oligochaeta;13.07.2016;14.07.2016;0;17.6;Animal;Oligochaeta;3.786;3;17;NA;NA;NA;NA
+Pilot;Oligochaeta;13.07.2016;14.07.2016;0;17.6;Control;Water;0;10;10;NA;NA;NA;NA
+Pilot;Oligochaeta;13.07.2016;14.07.2016;0;17.6;Animal;Oligochaeta;1.732;6;14;NA;NA;NA;NA
+Pilot;Oligochaeta;13.07.2016;14.07.2016;0;17.6;Animal;Oligochaeta;3.556;5;15;NA;NA;NA;NA
+Pilot;Oligochaeta;13.07.2016;14.07.2016;0;17.6;Animal;Oligochaeta;2.744;0;20;NA;NA;NA;NA
+Pilot;Oligochaeta;13.07.2016;14.07.2016;0;17.6;Animal;Oligochaeta;1.012;1;19;NA;NA;NA;NA
+Pilot;Oligochaeta;13.07.2016;14.07.2016;0;17.6;Control;Water;0;6;14;NA;NA;NA;NA

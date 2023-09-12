@@ -1,0 +1,123 @@
+---
+title: "GAM for Sound analysis of different components"
+author: "В. М. Хайтов"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = TRUE, fig.height=10)
+```
+
+```{r}
+library(readxl)
+library(vegan)
+library(dplyr)
+library(mgcv)
+library(reshape2)
+library(gratia)
+
+```
+
+
+```{r}
+
+dat <- read_excel("Short_observation.xlsx")
+
+dat_long <- melt(dat, id.vars = c("Indx", "Day_Night", "time24", "Day_Part_", "Month_", "Month2"), variable.name = "Component")
+
+```
+
+
+
+```{r}
+#Модель, основанная на отрицаетльном биномиальном распределении
+M1 <- gam(value ~ s(time24, by = Component,  k = 24, bs = 'cc') + Component + s(Month2, by = Component, k = 12, bs = "cc"), method = 'REML',  knots = list(time24 = c(0, 24), month = c(1,12)), family = "nb", data = dat_long) 
+
+
+#Модель, основанная на zero-inflated Poisson distribution 
+M2 <- gam(value ~ s(time24, by = Component,  k = 24, bs = 'cc') + Component + s(Month2, by = Component, k = 12, bs = "cc"), method = 'REML',  knots = list(time24 = c(0, 24), month = c(1,12)), family = "ziP", data = dat_long) 
+
+```
+
+
+```{r}
+AIC(M1, M2)
+```
+
+Модель, основанная на zero-inflated Пуассоне, чуть лучше по AIC. 
+
+```{r}
+appraise(M2)
+
+```
+
+Остатки тоже распределены прилично.Правда, заметно отскакивают краевые значения в распределении.То есть все не столь идеально.  
+
+
+
+```{r}
+summary(M2)
+```
+
+### Вот смузеры по времени дня
+
+```{r }
+
+draw(M2, select = 1:7, ncol = 2)
+```
+
+У насекомых нет значимой зависимости от времени суток. Они кричат всегда. 
+
+Видно, что количество звуков птиц и количество звуков лягушек расходятся во времени. Первые активны днем, вторые вечером, ночью и утром. Пик активности млеков приходится на утро с 5 до 10 утра.
+
+
+
+### Вот смузеры по месяцам
+```{r}
+draw(M2, select = 8:14, ncol = 2)
+```
+
+Осмысленный паттерн годовой динамики есть у дождя, пик которого приходится на лето. Именно на это время приходится падение активности млеков. 
+
+Остальные компоненты, по-моему, не демонстрируют осмысленных паттернов годовой динамики (хоть и большинство статистически значимы).
+
+
+
+## Все то же самое, но для модели основанной на отицательном биномиальном распределении
+
+
+
+
+```{r}
+appraise(M1)
+
+```
+
+Остатки тоже распределены не супер, но зато гораздо лучше описывается теоретическим распределением 
+
+
+
+```{r}
+summary(M1)
+```
+
+Здесь, как мне кажется, несколько более правдивые оценки статистической значимости.
+
+### Вот смузеры по времени дня
+
+```{r }
+
+draw(M1, select = 1:7, ncol = 2)
+```
+
+
+
+### Вот смузеры по месяцам
+```{r}
+draw(M1, select = 8:14, ncol = 2)
+```
+
+
+
