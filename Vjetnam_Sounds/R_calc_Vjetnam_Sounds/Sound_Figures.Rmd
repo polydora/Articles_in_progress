@@ -18,7 +18,12 @@ library(ggplot2);
 library(gratia)
 library(dplyr)
 library(reshape2)
+library(vegan)
+library(ggvegan)
+library(readxl)
 
+
+theme_set(theme_bw())
 ```
 
 
@@ -63,103 +68,484 @@ indices3$Index <- factor(indices3$Index)
 # Модель с разными смузерами по часам и месяцам для каждого индекса
 M1 <- gam(Value ~ s(time24, by = Index,  k = 24, bs = 'cc') + Index + s(month, by = Index, k = 12, bs = "cc"), method = 'REML',  knots = list(time24 = c(0, 24), month = c(1,12)), family = "betar", data = indices3) 
 
-# # Модель с разными смузерами по месяцам для каждого индекса, но с общим смузером по часам
-# M2 <- gam(Value ~ s(time24,   k = 24, bs = 'cc') + Index + s(month, by = Index, k = 12, bs = "cc"), method = 'REML',  knots = list(time24 = c(0, 24), month = c(1,12)), family = "betar", data = indices3)
-# 
-# # Модель с разными смузерами для каждого индекса по часам, но общим смузером по месяцам 
-# M3 <- gam(Value ~ s(time24, by = Index,  k = 24, bs = 'cc') + Index + s(month,  k = 12, bs = "cc"), method = 'REML',  knots = list(time24 = c(0, 24), month = c(1,12)), family = "betar",  data = indices3)
-# 
-# # Модель с общими  смузерами и по месяцам и часам 
-# M4 <- gam(Value ~ s(time24,  k = 24, bs = 'cc') + Index + s(month,  k = 12, bs = "cc"), method = 'REML',  knots = list(time24 = c(0, 24), month = c(1,12)), family = "betar", data = indices3)
-
-
 ```
 
 
 
-
-<!-- ```{r} -->
-<!-- AIC(M1, M2, M3, M4) -->
-
-<!-- ``` -->
-
-
-Проверка валидности
+Вот визуализация модели для суточной динамики индексов
 
 ```{r}
-appraise(M1)
+#Модель для суточной динамики солнечной радиации. Это нужно только для рисования картинок
 
-```
+Mod_Rg <- gam(Rg ~ s(time24,  k = 24, bs = 'cc'), data = indices, method = "REML")
 
-Не супер!... Но пока посмотрим.
+background <- expand.grid(est = seq(-1, 1, 0.001), time24 = seq(0, 24, 0.1))
 
-```{r}
-summary(M1)
-```
-
-
-
-Вот визуализация модели.
-
-Смузеры по часам
-```{r}
-draw(M1,select = 1:5)
-
-```
-
-Смузеры по месяцам
-```{r}
-draw(M1,select = 6:10)
-
-```
-
-Смузеры для двух BI остались такими же.
-
-Для индекса ACI_Mean годовая динамика отсутствует (он, в среднем, всегда один и тот же), хотя есть явная суточная динамика (Ночью значения этого индекса минимальны). Пик же приходится на день (около 16-17 часов).
-
-Сильно подозреваю, что индексы ADI_Mean и AEI_mean просто функционально связаны друг с другом как 1/x. 
-
-
-
-Поэтому предлагаю упростить модель вот до такого вида.
-
-```{r}
-indices4 <- indices3 %>% filter(Index %in% c("BI_Mean_12_P", "BI_Mean_6.5_P", "ADI_Mean_P", "ACI_Mean_P")) # Убрал дублирующий индекс AEI_Mean_P
-
-```
-
-
-```{r}
-M5 <- gam(Value ~ s(time24, by = Index,  k = 24, bs = 'cc') + Index + s(month, by = Index, k = 12, bs = "cc"), method = 'REML',  knots = list(time24 = c(0, 24), month = c(1,12)), family = "betar", data = indices4) 
+background$Rg <- predict(Mod_Rg, newdata = background)
 
 ```
 
 
 
 ```{r}
-appraise(M5)
+sm <- smooth_estimates(M1) %>%
+  add_confint()
+
+# unique(sm$smooth)
+
 
 ```
 
-Есть что допилить! Но проблема, к сожалению, в методике расчетов самих индексов. Когда значения индексов близки к максимумам и к минимумам они не очень соответствуют теоретически ожидаемому распределению. Подозреваю, что это результат каких-то "валюнтаристских" проведений границ частот при вычислении индексов. В целом, модель может и не очень плоха.
+```{r}
+# Установки для рисунков
+
+linecolor = "blue"
+line_size = 1
+axis_text = 10
+axis_title = 12
+ribbon_alpha = 0.3
+dark = "gray60"
+light = "yellow"
+```
 
 
 ```{r}
-summary(M5)
+sm_df <- 
+  sm %>% 
+  filter(smooth == "s(time24):IndexACI_Mean_P")  
+
+Pl_ACI <- 
+ggplot(sm_df, aes(x = time24, y = est)) +
+  geom_tile(data = background, aes(fill = Rg) ) +
+  scale_fill_gradient(low = dark, high = light) +
+  ylim(min(sm_df$lower_ci), max(sm_df$upper_ci)) +
+  guides(fill = "none") + 
+  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), alpha = ribbon_alpha) +
+  geom_line(color = linecolor, size= line_size) +
+   theme(axis.title = element_text(size = axis_title), axis.title.x = element_blank()) +
+  labs(y = "") +
+  ggtitle("ACI") + 
+  xlim(0, 23.1)
+  
+  
+  
 ```
 
 
-Вот ее визуализация 
 
-Смузеры по часам.
 ```{r}
-draw(M5,select = 1:4)
+sm_df <- 
+  sm %>% 
+  filter(smooth == "s(time24):IndexBI_Mean_6.5_P")  
+
+Pl_BI_6.5 <- 
+ggplot(sm_df, aes(x = time24, y = est)) +
+  geom_tile(data = background, aes(fill = Rg) ) +
+  scale_fill_gradient(low = dark, high = light) +
+  ylim(min(sm_df$lower_ci), max(sm_df$upper_ci)) +
+  guides(fill = "none") + 
+  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), alpha = ribbon_alpha) +
+  geom_line(color = linecolor, size= line_size) +
+   theme(axis.title = element_text(size = axis_title), axis.title.x = element_blank()) +
+  labs(y = "") + 
+  ggtitle("BI 6.5") +
+  xlim(0, 23.1)
+  
+  
+  
 ```
 
 
 
-Смузеры по месяцам.
+
+
 ```{r}
-draw(M5,select = 5:8)
+sm_df <- 
+  sm %>% 
+  filter(smooth == "s(time24):IndexBI_Mean_12_P")  
+
+Pl_BI_12 <- 
+ggplot(sm_df, aes(x = time24, y = est)) +
+  geom_tile(data = background, aes(fill = Rg) ) +
+  scale_fill_gradient(low = dark, high = light) +
+  ylim(min(sm_df$lower_ci), max(sm_df$upper_ci)) +
+  guides(fill = "none") + 
+  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), alpha = ribbon_alpha) +
+  geom_line(color = linecolor, size= line_size) +
+   theme(axis.title = element_text(size = axis_title), axis.title.x = element_blank()) +
+  labs(y = "") + 
+  ggtitle("BI 12") +
+  xlim(0, 23.1)
+  
+  
+  
 ```
+
+
+
+
+```{r}
+sm_df <- 
+  sm %>% 
+  filter(smooth == "s(time24):IndexADI_Mean_P")  
+
+Pl_ADI <- 
+ggplot(sm_df, aes(x = time24, y = est)) +
+  geom_tile(data = background, aes(fill = Rg) ) +
+  scale_fill_gradient(low = dark, high = light) +
+  ylim(min(sm_df$lower_ci), max(sm_df$upper_ci)) +
+  guides(fill = "none") + 
+  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), alpha = ribbon_alpha) +
+  geom_line(color = linecolor, size= line_size) +
+   theme(axis.title = element_text(size = axis_title), axis.title.x = element_blank()) +
+  labs(y = "")+
+  ggtitle("ADI") + 
+  xlim(0, 23.1) 
+  
+  
+  
+```
+
+
+
+```{r}
+sm_df <- 
+  sm %>% 
+  filter(smooth == "s(time24):IndexAEI_Mean_P")  
+
+Pl_AEI <- 
+ggplot(sm_df, aes(x = time24, y = est)) +
+  geom_tile(data = background, aes(fill = Rg) ) +
+  scale_fill_gradient(low = dark, high = light) +
+  ylim(min(sm_df$lower_ci), max(sm_df$upper_ci)) +
+  guides(fill = "none") + 
+  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), alpha = ribbon_alpha) +
+  geom_line(color = linecolor, size= line_size) +
+  theme(axis.title = element_text(size = axis_title), axis.title.x = element_blank()) +
+  labs(y = "") +
+  ggtitle("AEI") +
+  xlim(0, 23.1)
+  
+  
+  
+```
+
+
+
+
+```{r, fig.height=10, fig.width=8}
+library(cowplot)
+
+Plots <-
+plot_grid(Pl_ACI, Pl_BI_6.5, Pl_BI_12, Pl_ADI, Pl_AEI, ncol = 1) 
+# + 
+#   theme(plot.margin = margin(30, 30, -50, 50))
+
+
+# draw_label("Hours", x=0.5, y=  0, vjust=-0.5, angle= 0) +
+# draw_label("Partial effects", x=  0, y=0.5, vjust= 1.5, angle=90)
+
+Plots <-  add_sub(Plots, "Hours", x=0.5, y=  0, vjust=-0.5, angle= 0)
+
+Plots <-  add_sub(Plots, "Partial effects", x=  0, y=5, vjust= 1.5, angle=90 )
+
+ggdraw(Plots)
+```
+
+
+
+Вот визуализация модели для сезонной динамики индексов. Я не настаиваю, но раз такой смузер есть в модели, то его желательно присести в работе (хотя бы в элетронном приложении)
+
+
+
+
+```{r}
+#Модель для сезонной динамики солнечной радиации. Это нужно только для рисования картинок
+
+Mod_Rg_2 <- gam(Rg ~ s(month,  k = 5, bs = 'cc'), data = indices, method = "REML")
+
+background2 <- expand.grid(est = seq(-1.5, 1, 0.001), month = seq(1, 12, 0.1))
+
+background2$Rg <- predict(Mod_Rg_2, newdata = background2)
+
+
+```
+
+
+
+
+
+```{r}
+sm_df <- 
+  sm %>% 
+  filter(smooth == "s(month):IndexACI_Mean_P")  
+
+Pl_ACI_month <- 
+ggplot(sm_df, aes(x = month, y = est)) +
+  geom_tile(data = background2, aes(fill = Rg) ) +
+  scale_fill_gradient(low = "lightblue", high = "red") +
+  ylim(min(sm_df$lower_ci), max(sm_df$upper_ci)) +
+  guides(fill = "none") + 
+  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), alpha = ribbon_alpha) +
+  geom_line(color = linecolor, size= line_size) +
+   theme(axis.title = element_text(size = axis_title), axis.title.x = element_blank()) +
+  labs(y = "") + 
+  ggtitle("ACI")+
+  scale_x_continuous(breaks = 1:12)
+  
+  
+```
+
+
+
+```{r}
+sm_df <- 
+  sm %>% 
+  filter(smooth == "s(month):IndexBI_Mean_6.5_P")  
+
+Pl_BI_6.5_month <- 
+ggplot(sm_df, aes(x = month, y = est)) +
+  geom_tile(data = background2, aes(fill = Rg) ) +
+  scale_fill_gradient(low = "lightblue", high = "red") +
+  ylim(min(sm_df$lower_ci), max(sm_df$upper_ci)) +
+  guides(fill = "none") + 
+  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), alpha = ribbon_alpha) +
+  geom_line(color = linecolor, size= line_size) +
+   theme(axis.title = element_text(size = axis_title), axis.title.x = element_blank()) +
+  labs(y = "") + 
+  ggtitle("BI 6.5")+
+  scale_x_continuous(breaks = 1:12)
+  
+  
+```
+
+
+
+
+```{r}
+sm_df <- 
+  sm %>% 
+  filter(smooth == "s(month):IndexBI_Mean_12_P")  
+
+Pl_BI_12_month <- 
+ggplot(sm_df, aes(x = month, y = est)) +
+  geom_tile(data = background2, aes(fill = Rg) ) +
+  scale_fill_gradient(low = "lightblue", high = "red") +
+  ylim(min(sm_df$lower_ci), max(sm_df$upper_ci)) +
+  guides(fill = "none") + 
+  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), alpha = ribbon_alpha) +
+  geom_line(color = linecolor, size= line_size) +
+   theme(axis.title = element_text(size = axis_title), axis.title.x = element_blank()) +
+  labs(y = "") + 
+  ggtitle("BI 12")+
+  scale_x_continuous(breaks = 1:12)
+  
+  
+```
+
+
+
+
+```{r}
+sm_df <- 
+  sm %>% 
+  filter(smooth == "s(month):IndexADI_Mean_P")  
+
+Pl_ADI_month <- 
+ggplot(sm_df, aes(x = month, y = est)) +
+  geom_tile(data = background2, aes(fill = Rg) ) +
+  scale_fill_gradient(low = "lightblue", high = "red") +
+  ylim(min(sm_df$lower_ci), max(sm_df$upper_ci)) +
+  guides(fill = "none") + 
+  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), alpha = ribbon_alpha) +
+  geom_line(color = linecolor, size= line_size) +
+   theme(axis.title = element_text(size = axis_title), axis.title.x = element_blank()) +
+  labs(y = "") + 
+  ggtitle("ADI")+
+  scale_x_continuous(breaks = 1:12)
+  
+  
+```
+
+
+
+
+```{r}
+sm_df <- 
+  sm %>% 
+  filter(smooth == "s(month):IndexAEI_Mean_P")  
+
+Pl_AEI_month <- 
+ggplot(sm_df, aes(x = month, y = est)) +
+  geom_tile(data = background2, aes(fill = Rg) ) +
+  scale_fill_gradient(low = "lightblue", high = "red") +
+  ylim(min(sm_df$lower_ci), max(sm_df$upper_ci)) +
+  guides(fill = "none") + 
+  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), alpha = ribbon_alpha) +
+  geom_line(color = linecolor, size= line_size) +
+   theme(axis.title = element_text(size = axis_title), axis.title.x = element_blank()) +
+  labs(y = "") + 
+  ggtitle("AEI")+
+  scale_x_continuous(breaks = 1:12)
+  
+  
+```
+
+
+
+
+
+
+```{r, fig.height=10, fig.width=7}
+
+Plots2 <- plot_grid(Pl_ACI_month, Pl_BI_6.5_month, Pl_BI_12_month, Pl_ADI_month, Pl_AEI_month, ncol = 1) 
+
+
+Plots2 <-  add_sub(Plots2, "Months", x=0.5, y=  0, vjust=-0.5, angle= 0)
+
+Plots2 <-  add_sub(Plots2, "Partial effects", x=  0, y=5, vjust= 1.5, angle=90 )
+
+
+ggdraw(Plots2)
+```
+
+
+
+## RDA
+
+
+```{r}
+
+dat <- read_excel("Short_observation.xlsx")
+
+sound <- dat %>% select(Ins, Anur, Bird, Mam, Wind, Rain, Noise)
+
+sound_perc <- decostand(x = sound, MARGIN = 1, method = "total") #Выражаем в представленность источников звука в долях.
+
+predictors <- dat %>% select(Indx, Month_, Day_Part_, Year_Part_, Day_Night)
+
+
+```
+
+
+
+```{r}
+
+Mod <- rda(sound ~ Day_Night + Year_Part_, data = predictors)
+
+```
+
+
+
+
+
+Ниже приводятся результаты пермутационной оценки значимости самой модели, ее канонических осей и предикторов, включенных в модель.
+
+```{r}
+
+anova(Mod)
+
+anova(Mod, by = "axis")
+
+anova(Mod, by = "margin")
+
+```
+
+
+
+```{r}
+Mod_scores <- fortify(Mod, scale = "symmetric")
+
+
+species <- Mod_scores %>% filter(Score == "species")
+observations <- Mod_scores %>% filter(Score == "sites")
+centroids <- Mod_scores %>% filter(Score == "centroids")
+
+centroids$Label2 <- c("Day", "Night", "Autumn", "Spring", "Summer", "Winter")
+
+library(ggrepel)
+
+ggplot(species, aes(x = RDA1, y = RDA2)) +
+  geom_vline(xintercept = 0) +
+  geom_hline(yintercept = 0) +
+  geom_point(data = observations, alpha = 1, color = "gray")+
+  geom_label(data = centroids, aes(label = Label2), fill = "gray", alpha = 0.7) +
+  geom_point(data = species, size = 3, color = "red") +
+  geom_text_repel(data = species, aes(label = Label), color = "blue",box.padding= 0.6)
+
+
+  
+```
+
+
+
+```{r}
+library(cowplot)
+
+background3 <- expand.grid(est = seq(-3, 6, 0.1), time24 = seq(0, 24, 0.1))
+
+background3$Rg <- predict(Mod_Rg, newdata = background3)
+
+
+
+Pl_rda1_dynamics <- 
+  ggplot(cbind(dat,observations), aes(x = time24, y = RDA1)) + 
+  geom_tile(data = background3, aes(y = est,  fill = Rg) ) +
+  scale_fill_gradient(low = dark, high = light) +
+  ylim(-3, 6) +  
+  geom_smooth(method = "gam", formula = y ~ s(x, bs = "cc"), se = F) +
+  geom_point() +
+  labs(x = "Hour", y = "RDA1 Score") +
+  geom_hline(yintercept = 0) +
+  guides(fill = "none")
+
+Pl_bird <- 
+  qplot(x = observations$RDA1, y = dat$Bird) + 
+  labs(x = "RDA1 Score", y = "Number of Bird's sounds")
+
+
+Pl_anur <- 
+  qplot(x = observations$RDA1, y = dat$Anur) + 
+  labs(x = "RDA1 Score", y = "Number of Anura' sounds")
+
+plot_grid(Pl_rda1_dynamics, Pl_bird, Pl_anur, nrow =1)
+```
+
+
+Кстати, заметьте, что после раскраски стало хорошо заметно, что птицы (высокие значения RDA1) поют на рассвете после заката.
+
+
+```{r}
+
+background4 <- expand.grid(est = seq(-6, 5, 0.1), month = seq(1, 12, 0.1))
+
+background4$Rg <- predict(Mod_Rg_2, newdata = background4)
+
+
+
+Pl_rda2_dynamics <- 
+  ggplot(cbind(dat,observations), aes(x = Month2, y = RDA2)) + 
+    geom_tile(data = background4, aes(y = est, x = month, fill = Rg) ) +
+  scale_fill_gradient(low = "lightblue", high = "red") +
+  ylim(-6,4) +
+  guides(fill = "none") + 
+  geom_smooth(method = "gam", formula = y ~ s(x, bs = "cc"), se = F) +
+  geom_point() +
+  labs(x = "Month", y = "RDA2 Score") +
+  geom_hline(yintercept = 0)+ 
+  scale_x_continuous(breaks = 1:12)
+
+Pl_ins <- 
+  qplot(x = observations$RDA2, y = dat$Ins) + 
+  labs(x = "RDA2 Score", y = "Number of Insects' sounds")
+
+
+Pl_wind <- 
+  qplot(x = observations$RDA2, y = dat$Wind) + 
+  labs(x = "RDA2 Score", y = "Number of Wind' sounds") 
+
+plot_grid(Pl_rda2_dynamics, Pl_ins, Pl_wind, nrow =1)
+```
+
+
 
