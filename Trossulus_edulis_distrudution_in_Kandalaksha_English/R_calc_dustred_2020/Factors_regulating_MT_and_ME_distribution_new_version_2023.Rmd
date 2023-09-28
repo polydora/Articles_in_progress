@@ -12,7 +12,7 @@ output:
 
 ```{r setup, include=FALSE}
 library(knitr)
-opts_chunk$set(echo = FALSE, message = FALSE)
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, )
 options(knitr.kable.NA = '')
 ```
 
@@ -166,7 +166,7 @@ Mussels with a shell length more than 10 mm were cleaned from tissues and used i
 
 ### Environmental parameters assessment
 
-This work was was aimed to examine the effects of substrate, salinity, surf level and proximity to ports. Some of these parameters were measured directly but for others several proxies were considered. 
+This work was aimed to examine the effects of substrate, salinity, surf level and proximity to ports. Some of these parameters were measured directly but for others several proxies were considered. 
 
 The nature of the substrate was characterized by where the corresponding sample was taken from (*Algae* vs *Bottom*). The degree of proximity to port was estimated as the straight line distance (not accounting shoreline bends) from the sampling site to the nearest of the 6 large ports presented in the area (Fig++, STable ++). Additionally each port was assigned to one of two categories: *"Active"* if at the time of sampling the port was serving heavy-tonnage vessels plying out of the White Sea, or *"Abandoned"* if the port served only small vessels cruising within the White Sea, or was completely abandoned at the time of sampling. 
 
@@ -174,7 +174,7 @@ The nature of the substrate was characterized by where the corresponding sample 
 
 
 
-*Wind fetch as a proxy for wave impact*. When selecting sampling sites, we assumed that collections should characterize both surf and sheltered habitats. Each site was visually assigned to one of two categories: *"Exposed"* (sites located on open shores exposed to waves coming from the open part of the bay) or *"Sheltered"* (sites located in bays or skerries). For a more formal assessment, the value of wind fetch was calculated for each site. It was calculated as the unobstructed length of water surface (in km) over which wind from a certain direction can blow over. These values can be obtained from the analysis of geographical maps of the region. To calculate the wind fetch values, the R-package *"windfetch"* was used (Seers, 2022). The higher fetch values denote the more wave impact could  be brought from a certain direction. Wind fetch was measured for each site from all directions (North, East, South and West, STable +) but as a value for the further analysis we used an averaged fetch value.  
+*Wind fetch as a proxy for wave impact*. When selecting sampling sites, we assumed that collections should characterize both surf and sheltered habitats. Each site was visually assigned to one of two categories: *"Exposed"* (sites located on open shores exposed to waves coming from the open part of the bay) or *"Sheltered"* (sites located in bays or skerries). For a more formal assessment, the value of wind fetch was calculated for each site. It was calculated as the unobstructed length of water surface (in km) over which wind from a certain direction can blow over. These values can be obtained from the analysis of geographical maps of the region. To calculate the wind fetch values, the R-package "windfetch" was used (Seers, 2022). The higher fetch values denote the more wave impact could  be brought from a certain direction. Wind fetch was measured for each site from all directions (North, East, South and West, STable +) but as a value for the further analysis we used an averaged fetch value.  
 
 *Proxies for salinity assessment*. Water samples were taken at each site when mussels were collected, i.e. in the time of  the low tide. The salinity was measured using an "Atago S/Mill-E" handheld salinity refractometer (with 1 ppm accuracy). However, salinity measured directly at the sampling site poorly reflects the salinity regime in the site due to its fluctuations during the tidal cycle and due to weather conditions (waving, precipitation *etc.*). Therefore, as an additional estimate of the desalination level in a given site, we used the characteristics of fresh water discharging sources closest to the sampling site (rivers or channels of hydroelectric power plants). 
 
@@ -202,20 +202,20 @@ At the first step, we assumed that the relationship between dependent variable a
 *AverageFetch*: continuous, fetch value (km).  
 
 
-For all categorical predictors, the first mentioned category was used as base level in the analyses. The function gam() from the package “mgcv” (+++) was used to build the GLMM.  Smoothers for all continuous predictors were fitted using cubic basic splines (+++). Categorical predictors were included as parametric terms in the model. "Site" was considered as random factor in the model.         
+For all categorical predictors, the first mentioned category was used as base level in the analyses. The function gam() from the package “mgcv” (+++) was used to build the GAMM.  Smoothers for all continuous predictors were fitted using cubic basic splines (+++). Categorical predictors were included as parametric terms in the model. "Site" was considered as random factor in the model.         
 
-To check for the predictors' collinearaity we calculated the variance inflation factor (VIF, Fox & Monette, 1992) for each of them. Additionally we calculated Pearson correlation between continuous predictors. 
-
-To verify that the *Model 1* meets the assumptions of sampling independence, we examined the presence of  residuals' spatial autocorrelation by means of semivariogram construction (++). Only poor evidences of spatial autocorrelation were revealed. 
-
+To check for the predictors' collinearaity in the *Model 1* we calculated the variance inflation factor (VIF, Fox & Monette, 1992) for each of them. Additionally we calculated Pearson correlation between continuous predictors. 
+ 
 
 
-At the second step, we constructed the frequency distribution of *PT* values. We revealed a condidtional boundary between peaks in distribution corresponding to *ME*-dominated populations (low *PT* values) and *MT*-dominated ones (high *PT*). Thus we divided our samples into two groups. We constructed a variable marking all populations from the "*ME*-dominated" group as "0", and as "1" populations from the "*MT*-dominated" one. We used this variable as dependent one in the logistic mixed effect model (thereafter *Model 2*), describing the probability of a population to be *Mt*-dominated as a function of the same predictor set as in the *Model 1*. "Site" was considered as random factor in the *Model 2*. The model was fitted with "glmer()" finction from "lme4" package (+++). 
+In the second step, we analyzed the frequency distribution of *PT* values to identify the boundary between *MT*- and *ME*-dominated sites. We hypothesized that these two groups of sites should form separate peaks in the *PT*-distribution, which should have a bimodal shape. In this analysis, we combined all samples from each site and calculated *PT* for each of them (separately for Algae and Bottom). The resulting values were subjected to arcsin transformation (this was necessary to describe the peaks by normal distributions).  Using the approach described in Benaglia et al. (2009), we identified two peaks in the *PT*-distribution, which were approximated by separate normal distributions. Two parameters (mean and standard deviation) were fitted for each of the peak using "normalmixEM()" function from the "mixtools" package (Benaglia et al., 2009). The boundary between these distributions was considered as the value separating two statistical populations. 
 
-The fraction of total variability explained by the fixed part of the *Model 2* was estimated using marginal coefficient of determination  *R^2^* (Nakagawa & Schielzeth, 2013). Marginal *R^2^* can be decomposed into semi-partial coefficients of determination, *semi-partial R^2^*, that describe the contribution of each individual predictor to the overall coefficient of determination using the “partR2” package  (Stoffel et al., 2021). We calculated the "inclusive R^2^" to estimate the total variance
-explained by a predictor (Stoffel et al., 2021).
+Using this boundary, we assigned samples from each of the sites (separately for Algae and Bottom) to *MT*-dominated (high *PT*) or *ME*-dominated  (low *PT*) groups. The former were coded as 1 and the latter as 0. We used this binary variable constructed as dependent one in a mixed logistic regression model (*Model 2*).  This model described the dependence of the probability of being in the *MT*-dominated group on the same predictors as in the *Model 1*. Site was considered as a random factor in the *Model 2*. The model was fitted with "glmer()" finction from "lme4" package (Bates et al., 2015). 
+
+The fraction of total variability explained by the fixed part of the *Model 2* was estimated using marginal coefficient of determination  *R^2^* (Nakagawa & Schielzeth, 2013). Marginal *R^2^* can be decomposed into semi-partial coefficients of determination, *semi-partial R^2^*, that describe the contribution of each individual predictor to the overall coefficient of determination. Using the “partR2” package  (Stoffel et al., 2021) we calculated the "inclusive R^2^" to estimate the total variance explained by each predictors.
 
 
+To verify that the *Model 1* and *Model 2* meet the assumptions of sampling independence, we examined the presence of  residuals' spatial autocorrelation by means of semivariogram construction (++). Only poor evidences of spatial autocorrelation were revealed for both models.
 
 
 ## Results
@@ -228,9 +228,7 @@ Two of six ports presented in the area were active at the date of material colle
 
 
 
-## *PT* distribution
-
-
+## *PT* spatial distribution
 
 
 The maximum proportion of the T-morphotype was observed in the top of the Kandalaksha Bay itself and in the small bays deeping into the mainland (Fig. ++). At the same time, sites with a lower proportion of the T-morphotype were located in the immediate vicinity of sites where settlements with high *PT* values were represented (Fig. ++), reflecting the high level of patchiness in PT spatial distribution. Settlements with the lowest frequency of T-morphotype were represented in the open areas of the Northwest Coast. 
@@ -473,7 +471,7 @@ VIF <- vif(Mod_dummy)
 
 The values of VIF calculated for the predictors' set included in the analysis were rather small (the maximal VIF was detected for `r paste(names(VIF)[which.max(VIF)])`: `r round(max(VIF), 2)`). Although some pairwise correlation  between environmental factors were found (see above) the low VIF values can be interpreted as a negligible collinearity between predictors (i.e. they don't mask influence of each for other).   
 
-To assess the dependency of *PT* on all predictors considered we constructed the *Model* (Table ++, R^2^ = `r round(sum_Model_1$r.sq, 2)`) which explained  `r round(sum_Model_1$ dev.expl*100, 1)`% of total deviance. The *Model* revealed statistically significant dependency of *PT* on all predictors except distance to the nearest river (*MinDistRiver*).
+To assess the dependency of *PT* on all predictors considered we constructed the *Model 1* (Table ++, R^2^ = `r round(sum_Model_1$r.sq, 2)`) which explained  `r round(sum_Model_1$ dev.expl*100, 1)`% of total deviance. The *Model 1* revealed statistically significant dependency of *PT* on all predictors except distance to the nearest river (*MinDistRiver*).
 
 The effective degrees of freedom (*edf*, Table ++, A) for most smoothers were equal to 1, reflecting the linear dependence of *PT* on such continous predictors as distance to the nearest port (*MinDistPort*) and fetch (*AverageFetch*). The exception was *Salinity*, where a pronounced curvilinear dependence was revealed.     
 
@@ -563,44 +561,87 @@ ft_Model_1_summ_parametric
 
 
 ```{r fig.height= 8, fig.cap= "Fig. ++. Predictions of the Model describing dependency of PT on substrate type, nearest port status and size of the largest river (A, B), distance to the nearest river (C), distance to the nearest port (D), average fetch (E) and salinity (E). The wiskers and gray ribbons demonstrate 95% confidence interval. The dashed lines at C-E panels reflect median partial effect  value. Points on panels C-F reflect partial residuals but not raw data."}
+
 plot_grid(Pl_Small, Pl_Large,  Pl_riv_dist_smoother_Pi, Pl_port_dist_smoother_Pi, Pl_fetch_smoother_Pi, Pl_sal_smoother_Pi,  ncol = 2, labels = "AUTO")
 
 ```
 
 
 
-According to the *Model* fitted (Table ++, Fig. ++) the value of *PT* is dramatically higher on the Algae substrate than on the Bottom one. This value is higher in those sites which is close to active ports than to abandoned ones. Finally, the *PT* value is slightly higher at sites situated close to large rivers than to small ones. The *PT* has a tendency to decrease with increasing of distance to the nearest port (Fig. ++, D) starting to be in average lower than median partial effect when distance to the nearest port is higher than 20 km. The dependency of *PT* on average fetch (Fig. ++, E) is also negative: *PT* become lover than median partial effect when value of fetch started to be higher of 5 km.   
-
-The curvilinear dependence of *PT* on salinity (Fig. ++, F) can be described as follows. The predicted value of *PT* is close to the median partial effect at intermediate salinity range. However, at extremely low (less than 10 ppt) and high (more than 25 ppt) salinity, *PT* becomes higher than the median predicted value.    
+According to the *Model 1* (Table ++, Fig. ++) the value of *PT* is dramatically higher on the Algae substrate than on the Bottom one. This value is higher in those sites which is close to active ports than to abandoned ones. Finally, the *PT* value is slightly higher at sites situated close to large rivers than to small ones. The *PT* has a tendency to decrease with increasing of distance to the nearest port (Fig. ++, D) starting to be in average lower than median partial effect when distance to the nearest port is higher than 20 km. The dependency of *PT* on average fetch (Fig. ++, E) is also negative: *PT* become lover than median partial effect when value of fetch started to be higher of 5 km.   
 
 
-## Assessment of predictor's importance
+```{r}
+sal_smoother <- 
+sm %>% 
+  filter(smooth == "s(Salinity)")  
 
-The values of *PT* ranged from `r round(min(myt_site$Prop_T), 0)` to `r round(max(myt_site$Prop_T), 2)` at different sites. The frequency distribution of *PT* values displayed a clear bimodal structure both in the case of "Bottom" and "Algae" samples (Fig. ++). Thus two types of populations can be recognized in the studied area: populations dominated by *ME* (conditional boundary *PT* < 0.5) and samples with MT prevalence (*PT* > 0.5). In collections from the "Bottom" substrate, samples belonging to the first group were more frequent (the left peak in the distribution predominated). In collections from the "Algae" substrate, both groups of specimens were represented in more or less equal proportions.
+sm_low_salinity <- 
+sal_smoother %>% filter(est > median(est)) %>% filter(Salinity < 20) 
+  
+Min_salinity <- max(sm_low_salinity$Salinity)
 
-```{r, fig.cap="Fig ++. The frequency distributon of *PT* values at different substrates. Blue lines represent the kernell density polygons smoothing the *PT* frequency distributions."}
+sm_high_salinity <- 
+sal_smoother %>% filter(est > median(est)) %>% filter(Salinity > 20) 
+
+Max_salinity <- min(sm_high_salinity$Salinity)
 
 
-myt_full$Fi_T <- 2*asin(sqrt(myt_full$Prop_T))*180/pi
+Number_sites_low_salinity <- myt_site %>% filter(Salinity <= round(Min_salinity, 0)) %>% nrow()
 
-binwidth <- 0.05
+Number_sites_high_salinity <- myt_site %>% filter(Salinity >= round(Max_salinity, 0)) %>% nrow()
 
-Pl_PT_distribution_substrates <-
-ggplot(myt_full, aes (x = Prop_T)) + 
+```
+
+
+
+The curvilinear dependence of *PT* on salinity (Fig. ++, F) can be described as follows. The predicted value of *PT* is close to the median partial effect at intermediate salinity range. However, at extremely low (less than `r round(Min_salinity,0)` ppt) and high (more than `r round(Max_salinity, 0)` ppt) salinity, *PT* becomes higher than the median predicted value. Extreme low salinity was observed at only `r Number_sites_low_salinity` sites and extreme high salinity at `r Number_sites_high_salinity` sites. For other `r Total_site - Number_sites_low_salinity - Number_sites_high_salinity` sites with intermediate salinity predicted *PT* is close to the median value (Fig. +++, F). 
+
+
+## Assessment of predictors' importance
+
+```{r}
+
+myt_site_substr <- 
+  myt_full %>% 
+  group_by(Site, Position) %>% 
+  summarise(N_E = sum(N_E), N_T = sum(N_T),
+        Salinity = mean(Salinity),
+        Min_dist_river = mean(Min_dist_river),
+        River_Size = unique(River_Size),
+        Average_Fetch = mean(Average_Fetch),
+        Min_dist_port = mean(Min_dist_port),
+        Port_Status = unique(Port_Status),
+        Lon = mean(Lon),
+        Lat = mean(Lat)) %>% 
+  mutate(Prop_T = N_T/(N_T + N_E)) %>% 
+  mutate(Fi_T = 2*asin(sqrt(Prop_T))*180/pi)  
+    
+  
+
+binwidth <- 15
+
+Pl_Fi_distribution_substrates <-
+ggplot(myt_site_substr, aes (x = Fi_T)) + 
   geom_histogram(fill = "grey", color = "black", binwidth = binwidth) +
   geom_density(aes(y=binwidth * ..count..), color = "blue", size = 1, fill="blue", alpha = 0.2, ) + 
-  labs(x = "PT", y = "Count") + 
+  labs(x = "arcsin transformed PT", y = "Count")  +
   facet_wrap(~Position) +
   theme_bw()
 
 
+Pl_Fi_distribution <-
+ggplot(myt_site_substr, aes (x = Fi_T)) + 
+  geom_histogram(fill = "grey", color = "black", binwidth = binwidth) +
+  geom_density(aes(y=binwidth * ..count..), color = "blue", size = 1, fill="blue", alpha = 0.2, ) + 
+  labs(x = "Fi", y = "Count") +
+  theme_bw()
+
 library(mixtools)
 
-x <- 2*asin(sqrt(myt_full$Prop_T)) *180/pi
+x <- myt_site_substr$Fi_T
 
 model <- normalmixEM(x=x, verb = F)
-
-# model <- gammamixEM(x=x, verb = F)
 
 
 index.lower <- which.min(model$mu)  # Index of component with lower mean
@@ -634,24 +675,36 @@ sd2 = model$sigma[2]
 
 fi_back <- function(x) (sin((x*pi)/360))^2
 
-binwidth = 20 # passed to geom_histogram and stat_function
+annot <- data.frame(x = c(mean1, mean2), y = c(40, 25), label = c("ME-dominated", "MT-dominated"))
 
-
-ggplot(myt_full, aes(x = Fi_T)) + 
+Pl_Fi_distribution_total <-
+ggplot(myt_site_substr, aes(x = Fi_T)) + 
   geom_histogram( binwidth = binwidth, fill = "gray", color = "black") +  
-  geom_density(aes(y=binwidth * ..count..), color = "blue", size = 1, fill="blue", alpha = 0.2, ) +
+  # geom_density(aes(y=binwidth * ..count..), color = "blue", size = 1, fill="blue", alpha = 0.2, ) +
   stat_function(fun = function(x) dnorm(x, mean = mean1, sd = sd1) * n1 * binwidth, color = "darkred", size = 1) + 
   stat_function(fun = function(x) dnorm(x, mean = mean2, sd = sd2) * n2 * binwidth, color = "darkred", size = 1)  +
   geom_vline(xintercept = cutoffs, linetype = 2) +
-  theme_bw()
+  theme_bw() +
+  labs(x = "arcsin transformed PT", y = "Count") +
+  ylim(0, 45) +
+  geom_text(data = annot, aes(x, y, label = label))
   
 
 boundary <- round(fi_back(cutoffs), 2)
 
 
-Pl_PT_distribution_substrates
+
+```
 
 
+
+
+The values of *PT* ranged from `r round(min(myt_site_substr$Prop_T), 0)` to `r round(max(myt_site_substr$Prop_T), 2)` at different sites. The frequency distribution of *PT* values displayed a clear bimodal structure both in the case of "Bottom" and "Algae" samples (Fig. ++). Two peaks were recognized in total distribution as well (Fig. ++ lower pannel). Two  Gaussian components were fitted into the total *PT* distribution with parameters as follow: $\mu_1$ = `r round(mean1,1)`, $\mu_2$ = `r round(mean2,1)` and $\sigma_1$ = `r round(sd1, 2)`, $\sigma_2$ = `r round(sd2, 2)`. The boundary between these peaks was `r round(cutoffs,1)`(*PT*=`r boundary`). Thus two types of populations can be recognized in the studied area: populations dominated by *ME* (conditional boundary *PT* < `r boundary`) and samples with MT prevalence (*PT* > `r boundary`). In samples from the "Bottom" substrate, samples belonging to the first group were more frequent (the left peak in the distribution predominated). In samples from the "Algae" substrate, both groups were represented in more or less equal proportions.
+
+```{r, fig.cap="Fig ++. The distributon of arcsin transformed *PT* values at different substrates (upper panels) and in total (lower pannel). Blue lines represent the kernell density smoothing the frequency distributions. Black curves on the lower pannel represent normal distributions fitted, dotted line represent boundary between peaks."}
+
+
+Pl_Fi_distribution_substrates/Pl_Fi_distribution_total
 
 
 ```
@@ -661,77 +714,91 @@ Pl_PT_distribution_substrates
 
 
 ```{r}
-myt_full <- 
-  myt_full %>% 
-  mutate(T_dominated = ifelse(Prop_T > 0.5, 1, 0))
 
-myt_site_substr <- 
-myt_full %>% 
-  group_by(Site, Position) %>% 
-  summarise(Prop_T = sum(N_T)/(sum(N_T) + sum(N_E)),
-        Salinity = mean(Salinity),
-        Min_dist_river = mean(Min_dist_river),
-        River_Size = unique(River_Size),
-        Average_Fetch = mean(Average_Fetch),
-        Min_dist_port = mean(Min_dist_port),
-        Port_Status = unique(Port_Status)) %>%   
+myt_site_substr <-
+  myt_site_substr %>% 
   mutate(T_dominated = ifelse(Prop_T > boundary, 1, 0))
 
 
-# myt_full$OLRE <- 1:nrow(myt_full)
 
 
-Model_2 <- glmer(T_dominated ~ Position + Salinity + Min_dist_river + River_Size + Average_Fetch + Min_dist_port + Port_Status + (1|Site) ,  data = myt_full, family = binomial(link = "logit"), control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)) )
+Model_2 <- glmer(T_dominated ~ Position + Salinity + Min_dist_river + River_Size + Average_Fetch + Min_dist_port + Port_Status + (1|Site) ,  data = myt_site_substr, family = binomial(link = "logit"), control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)) )
 
 summary(Model_2)
 
 
-qplot(x= fitted(Model_2), y = residuals(Model_2, type = "pearson")) + geom_smooth(method = "lm") + geom_hline(yintercept = 0)
+# qplot(x= fitted(Model_2), y = residuals(Model_2, type = "pearson")) + geom_smooth(method = "loess") + geom_hline(yintercept = 0)
 
 library(partR2)
 
-# res_part_R2 <- partR2(Model_2, nboot = 100)
+res_part_R2 <- partR2(Model_2, R2_type = "marginal")
 
 # save(res_part_R2, file = "partR2 result glmer Model2.RData")
 
 # Calculations by this code take several hours (due to GLMM bootstraping). Thus the results are loaded from the file with saved analysis data.
 
-load(file = "partR2 result glmer Model2.RData")
+# load(file = "partR2 result glmer Model2.RData")
 
 
 # str(res_part_R2)
 
 IR2 <- res_part_R2$IR2
 
-BW <- res_part_R2$BW
 
-res_part_R2$SC
+# BW <- res_part_R2$BW
+# 
+# res_part_R2$SC
 
-forestplot(res_part_R2, type = "IR2")
+# forestplot(res_part_R2, type = "IR2")
+
+IR2 <- 
+  IR2 %>% 
+  arrange(desc(estimate)) %>% 
+  mutate(Predictor = c(
+    "Salinity", 
+    "PortStatus", 
+    "RiverSize",
+    "Substrate",
+    "AverageFetch",
+    "MinDistPort",
+    "MinDistRiver")) %>% 
+    mutate(PropExplined = round(estimate*100, 1)) %>% 
+  select(Predictor, PropExplined) 
+
+
 
 
 ```
 
 
-Parameters of the *Model 2* are presented in STable ++. The marginal coefficient of determination of the *Model 2* (R^2^ = `r round(res_part_R2$R2$estimate, 2)`) was portioned as follow (Fig. +). The highest 
+Parameters of the *Model 2* are presented in STable ++. The marginal coefficient of determination of the *Model 2* (R^2^ = `r round(res_part_R2$R2$estimate, 2)`) was decomposed as follow (Table. +). The highest proportion of total variance explained was associated with *Salinity*. However the influence of other three  predictors (*PortStatus*, *RiverSize* and  *Substrate*) were close to the former.  The minimal influence was determined for *MinDistRiver*. The influence of *AverageFetch* and  *MinDistPort* was intermediate.      
+
+```{r}
+
+ft_IR2 <- flextable(IR2)
+
+ft_IR2 <-
+ft_IR2 %>% 
+  set_header_labels(values = c("Predictor", "Proportion of variaton explined (%)")) %>% 
+  set_caption(caption = "Table +. Proportion of variation explined by different predictors included into Model 2.")
+
+ft_IR2
+```
 
 
 
 
 ## Discussion
 
-Using the "morphotype test" (Khaitov et al. 2021) as a tool for species identification, we were able to construct a *Model* describing the relationship between *PT* frequency and all the factors that are generally considered to be the main regulators of the *MT:ME* ratio in mixed mussel settlements.  Our analysis showed that the predictors included in the model, although weakly correlated with each other, do not exhibit high collinearity. This means that we can consider all factors involved as independent entities that do not mask each other in their influence.   
+Using the "morphotype test" (Khaitov et al. 2021) as a tool for species identification, we were able to construct a *Model 1* describing the relationship between *PT* frequency and all the factors that are generally considered to be the main regulators of the *MT:ME* ratio in mixed mussel settlements.  Our analysis showed that the predictors included in the model, although weakly correlated with each other, do not exhibit high collinearity. This means that we can consider all factors involved as independent entities that do not mask each other in their influence.   
 
-We found that all factors, which were considered as crucial for *MT:ME* proportion regulation in previous works, were significant for *PT* value (and consequently proportion of *MT* in mixed populations) in a small contact zone of the Kandalaksha Bay. This means that the patterns revealed on more extensive contact zones with longer ecological gradients retain their influence in essentially smaller spatial scales. 
+We found that all factors, which were considered as crucial for *MT:ME* proportion regulation in previous works, were significant for *PT* value (and consequently proportion of *MT* in mixed populations) in a rlatively small contact zone of the Kandalaksha Bay. This means that the patterns revealed on more extensive contact zones with longer ecological gradients retain their influence in essentially smaller spatial scales.
 
 
 The proportion of *MT* is clearly governed by three factors in the Kandalaksha Bay: the nature of the substrate, the proximity  to active port systems, and the degree of coast exposure to wave action. According to the data we obtained, the highest *MT* concentration should be expected on the fuchcoid tally, in sheltered areas close to active ports.
 
 
-It is believed that *MT* was introduced into the Barents and White Seas due to ship traffic during World War II (Vainola & Strelkov, 2011). This hypothesis was based primarily on the fact that high concentrations of *MT* were found in the vicinity of currently active or abandoned ports in the Barents and White Seas (Vainola & Strelkov, 2011; Katolikova et al. 2016). Our study confirmed this hypothesis. The proportion of T-morphotype (and hence *MT*) in the studied area decreases with the distance from the port.
-
-
-Apparently, the degree of port activity also plays an important role. According to our data, if the port nearest to the mixed settlement is active, i.e. it serves the ships coming from outside the White Sea (in our case it is "Kandlaksha" and "Vitino" ports), then the *PT* value in such settlements is higher than in the settlements adjacent to the abandoned harbors.  This can be explained in several ways. 
+It is believed that *MT* was introduced into the Barents and White Seas due to ship traffic during World War II (Vainola & Strelkov, 2011). This hypothesis was based primarily on the fact that high concentrations of *MT* were found in the vicinity of currently active or abandoned ports in the Barents and White Seas (Vainola & Strelkov, 2011; Katolikova et al. 2016). Our study confirmed this hypothesis. The proportion of T-morphotype (and hence *MT*) in the studied area increased with approaching to ports. Apparently, the degree of port activity also plays an important role. According to our data, if the port nearest to the mixed settlement is active, i.e. it serves the ships coming from outside the White Sea (in our case it is "Kandlaksha" and "Vitino" ports), then the *PT* value in such settlements is higher than in the settlements adjacent to the abandoned harbors.  This can be explained in several ways. 
 
 It is possible that new *MT* are constantly brought to the ports of the Kandalaksha Bay from the Barents Sea (primarily from the ports of Murmansk in the Kola Bay, where the abundance of *MT* is very high, Vainola&Strelrov, 2013; Marchenko et al., 2023). In the abandoned ports this constant renewation is absent and during the time of port inactivity *MT* have been displaced by *ME*. 
 
@@ -742,42 +809,22 @@ A third explanation is also possible. As it was shown the Bivalvian Transmissibl
 
 In any case, our data are in line with earlier stated hypothesis that in the case of the White Sea  *MT* is an invasive species (Vainola&Strelkov 2011). Unfortunately, only few data could be provided to check this hypothesis for other European *MT* populations since the closeness to the port harbors was never included into species distribution models developed for other areas. In some cases it is probably an unrealistic aim due to absence of predictor variability.  For example in the case of *MT* populations in the Baltic Sea, where there is extremely active ship traffic and vessels visiting almost all parts of the Baltic Sea, it is not possible to identify a correlation between the distribution of *MT* and the presence of ports. At the same time, if we look at the map of *MT* distribution (Vainola & Strelkov, 2011), the confinement of *MT* to large European ports out of the Baltic Sea (e.g. Bergen, Murmansk), rather speaks in favor of the hypothesis of *MT* introduction due to ship traffic.  The unexpected increase in the number of *MT* in aquaculture plantations in the Scottish fjords (Beaumont 200+) is rather consistent with the hypothesis of the recent invasion as well. 
 
-Our analysis revealed that the higher wind fetch is associated with lower *PT* value. That means *MT* avoid open coasts potentially exposed to the surf. The lowest *PT* value (i.e., E-morphotype mussels dominate in the settlements) is observed on open shores of the north-east coast of Kandalaksha Bay (Fig. ++), exposed to wave action due to southeast and south-west winds which are frequent in the White Sea region (Berger, Naumov, 2001). This result corresponds well with the data on the thickness of *MT* and *ME* shells. It is known that *MT* have thinner, more fragile shells (Beaumont et al., 2008; Michalek et al, 2021). It is logical to expect that mollusks with such characteristics should avoid places with high wave loading. In such habitats, *ME* with stronger shells are expected to benefit. A similar pattern can be seen in other contact zones. For example, in Greenland, an increased frequency of *MT* was noted at the sheltered top of the fjord (GLS and GLD sites, Fig. 1 in Wenne et al. 2016), while the population at a more open site located near fjord mouth (GLL site in Wenne et al. 2016) is dominated by *ME*. 
+Our analysis revealed that the higher wind fetch is associated with lower *PT* value. That means *MT* avoid open coasts potentially exposed to the surf. The lowest *PT* value (i.e., E-morphotype mussels dominate in the settlements) is observed on open shores of the north-east coast of Kandalaksha Bay (Fig. ++), exposed to wave action due to southeast and south-west winds which are frequent in the White Sea region (Berger, Naumov, 2001). This result corresponds well with the data on the thickness of *MT* and *ME* shells. It is known that *MT* have thinner, more fragile shells (Beaumont et al., 2008; Michalek et al, 2021). It is logical to expect that mollusks with such characteristics should avoid places with high wave loading. In such habitats, *ME* with stronger shells are expected to benefit. A similar pattern can be seen in other contact zones. For example, in Greenland, an increased frequency of *MT* was noted at the sheltered top of the fjord (GLS and GLD sites, Fig. 1 in Wenne et al. 2016), while the population at a more open site located near fjord mouth (GLL site in Wenne et al. 2016) is dominated by *ME*.  
 
 Finally the nature of the substrate is the powerful predictor that has an influence on *PT* variation (Table ++, Figure ++). The proportion of T-morphotype mussels appears to be significantly higher on fucoids than on bottom substrates (silty-sandy sediment, pebbles, boulders and rock surfaces) located in close proximity (not more than 20 m, within the same fucoid belt). This pattern was first detected in the analysis of a significantly smaller volume of material (Katolikova et al., 2016). Bringing in new data collected in a wider range of conditions confirmed the presence of this pattern. It can be assumed that the effect of substrate type on *PT* has the same mechanism that underlies the negative correlation of *PT* with wind fetch. Fucoids may work as shock absorbers, mitigating, to a certain extent, the impact of the surf.  Another explanation could also be given. Perhaps *MT* are capable of attaching to underwater substrates more strongly than *ME* do. This should cause less strongly attached molluscs to break off and remain on the bottom under constant fluctuations in the thallus of the fucoids. This hypothesis is contradicted by the fact that a comparison of attachment strength in *MT* and *ME* from the contact zone in Canada, showed no significant differences between the species when they were kept under laboratory  conditions (Lowen et al., 200+). Additional investigations of attachment strength of both species are needed. 
 
+An intriguing result of our study was the absence of clear linear signal of the influence of salinity on the *MT:ME* ratio. GAM fitted reveal a statistically significant curvelinear relationship between *PT* and salinity. From one hand, our *Model 1* revealed expected dependency on salinity: *PT*, in fact, was higher in the lower salinity conditions. However, on the other hand, it was unexpectedly high when salinity was unusually high for the region. 
+
+It should be noted that the number of extreme low salinity sites where PT was found to be quite high is relatively small. Similarly, the number of sites where salinity is very high and where *PT* is also high is very small. In total, the number of such sites is about `r round( (Number_sites_low_salinity + Number_sites_high_salinity)/Total_site *100, 1)  ` % of the total number of sites surveyed.  At other sites where salinity intermediate *PT* does not differ significantly from the background value. That is, anomalously high *PT* values are observed in some marginal habitats. Such pattern can be expected if we assume that *MT* is a weaker competitor, which on average cannot dominate *ME*. This assumption is supported by the fact that the settlements that we classify as *MT*-dominated are essentially scarcer  in the studied area (smaller peak in the frequency distribution, Fig. ++) than the  *ME*-dominated sites. Such displacement of weaker competitor into marginal habitat is well known for other systems where inviders met resident species:  mosquito larvae (Juliano, 1998), geckos (Case et al 1994) and fishes(Herbold, Moyle, 1986). Usually resident species persist in their optimal habitats if they have not been destroyed but introduced species prevail in marginal habitats (Juliano, 1998).  
+
+The analysis of relative importance of different predictors revealed practically equal value of them in regulation of *MT:ME* composition in the Kandalaksha bay contact zone. This means that there is no single leading factor that plays an exclusive role in determining the ratio of species in mixed settlements. Any gradients of factors, whether extended gradients related to salinity or sudden local changes in habitat parameters, as in the case of substrate or surf magnitude, are used by the two mussel species for segregation. 
+ 
+ 
+## Literature cited 
+
+Лоция Белого моря / Гидрографическое управление ; общ. ред. А. Н. Рождественского. – 5-е изд. – Ленинград : Издание Гидрографического управления, 1932. – LXXII, 566 с., 22 вкл. л. ил., карт., схем.
 
 
-
-
-
-An intriguing result of our study was the absence of clear linear signal of the influence of salinity on the *MT:ME* ratio. GAM fitted reveal a statistically significant curvelinear relationship between *PT* and salinity. From one hand, our *Model* revealed expected dependency on salinity: *PT*, in fact, was higher in the lower salinity conditions. However, on the other hand, it was unexpectedly high when salinity was unusually high for the region. Such highly saline regions were uevnly distributed around area. 
-
-Про то, что в большинстве участков, когда соленость нормальная,  доминирует E
-Гипотеза маргинальных местообитаний для T.
-Сказать пр несовершенстов методов определиня солености непосредственно.
-Про возможность отращивать T-морфотип при высокой солености в арктике.
-
-
-
-
-We attempted to estimate the degree of desalination indirectly by introducing into the model quantities that may alternatively characterize salinity at the sampling site: the distance to the nearest river and the size of the nearest river. Only the second had significant influence: *PT* was higher if the nearest river was large. Thus using this type of salinity proxy 
-
-
-Both of these quantities, like salinity, contributed negligibly to the total variance explained by the model. This result is in contradiction with the fact that many papers analyzing *MT* distribution in *MT-ME* contact zones indicate that *MT* forms populations in more desalinated habitats and *MT* gene frequencies decrease as salinity increases (Riginos and Cunningham, 2005; Katolikova et al., 2016; Stuckas et al., 2017; Kijewski et al 2019). 
-
-
-Surprisingly, in spite of the fact that salinity is considered as a leading factor determining the segregation of *MT* and *ME* (see citations above) all studies discussing this relationship are correlative. Only a few works have been devoted to comparison of ecophysiological responses of these two species to salinity (Gardner&Thompson 2001; Qiu et al., 2002; Knobel et al. 2021).
-
-Moreover, direct investigations tended to influence salinity analysis, did not reveal unequivocal evidence that adult *MT* stages are better adapted to reduced salinity than adult *ME* (Gardner&Thompson 2001; Qiu et al., 2002). It has only been shown that larval stages of *MT* survive in lower salinity better than the same *ME* stages (Qiu et al., 2002). That is, *MT* larvae are better performed in low salinity corresponding to those conditions in which adults exist (Knobel et al. 2021).
-
-
-We admit that our methods of salinity determination, the way of sampling, the use of morphotype test instead of direct genotyping, all this does not allow us to reveal the fine  relationship between the *MT:ME* ratio and salinity. However, if such clear links with salinity, which have been revealed in other regions, exist also in the Kandalaksha Bay of the White Sea, where salinity gradients are very pronounced, then these patterns should have been reflected in the distribution of morphotypes (which are very tightly associated with the species status of mussels) as well. Perhaps we should look for the answer in other influences that shift the observed pattern. For example, it has been shown that only larvae (Qiu et al., 20++) show a clear dependence on salinity. If the critical stage for the formation of the *MT:ME* ratio relationship with salinity is larvae, then the ratio of larval numbers of the two species in the plankton will play a crucial role. We currently have no data on this ratio in the White Sea. However, it is logical to assume that the number of larvae will be proportional to the abundance of adults living on the bottom. If we consider only bottom substrates, the relative frequency of *ME*-dominated settlements (low *PT* values, Fig. ++) greatly exceeds the frequency of *MT*-dominated settlements (high *PT* values, Fig. ++). In the case of fucoid settlements, this ratio is close to equal. Mussel settlements existing on the bottom substrates in the White  Sea are very extensive and are represented by numerous littoral and sublittoral mussel beds located on gravel or muddy-sand substrates (Lukanin +++; Khaitov, 2013). The fucoid belt is only a narrow band along the lower part of the intertidal zone (Naumov, 2019; Novaczek & McLachlan,1989). These allow us to expect that in the plankton the absolute advantage should be with the *ME*. It is possible that with such ratios of species abundance in plankton and with a relatively small area of the Kandalaksha Bay, the salinity driven selection discussed in previous studies (Knobel et al., 2021) cannot manifest itself.  
-
-
-
-
- At the same time it should be noted the rather low coefficient of determination (partial R^2^) for this model indicates that a significant portion of the variability in the *MT:ME* ratio is under the control of some factors both abiotic and biotic one which were not included in the model constructed. For example, we predict that some differences could be found in the tolerance of the two mussel species to freezing in ice (responses to freezing for *MT* studied in Gill et al., 2023, for *ME* - in Williams, 1970). The low temperature impact for mussels living  in the  White Sea covering by ice for several months may be an important factor regulating the *MT:ME* ratio. One of the possible biotic factor which was out of scope in our investigation is the influence of predators which can significantly shift *MT:ME* proportion (Khaitov et al, 2021; Khaitov et al., 2023). Another underestimated biotic factor that potentially can regulate the ratio of species in mixed settlements can be epidemic events (e.g. transmissible cancer, see above). Additionally,  our study revealed the segregation of *MT* and *ME* at very tiny spatial scales. We showed that these two species segregate within the same habitat (inside the fucoid belt), inhabiting different substrate types. This is the pattern to be expected if we have deal with two competing species occurring in common habitat. This suggests that, competitive interactions with *ME* may also constrain *MT* dispersal and as a consequence determine the *MT:ME* ratio. Additional extensive investigations are needed to fill mentioned gaps. 
 
 
 
@@ -969,14 +1016,42 @@ ggsave(plot = Pl_predictors, filename = "figures/Pl_predictors.jpg", device = "j
 
 <!-- Salinity measured at the time of sampling ranged from 2 to 30 ppm (Median = 19 ppm). The most desalinated areas were at the top of both the Kandalaksha Bay itself and at the tops of smaller inlets deeping into the shore, where rivers often flow into (Fig. ++1). The closest to the sampling sites were the mouths of 18 rivers, of which 11 were classified as "Large" (Table ++, Fig. ++). Salinity at sites where the nearest river was classified as "Large" was markedly lower than at sites closer to small rivers (Fig. ++, C). Salinity tended to increase as the distance to the nearest river increased (Fig. ++ D). -->
 
+## Parameters of Model 2
+
+```{r}
+summary_Model_2 <- tidy(Model_2)
+
+summary_Model_2$estimate <- round(summary_Model_2$estimate, 3)
+summary_Model_2$std.error <- round(summary_Model_2$std.error, 5)
+summary_Model_2$statistic <- round(summary_Model_2$statistic, 2)
+summary_Model_2$p.value <- round(summary_Model_2$p.value, 5)
+
+summary_Model_2$p.value <- ifelse(summary_Model_2$p.value == 0, "<0.0001", summary_Model_2$p.value)
+
+summary_Model_2 <- summary_Model_2 %>% select(-effect, -group)
+
+summary_Model_2$term <- c("(Intercept)",
+                            "Substrate(Algae)",
+                            "Salinity",
+                            "MinDistRiver",
+                            "RiverSize(Large)",
+                            "AverageFetch",
+                            "MinDistPort",
+                            "PortStatus",
+                            "SD (Intercept) random effect")
+
+
+ft_Model_2_summ <- flextable(summary_Model_2)
+
+ft_Model_2_summ %>% 
+  set_header_labels(values = c("Model term", "Estimate", "SE", "z-statistic", "p.value")) %>% 
+  set_caption("STable ++. Parameters of Model 2")
+
+
+```
 
 
 
 
-
-
-## Literature cited 
-
-Лоция Белого моря / Гидрографическое управление ; общ. ред. А. Н. Рождественского. – 5-е изд. – Ленинград : Издание Гидрографического управления, 1932. – LXXII, 566 с., 22 вкл. л. ил., карт., схем.
 
 
