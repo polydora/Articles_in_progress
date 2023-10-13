@@ -1,0 +1,493 @@
+---
+title: "Экология BTN в окрестностях Магадана"
+author: "В. М. Хайтов"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+```{r packages}
+library(ggplot2)
+library(dplyr)
+library(vegan)
+library(reshape2)
+library(betareg)
+library(car)
+library(readxl)
+
+```
+
+
+```{r Points_data}
+
+points <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", sheet = "Points  characteristic 2021-23", na = "NA")
+
+load(file =  "Data/gg_Magadan_large.RData")
+
+points <- points %>% mutate(fPort = factor(ifelse(Site %in% c("KHOL", "MAM", "MAR_II", "MCHK", "PORT"), "Close", "Distant")))
+
+
+
+```
+
+
+```{r Cancer_data}
+cancer <- read_excel("Data/Cancer_Magadan_2021-2023.xlsx", na = "NA", sheet = "Magadan_cancer_prevalence")
+
+cancer2 <-
+  cancer %>%
+  group_by(Year, Site, Sample_ID) %>%
+  summarise(N_processed = sum(N_Processed), N_cancer = sum(Aneuploid)) %>% 
+  filter(Year == 2023)
+
+mean_cancer <- cancer2 
+
+# mean_cancer <-
+#   cancer2 %>%
+#   group_by(Year, Site) %>%
+#   summarise(N_processed = sum(N_processed), N_cancer = sum(N_cancer)) %>%
+#   mutate(Prop_cancer = N_cancer/N_processed) %>% 
+#   filter(Year == 2023)
+
+
+```
+
+
+```{r Size_data}
+
+size <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", na = "NA", sheet = "Размерная струкутра 2023 2021")
+
+size <- size[complete.cases(size), ]
+
+scam <- dcast(Year + Site ~ Size_class, data = size)
+
+area <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", na = "NA", sheet = "Площадь проб на размер")
+
+sample_area <- 
+  area %>% group_by(Year, Site) %>% summarise(Total_area = sum(Area))
+
+scam <- 
+  scam %>% group_by(Year, Site)
+
+
+scam [ ,3:ncol(scam)] <- 
+  round((scam[ ,3:ncol(scam)] / sample_area$Total_area) *10000, 0)
+
+
+scam_23 <- scam %>% filter(Year == 2023)
+
+
+```
+
+
+
+```{r cover_reading}
+cover <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", sheet = "Покрытия миидий 2023")
+
+mean_cover <-
+cover %>%
+  group_by(Site) %>%
+  summarise(Cover = mean(`Number of squares`/30))
+
+```
+
+
+
+## Общая характеристика материала
+
+Анализ основан на сборах, проведенных в 2021 и 2023 гг. на побережье Охотского моря, прилегающего к г. Магадан. Всего было обследовано `r points %>% filter(Year == 2021) %>% nrow()` точек в 2021 г. и `r points %>% filter(Year == 2023) %>% nrow()` в 2023 г. 
+
+Проведенное в 2021 г. пилотное обследование побережья позволило выявить значительное варьирование частоты встречаемости BTN в локальных поселениях.   
+
+В 2023 г.  было проведено более детальное описание условий существования мидий в тех же самых и новых  участках. Были описаны следующие параметры условий, в которых производился сбор мидий для детекции BTN. 
+
+- Уровень открытости акватории.
+- Cтепень близости к портовым сооружениям г. Магадан.
+- Соленость во время взятия проб.
+- Описано проективное покрытие мидий.
+- Описана размерная структура поселений мидий.
+
+
+
+#### Характеристика предикторов
+
+**Уровень открытости побережья (fetch)**. По географической карте для каждого сайта была определена протяженность (км) открытой воды (отсутствие географических препятствий)  для 8 направлений (шаг 45 градусов). На основе 8 измерений было вычислено среднее значение, которое использовалось в дальнейшем анализе.  
+
+**Cтепень близости к портовым сооружениям**. Каждый сайт был отнесен к одной из двух категорий: "Close" (точки, находящиеся в непосредственной близости от Морского и Рыбного портов, или располагающиеся между ними) или  "Distant"(точки, удаленные от портов)
+
+
+```{r fig.cap="Точки обследованные в 2023 г. Разер точек пропоционален степени открытости побережья. Серыми точками обозначены сайты, находящиеся в зоне вличния портов."}
+ggplot(gg_Magadan_large, aes(x = long, y = lat, group = group)) + 
+  geom_polygon() + 
+  # coord_map(xlim = c(150., 151.52), ylim = c(59.4, 59.8) )+
+  geom_point(data = points %>% filter(Year == 2023), aes(x = lon, y = lat, group = 1, size = (fetch), fill = fPort ), shape = 21) +
+  scale_fill_manual(values =  c("gray", "yellow"))
+```
+
+
+
+**Соленость**. Определялась с помощью портативного кондуктометра с точностью 1 промилле в пробе, взятой во время отлива.
+
+**Проективное покрытие**. На 13 точках была проведена фотосъемка участков литорали. Для фотографирования смартфон располагался горизонтально, будучи зафиксирован на селфи-палке (50 см длиной), поднятой на вытянутой руке над головой оператора. В кадр попадал участок литорали площадью 6м^2^. На каждом участке было сделано не менее 30 кадров, равномерно распределенных по обследованному участку. Границы участка располагались на расстоянии около $\pm$ 50 м от точек сбора мидий, использованных  для оценки присутствия BTN.
+
+При дальнейшей обработке снимков случайно отбирали 30 кадров.  На изображение в случайном порядке наносили 30 квадратов стандартной площади (1/100 площади изображения). Далее  подсчитывалось количество квадратов, на которых пятна мидий занимали не менее 1/4 площади квадратов. Покрытие мидий оценивалось как доля квадратов, накрывших пятна мидий, к общему количеству квадратов.
+
+Для примера ниже приведен один из `r nrow(cover)` проанализированных кадров.
+
+![](Figures/IMG_20230703_133755.jpg_sample.jpg)
+
+
+
+
+**Размерная структура**. На каждом из 13 участков было взято по три количественные пробы (привязка к площади сбора осуществлялась с помощью рамки известной площади или с помощью фотографирования собранного участка с дальнейшим пересчетом на стандартную площадь). 
+
+После промывки через сито с размером ячеи 1 мм из проб выбирали живых мидий, у которых измеряли длину раковины. Все мидии были разбиты на размерные классы с шагом 5 мм. Для каждого размерного классы было подсчитано количество особей (для дальнейшего анализа производили пересчет количества особей на стандартную площадь 1 м^2^).
+
+
+
+
+
+
+## Размерная структура мидий 
+
+
+```{r}
+
+pca_scam_23 <- cca(scam_23[ , -c(1,2)])
+
+sum_pca_scam_23 <- summary(pca_scam_23)
+
+pca_scam_23_size_scores <- as.data.frame(scores(pca_scam_23)$species)
+
+# pca_scam_23_size_scores %>% arrange(CA1)
+
+pca_scam_23_scores <- as.data.frame(scores(pca_scam_23)$sites)
+
+pca_scam_23_scores$N_Juv <- scam_23$L3  
+pca_scam_23_scores$N_Large = scam_23$L8 + scam_23$L13 + scam_23$L18 + scam_23$L23 + scam_23$L28 + scam_23$L33 + scam_23$L38 + scam_23$L43 + scam_23$L48 + scam_23$L53 + scam_23$L58
+
+
+pca_scores_scam_23 <- data.frame(Year = scam_23$Year, Site = scam_23$Site, pca_scam_23_scores)
+
+
+```
+
+Для анализа размерной структуры был применен корресподентный анализ (CA). Первые две главные оси описывают `r round(sum_pca_scam_23$cont$importance[2,1]*100, 1)` и `r round(sum_pca_scam_23$cont$importance[2,2]*100, 1)`% суммарной инерции. 
+
+```{r fig.cap="Ординация размерных классов"}
+ggplot(pca_scam_23_size_scores, aes(CA1, CA2)) + geom_text(aes(label = row.names(pca_scam_23_size_scores))) + 
+  geom_hline(yintercept = 0) + 
+  geom_vline(xintercept = 0)
+```
+
+
+
+
+```{r fig.cap="Ординация сайтов"}
+library(ggrepel)
+ggplot(pca_scores_scam_23, aes(CA1, CA2)) + 
+  geom_text_repel(aes(label = Site)) + 
+  geom_hline(yintercept = 0) + 
+  geom_vline(xintercept = 0)
+```
+
+
+
+Ординация размерных классов позволяет трактовать первую корреспондентную ось, как отражение градиента между поселениями, где доминируют моллюски средних размеров с одной стороны  (положительные значения оси) и, с другой стороны (отрицательная часть оси) в поселении многочисленны самые мелкие мидии (1-5 мм), но присутствуют и  крупные моллюски, живущие совместно с самыми мелкими особями. 
+
+
+Возможной трактовкой CA1 может быть отражение градиента от самой высокой доли молоди в поселении (отрицательные значения CA1) к поселениям, практически лишенным самых мелких особей (высокие положительные значения  CA1).
+
+
+
+```{r, fig.cap="Cвязь доли молоди со значениями первой корреспондентной оси." }
+ggplot(pca_scores_scam_23, aes(CA1, N_Juv/(N_Juv + N_Large))) + 
+  geom_text(aes(label = Site)) +
+  labs(x = "Значения CA1", y = "Доля L3 в общей численности") +
+  geom_smooth(method = "lm")
+
+```
+
+
+Вторая корреспондентная ось разделяет поселения с преобладанием молоди (положительные значения) и поселения, где молодь малочисленна (отрицательные значения).
+
+В дальнейшем анализе значения CA1 и CA2 будут рассматриваться как величины, описывающие варьирование структуры поселения мидий.
+
+
+
+```{r fig.cap="Размерные структуры поселений мидий. Сайты упорядочены в соответствии с CA1."}
+size_23 <- 
+size %>% filter(Year == 2023)  
+
+Sites <- 
+pca_scores_scam_23 %>% arrange(CA1) %>% pull(Site) 
+
+size_23$Site <- factor(size_23$Site, levels = Sites)
+
+
+size_23 %>% 
+  ggplot(., aes(x = L)) +
+  geom_histogram(binwidth = 5) +
+  facet_wrap(~Site, scales = "free_y", dir = "v") 
+
+  # scale_y_continuous(trans='log10')
+
+```
+
+`
+
+
+
+
+```{r}
+mean_NB_cancer_23 <- 
+  merge(points, mean_cancer) %>% 
+  filter(Year == 2023)
+
+mean_NB_cancer_23 <- merge(mean_NB_cancer_23, pca_scores_scam_23)
+
+mean_NB_cancer_23$Prop_cancer <- mean_NB_cancer_23$N_cancer/(mean_NB_cancer_23$N_processed) 
+
+mean_NB_cancer_23$Prop_cancer[mean_NB_cancer_23$Prop_cancer == 0] <- 0.00000001
+
+mean_NB_cancer_23 <- mean_NB_cancer_23 %>% mutate(fPort = factor(ifelse(Site %in% c("KHOL", "MAM", "MAR_II", "MCHK", "PORT"), "Close", "Distant")))
+
+
+mean_NB_cancer_23 <-
+merge(mean_NB_cancer_23, scam_23)
+
+
+mean_NB_cancer_23 <- 
+merge(mean_NB_cancer_23, mean_cover)
+
+mean_NB_cancer_23$Site <- factor(mean_NB_cancer_23$Site)
+
+mean_NB_cancer_23$N_Helthy <- mean_NB_cancer_23$N_processed - mean_NB_cancer_23$N_cancer 
+
+
+```
+
+
+## Связь уровня зараженности BTN с предикторами
+
+```{r}
+
+library(lme4)
+library(glmmADMB)
+library(glmmTMB)
+
+
+mod_glmm <- glmmTMB(Prop_cancer ~ Cover + Salinity + fetch + fPort + CA1 + CA2  + (1|Site), data = mean_NB_cancer_23, family = beta_family())
+
+mod_glmm_final <- glmmTMB(Prop_cancer ~ Cover  + fetch + CA1 + (1|Site), data = mean_NB_cancer_23, family = beta_family())
+
+
+# n_site <- length(unique(mean_NB_cancer_23$Site))
+# 
+# mod_gam <- gam(cbind(N_cancer, N_Helthy) ~ s(Cover, k = 4) + s(CA1, k = 4) + s(CA2, k = 4) +  s(fetch, k = 4) + fPort + s(Site, k = n_site, bs = "re"), data = mean_NB_cancer_23, family = "binomial")
+# 
+# concrvity(mod_gam)
+# 
+# summary(mod_gam)
+
+
+# mod_beta <- betareg(Prop_cancer ~ Cover + CA1 + CA2 +  fetch + fPort ,  data =  mean_NB_cancer_23)
+
+# library(emmeans)
+# 
+# joint_tests(mod_beta)
+
+# library(lmtest)
+# 
+# lrtest(mod_glmm)
+
+# vif(mod_beta)
+
+
+
+```
+
+
+На первом этапе анализа была построена полная модель (смешанная модель, основанная на beta-распределении), описывающая зависимость доли зараженных моллюсков в выборке от всех предикторов, описанных выше. 
+
+$$
+M1: Prop_{cancer} = b_0 + b_1Cover + b_2Salinity + b_3fetch + b_4fPort + b_5CA1 +b_6CA2  + (1|Site) + \varepsilon
+$$
+
+После пошагового упрощения  этой модели (backward selection) финальная модель имела меньшее значение AIC.
+
+```{r}
+AIC(mod_glmm, mod_glmm_final)
+```
+
+
+
+Финальная модель имела следующий вид.
+
+$$
+M_{final}: Prop_{cancer} = b_0 + b_1Cover  + b_3fetch + b_5CA1  + (1|Site) + \varepsilon
+$$
+Вот итоговое описание этой модели.
+
+```{r}
+summary(mod_glmm_final)
+```
+
+Вот диагностические графики для финальной модели
+
+
+
+```{r}
+qplot(fitted(mod_glmm_final),
+     residuals(mod_glmm_final)) + geom_smooth() + geom_hline(yintercept = 0)
+
+```
+
+
+```{r}
+hist(residuals(mod_glmm_final))
+```
+
+Не супер, конечно, но принять можно.
+
+
+Согласно финальной модели доля зараженных особей возрастает по мере увеличения степени открытости побережья (fetch), но убывает по мере увеличения проективного покрытия и значения CA1.  
+
+
+```{r}
+sites_ordered <- 
+mean_NB_cancer_23 %>% group_by(Site) %>% summarise(Prop_cancer = sum(N_cancer)/sum(N_processed)) %>% arrange(Prop_cancer) %>%  pull(Site)
+
+size_23$Site <- factor(size_23$Site, levels = as.character(sites_ordered))
+
+ggplot(size_23, aes(x = Site, y = (L) )) + geom_boxplot()
+```
+
+
+### Укладываются ли данные 2021 года в предсказания модели 2023?
+
+```{r}
+cancer_21 <- 
+cancer %>% 
+  filter(Year == 2021) %>% 
+  mutate(Prop_cancer = Aneuploid/N_Processed) 
+  
+points_21 <- 
+  points %>% 
+  filter(Year == 2021)
+
+size_21 <-
+  size %>% 
+  filter(Year == 2021)
+  
+
+Prop_Juv <- 
+size_21 %>% 
+  group_by(Site) %>% 
+  summarise(Prop_Juv = mean(Size_class == "L3"))
+
+data_21 <- merge(points_21, cancer_21) %>% merge(Prop_Juv)
+
+data_21$Prop_cancer[data_21$Prop_cancer == 0] <- 0.00000001
+
+```
+
+```{r}
+logit_back <- function(x) exp(x)/(1 + exp(x)) # обратная логит-трансформация
+
+mean_NB_cancer_23 <- mean_NB_cancer_23 %>%  mutate(Prop_Juv = N_Juv/(N_Juv + N_Large) )
+
+mod_CA1_Juv <- lm(CA1 ~ Prop_Juv, data = mean_NB_cancer_23 )
+
+
+my_data_fetch <- data.frame(Intercept = 1, Cover = mean(mean_NB_cancer_23$Cover), fetch = data_21$fetch, CA1 = predict(mod_CA1_Juv, newdata = data_21) ) 
+
+my_data_fetch$Predict <- logit_back(as.matrix(my_data_fetch) %*% (fixef(mod_glmm_final)$cond))
+
+```
+
+
+```{r}
+qplot(x = my_data_fetch$Predict, y = data_21$Prop_cancer) +
+  labs(x = "Предсказанная моделью 2023 г. доля зараженных моллюсков", y = "Наблюдаемое в 2021 г. значение доли зараженных") 
+```
+
+Корреляция, несомненно, есть... 
+
+
+Видна и связь частоты BTN с открытостью побережья в 2021 г. 
+
+```{r}
+ggplot(data_21, aes(x = fetch, y = Prop_cancer)) + 
+  geom_point()+
+  labs(x = "Fetch", y = "Доля мидий с признаками DN")
+```
+
+
+Прослеживается, также, и связь с долей молоди в 2021 г.  
+
+```{r}
+ggplot(data_21, aes(x = Prop_Juv, y = Prop_cancer)) + 
+  geom_point() +
+    labs(x = "Доля L3 в общей численности моллюсков в поселении", y = "Доля мидий с признаками DN")
+
+
+```
+
+
+Вот обощнные данные за 2021 и 2023 гг.
+
+
+```{r}
+data_21_23 <- 
+  merge(cancer, points)
+
+data_21_23_scam <- 
+merge(data_21_23, scam)
+
+
+data_21_23_scam <- data_21_23_scam %>% mutate(Prop_Juv = L3/(L13 + L18 + L23+L28+L3+L33+L38+L43+L48+L53+L58+L8), Prop_cancer = Aneuploid/N_Processed)
+
+
+```
+
+
+```{r}
+ggplot(data_21_23_scam, aes(x = fetch, y = Prop_cancer)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = F) +
+  labs(x = "Fetch", y = "Доля мидий с признаками DN")
+```
+
+
+
+```{r}
+ggplot(data_21_23_scam, aes(x = Prop_Juv, y = Prop_cancer)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = F)+
+  labs(x = "Доля L3 в общей численности моллюсков в поселении", y = "Доля мидий с признаками DN")
+```
+
+
+
+
+## Что это может означать?
+
+Положительная связь со степенью открытости акватории и положительная связь с долей молоди (отрицательная связь с CA1) свидетельствует о том, что высокая частота BTN наблюдается в тех местообитаниях, где происходит активное оседание молоди (а это часто именно открытые прибойные местообитания). Плюс к этому молодь не любит оседать в те места, где имеется плотное поселение взрослых. Это хорошо согласуется с отрицательной корреляцией частоты BTN с покрытием мидий. 
+
+Идеальное место, где надо искать рак - это открытое для прибоя побережье с невысоким покрытием мидий, куда хорошо идет оседание молоди.      
+
+Я вижу два возможных объяснения.  
+
+*Гипотеза 1.* BTN часто встречается в супер благоприятных для мидий местообитаниях. Мидии в таких благоприятных местообитаниях могут выживать с большей вероятностью, даже если они заражены BTN. 
+
+Из Гипотезы 1 можно выдвинуть проверяемое следствие. Частота BTN должна коррелировать с повышенным фитнесом мидий. Надо посмотреть скорость роста в разных сайтах. Возможно, надо проверить нет ли корреляции с величиной прироста раковины у мидий зараженных и не зараженных.  
+
+
+
+*Гипотеза 2.*  BTN часто встречается в тех местах, где мидии не формируют нормальных плотных банок, то есть это, скорее, маргинальные для мидий местообитания. В пользу последнего говорит отрицательная связь с проективным покрытием. В нормальных мидиевых банках, которые не возникают в условиях сильного прибоя, мидии, зараженные BTN, дохнут очень быстро и мы их не находим в большом количестве.    
+

@@ -80,14 +80,17 @@ fetch_locs = SpatialPoints(fetch.df[, 1:2],
 fetch <- fetch_len_multi(pts = fetch_locs, bearings = c(0, 45, 90, 135, 180, 225, 270 ), shoreline = Magadan_map,  dmax = 100000, spread = 0,  method = "btree", projected = FALSE)
 
 
-fetch.df$fetch <- as.data.frame(fetch) %>% rowMeans()
+fetch.df$fetch <- as.data.frame(fetch) %>% rowMeans()/1000 
  
+fetch.df$fetch <- round(fetch.df$fetch, 1)
+
 ggplot(gg_Magadan_large, aes(x = long, y = lat, group = group)) + 
   geom_polygon() + 
-  coord_map(xlim = c(150., 151.52), ylim = c(59.4, 59.8) )+
-  geom_point(data = fetch.df[11,], aes(x = lon, y = lat, group = 1, size = (fetch) ), fill = "yellow", shape = 21) 
+  # coord_map(xlim = c(150., 151.52), ylim = c(59.4, 59.8) )+
+  geom_point(data = fetch.df, aes(x = lon, y = lat, group = 1, size = (fetch) ), fill = "yellow", shape = 21) 
 ############################
 
+# write.table(fetch.df, "clipboard",sep = "\t", dec = ",", row.names = F)
 
 # fetch.df <- fetch.df[complete.cases(fetch.df),]
 # nrow(fetch.df)

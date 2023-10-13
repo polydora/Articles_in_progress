@@ -36,9 +36,11 @@ wdb_borders.f.b <- paste(Path, "/GSHHS/wdb_borders_f.b", sep = "")
 
 # Задаем пределы координат для карт
 
-Magadan_x <- c(149.8, 151.6)
-Magadan_y <- c(59.3, 59.8)
+Magadan_x <- c(149.8, 152.4)
+Magadan_y <- c(58.8, 59.8)
 
+# Magadan_x <- c(149.8, 151.6)
+# Magadan_y <- c(59.3, 59.8)
 
 
 # Читаем файлы с контурными картами
@@ -50,6 +52,7 @@ plot(Magadan_map)
 
 gg_Magadan_large <- fortify(Magadan_map)
 
+# save(gg_Magadan_large, file =  "Data/gg_Magadan_large.RData")
 # gg_Magadan <- read.csv("Data/gg_Magadan_map.csv")
 
 
@@ -58,7 +61,7 @@ gg_Magadan_large <- fortify(Magadan_map)
 
 ## Данные по поселениям мидий
 
-points <- read_excel("Data/Magadan_2021_2023.xlsx", sheet = "Точки взятия проб 2023 2021")
+points <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", sheet = "Точки взятия проб 2023 2021")
 points$long <- as.numeric(points$E)
 points$lat <- as.numeric(points$N)
 
@@ -89,6 +92,10 @@ fetch <- fetch_len_multi(pts = fetch_locs, bearings = seq(0, 315, 45), shoreline
 
 
 fetch.df$fetch <- as.data.frame(fetch) %>% rowMeans()
+
+
+load(file =  "Data/gg_Magadan_large.RData")
+
  
 ggplot(gg_Magadan_large, aes(x = long, y = lat, group = group)) + 
   geom_polygon() + 
@@ -206,14 +213,14 @@ scam_r <- decostand(scam[,-c(1,2)], method = "hellinger")
 scam_log <- decostand(scam[,-c(1,2)], method = "log")
 
 
-pca_scam <- rda(scam_log, scale = F) 
+pca_scam <- cca(scam[,-c(1,2)], scale = F) 
 summary(pca_scam)
 
 plot(pca_scam, display = "species")
 plot(pca_scam, display = "sites")
 
 
-pca_scores_scam <- data.frame(Year = scam$Year, Site = scam$Site, as.data.frame(scores(pca_scam, choices = 1:5)$sites))
+pca_scores_scam <- data.frame(Year = scam$Year, Site = scam$Site, as.data.frame(scores(pca_scam, choices = 1:2)$sites))
 
 
 
@@ -255,12 +262,15 @@ library(gratia)
 
 
 
-mod_1 <- gam(Prop_cancer ~ s(fetch, k=4, by = fYear, bs = "cr") + s(Salinity, k=3, by = fYear, bs = "cr") + s(PC1, k=3, by = fYear, bs = "cr")   + fPort + fYear,  data =  mean_NB_cancer, family = "betar")
+mod_1 <- gam(Prop_cancer ~ s(fetch,  k = 4) + s(CA2, k=4) + fPort,  data =  mean_NB_cancer, family = "betar")
+
+# At!!!
+# Salinity and fetch seems to be concurvative
 
 # mod_1 <- gam(Prop_cancer ~ s(fetch, k=4, by = fYear, bs = "cr") + s(PC1, k=3, by = fYear, bs = "cr") + fSal   + fPort + fYear,  data =  mean_NB_cancer, family = "betar")
 
 
-mod_2 <- gam(Prop_cancer ~ s(fetch, k=4, by = fYear, bs = "cr") + s(Salinity, k=4, by = fYear, bs = "cr") + PC1  + fPort + fYear,  data =  mean_NB_cancer, family = "betar")
+mod_2 <- gam(Prop_cancer ~ s(fetch, k=4, by = fYear, bs = "cr") + s(Salinity, k=4, by = fYear, bs = "cr") + CA1 + CA2 + fPort + fYear,  data =  mean_NB_cancer, family = "betar")
 
 # mod_2 <- gam(Prop_cancer ~ s(fetch, k=4, by = fYear, bs = "cr") +  fSal + PC1  + fPort + fYear,  data =  mean_NB_cancer, family = "betar")
 
@@ -268,16 +278,19 @@ mod_2 <- gam(Prop_cancer ~ s(fetch, k=4, by = fYear, bs = "cr") + s(Salinity, k=
 
 AIC(mod_1, mod_2)
 
-appraise(mod_2)
+appraise(mod_1)
+concur <- concrvity(mod_1)
+draw(concur)
 
-draw(mod_2, parametric = T)
 
-# vif(mod)
+
+draw(mod_1, parametric = T, residuals = T)
+
 summary(mod_1)
 
-
-ggplot(mean_NB_cancer, aes(x = PC1, y = Prop_cancer)) +
-  geom_point()
+ggplot(mean_NB_cancer, aes(x = CA2, y = Prop_cancer)) +
+  geom_point() +
+  facet_wrap(~fYear)
 
 
 
@@ -323,18 +336,78 @@ ggplot(df2, aes(x = PC1, y = log(L8+1) )) +
 
 ## Анализ только на основе данных 2023 года ##############
 
+#Обилие Раковых мидий #######################3
+
+cancer <- read_excel("Data/Cancer_Magadan_2021-2023.xlsx", na = "NA", sheet = "Magadan_cancer_prevalence")
+
+cancer2 <-
+  cancer %>%
+  group_by(Year, Site) %>%
+  summarise(N_processed = sum(N_Processed), N_cancer = sum(Aneuploid))
+
+
+mean_cancer <-
+  cancer2 %>%
+  group_by(Year, Site) %>%
+  summarise(N_processed = sum(N_processed), N_cancer = sum(N_cancer)) %>%
+  mutate(Prop_cancer = N_cancer/N_processed) %>% 
+  filter(Year == 2023)
+
+
+# Размерная структура 2023 #############
+
+library(vegan)
+
+size <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", na = "NA", sheet = "Размерная струкутра 2023 2021")
+size <- size[complete.cases(size), ]
+
+scam <- dcast(Year + Site ~ Size_class, data = size)
+
+area <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", na = "NA", sheet = "Площадь проб на размер")
+
+sample_area <- 
+  area %>% group_by(Year, Site) %>% summarise(Total_area = sum(Area))
+
+scam <- 
+  scam %>% group_by(Year, Site)
+
+
+sum(scam$Site != sample_area$Site)
+
+
+
+scam [ ,3:ncol(scam)] <- 
+  round((scam[ ,3:ncol(scam)] / sample_area$Total_area) *10000, 0)
+
+
+
+
+
+
 scam_23 <- scam %>% filter(Year == 2023)
 
-scam_23_log <- decostand(scam_23[ , -c(1,2)], method = "log")
+# scam_23_log <- decostand(scam_23[ , -c(1,2)], method = "log")
 
-pca_scam_23 <- cca(scam_23[ , -c(1,2)], scale = F)
+
+library(vegan)
+
+pca_scam_23 <- cca(scam_23[ , -c(1,2)])
+
+summary(pca_scam_23)
+
 plot(pca_scam_23, display = "species")
 plot(pca_scam_23, display = "sites")
 
-scores(pca_scam_23)
+pca_scam_23_size_scores <- as.data.frame(scores(pca_scam_23)$species)
+
+pca_scam_23_size_scores %>% arrange(CA1)
 
 
 pca_scores_scam_23 <- data.frame(Year = scam_23$Year, Site = scam_23$Site, as.data.frame(scores(pca_scam_23)$sites))
+
+
+
+pca_scores_scam_23 %>% arrange(desc(CA1))
 
 ggplot(pca_scores_scam_23, aes(CA1, CA2)) +
   geom_text(aes(label = Site))
@@ -358,7 +431,7 @@ mean_NB_cancer_23$Prop_cancer[mean_NB_cancer_23$Prop_cancer == 0] <- 0.00000001
 mean_NB_cancer_23 <- mean_NB_cancer_23 %>% mutate(fPort = factor(ifelse(Site %in% c("KHOL", "MAM", "MAR_II", "MCHK", "PORT"), "Close", "Distant")))
 
 
-cover <- read_excel("Data/Magadan_2021_2023.xlsx", sheet = "Покрытия миидий 2023")
+cover <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", sheet = "Покрытия миидий 2023")
 
 mean_cover <-
 cover %>%
@@ -369,14 +442,38 @@ mean_NB_cancer_23 <-
 merge(mean_NB_cancer_23, mean_cover)
 
 
+library(mgcv)
+library(gratia)
+library(betareg)
 
-mod <- gam(Prop_cancer ~ s(fetch, k = 3) + s(Salinity, k = 4) + Cover + CA1 + CA2 + fPort,  data =  mean_NB_cancer_23, family = "betar")
+mod <- gam(Prop_cancer ~ s(fetch, k = 4, bs = "cr") + s(Salinity, k = 4, bs = "cr") + s(Cover, k = 4, bs = "cr") + CA1 + CA2 + fPort,  data =  mean_NB_cancer_23, family = "betar")
 
 
-appraise(mod)
+appraise(mod, type = "deviance")
 
 draw(mod, parametric = T)
 
 # vif(mod)
 summary(mod)
+
+ggplot(mean_NB_cancer_23, aes(x = Salinity, y = Prop_cancer)) +
+  geom_point()
+
+concrvity(mod)
+
+
+mod_beta <- betareg(Prop_cancer ~ scale(Cover) + scale(CA1) + fPort + scale(fetch),  data =  mean_NB_cancer_23)
+
+
+vif(mod_beta)
+
+summary(mod_beta)
+
+plot(mod_beta)
+
+plot(mean_NB_cancer_23$CA1, mean_NB_cancer_23$Prop_cancer)
+plot(mean_NB_cancer_23$fetch, mean_NB_cancer_23$Prop_cancer)
+
+
+
 
