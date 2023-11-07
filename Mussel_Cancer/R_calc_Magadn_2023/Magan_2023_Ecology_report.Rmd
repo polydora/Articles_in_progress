@@ -368,6 +368,51 @@ ggplot(size_23, aes(x = Site, y = (L) )) + geom_boxplot()
 ```
 
 
+```{r}
+dots <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", sheet = "Dots 0n Shels")
+
+
+
+ggplot(dots, aes(x = Site, y = N_dots)) + 
+  geom_boxplot()
+
+
+```
+
+
+```{r}
+df_cancer <- 
+  cancer %>%
+  group_by(Year, Site) %>%
+  summarise(N_processed = sum(N_Processed), N_cancer = sum(Aneuploid)) %>% 
+  mutate(Prop_cancer = N_cancer/N_processed)
+
+
+df_dots <-
+  dots %>% group_by(Site) %>% summarise(N_dots_median = median(N_dots), N_dots_mean = mean(N_dots))
+
+df_dots_cancer <- merge(df_cancer, dots)
+
+
+ggplot(df_dots_cancer,  aes(x = (Prop_cancer), y = (N_dots) )) +
+  geom_point() +
+  geom_smooth(method = "gam") 
+
+library(mgcv)
+library(gratia)
+M <- gam( (N_dots) ~ s(Prop_cancer, k = 4, bs = "cr"), data = df_dots_cancer, family = "nb")
+
+appraise(M)
+draw(M, residuals = F)
+
+# gam.check(M)
+summary(M)
+
+```
+
+
+
+
 ### Укладываются ли данные 2021 года в предсказания модели 2023?
 
 ```{r}
