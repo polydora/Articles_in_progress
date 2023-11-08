@@ -1,5 +1,5 @@
 ---
-title: "Mixed populations of Mytilus trossulus and M.edulis in the White Sea: towards to a species distribution model"
+title: "Mixed populations of Mytilus trossulus and M.edulis: towards to a species distribution modelling"
 author: "**V. M. Khaitov, A. A. Zaychikova, P. Y. Safonov, M. V. Katolikova, M. V. Ivanov, P. P. Strelkov**"
 output:
   word_document:
@@ -116,6 +116,13 @@ Further, as discussed above, *MT* and *ME* have different substrate preferences 
 In this paper, we will consider the case where *ME* and *MT* come into contact forming mixed populations in the Kandalaksha Bay of the White Sea (Vainola, Strelkov, 2011; Katolikova et al. 2016; Khaitov et al, 2021). This contact zone found in the relatively small area is extremely convenient for investigation of environmental factors' role  in the regulation of the *MT:ME* ratio and therefore SDM construction.The salinity gradients are well expressed in this area (Filatov et al., 2005) which is determined  by the inflow of several large rivers into the sea (Katolikova et al., 2016). Further, the coast of the gulf possesses numerous sheltered areas (inlets and skerries) and areas open to the surf which provide the opportunity to assess the wave impact gradient.  There are several active and several abandoned ports (Katolikova et al., 2016) that give an opportunity to trace the role of vessel trafic in species distribution.  And finally, the fucoid belt is almost ubiquitous on the intertidal zone of the bay, mussels settle both on algae and on the ground surface throughout the area (Katolikova et al., 2016), which allows us to assess the role of substrate in the regulation of micro-scale species segregation. And important is that the small size of the Kandalaksha Bay (Fig. ++) ensures that there are no clear temperature gradients in both warm and cold seasons. Therefore, the influence of temperature, which probably regulates the distribution of *Mytilus* species on a broader geographic scale (Wenne et al. 2020) can be excluded from the discussion.
 
 Additionally, it was shown that in the Kandalaksha Bay the expensive genetic manipulations aimed at species identification can be replaced by a cheep "morphotype test" based on the study of an easy to observe conchological trait (Khaitov et al. 2021). The morphotype test allow identifying mussel species with sufficient accuracy (Khaitov et al. 2021) and makes it possible to process large material amount (dosen of sampling sites and thousands of mussels), which is necessary for ecological patterns' revealing.
+
+
+Добавить во введение и для обсуждения
+Важная задача - оценка вклада предикторов в SDM (Araujo Guisan, 2006) CHALLENGE 4:It is unsurprizing that the choice of predictors affects the modelled spatial distribution of species. 
+Another important issue is the calculation of the contribution of each predictor in the model.
+Therefore, except the cases where predictors are orthogonal, the deviance is not and cannot be interpreted as an absolute measure of the contribution of predictors in the model. This sensitivity weakens the utility of the model as it confounds two key factors: which are the most important predictors, and how much variance each predictor can potentially explain. Solutions to the problem have been
+proposed, but again they have not been extensively used in species distribution modelling and sufficient statistical validation is lacking.
 
 
 
@@ -783,8 +790,52 @@ ft_IR2
 
 
 ```{r eval=FALSE}
+
+myt_sample_area <- read_excel("Data/myt_full.xls", sheet = "Sampling area assesment", na = "NA")
+
+myt_sample_area <- myt_sample_area %>% select(Site, Sample, Position, SQM_factor)
+
+
+Sites <- 
+myt_sample_area %>% group_by(Site) %>% summarise(Sum = sum(SQM_factor)) %>% filter(!is.na(Sum)) %>% 
+filter(Site %in% unique(myt_full$Site)) %>% pull(Site)  
+
+
+
+
+
+
+# unique(myt_full$Site)[!(unique(myt_full$Site) %in% Sites)]
+
+
+myt_full_reduced <- myt_full %>% filter(Site %in% Sites)
+
+myt_full_reduced <-
+merge(myt_full_reduced, myt_sample_area)
+
+
+
+myt_site_substr_reguced <- 
+  myt_full_reduced %>% 
+  mutate(D_T = N_T * SQM_factor, D_E = N_E*SQM_factor) %>% 
+  group_by(Site, Position) %>% 
+  summarise(D = mean(D_E + D_T), N_T = sum(N_T), N_E = sum(N_E),
+        Salinity = mean(Salinity),
+        Min_dist_river = mean(Min_dist_river),
+        River_Size = unique(River_Size),
+        Average_Fetch = mean(Average_Fetch),
+        Min_dist_port = mean(Min_dist_port),
+        Port_Status = unique(Port_Status),
+        Lon = mean(Lon),
+        Lat = mean(Lat)) %>% 
+  mutate(Prop_T = N_T/(N_T + N_E)) %>% 
+  mutate(Fi_T = 2*asin(sqrt(Prop_T))*180/pi)  
+
+
+
+
 df1 <-
-myt_site_substr %>% 
+myt_site_substr_reguced %>% 
   select(Site, Position, Prop_T) %>%
   dcast(., formula = Site ~ Position, value.var = c("Prop_T") ) 
 
@@ -793,32 +844,39 @@ names(df1) <- c("Site", "Prop_T_Bottom", "Prop_T_Algae" )
   
 
 df2 <-
-myt_site_substr %>% 
-  select(Site, Position, N_T) %>%
-  dcast(., formula = Site ~ Position, value.var = c("N_T") )
+myt_site_substr_reguced %>% 
+  select(Site, Position, D) %>%
+  dcast(., formula = Site ~ Position, value.var = c("D") )
 
 
-names(df2) <- c("Site", "N_T_Bottom", "N_T_Algae" )
-
+names(df2) <- c("Site", "D_Bottom", "D_Algae" )
 
 df3 <-
-myt_site_substr %>% 
-  select(Site, Position, N_E) %>%
-  dcast(., formula = Site ~ Position, value.var = c("N_E") )
+myt_site_substr_reguced %>% 
+  select(Site, Position, N_T, N_E) %>% 
+  group_by(Site) %>% 
+  summarise(N_T = sum(N_T), N_E = sum(N_E)) %>% 
+  mutate(Total_Prop_T = N_T/(N_T + N_E)) %>% 
+  select(-N_T, -N_E)
+  
 
-names(df3) <- c("Site", "N_E_Bottom", "N_E_Algae" )
+all_sites <- merge(df1, df2) %>% merge(., df3) %>% 
+    mutate(Dif = Prop_T_Algae - Prop_T_Bottom) %>% 
+  mutate(D_mean = (D_Bottom + D_Algae)/2 )
+  
 
-all_sites <- merge(df1, df2) %>% merge(., df3) %>% mutate(Total_Prop_T = (N_T_Bottom + N_T_Algae)/(N_E_Bottom + N_E_Algae +  N_T_Bottom + N_T_Algae), N_total = log(N_E_Bottom +  N_T_Bottom), Dif = log( (Prop_T_Algae + 1) / (Prop_T_Bottom + 1) ) ) 
 
-Mod_Dif <- gam(Dif ~ s(Total_Prop_T) + s(N_total), data = all_sites)
+Mod_Dif <- gam(Dif ~ s(Total_Prop_T) + s(log(D_mean)) + , data = all_sites)
 
 summary(Mod_Dif)
-draw(Mod_Dif, residuals = T) + geom_hline(yintercept = 0)
+
+draw(Mod_Dif, residuals = T)
+
 
 Pl_Dif_Prop_T <-
 ggplot(all_sites, aes(Total_Prop_T, Dif)) +
   geom_point(aes(size = N_total)) +
-  scale_size_continuous(breaks = c(100, 500, 1000, 1500)) +
+  # scale_size_continuous(breaks = c(100, 500, 1000, 1500)) +
   geom_smooth(method = "gam") +
   geom_hline(yintercept = 0) + 
   geom_vline(xintercept = boundary, linetype = 2) +
