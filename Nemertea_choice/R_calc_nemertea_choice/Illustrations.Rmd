@@ -7,7 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 library(knitr)
-opts_chunk$set(echo = FALSE)
+opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 ```
 
 
@@ -157,9 +157,9 @@ AIC(model_1, model_2)
 overdisp_fun(model_2)
 
 summary(model_2)
-
-qplot(x = fitted(model), y = resid(model)) + geom_smooth()
-
+# 
+# qplot(x = fitted(model), y = resid(model)) + geom_smooth()
+# 
 
 
 
@@ -178,9 +178,9 @@ summary(model_gam)
 
 
 
-qplot(x=fitted(model_gam), y = resid(model_gam)) + geom_smooth()
+# qplot(x=fitted(model_gam), y = resid(model_gam)) + geom_smooth()
 
-summary(model)
+# summary(model)
 
 ```
 
