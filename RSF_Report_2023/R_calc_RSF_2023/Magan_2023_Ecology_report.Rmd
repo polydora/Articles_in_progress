@@ -1,0 +1,371 @@
+---
+title: "Экологические факторы, влияющие на частоту BTN в окрестностях Магадана"
+author: "В. М. Хайтов"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+```{r packages}
+library(ggplot2)
+library(dplyr)
+library(vegan)
+library(reshape2)
+library(betareg)
+library(car)
+library(readxl)
+library(ggrepel)
+
+```
+
+
+```{r Points_data}
+
+points <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", sheet = "Points  characteristic 2021-23", na = "NA")
+
+load(file =  "Data/gg_Magadan_large.RData")
+
+points <- points %>% mutate(fPort = factor(ifelse(Site %in% c("KHOL", "MAM", "MAR_II", "MCHK", "PORT"), "Close", "Distant")))
+
+
+
+```
+
+
+```{r Cancer_data}
+cancer <- read_excel("Data/Cancer_Magadan_2021-2023.xlsx", na = "NA", sheet = "Magadan_cancer_prevalence")
+
+cancer2 <-
+  cancer %>%
+  group_by(Year, Site, Sample_ID) %>%
+  summarise(N_processed = sum(N_Processed), N_cancer = sum(BTN)) %>% 
+  filter(Year == 2023)
+
+mean_cancer <- cancer2[complete.cases(cancer2), ] 
+
+mean_cancer <- mean_cancer %>% filter(! Site %in% c("KAR", "ON") )
+# length(unique(mean_cancer$Site))
+
+```
+
+
+```{r Size_data}
+
+size <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", na = "NA", sheet = "Размерная струкутра 2023 2021")
+
+size <- size[complete.cases(size), ]
+
+scam <- dcast(Year + Site ~ Size_class, data = size)
+
+area <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", na = "NA", sheet = "Площадь проб на размер")
+
+sample_area <- 
+  area %>% group_by(Year, Site) %>% summarise(Total_area = sum(Area))
+
+scam <- 
+  scam %>% group_by(Year, Site)
+
+
+scam [ ,3:ncol(scam)] <- 
+  round((scam[ ,3:ncol(scam)] / sample_area$Total_area) *10000, 0)
+
+
+scam_23 <- scam %>% filter(Year == 2023)
+
+scam_23 <- scam_23 %>% filter(Site %in% unique(mean_cancer$Site))
+```
+
+
+
+```{r cover_reading}
+cover <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", sheet = "Покрытия миидий 2023")
+
+mean_cover <-
+cover %>%
+  group_by(Site) %>%
+  summarise(Cover = mean(`Number of squares`/30))
+
+```
+
+
+Целью данного направления исследований было выявление популяционных и средовых факторов, влияющих на заболеваемость мидий MtrBTN1 и MtrBTN2 в Охотском море. Разведочный анализ, проведенный по итогам сборов 2021 года, когда было обследовано `r points %>% filter(Year == 2021) %>% nrow()` была выдвинута гипотеза о наличии связи частоты заболевания с уровнем открытости акватории. Для проверки этой гипотезы, в 2023 г. мы провели повторное описание  некоторых поселений мидий, исследованных в прошлом, а также произвели сборы в  новых точках. 
+
+В каждой точке мы собрали материал, необходимый для выявления зараженных моллюсков. При этом в каждой локации сбор осуществлялся как минимум с трех участков, разнесенных на несколько метров друг от друга. Наличие таких повторностей позволило включить в регрессионную модель (см. ниже) случайный фактор "Site", присутствие которого создало предпосылки для более аккуратной оценки связи зараженности с предикторами.   
+
+Для оценки популяционной структуры поселений мидий на каждой из точек мы отобрали по три количественных пробы. Эти пробы позволили оценить размерную структуру моллюсков, выраженную в обилии (экз./м^2^) разных размерных классов. Для дальнейшего анализа связи частоты BTN с популяционными характеристиками поселений мидий мы провели корреспондентный анализ, который позволил для каждого из обследованных участков определить значение координат по первой и второй корреспондентным осям, которые были включены далее в регрессионный анализ в качестве предикторов, отражающих размерную структуру популяции. Помимо этого на основе анализа нескольких десятков фотоснимков разных участков поселений была произведена оценка проективного покрытия мидий. 
+
+Для оценки абиотических факторов потенциально влияющих на степень зараженности, мы включили в анализ соленость и степень открытости акватории. Соленость была измерена во время отлива. Степень открытости акватории (Fetch, см. LaBarre et al. 2023, Marchand, Gill, 2018) определяли по географической карте.
+
+Для оценки влияния портов, как потенциальных источников заражения BTN (Hammel et al., 2023), мы разделили все точки на две группы: участки, находящиеся во внутренней части бухты Нагаева (здесь располагаются два порта), и остальные участки, расположенный на значительном расстоянии, как от портов, так и от основного массива г. Магадан (Рис. ++).     
+
+```{r fig.cap="Точки сбора материала в 2023 г., использованные для анализа влияния экологических факторов на распространение BTN. Размер точек пропоционален степени открытости побережья. Серыми точками обозначены сайты, находящиеся в зоне антропогенного влияния."}
+
+points_reduced <- 
+points %>% filter(Year == 2023) %>% filter(Site %in% unique(mean_cover$Site))
+
+Magadan <- data.frame(long = 150 + 48/60, lat = 59 + 34/60)
+
+Pl_map <- 
+ggplot(gg_Magadan_large, aes(x = long, y = lat, group = group)) + 
+  geom_polygon() + 
+  coord_map(xlim = c(150., 151.52), ylim = c(59.4, 59.8) )+
+  geom_point(data = points_reduced, aes(x = lon, y = lat, group = 1, size = (fetch), fill = fPort ), shape = 21) +
+  scale_fill_manual(values =  c("gray", "yellow")) +
+  theme_minimal() +
+  guides(fill = "none", size = "none") +
+  labs(x = "Долгота", y = "Широта") +
+  geom_point(data = Magadan, aes(x = long + 0.01), shape = 22, group = 1, fill = "red", size = 6)+
+  geom_text(data =  Magadan, aes(x = long, y = lat+0.02, label = "Магадан", group = 1), color = "white")
+  
+Pl_map
+```
+
+
+
+```{r}
+
+pca_scam_23 <- cca(scam_23[ , -c(1,2)])
+
+sum_pca_scam_23 <- summary(pca_scam_23)
+
+pca_scam_23_size_scores <- as.data.frame(scores(pca_scam_23)$species)
+
+# pca_scam_23_size_scores %>% arrange(CA1)
+
+pca_scam_23_scores <- as.data.frame(scores(pca_scam_23)$sites)
+
+pca_scam_23_scores$N_Juv <- scam_23$L3  
+pca_scam_23_scores$N_Large = scam_23$L8 + scam_23$L13 + scam_23$L18 + scam_23$L23 + scam_23$L28 + scam_23$L33 + scam_23$L38 + scam_23$L43 + scam_23$L48 + scam_23$L53 + scam_23$L58
+
+
+pca_scores_scam_23 <- data.frame(Year = scam_23$Year, Site = scam_23$Site, pca_scam_23_scores)
+
+
+
+```
+
+```{r fig.cap="Ординация размерных классов"}
+Pl_CA_size_classes <- 
+ggplot(pca_scam_23_size_scores, aes(CA1, CA2)) + 
+  geom_text(aes(label = row.names(pca_scam_23_size_scores))) + 
+  geom_hline(yintercept = 0) + 
+  geom_vline(xintercept = 0) +
+  theme_bw()
+```
+
+
+```{r fig.cap="Ординация сайтов"}
+Pl_CA_sites <- 
+ggplot(pca_scores_scam_23, aes(CA1, CA2)) + 
+  geom_text_repel(aes(label = Site)) + 
+  geom_hline(yintercept = 0) + 
+  geom_vline(xintercept = 0)
+```
+
+
+
+```{r, fig.cap="Cвязь доли молоди со значениями первой корреспондентной оси." }
+Pl_CA1 <- 
+ggplot(pca_scores_scam_23, aes(CA1, N_Juv/(N_Juv + N_Large))) + 
+  geom_text(aes(label = Site)) +
+  labs(x = "Значения CA1", y = "Доля молоди в общей численности") +
+  geom_smooth(method = "lm") +
+  theme_bw()
+
+Pl_CA2 <- 
+ggplot(pca_scores_scam_23, aes(CA2, log(N_Large) )) + 
+  geom_text(aes(label = Site)) +
+  labs(x = "Значения CA2", y = "Логарифм плотности поселения взрослых особей") +
+  geom_smooth(method = "lm") +
+  theme_bw()
+
+
+```
+
+
+
+
+
+```{r fig.cap="Размерные структуры поселений мидий. Сайты упорядочены в соответствии с CA1."}
+size_23 <- 
+size %>% filter(Year == 2023)  
+
+Sites <- 
+pca_scores_scam_23 %>% arrange(CA1) %>% pull(Site) 
+
+size_23$Site <- factor(size_23$Site, levels = Sites)
+
+Pl_histograms <- 
+size_23 %>% 
+  ggplot(., aes(x = L)) +
+  geom_histogram(binwidth = 5) +
+  facet_wrap(~Site, scales = "free_y", dir = "v") 
+
+  # scale_y_continuous(trans='log10')
+
+```
+
+`
+
+
+Корреспондентный анализ размерной структуры позволил выделить две главные оси, которые описывают `r round(sum_pca_scam_23$cont$importance[2,1]*100, 1)` и `r round(sum_pca_scam_23$cont$importance[2,2]*100, 1)`% суммарной инерции. Первая главная ось интерпретируется как отражение варьирования доли самых мелких моллюсков (длина раковины 1-5 мм) в общем количестве мидий, формирующих поселение (рис. ++). Рост значений CA1 сопряжен с падением относительного обилия молоди.  Вторая главная ось отражает плотность поселения взрослых моллюсков: рост значений CA2 свидетельствует о росте обилия взрослых особей (рис. ++). Таким образом, значения первых двух главных осей  можно использовать для оценки двух основных популяционных характеристик: интенсивности пополнения молодью (СА1) и общей плотности поселения (CA2).
+
+
+
+
+```{r}
+mean_NB_cancer_23 <- 
+  merge(points, mean_cancer) %>% 
+  filter(Year == 2023)
+
+mean_NB_cancer_23 <- merge(mean_NB_cancer_23, pca_scores_scam_23)
+
+mean_NB_cancer_23$Prop_cancer <- mean_NB_cancer_23$N_cancer/(mean_NB_cancer_23$N_processed) 
+
+mean_NB_cancer_23$Prop_cancer[mean_NB_cancer_23$Prop_cancer == 0] <- 0.00000001
+
+mean_NB_cancer_23 <- mean_NB_cancer_23 %>% mutate(fPort = factor(ifelse(Site %in% c("KHOL", "MAM", "MAR_II", "MCHK", "PORT"), "Close", "Distant")))
+
+
+mean_NB_cancer_23 <-
+merge(mean_NB_cancer_23, scam_23)
+
+
+mean_NB_cancer_23 <- 
+merge(mean_NB_cancer_23, mean_cover)
+
+mean_NB_cancer_23$Site <- factor(mean_NB_cancer_23$Site)
+
+mean_NB_cancer_23$N_Helthy <- mean_NB_cancer_23$N_processed - mean_NB_cancer_23$N_cancer 
+
+
+```
+
+
+## Связь уровня зараженности BTN с предикторами
+
+```{r}
+
+library(lme4)
+library(glmmADMB)
+library(glmmTMB)
+
+
+mod_glmm <- glmmTMB(Prop_cancer ~ Cover + Salinity + fetch + fPort + CA1 + CA2  + (1|Site), data = mean_NB_cancer_23, family = beta_family())
+
+# mod_foo <- glm(Prop_cancer ~ Cover +  fetch + fPort + CA1 + CA2, data = mean_NB_cancer_23)
+# 
+# 
+# vif(mod_foo)
+
+```
+
+
+Нами была построена смешанная регрессионная модель, основанная на beta-распределении остатков. Модель имела следующую структуру. 
+
+$$
+Prop_{cancer} = b_0 + b_1Cover + b_2Salinity + b_3Fetch + b_4fPort + b_5CA1 +b_6CA2  + (1|Site) + \varepsilon
+$$
+где
+*Cover* - проективное покрытие мидий;
+*Salinity* - соленость;
+*Fetch* - степень открытости побережья;
+*fPort* - дискретный фактор, характеризующий близость к портам;
+*CA1* и *CA2* - значения корреспондентных осей;
+*(1|Site)* - эффект случайного фактора, определяющего дисперсию свободного члена (random intercept)
+*$\varepsilon$ - остатки.
+
+Оценки параметров этой модели (Табл. ++) позволяют заметить, что  частота BTN не демонстрирует существенной связи ни с соленостью, ни с потенциальным антропогенным влиянием, которое характеризуется степенью близости к портам и побережью г. Магадан, ни с плотностью поселения мидий (CA2). Вместе с тем, были выявлены статистически значимые связи частоты заболевания с остальными предикторами. 
+
+Полученные нами результаты свидетельствуют о том, что частота BTN снижается по мере увеличения проективного покрытия мидий. Аналогично, частота заболевания снижается по мере увеличения значений CA1. Учитывая отрицательную связь этой главной оси с долей молоди в поселении, можно утверждать, что частота BTN повышается в тех поселениях, в которых происходит активный приток молоди. Таким образом, нами выявлена корреляция частоты BTN с популяционными характеристиками поселений мидий, которая ранее описана не была. При этом, ожидаемая с точки зрения эпидемиологических принципов положительная связь с плотностью поселения мидий, на нашем материале, скорее опровергается.     
+
+Единственным, значимым предиктором, не связанным с популяционной структурой мидий, оказалась степень открытости побережья (Fetch), которая может трактоваться как степень потенциальноо волнового воздействия. Согласно нашей модели, наиболее высокая частота заболевания отмечается на самых открытых участках побережья. Этот результат воспроизводит данные анализа проведенного по материалам, полученным при обследовании акватории в 2021 г (Рис. ++). 
+
+
+Можно сформулировать две гипотезы, объясняющие, что наиболее высокая частота BTN в исследованной акватории наблюдается на открытых для прибоя побережьях с невысоким проективным покрытием мидий, куда интенсивно происходит оседание молоди. 
+
+*Гипотеза 1.* BTN часто встречается в очень благоприятных для мидий местообитаниях. Моллюски в таких благоприятных местообитаниях могут выживать с большей вероятностью, даже если они заражены BTN. Это и определяет высокую частоту этого, безусловно смертельного, заболевания. 
+
+*Гипотеза 2.*  Повышенная частота BTN может наблюдаться, наоборот, в маргинальных местообитаниях, где моллюски не формируют нормальных  мидевых банок, характеризующихся высокой плотностью поселения и значительным проективным покрытием. В таких поселениях, где конкурентный пресс со стороны взрослых особей ниже, ожидается, что доля молоди будет выше (Khaaman et al., 2020; Khaitov, Lentsman 2016). В нормальных мидиевых банках, которые формируются в более затишных местообитаниях, мидии, зараженные BTN, быстро погибают, что и определяет более низкую частоту заболевания в таких условиях.     
+
+
+
+
+
+
+## Рисунки и таблицы
+
+
+```{r}
+library(broom.mixed)
+
+Mod_sum <- tidy(mod_glmm)
+
+Mod_sum <- Mod_sum[,-c(1,2)]
+
+Mod_sum[,3:5] <- round(Mod_sum[,3:5], 3)
+
+Mod_sum[, 6] <- round(Mod_sum[,6], 4)
+
+
+
+library(flextable)
+
+ft <- Mod_sum %>% flextable() 
+
+ft <- set_header_labels(ft,
+  values = list(
+    group  = "Случайный фактор",
+    term   = "Параметр модели",
+    estimate  = "Значение параметра",
+    std.error = "SE",
+    statistic  = "z-тест",
+    p.value = "p"
+  )
+)
+
+ft <- set_caption(ft, "Table ++. Параметры модели, описывающей связь частоты BTN с изученными факторами.")
+
+ft
+
+
+```
+
+
+
+
+
+
+```{r}
+cancer_summ <- 
+cancer %>% group_by(Year, Site) %>% summarise (N_processed = sum(N_Processed), BTN = sum(BTN), Prop_cancer = BTN/N_processed) %>% merge(points)
+
+cor <- cor.test(cancer_summ$Prop_cancer, cancer_summ$fetch, method = "spearman")  
+
+Pl_fetch_BTN <- 
+ggplot(cancer_summ, aes(x = fetch, y = Prop_cancer, fill= factor(Year) )) + 
+  geom_point(shape = 21, size = 4) + 
+  scale_fill_manual(values = c("black", "gray")) +
+  labs(x = "Степень открытости побережья (Fetch, км)", y = "Частота BTN", fill = "Год сбора") +
+  theme_bw() +
+  ggtitle(paste("Spearman R = ", round(cor$estimate, 3), " p-value = ",  round(cor$p.value, 4)))
+  
+```
+
+
+```{r fig.cap="Рисунок +. Связь значений первых двух корреспондентных осей с относительным обилием молоди  и плотностью поселения взрослых особей"}
+library(cowplot)
+
+plot_grid(Pl_CA1, Pl_CA2)
+
+```
+
+```{r fig.cap="Рисунок +. Зависимость чатоты BTN от степени открытости акватории в разные годы."}
+Pl_fetch_BTN
+```
+
+

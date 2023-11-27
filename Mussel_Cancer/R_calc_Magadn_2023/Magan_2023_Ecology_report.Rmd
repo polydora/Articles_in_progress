@@ -41,10 +41,11 @@ cancer <- read_excel("Data/Cancer_Magadan_2021-2023.xlsx", na = "NA", sheet = "M
 cancer2 <-
   cancer %>%
   group_by(Year, Site, Sample_ID) %>%
-  summarise(N_processed = sum(N_Processed), N_cancer = sum(Aneuploid)) %>% 
+  summarise(N_processed = sum(N_Processed), N_cancer = sum(BTN)) %>% 
   filter(Year == 2023)
 
-mean_cancer <- cancer2 
+
+mean_cancer <- cancer2[complete.cases(cancer2),] 
 
 # mean_cancer <-
 #   cancer2 %>%
@@ -99,7 +100,7 @@ cover %>%
 
 ## Общая характеристика материала
 
-Анализ основан на сборах, проведенных в 2021 и 2023 гг. на побережье Охотского моря, прилегающего к г. Магадан. Всего было обследовано `r points %>% filter(Year == 2021) %>% nrow()` точек в 2021 г. и `r points %>% filter(Year == 2023) %>% nrow()` в 2023 г. 
+Анализ основан на сборах, проведенных в 2021 и 2023 гг. на побережье Охотского моря, прилегающего к г. Магадан. Всего было обследовано `r points %>% filter(Year == 2021) %>% nrow()` точек в 2021 г. и `r mean_cover %>% nrow()` в 2023 г. 
 
 Проведенное в 2021 г. пилотное обследование побережья позволило выявить значительное варьирование частоты встречаемости BTN в локальных поселениях.   
 
@@ -286,6 +287,8 @@ mod_glmm <- glmmTMB(Prop_cancer ~ Cover + Salinity + fetch + fPort + CA1 + CA2  
 mod_glmm_final <- glmmTMB(Prop_cancer ~ Cover  + fetch + CA1 + (1|Site), data = mean_NB_cancer_23, family = beta_family())
 
 
+summary(mod_glmm_final)
+
 # n_site <- length(unique(mean_NB_cancer_23$Site))
 # 
 # mod_gam <- gam(cbind(N_cancer, N_Helthy) ~ s(Cover, k = 4) + s(CA1, k = 4) + s(CA2, k = 4) +  s(fetch, k = 4) + fPort + s(Site, k = n_site, bs = "re"), data = mean_NB_cancer_23, family = "binomial")
@@ -384,7 +387,7 @@ ggplot(dots, aes(x = Site, y = N_dots)) +
 df_cancer <- 
   cancer %>%
   group_by(Year, Site) %>%
-  summarise(N_processed = sum(N_Processed), N_cancer = sum(Aneuploid)) %>% 
+  summarise(N_processed = sum(N_Processed), N_cancer = sum(BTN)) %>% 
   mutate(Prop_cancer = N_cancer/N_processed)
 
 
@@ -419,7 +422,7 @@ summary(M)
 cancer_21 <- 
 cancer %>% 
   filter(Year == 2021) %>% 
-  mutate(Prop_cancer = Aneuploid/N_Processed) 
+  mutate(Prop_cancer = BTN/N_Processed) 
   
 points_21 <- 
   points %>% 
@@ -495,7 +498,7 @@ data_21_23_scam <-
 merge(data_21_23, scam)
 
 
-data_21_23_scam <- data_21_23_scam %>% mutate(Prop_Juv = L3/(L13 + L18 + L23+L28+L3+L33+L38+L43+L48+L53+L58+L8), Prop_cancer = Aneuploid/N_Processed)
+data_21_23_scam <- data_21_23_scam %>% mutate(Prop_Juv = L3/(L13 + L18 + L23+L28+L3+L33+L38+L43+L48+L53+L58+L8), Prop_cancer = BTN/N_Processed)
 
 
 ```
@@ -504,9 +507,14 @@ data_21_23_scam <- data_21_23_scam %>% mutate(Prop_Juv = L3/(L13 + L18 + L23+L28
 ```{r}
 ggplot(data_21_23_scam, aes(x = fetch, y = Prop_cancer)) +
   geom_point() +
-  geom_smooth(method = "lm", se = F) +
+  geom_smooth(method = "lm", se = T) +
   labs(x = "Fetch", y = "Доля мидий с признаками DN")
 ```
+
+```{r}
+cor.test(data_21_23_scam$fetch, data_21_23_scam$Prop_cancer, method = "spearman")
+```
+
 
 
 
@@ -517,6 +525,10 @@ ggplot(data_21_23_scam, aes(x = Prop_Juv, y = Prop_cancer)) +
   labs(x = "Доля L3 в общей численности моллюсков в поселении", y = "Доля мидий с признаками DN")
 ```
 
+
+```{r}
+cor.test(data_21_23_scam$Prop_Juv, data_21_23_scam$Prop_cancer, method = "spearman")
+```
 
 
 
