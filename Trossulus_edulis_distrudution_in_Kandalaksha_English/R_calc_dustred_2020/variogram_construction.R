@@ -11,7 +11,7 @@ library(ncf)
 summary(Mod_gam)
 
 
-E <- resid(Mod_gam, type = "pearson")
+E <- resid(Mod_gam_reduced, type = "pearson")
 
 # E <- myt_full$Prop_T
 
@@ -60,40 +60,3 @@ summary(fit_corelogr)
 fit_corelogr <- spline.correlog(myt_full$Lon, myt_full$Lat, residuals(Mod_gam, type = "pearson"))
 plot(fit_corelogr)
 
-
-
-#######################3
-
-
-E <- resid(Model_2, type = "pearson")
-
-# E <- myt_full$Prop_T
-
-
-df <- data.frame(x = myt_site_substr$Lon, y = myt_site_substr$Lat, z = E)
-
-
-coordinates(df)= ~ x+y
-
-bubble(df, zcol='z', fill=TRUE, do.sqrt=F, maxsize=3)
-
-TheVariogram=variogram(z~1, data=df)
-plot(TheVariogram)
-
-TheVariogramModel <- vgm(psill=0.15, model="Gau", nugget=0.0001, range=5)
-plot(TheVariogram, model=TheVariogramModel)
-
-
-FittedModel <- fit.variogram(TheVariogram, model=TheVariogramModel)    
-plot(TheVariogram, model=FittedModel)
-
-
-
-
-
-fit_corelogr <- spline.correlog(myt_site_substr$Lon, myt_site_substr$Lat, resid(Model_2, type = "pearson"))
-plot(fit_corelogr)
-
-
-fit_corelogr <- spline.correlog(myt_site_substr$Lon, myt_site_substr$Lat,myt_site_substr$T_dominated )
-plot(fit_corelogr)

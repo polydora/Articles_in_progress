@@ -1,0 +1,157 @@
+---
+title: "Sparrow and Malaria"
+author: ""
+date: ''
+output: html_document
+---
+
+
+
+
+```{r setup, include=FALSE}
+library(knitr)
+  
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+```{r}
+library(ggplot2)
+library(mgcv)
+library(dplyr)
+library(readxl)
+library(cowplot)
+
+
+theme_set(theme_bw())
+```
+
+
+```{r}
+
+spar <- read.table("Data/Sparrows_RMR_Parasitemia_IL6_final.csv", sep =";", header = TRUE, dec = ",")
+
+# str(spar)
+
+spar$Experiment <- factor(spar$Experiment)
+spar$Ring <- factor(spar$Ring)
+
+spar <- spar %>% filter(Survival == "Yes")
+
+spar <- spar %>% filter(!is.na(DPI_Parasitemia))
+
+n_obs <- spar %>% group_by(Ring) %>% summarise(N = n())
+
+
+spar$DPI <- spar$DPI_Parasitemia
+
+```
+
+
+
+
+## Динамика паразитемии
+
+```{r}
+
+spar2 <- spar %>% filter(! Experiment %in% c("Cont", "mix"))
+
+# str(spar2)
+
+n_birds <- length(unique(spar2$Ring))
+
+
+# M1_Par_gam <- gam(Parasitised_erythrocytes ~ s(DPI, bs = "cr") + Experiment  + s(Ring, k = n_birds, bs = "re"),  method = "REML", data = spar2, family = "nb")
+
+
+# spar2$Parasitemia[spar2$Parasitemia == 0] <- 0.0000000000001
+
+
+M2_Par_gam <- gam(Parasitised_erythrocytes ~ s(DPI, by = Experiment) + Experiment  + Total_erythrocytes + s(Ring, k = n_birds, bs = "re"),  method = "REML", data = spar2, family = "nb")
+
+# AIC(M1_Par_gam, M2_Par_gam)
+```
+
+
+
+```{r}
+My_data <- expand.grid(Experiment = c("Exp_1", "Exp_2"), DPI = seq(0, max(spar2$DPI, na.rm = T)))
+My_data$Total_erythrocytes <- mean(spar2$Total_erythrocytes, na.rm = T)
+
+predicted <- predict(M2_Par_gam, newdata = My_data, exclude = "s(Ring)", newdata.guaranteed=TRUE, se.fit = TRUE, type = "link")
+
+My_data$Fit_eta <- predicted$fit
+My_data$SE_eta <- predicted$se.fit
+
+My_data$Fit_mu <- exp(My_data$Fit_eta)
+
+My_data$CI_up <- exp(My_data$Fit_eta + 1.96*My_data$SE_eta)
+My_data$CI_low <- exp(My_data$Fit_eta - 1.96*My_data$SE_eta)
+
+
+Pl_parasetemia_with_points <-
+ggplot(My_data, aes(x = DPI, y = Fit_mu)) + 
+  geom_line(aes(color = Experiment), size = 1) + 
+  geom_ribbon(aes(ymin = CI_low, ymax = CI_up, group = Experiment), alpha = 0.2) +
+  labs(y = "Parasitemia", color = "Lineage") + 
+  scale_fill_manual(values = c("red", "blue")) +
+  scale_color_manual(values = c("red", "blue")) +
+  theme(legend.position = c(0.8, 0.85)) +
+  guides(fill = "none") + 
+  geom_point(data = spar2, aes(y = Parasitised_erythrocytes, fill = Experiment), shape = 21, position = position_jitter(width = 1))
+
+
+
+Pl_parasetemia <-
+ggplot(My_data, aes(x = DPI, y = Fit_mu)) + 
+  geom_line(aes(color = Experiment), size = 1) + 
+  geom_ribbon(aes(ymin = CI_low, ymax = CI_up, group = Experiment), alpha = 0.2) +
+  labs(y = "Parasitemia", color = "Lineage") + 
+  scale_fill_manual(values = c("red", "blue")) +
+  scale_color_manual(values = c("red", "blue")) +
+  theme(legend.position = c(0.8, 0.85)) +
+  guides(fill = "none") 
+
+
+
+```
+
+## Предварительные замечания
+
+1. Не очень понятно, почему есть NA в колонке  DPI_Parasitemia. Я их удалил из анализа.
+2. Что надо моделировать, имея ввиду Parasetemia - количество зараженных эритроцитов или долю зараженных? Пока взял, как в прошлой работе, где под паразитемиа понимали количество, а не долю. НО! сейчас пришлось вставлять модель в качестве ковариаты количесвто эритроцитов Total_erythrocytes. Правильно ли это?
+3. КАк я понял, помимо двух видов плазмозиев делали еще и смешанное заражение (mix). Но! там очень маленькие выборки.  Я исключил строчки mix из анализа (хотя модель с ними считается, но получаются чудовищных размеров доверительные интервалы). Поэтому из анализ их пока выкинул.
+
+
+## Резльтаты
+
+
+Я построил модель вот  такого вида
+
+gam(Parasitised_erythrocytes ~ s(DPI, by = Experiment) + Experiment  + Total_erythrocytes + s(Ring, k = n_birds, bs = "re"),  method = "REML", data = spar2, family = "nb")
+
+
+
+
+### Проверка валидности модели
+
+```{r}
+library(gratia)
+appraise(M2_Par_gam)
+
+```
+
+Тут не все супер, к сожалению. 
+
+
+
+### Визуализация модели
+
+
+```{r}
+plot_grid(Pl_parasetemia, Pl_parasetemia_with_points)
+```
+
+Здесь на левой картинке только модель, а на правой - еще и первичка. 
+
+1. Видно, что ход развития заболевания идет по-разному у двух линий. Кстати, mix, если их вставлять в модель, ложатся ровно посередине.
+2. Очень большие выбросы (см. правую картинку)! Особенно для Exp_2 отсюда раздутые доверительные интервалы. Как с этим бороться пока не понял.  

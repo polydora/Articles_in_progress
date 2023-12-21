@@ -110,7 +110,9 @@ cover %>%
 ```{r }
 
 points_reduced <- 
-points %>% filter(Year == 2023) %>% filter(Site %in% unique(mean_cover$Site))
+points %>% filter(Year == 2023) %>% filter(Site %in% unique(mean_cover$Site)) 
+
+points_reduced <- points_reduced %>% filter(Site != "VES")
 
 Magadan <- data.frame(long = 150 + 48/60, lat = 59 + 34/60)
 
