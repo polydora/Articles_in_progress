@@ -51,7 +51,7 @@ library(ncf)
 
 
 
-fit_corelogr <- spline.correlog(myt_full$Lon, myt_full$Lat, myt_full$Prop_T)
+fit_corelogr <- spline.correlog(myt_full$Lon, myt_full$Lat, myt_full$Ptros)
 plot(fit_corelogr)
 
 summary(fit_corelogr)

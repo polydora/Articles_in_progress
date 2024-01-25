@@ -117,3 +117,21 @@ v2<-viewport(width = 0.5, height = 0.5, x = 0.78, y = 0.75) #plot area for the i
 print(Plot_Kand_upper2,vp=v1) 
 print(Plot_White_sea2,vp=v2)
 
+
+# Карта сайтов с тестовым датасетом и сайтов с низкой и высокой соленостью
+
+myt_site_low_salinity <- myt_site %>% filter(Salinity <= 12)
+myt_site_high_salinity <- myt_site %>% filter(Salinity >= 27)
+
+
+Plot_Kand_upper_extrem_salinity <-
+Plot_Kand_upper +
+  geom_point(data = myt_site_low_salinity, aes(x = Lon, y = Lat, group = 1), size = 4, shape = 21, fill = "cyan") +
+  geom_point(data = myt_site_high_salinity, aes(x = Lon, y = Lat, group = 1), size = 4, shape = 21, fill = "blue") +
+  geom_point(data = myt_test_site, aes(x = Lon, y = Lat, group = 1), shape = 24, fill = "red", size = 2)
+
+
+ggsave(filename = "figures/Plot_Kand_upper_extremesalinity_and_testing.svg", plot = Plot_Kand_upper_extrem_salinity)  
+
+
+
