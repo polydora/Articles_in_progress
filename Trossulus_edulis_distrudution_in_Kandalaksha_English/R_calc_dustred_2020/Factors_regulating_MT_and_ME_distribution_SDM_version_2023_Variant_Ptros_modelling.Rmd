@@ -199,16 +199,23 @@ tuv <-
 
 ## Introduction
 
+Species distribution models (SDM) being a numerical tools describing the relationship between species occurrence and environmental parameters (Elith, Leathwick, 2009) allow to predict distribution patterns of ecologically and economically important species in marine realm (Lowen et al 2019). The amount of papers devoted to SDMs for marine species has been growing significantly in recent years (Robinson et al 2017). 
+These models allow predicting distribution patterns of species both in space and time which is necessary for investigations of unexplored areas and under global climate changes. 
 
-One of the urgent tasks of the modern marine ecology is the construction of relevant species distribution models (SDM) as numerical tools describing the relationship between species occurrence and environmental parameters (Elith, Leathwick, 2009). These models allow to predict distribution patterns of ecologically and economically important species (Lowen et al 2019) and the amount of papers devoted to SDMs for marine species has been growing significantly in recent years (Robinson et al 2017). Importantly that  SDMs can serve as a basis for prognosis of species distribution both in unexplored areas (Russo et al 2014) and in the future as a consequence of environmental changes (Buisson et al 2010 but see Santini et al 2021 for critical discussion). 
+SDM could be built not for a single species, but for a number coexisting ones, using the Joint Species Distribution Modelling (JSDM) (Ovaskainen, Abreg, 2020). Whereas the basic SDM approach assume to use the presence/absence (or abundance) of a species as a response variable, which is under control of numerous environmental predictors, in JSDM framework the dependent part of the model is presented as community matrix and some correlative assessment of interspecific interactions are incorporated into the model (Ovaskainen, Abreg, 2020). While the SDMs are considered as presentations of ecological niches of species (Elith, Leathwick, 2009), the implementation of the JSDM approach can directly consider the manifestation of ecological niche partitioning between species (Ovaskainen, Abreg, 2020 +++).  
+
+SDMs (and JSDMs) are mostly applied for «good», morphologically distinct, species that can be processed in routine ecological studies which usually require numerous samples (e.g. Reiss et al., 2011; Lindegren et al., 2022). However, the increasing evidence for cryptic species among marine animals (Bastrop et al 1998; Fiser et al 2010) makes it urgent to find possibility to build SDMs for sympatric or parapatric cryptic species (e.g.Dennis, Hellberg, 2010), and even to infraspecific taxa such as subspecies or phylogenetic lineages within polytypic species (e.g. Lowen et al 2019). The construction of SDM for cryptic species has its own peculiarities. Dealing with cryptic species, forming parapatric or sympatric populations, both genetic processes (e.g., hybridization) and ecological interactions between closely related species potentially can influence the result of analysis and consequently model prediction quality (see Fielding&Bell, 1997).
+
+++++++++++++++++++++++++++
 
 
 
-Although the biological unit for SDM can be either species, genetically distinct subpopulations, or even genetic lineages (Lowen et al 2019), however, in marine ecology SDMs are currently developed for "good"  species whose taxonomic status is not in doubt (e.g. Reiss et al., 2011; Lindegren et al., 2022). The taxonomic certainty gives an opportunity to focus on solving actual problems related to the search for modeling algorithms (see Elith et al 2006 for methods comparative analysis) and/or identification of the most significant environmental predictors in marine realm (Bosh et al 2018). However, the increasing evidence for cryptic species among marine animals (Bastrop et al 1998; Fiser et al 2010) makes it urgent to build SDMs in such cases as well. Only few papers have directly addressed the construction of SDMs for marine animals' within species genetic lineages and cryptic species (e.g. Dennis, Hellberg, 2010; Lowen et al 2019). 
+
+
+In the marine realm, the longest scientifically known and best studied complex of cryptic species is the "*Mytilus edulis*" complex (blue mussels), which includes a number of species that are morphologically similar and capable of hybridization (+++++). Blue mussels are powerful ecosystem engineers playing an important role in structuring coastal communities in the temperate and subpolar seas (+++) and . 
 
 
 
-The construction of SDM for cryptic species has its own peculiarities. Dealing with cryptic species, forming parapatric or sympatric populations, both genetic processes (e.g., hybridization) and ecological interactions between closely related species potentially can influence the result of analysis and consequently model prediction quality (see Fielding&Bell, 1997). Strictly speaking, in the case when SDM is built not for a single species, but for several coexisting ones, which is the case of sympatric cryptic species, the Joint Species Distribution Modelling (JSDM) framework should be considered (Ovaskainen, Abreg, 2020). Whereas the standard SDM approach assume to use the presence/absence (or abundance) of a species as a response variable, which is under control of numerous environmental predictors, in JSDM framework some correlative assessment of interspecific interactions should be incorporated into the model as well (Ovaskainen, Abreg, 2020).     
 
 Blue mussels from "*Mytilus edulis*" complex (Gardner 1996; Varvio et al., 1988) provide a good opportunity to work out the approaches to SDM construction in the case of coexisting cryptic species.The native ranges of Atlantic *M. edulis* (thereafter *ME*) and pacific *M. trossulus* (*MT*) are differ (Riginos, Cunningham, 2005), but at North Atlantic coasts they form mixed settlements in several contact zones (Varvio et al., 1988; Hilbish et al., 2000; Brooks, Farmen, 2013; Katolikova et al. 2016; Vainola, Strelkov 2011; Wenne et al. 2020).  In these areas the proportion of *MT:ME* can vary in broad limits even in small spatial scales (Katolikova et al. 2016) that allows considering the *MT:ME* ratio as a very sensitive variable responding both to the influence of environmental factors and/or interactions between *MT* and *ME*. Thus the use of *MT:ME* ratio brings us closer to the JSDM framework but allow to consider single dependent variable describing the structure of a community consisting of two interacting species.
 
@@ -279,6 +286,7 @@ Mussels are ubiquitous and abundant along the coasts of the Kandalaksha Bay. On 
 When sampling, we tried to describe littoral populations of mussels in the Kandalaksha Bay in as much detail as possible, also taking into account the heterogeneity of their habitats by salinity, wave exposure and proximity to ports. The material was collected on the littoral of the mainland and the islands of the Kandalaksha Bay (Fig. 1 A). Collections were carried out in July-August in 2011-2018 at `r Total_site` sites. 
 
 At each site we collected mussels from two substrates: fucoid's thallus (thereafter "Algae") and bottom surface (i.e. stones, pebbles, sand, mud; thereafter "Bottom"). Bottom samples were taken using a 0.025 m^2^ square frame placed on a ground in such a way that at least a few dozens of mussels could be sampled.The sample was placed in a plastic bag and transported to the laboratory. The abundance of mussels from Bottom samples was recalculated to standard area of 1 m^2^ by multiplication of mussels number by 40.
+
 To collect Algae samples, we placed a 0.5x0.5 m square frame on areas completely covered with fucoids. Inside the area of the frame we collected an individual fucoid's bundle  large enough to contain at least a few dozens of mussels (however, this condition proved to be unfeasible for several samples from sparse populations).  The fucoid's bundle (with mussels and without removing water) was weighted with electronic balance and placed into a plastic bag for the further processing. The rest of algae from the area inside the frame was taken and weighted by the same manner. Using the data on weights of fucoid's bundle and algae rest from the frame the abundance of mussels was recalculated to standard area. To note, at `r length(incomplete_sites)` sites  the information on fucoid's weights was not obtained and these sites were excluded from those analyses which required data on absolute mussel's abundance. Three samples (replications) of each type were taken in each site no more than 20 meters apart. Geographic coordinates were determined for each site (i.e., the same coordinates were assigned to each sample within the same site). The dataset described above was considered as main, training, data which will be used for  construction of models (see bellow).  
 
 
@@ -592,6 +600,12 @@ Pl_fetch_smoother_Pi <-
 
 
 
+
+```{r}
+draw(Mod_gam, parametric = T)
+```
+
+
 ```{r Parametric_prediction_figures}
 
 # Predictions for parametric terms 
@@ -599,11 +613,16 @@ Pl_fetch_smoother_Pi <-
 ds <-  data_slice(Mod_gam, Position = evenly(Position),  Port_Status = evenly(Port_Status), River_Size = evenly(River_Size)) 
 
 
-Fit <- predict.gam(Mod_gam, newdata = ds, se = T,  exclude = c("s(Salinity)", "s(Log_Min_dist_river)",  "s(Log_Average_Fetch)",  "s(Log_Min_dist_port)", "s(Site)"))
+Fit <- predict.gam(Mod_gam, newdata = ds, se = T, type = "link", exclude = c("s(Salinity)", "s(Log_Min_dist_river)",  "s(Log_Average_Fetch)",  "s(Log_Min_dist_port)", "s(Site)"))
 
 ds$Fit = Fit$fit
 
 ds$SE = Fit$se.fit
+ds$CI_low <- (Fit$fit - 1.96*Fit$se.fit)
+ds$CI_up <- (Fit$fit + 1.96*Fit$se.fit)
+
+
+
 
 ds$Pi <- logit_back(Fit$fit)
 ds$Pi_CI_low <- logit_back(Fit$fit - 1.96*Fit$se.fit)
@@ -611,6 +630,34 @@ ds$Pi_CI_up <- logit_back(Fit$fit + 1.96*Fit$se.fit)
 
 
 Pl_Small <-
+ds %>% filter(River_Size == "Small") %>%   
+ggplot(., aes(x = Position, y = Fit, fill = Port_Status)) + 
+  geom_col(position = position_dodge()) +
+  scale_fill_manual(values = c("blue", "gray")) +
+  geom_errorbar(aes(ymin = CI_low, ymax = CI_up), width = 0.2, position = position_dodge(width = 0.9)) +
+  theme_bw()+
+  ggtitle("The nearest River: Small") +
+  theme(legend.position = c(0.8, 0.2)) +
+  labs(x = "", y = "Partial effect", fill = "Nearest port status")     
+    
+Pl_Large <-
+ds %>% filter(River_Size == "Large") %>%   
+ggplot(., aes(x = Position, y = Fit, fill = Port_Status)) + 
+  geom_col(position = position_dodge()) +
+  scale_fill_manual(values = c("blue", "gray")) +
+  geom_errorbar(aes(ymin = CI_low, ymax = CI_up), width = 0.2, position = position_dodge(width = 0.9)) +
+  theme_bw()+
+  ggtitle("The nearest River: Large") +
+  guides(fill = "none") +
+  theme(legend.position = c(0.19, 0.5)) + 
+  labs(x = "", y = "Partial effect")
+ 
+
+
+
+
+
+Pl_Small_Pi <-
 ds %>% filter(River_Size == "Small") %>%   
 ggplot(., aes(x = Position, y = Pi, fill = Port_Status)) + 
   geom_col(position = position_dodge()) +
@@ -622,7 +669,7 @@ ggplot(., aes(x = Position, y = Pi, fill = Port_Status)) +
   theme(legend.position = c(0.25, 0.7)) +
   labs(x = "", y = "Partial effect", fill = "Nearest port status")     
     
-Pl_Large <-
+Pl_Large_Pi <-
 ds %>% filter(River_Size == "Large") %>%   
 ggplot(., aes(x = Position, y = Pi, fill = Port_Status)) + 
   geom_col(position = position_dodge()) +
@@ -747,7 +794,17 @@ ft_Model_1_summ_parametric
 
 ```{r Model1_prediction_Figure, fig.height= 8,fig.width=8, fig.cap= "Fig. 3. Predictions of the *Model 1* describing the dependency of *Ptros* on distance to the nearest port (A), average fetch (B), distance to the nearest river (C), salinity (E) and substrate type, nearest port status and size of the largest river (E, F). The  gray ribbons and wiskers demonstrate 95% confidence interval. The dotted lines in panels A-D represent the median predicted value, this value is given to track the trend in the change in model predictions. Points on panels A-D reflect partial residuals but not raw data for each sample."}
 
-plot_grid(Pl_port_dist_smoother_Pi, Pl_fetch_smoother_Pi, Pl_riv_dist_smoother_Pi,  Pl_sal_smoother_Pi, Pl_Small, Pl_Large,  ncol = 2, labels = "AUTO")
+plot_grid(Pl_port_dist_smoother_Pi, Pl_fetch_smoother_Pi, Pl_riv_dist_smoother_Pi,  Pl_sal_smoother_Pi, Pl_Small_Pi, Pl_Large_Pi,  ncol = 2, labels = "AUTO")
+
+```
+
+
+
+Ниже приведен тот же самый рисунок, но по оси OY отложены значения смузеров не преобразованные в вероятности. Обычно именно именно так рисуют такие визуализации. Здесь понятно как трактовать значение смузера равное нулю (зона предиктора, когда виляние отсутствует. Если бы значимой связи не было бы то линия регрессии легла бы параллельно OX и шли бы в районе нуля). Если перобразовать значение смузра в веротяность, то не очень ясно, что взять в качестве аналога нуля. Я привел в качестве такой точки отсчета медиану предсказанных значений. Вообще-то это надо как-то объяснять. Поэтому, если ты готов понять суть такого рода картики, то предлагаю оставить вариант, котороый пиведен ниже.  
+
+```{r Model1_prediction_Figure, fig.height= 8,fig.width=8, fig.cap= "Fig. 3. Predictions of the *Model 1* describing the dependency of *Ptros* on distance to the nearest port (A), average fetch (B), distance to the nearest river (C), salinity (E) and substrate type, nearest port status and size of the largest river (E, F). The  gray ribbons and wiskers demonstrate 95% confidence interval. The dotted horizontal lines in panels A-D represent the zero smoother's value. Points on panels A-D reflect partial residuals but not raw data for each sample."}
+
+plot_grid(Pl_port_dist_smoother, Pl_fetch_smoother, Pl_riv_dist_smoother,  Pl_sal_smoother, Pl_Small_Pi, Pl_Large_Pi,  ncol = 2, labels = "AUTO")
 
 ```
 
@@ -916,7 +973,7 @@ sm %>%
   geom_point(data = all_sites, aes(y = Residuals),cex = 1, colour = "steelblue3") +
   labs(x = "Log Mussel abundance \n in Site", y = "Partial effect (Dif)")
 
-draw(Mod_Dif, residuals = TRUE)
+# draw(Mod_Dif, residuals = TRUE)
 
 ```
 
