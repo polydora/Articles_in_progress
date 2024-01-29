@@ -29,7 +29,9 @@ library(stringr)
 
 ```{r}
 
-zub <- read.table("Data/Зубатка_питание2001-2023.csv", sep = ";", dec = ",", header = TRUE)
+zub <- read_excel("Data/Зубатка_питание2001-2023.xlsx")
+
+zub$Sex <- factor(zub$Sex)
 
 zub2 <- melt(zub, id.vars = c("ID", "Year", "L", "W", "Sex"), variable.name = "Species",value.name = "Out" )
 
@@ -97,7 +99,7 @@ $f$ - непараметрическая сглаживающая функция
 ### Результаты построения модели
 
 ```{r}
-Mod_gam  <-  gam(Out ~ s(Year, by = Species) + Species, data = zub3, method = "REML", family = "binomial")
+Mod_gam  <-  gam(Out ~ s(Year, by = Species) + Species, data = zub2, method = "REML", family = "binomial")
 
 ```
 
@@ -154,8 +156,45 @@ Pl_Mod_gam +
 ```
 
 
+## Варьирование струкутры рациона
+
+```{r}
+library(vegan)
+
+zub3 <- 
+  zub %>% 
+  select(-c(ID, Year, L, W, Sex))
+
+mod <- cca(zub3 ~ log(L) , data = zub)
+
+plot(mod, display = c("cn", "species"))
+
+anova(mod)
+
+anova(mod, by = "axis")
+
+anova(mod, by = "margin", permutations = 9999)
 
 
+```
+
+
+```{r}
+mod_L <- gam((L) ~ s(Year, by = Sex, bs = "cs", k = 5) + Sex, data = zub)
+
+summary(mod_L)
+
+appraise(mod_L)
+draw(mod_L, parametric = T)
+```
+
+
+```{r}
+ggplot(zub, aes(x = Year, y = L, groip = factor(Year) )) +
+         geom_boxplot() +
+  facet_wrap(~Sex)
+  
+```
 
 
 
