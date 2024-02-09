@@ -3,7 +3,6 @@
 
 # Создание карты
 
-library(lattice)
 library(sp)
 library(dplyr)
 library(mgcv)
