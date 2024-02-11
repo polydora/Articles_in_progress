@@ -1,4 +1,4 @@
-Site;Shore;Sample;Position;Lat;Lon;N_T;N_E
+Site;Shore;Sample;Position;Lat_corrected;Lon_corrected;N_T;N_E
 Gridshel;Karel;Gridshel1;Algae;"65,92371667";"34,67516667";8;20
 Gridshel;Karel;Gridshel2;Bottom;"65,92371667";"34,67516667";4;89
 Gridshel;Karel;Gridshel3;Algae;"65,92371667";"34,67516667";7;36

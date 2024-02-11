@@ -5,8 +5,6 @@
 
 library(sp)
 library(dplyr)
-library(mgcv)
-library(reshape2)
 library(ggplot2)
 library(ggmap)
 library(mapproj)
@@ -20,12 +18,10 @@ library(maptools) # Rgshhs
 library(PBSmapping)
 library(gridExtra)
 library(grid)
-library(gamm4)
 
 library(akima)
 library(car)
 library(waver)
-library(MuMIn)
 library(readxl)
 
 # Вычисляем fetch для точек сбора 2023 #################
