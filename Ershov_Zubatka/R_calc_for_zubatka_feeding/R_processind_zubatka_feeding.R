@@ -7,14 +7,15 @@ library(dplyr)
 
 
 
-zub <- read.table("Data/Зубатка_питание2001-2023.csv", sep = ";", dec = ",", header = TRUE)
+zub <- read_excel("Data/Зубатка_питание2001-2023.xlsx", sheet = "С пищей")
 
 str(zub)
 
+zub$L <- as.numeric(zub$L)
 
 names(zub)
 
-zub2 <- melt(zub, id.vars = c("ID", "Year", "L", "W", "Sex"), variable.name = "Species",value.name = "Out" )
+zub2 <- melt(zub, id.vars = c("ID", "Date", "Year", "L", "W", "Sex"), variable.name = "Species",value.name = "Out" )
 
 species_freq <- 
 zub2 %>% group_by(Species) %>% summarise(Freq = mean(Out))

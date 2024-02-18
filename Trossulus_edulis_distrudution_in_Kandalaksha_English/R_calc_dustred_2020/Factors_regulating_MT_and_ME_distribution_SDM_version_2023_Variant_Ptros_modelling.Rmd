@@ -134,7 +134,7 @@ myt_site_substr <-
         Lat = mean(Lat)) %>%
   mutate(Prop_T = N_T/(N_T + N_E)) %>%
   mutate(Ptros =  exp(-2.4 + 5.4 * Prop_T)/(1 + exp(-2.4 + 5.4 * Prop_T))) %>%  
-  mutate(Mt_dominated = ifelse(Ptros > boundary, 1, 0))
+  mutate(Mt_dominated = ifelse(Ptros >= boundary, 1, 0))
 
 
 myt_site_substr <- 
@@ -165,7 +165,7 @@ myt_test_site <- myt_test %>% group_by(Site, Position) %>%
   mutate(Fi_T = 2*asin(sqrt(Prop_T))*180/pi) %>%
   mutate(Ptros = exp(-2.4 + 5.4 * Prop_T)/(1 + exp(-2.4 + 5.4 * Prop_T)),
          Fi_tros = 2*asin(sqrt(Ptros))*180/pi) %>% 
-  mutate(Mt_dominated = ifelse(Ptros > boundary, 1, 0))
+  mutate(Mt_dominated = ifelse(Ptros >= boundary, 1, 0))
 
 myt_test_site <- 
   myt_test_site %>% 
@@ -184,7 +184,7 @@ myt_test_site <-
 ```{r Tyuva_testing_data_set}
 tuv <- read_excel("data/TuMyt_2009_2010_for_SDM.xlsx")
 
-tuv <- tuv %>% mutate(Mt_dominated  = ifelse(Ptros_predicted > boundary, 1, 0))
+tuv <- tuv %>% mutate(Mt_dominated  = ifelse(Ptros_predicted >= boundary, 1, 0))
 
 # tuv <- tuv %>% filter(Depth > -1.5)
 tuv <-
@@ -200,6 +200,28 @@ tuv <-
 ```
 
 
+```{r}
+
+kola <- read_excel("data/Testing_data_from_Khaitov_et_al_2021.xlsx", sheet = "S1 Kola samples")
+kola$Port_Status <- factor(kola$Port_Status)
+kola$Position <- "Bottom"
+# kola$Position <- "Algae"
+
+kola$Position <- factor(kola$Position)
+kola$River_Size <- factor(kola$River_Size)
+
+kola$Log_Fetch <- log(kola$Fetch)
+kola$Log_Min_dist_port <- log(kola$Min_dist_port)
+kola$Log_Min_dist_river <- log(kola$Min_dist_river)
+
+kola <- 
+  kola %>% 
+  mutate(Ptros = ifelse(Sample_set == "BL", exp(-2.4 + 5.4 * PT)/(1 + exp(-2.4 + 5.4 * PT)), 
+         exp(-3.9 + 5.0 * PT)/(1 + exp(-3.9 + 5.0 * PT)))) %>% 
+  mutate(Mt_dominated = ifelse(Ptros >= boundary, 1, 0)) %>% 
+  filter(Region == "Kola Bay")
+
+```
 
 
 
@@ -860,7 +882,7 @@ According to the *Model 1*  the value of *Ptros* is dramatically higher on the A
 
 myt_sample_area <- read_excel("Data/myt_full.xls", sheet = "Sampling area assesment", na = "NA")
 
-myt_sample_area <- myt_sample_area %>% select(Site, Sample, Position, SQM_factor)
+myt_sample_area <- myt_sample_area %>% dplyr::select(Site, Sample, Position, SQM_factor)
 
 
 myt_full_reduced <- myt_full %>% filter(! Site %in% incomplete_sites)
@@ -894,7 +916,7 @@ myt_site_substr_reguced <-
 
 df1 <-
 myt_site_substr_reguced %>% 
-  select(Site, Position, Ptros) %>%
+  dplyr::select(Site, Position, Ptros) %>%
   dcast(., formula = Site ~ Position, value.var = c("Ptros") ) 
 
 
@@ -903,7 +925,7 @@ names(df1) <- c("Site", "Ptros_Bottom", "Ptros_Algae" )
 
 df2 <-
 myt_site_substr_reguced %>% 
-  select(Site, Position, D) %>%
+  dplyr::select(Site, Position, D) %>%
   dcast(., formula = Site ~ Position, value.var = c("D") )
 
 
@@ -911,12 +933,12 @@ names(df2) <- c("Site", "D_Bottom", "D_Algae" )
 
 df3 <-
 myt_site_substr_reguced %>% 
-  select(Site, Position, N_T, N_E) %>% 
+  dplyr::select(Site, Position, N_T, N_E) %>% 
   group_by(Site) %>% 
   summarise(N_T = sum(N_T), N_E = sum(N_E)) %>% 
   mutate(Total_Prop_T = N_T/(N_T + N_E)) %>% 
   mutate(Total_Ptros = exp(-2.4 + 5.4 * Total_Prop_T)/(1 + exp(-2.4 + 5.4 * Total_Prop_T))) %>%
-  select(-N_T, -N_E)
+  dplyr::select(-N_T, -N_E)
 
 
 df4 <-
@@ -1026,7 +1048,25 @@ tuv2 <-
 Mod_gam_prediction_tuv <- predict(Mod_gam, newdata = tuv, type = "response", exclude = "s(Site)")
 
 roc_Mod_gam_tuv <- roc(response = tuv$Mt_dominated, predictor = Mod_gam_prediction_tuv)
-# plot(roc_Mod_gam_tuv)
+
+
+
+
+
+# Mod_gam_prediction_kola_bottom <- predict(Mod_gam, newdata = kola, type = "response", exclude = "s(Site)")
+# 
+# kola$Position <- "Algae"
+# kola$Position <- factor(kola$Position)
+
+Mod_gam_prediction_kola <- predict(Mod_gam, newdata = kola, type = "response", exclude = "s(Site)")
+
+# 
+# Mod_gam_prediction_kola <- (Mod_gam_prediction_kola_algae + Mod_gam_prediction_kola_bottom)/2
+
+
+roc_Mod_gam_kola <- roc(response = kola$Mt_dominated, predictor = Mod_gam_prediction_kola)
+
+
 
 # 
 # # Mod 2 prediction as classifier 
@@ -1242,6 +1282,21 @@ Pl_Tuva_testing <-
   geom_label(aes(x = c(0, 0, 1, 1), y = c(0, 1, 1, 0), label = c("TN", "FP", "TP", "FN") ), alpha = 0.5 ) +
   ggtitle("Tyuva inlet testing data")
   
+Pl_Kola_testing <-
+  qplot(x = kola$Ptros,  y = Mod_gam_prediction_kola) +
+  labs(x = "Obseved Ptros", y = "Predicted Ptros") +
+  geom_point(shape = 21, aes(fill = kola$Position)) +
+  scale_fill_manual(values = c("white", "black")) +
+  guides(fill= "none") +
+  geom_abline(linetype = 2) +
+  geom_vline(xintercept = boundary) +
+  geom_hline(yintercept = boundary) +
+  xlim(0,1) +
+  ylim(0,1) +
+  geom_label(aes(x = c(0, 0, 1, 1), y = c(0, 1, 1, 0), label = c("TN", "FP", "TP", "FN") ), alpha = 0.5 ) +
+  ggtitle("Tyuva inlet testing data")
+
+
   
 plot_grid(Pl_training, Pl_Kand_testing, Pl_Tuva_testing, labels = "AUTO")
 

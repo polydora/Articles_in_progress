@@ -1,0 +1,50 @@
+/* DATA DESCRIPTION:
+Citation:	Trofimova, V V (2009): (Table 13) Water salinity and temperature at stations along the east coast of the Kola Bay in 2005. Murmansk Marine Biological Institute, PANGAEA, https://doi.org/10.1594/PANGAEA.774263, 
+	In supplement to: Trofimova, VV (2009): Photosynthetic pigments of phytoplankton. Daily dynamics and spatial distribution. Kola Bay: Development and Rational Nature Management. Moscow, Nauka Publ. (G.G. Matishov, Ed.), 86-108
+Project(s):	Archive of Ocean Data (ARCOD)
+Coverage:	MEDIAN LATITUDE: 68.982967 * MEDIAN LONGITUDE: 33.047767 * SOUTH-BOUND LATITUDE: 68.949500 * WEST-BOUND LONGITUDE: 33.031400 * NORTH-BOUND LATITUDE: 69.018100 * EAST-BOUND LONGITUDE: 33.059800
+	MINIMUM DEPTH, water: 0.5 m * MAXIMUM DEPTH, water: 0.5 m
+Event(s):	TrKB-4-5-A * LATITUDE: 69.018100 * LONGITUDE: 33.059800 * LOCATION: Kola Bay * METHOD/DEVICE: Water sample (WS)
+	TrKB-4-5-B * LATITUDE: 68.981300 * LONGITUDE: 33.052100 * LOCATION: Kola Bay * METHOD/DEVICE: Water sample (WS)
+	TrKB-4-5-C * LATITUDE: 68.949500 * LONGITUDE: 33.031400 * LOCATION: Kola Bay * METHOD/DEVICE: Water sample (WS)
+Parameter(s):	Event label (Event)
+	Latitude of event (Latitude)
+	Longitude of event (Longitude)
+	DEPTH, water [m] (Depth water) * GEOCODE
+	Date (Date) * PI: Trofimova, V V
+	Salinity (Sal) * PI: Trofimova, V V
+	Temperature, water [°C] (Temp) * PI: Trofimova, V V
+License:	Creative Commons Attribution 3.0 Unported (CC-BY-3.0) (URI: https://creativecommons.org/licenses/by/3.0/)
+Size:	88 data points
+*/
+Event	Latitude	Longitude	Depth water [m]	Date	Sal	Temp [°C]
+TrKB-4-5-A	69.0181	33.0598	0.5	2005-07-08	16.5	10.1
+TrKB-4-5-A	69.0181	33.0598	0.5	2005-07-13	16.3	
+TrKB-4-5-A	69.0181	33.0598	0.5	2005-07-15	18.7	
+TrKB-4-5-A	69.0181	33.0598	0.5	2005-07-19	16.6	13.0
+TrKB-4-5-A	69.0181	33.0598	0.5	2005-07-22	15.5	10.5
+TrKB-4-5-A	69.0181	33.0598	0.5	2005-07-26	19.0	11.0
+TrKB-4-5-A	69.0181	33.0598	0.5	2005-07-29	15.4	11.5
+TrKB-4-5-A	69.0181	33.0598	0.5	2005-08-12	11.9	13.5
+TrKB-4-5-B	68.9813	33.0521	0.5	2005-07-08	14.4	10.1
+TrKB-4-5-B	68.9813	33.0521	0.5	2005-07-12	12.8	12.0
+TrKB-4-5-B	68.9813	33.0521	0.5	2005-07-13	14.0	12.5
+TrKB-4-5-B	68.9813	33.0521	0.5	2005-07-15	18.2	10.6
+TrKB-4-5-B	68.9813	33.0521	0.5	2005-07-19	16.5	12.5
+TrKB-4-5-B	68.9813	33.0521	0.5	2005-07-22	13.2	10.5
+TrKB-4-5-B	68.9813	33.0521	0.5	2005-07-26	15.6	12.0
+TrKB-4-5-B	68.9813	33.0521	0.5	2005-07-29	14.2	12.0
+TrKB-4-5-B	68.9813	33.0521	0.5	2005-08-12	10.0	14.0
+TrKB-4-5-B	68.9813	33.0521	0.5	2005-08-29	14.0	13.0
+TrKB-4-5-B	68.9813	33.0521	0.5	2005-09-08	18.4	9.5
+TrKB-4-5-C	68.9495	33.0314	0.5	2005-07-08	12.0	10.5
+TrKB-4-5-C	68.9495	33.0314	0.5	2005-07-12	9.7	12.5
+TrKB-4-5-C	68.9495	33.0314	0.5	2005-07-13	11.4	12.5
+TrKB-4-5-C	68.9495	33.0314	0.5	2005-07-15	14.9	11.5
+TrKB-4-5-C	68.9495	33.0314	0.5	2005-07-19	12.6	14.5
+TrKB-4-5-C	68.9495	33.0314	0.5	2005-07-22	9.3	11.0
+TrKB-4-5-C	68.9495	33.0314	0.5	2005-07-26	11.8	12.0
+TrKB-4-5-C	68.9495	33.0314	0.5	2005-07-29	9.3	10.5
+TrKB-4-5-C	68.9495	33.0314	0.5	2005-08-12	8.7	14.0
+TrKB-4-5-C	68.9495	33.0314	0.5	2005-08-29	9.7	14.0
+TrKB-4-5-C	68.9495	33.0314	0.5	2005-09-08	15.8	10.0
