@@ -82,4 +82,23 @@ sum_Mod_gam$term_2 <- str_replace_all(sum_Mod_gam$term_2, "\\." , " " )
 
 
 
+######### Анализ пустых 
 
+zub_empty <- read_excel("Data/Зубатка_питание2001-2023.xlsx", sheet = "All")
+
+zub_empty <- 
+  zub_empty %>% 
+  mutate(Date = paste(Date, "/", Year, sep = ""))
+
+library(lubridate)
+
+zub_empty$Date <- as.Date(zub_empty$Date, format ="%d/%m/%Y") 
+
+zub_empty$DOY <- yday(zub_empty$Date)
+
+
+mod_empty <- gam(Out  ~ s(DOY) + s(Year), family = "binomial", data = zub_empty)
+
+library(gratia)
+
+draw(mod_empty)
