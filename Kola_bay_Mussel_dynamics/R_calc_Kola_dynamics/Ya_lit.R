@@ -126,7 +126,17 @@ Myt_pop2 <- merge(Myt_pop, Biomass, all.x = TRUE)
 # делаем ординацию
 
 
+Myt_pop2 %>% filter(complete.cases(.)) -> df  
+  ccf(df$Biomass, df$Anundance_0)
 
+cor(df$Anundance_0 [1:(ncol(df)-1)], df$Biomass[2:ncol(df)], use = "pairwise.complete.obs")
+
+
+ccf(df$Biomass, df$Anundance_0)
+
+
+
+qplot(df$Biomass [1:(ncol(df)-2)], df$Anundance_0[3:ncol(df)])
 
 
 ###### Данные по климатическим параметрам
@@ -185,46 +195,51 @@ predictors %>%
   predictors_reduced
 
 # удаляем данные по Кольскому меридиану
+# predictors_reduced <- 
+#   predictors_reduced %>% 
+#   select(-c(Tw_KM_Autumn, Tw_KM_Spring, Tw_KM_Summer, Tw_KM_Winter))
+
+
 predictors_reduced <- 
   predictors_reduced %>% 
-  select(-c(Tw_KM_Autumn, Tw_KM_Spring, Tw_KM_Summer, Tw_KM_Winter))
+  select(c(Year, Tw_KM_Autumn, Tw_KM_Spring, Tw_KM_Summer, Tw_KM_Winter))
+
 
 Myt_pop3 <- Myt_pop2 %>% select(-Anundance_0)
 
 # Myt_pop3 <- Myt_pop2 %>% filter(complete.cases(.))
 
-
-# рисуем популяционную ординацию
-
-clim_pca <- rda(predictors_reduced[, -1])
-
-summary(clim_pca)
-
-plot(clim_pca)
-
-PC_scores <- as.data.frame(scores(clim_pca)$sites)
+predictors_reduced <- 
+  predictors_reduced %>% 
+  filter(Year %in% Myt_pop3$Year)
 
 
-
-pop_ord <- cca(Myt_pop3[,-1] ~ ., data = PC_scores)
-
-plot(pop_ord)
-
-anova(pop_ord)
-
-env_fit <- envfit(pop_ord ~ ., data = PC_scores)
-
-plot(env_fit)
 
 
 
 # представляем временной ряд в виде матрицы эвклидовых расстояний 
+predictors %>% 
+  filter(Year %in% recruitment$Generation) ->
+  predictors_reduced2
+
+predictors_reduced2 <-
+  predictors_reduced2 %>%
+  select(-c(Tw_KM_Autumn, Tw_KM_Spring, Tw_KM_Summer, Tw_KM_Winter, Wind_mean_Autumn,Wind_mean_Spring, Wind_mean_Summer, Wind_mean_Winter))
+
+
 recruitment_dist <- vegdist(recruitment[,2], method = "euclidean")
 
 # процедура bioenv, которая позволяет подобрать наиболее КОНГРУЭНТНУЮ матрицу предиктов, которая будет максимально подобна матрице эвклидовых расстояний между N0
-bioenv_results <- bioenv(recruitment_dist, predictors_reduced[, -1],  metric = "euclidean")
+bioenv_results <- bioenv(recruitment_dist, predictors_reduced2[, -1],  metric = "euclidean", index = "euclidean")
 
 
+predictors_dist <- bioenvdist(bioenv_results, which = "best")
+
+
+
+mantel(recruitment_dist,  predictors_dist )
+
+bioenv_results$models
 
 ### Визуализация связи с предикторами из оптимальной модели     
 
