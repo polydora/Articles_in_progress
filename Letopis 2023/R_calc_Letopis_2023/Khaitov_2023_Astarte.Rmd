@@ -1,0 +1,236 @@
+---
+title: "Характеристика популяции *Atarte borealis* в сублиторали Илистой губы острова Горелого (Лувеньгский архипелаг) летом 2022-2023 гг. "
+author: "В. М. Хайтов"
+output: 
+      word_document:
+                reference_docx: Letopis_template.docx
+                fig_width: 6
+                fig_height: 6
+
+ 
+abstract: |
+    **Хайтов В. М. Характеристика популяции *Atarte borealis* в сублиторали Илистой губы острова Горелого (Лувеньгский архипелаг) летом 2022-2023 гг. ** // Толмачева Е. Л.  (ред.) Летопись природы Кадалакшского заповедника за 2023 год (ежегодный отчет). Кандалакша. Т.1 (Летопись природы Кандалакшского заповедника, кн. ++)
+    Рассматриваются данные по обилию, размерной и возрастной струкутре двустворчатых моллюсков *Atarte borealis* в сублиторали Илистой губы по данным количественных сборов, проведенных летом 2022 и 2023 гг.   
+    
+    **Khaitov V.M.  Population characteristics of * Atarte borealis* in the Ilistaya inlet (Gorely island) in the summer of 2022-2023** // Tolmacheva E. L. (ed.)  The Chronicle of Nature by the Kandalaksha Reserve for 2023 (Annual report).  Kandalaksha. V.1. (The Chronicle of Nature by the Kandalaksha Reserve, Book N ++)
+    
+     The data on the abundance, size and age structure of bivalves *Atarte borealis* in the sublittoral of Ilista Bay based on quantitative collections conducted in the summers of 2022 and 2023 are reviewed.   
+      
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, dpi=300)
+
+library(reshape2)
+library(knitr)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(cowplot)
+library(flextable)
+library(officer)
+library(lubridate)
+library(ggmap)
+
+
+editor <- "Толмачева Е. Л."
+editor_eng <- "Tolmacheva E.L."
+
+Year <- 2023
+
+# Функция, задающая нумерацию рисунков
+
+figRef <- local({
+    tag <- numeric()
+    created <- logical()
+    used <- logical()
+    function(label, caption, prefix = options("figcap.prefix"), 
+        sep = options("figcap.sep"), prefix.highlight = options("figcap.prefix.highlight")) {
+        i <- which(names(tag) == label)
+        if (length(i) == 0) {
+            i <- length(tag) + 1
+            tag <<- c(tag, i)
+            names(tag)[length(tag)] <<- label
+            used <<- c(used, FALSE)
+            names(used)[length(used)] <<- label
+            created <<- c(created, FALSE)
+            names(created)[length(created)] <<- label
+        }
+        if (!missing(caption)) {
+            created[label] <<- TRUE
+            paste0(prefix.highlight, prefix, " ", i, sep, prefix.highlight, 
+                " ", caption)
+        } else {
+            used[label] <<- TRUE
+            paste(prefix, tag[label])
+        }
+    }
+})
+
+options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**")
+
+
+theme_set(theme_bw())
+
+```
+
+
+
+
+```{r}
+# Читаем данные
+ast_22_23 <- read_excel("data/Tridonta_Ilistaya_inlet_2022_2023.xlsx", sheet = "Size", na = "NA")
+
+ast_22_23_age <- read_excel("data/Tridonta_Ilistaya_inlet_2022_2023.xlsx", sheet = "Age_assessment", na = "NA")
+
+
+ast_abund <- read_excel("data/Tridonta_abundance_1987_2019.xlsx", na = "NA")
+
+```
+
+
+
+
+
+Двустворчатые моллюски *A.borealis* (в старой номенклатуре *Tridonta borealis*) в бентосных сообществах Илистой губы играют роль доминантов по биомассе. Моллюски этого вида поселяются преимущественно на склонах дна на глубине более 3 метров. 
+
+Мониторинг бентоса позволил отследить динамику обилия, размерной и половой структуры  популяции *A.borealis*. Подробный анализ многолетних процессов в поселениях этого вида дан в специальной главе Летописи природы за 2018 г (поскольку мониториниг проводился в январе то данные за январь 2019 г. были приведены в Летописи природы за 2018 г.). 
+
+Кратко суть изменений сводится к следующему. До начала 2000-х годов обилие моллюсков оставалось на более или менее стабильном уровне, размерная и половая струкутра существенно не изменялись. В популяции  были представлены только крупные взрослые особи, соотношение полов было близко к 1:1. В 2000-х гг обилие старых моллюсков постепенно убывало, а количество створок мертвых особей увеличивалось. Однако с 2007 г. начался приток молоди этого вида. Обилие молоди быстро увеличивалось вплоть до января 2019 г. После января 2019 ежегодные наблюдения над популяцией вида остановились, но летом 2022 и 2023 гг были взяты количественные пробы, которые позволили описать состояние популяции после перерыва в наблюдениях.
+
+
+Методика сбора и обработки материала бентосных проб в Илистой губе в 1987-2019 приведена в соответствующей главе Летописи природы за 2018 г. Летом 2022 и 2023 гг были взяты дночерпательные пробы в точках, расположенных в окрестностях стандартных точек мониторинга. На каждой точке бралось по одной пробе дночерпателем Петерсена (1/40 м^2^). В этих пробах у каждой живой и мертовой особи, попавшей в пробу, была измерена длина раковины. 
+
+Часть раковин живых моллюсков (разных размеров), отловленных в2022 и 2023 гг. заливали в эпоксидную смолу. После застывания смолы делали спил в районе замка и отшлифовали мелкой наждачной бумагой. После отшлифовки на срез капали столовый уксус, и по прошествии нескольких минут смывали водой. Обработанную раковину помещали под бинокуляр и делали снимок с помощью цифровой камеры. По фотографии, после цифрового контрастирования, подсчитывали число слоев нарастания раковины (`r figRef("Shlif")`).
+
+
+
+```{r fig.cap = figRef("Shlif", "Шлиф раковины *A.borealis*. Точки маркируют визуально выявленные годичные слои. Section of *A.borealis* shell. Dots mark visually identified annual layers.")}
+
+knitr::include_graphics("figures/Astarte_shlif.png")
+
+```
+
+Размерная структура (`r figRef("Size_structure")`, Табл. +.1) в 2022-2023 гг отражает доминирование в популяции молоди. Были отмечены лишь единичные особи крупнее 20 мм. Вместе с тем, отчетливо выраженное бимодальное распределение размеров раковин мертвых моллюсков свидетельствует о том, что раковины отмерших старых особей все еще присутствуют на дне акватории.    
+
+
+Анализ спилов раковин (`r figRef("Age")`, Табл. +.2) позволил показать, что возраст моллюсков, представленных в популяции в 2022-2023 гг находится в пределах от `r min(ast_22_23_age$Age)` до `r max(ast_22_23_age$Age)` года (медиана `r median(ast_22_23_age$Age)` года). 
+
+Если оценить год рождения особей как разницу между годом отлова и возрастом, то частотное распределение (`r figRef("Birth_Year")`) отражает постоянный приток молоди в период после 2000 г.  То есть современная популяция продолжает пополняться молодью, и в настоящий момент в поселении представлены моллюски рожденные в 1980-х, 1990-х, 2000-2010х и 2020-х годах. 
+
+Сопоставление тренда динамики обилия вида, наметившегося в 1987-2019 гг., со значениями обилия в 2022-2023 гг. (`r figRef("Dynamics")`) говорит о том, что наметившаяся ранее тенденция к росту численности по прежнему присутствует. В среднем, обилие особей в 2022-2023 гг было на том же уровне, который наблюдался в последние годы непрерывных наблюдений.   
+
+
+
+```{r, fig.cap=figRef("Size_structure", "Размерная структура поселения *A.borealis* в Илистой губе в 2022-2023 гг. Size structure of *A.borealis* population in the Ilistaya inlet in 2022-2023."), fig_height = 5}
+
+ast_22_23$Status <- factor(ast_22_23$Status, labels = c("Живые", "Мертвые"))
+
+ast_22_23 %>% 
+  ggplot(aes(x = L)) + 
+  geom_histogram(binwidth = 2, fill = "gray", color = "black") + 
+  facet_wrap(~ Status, ncol = 2, scales = "free_y") + 
+  labs(x = "L (мм)", y = "Количество / Count" )
+
+
+```
+
+
+
+
+
+
+```{r, fig.cap=figRef("Birth_Year", "Частотное распределине годов рождения *A.borealis* в Илистой губе в 2022-2023 гг. Frequency distribution of *A.borealis* birth years in Ilistaya Bay in 2022-2023."), fig_height = 5}
+
+ast_22_23_age %>% 
+  mutate(Birth_Year = Year - Age) %>% 
+  ggplot(aes(x = Birth_Year)) + 
+  geom_histogram(binwidth = 4, fill = "gray", color = "black") +
+  labs(x = "Год рождения", y = "Количество / Count" )
+
+
+```
+
+
+
+```{r, fig.cap=figRef("Dynamics", "Многолетние изменения плотности поселения *A.borealis* (точками обозначены данные для отдельных станций, более крупные точки отражают данные 2022-2023 гг.). Long-term changes in *A.borealis* abundance (dots indicate data for individual stations, larger dots represent 2022-2023 data)).")}
+
+
+ast_22_23_abundance <- 
+  ast_22_23 %>% 
+  filter(Status == "Живые") %>% 
+  group_by(Year, Sample) %>% 
+  summarise(N = n()*40)
+
+
+Pl_abund <- 
+  ggplot(ast_abund, aes(x = Year, y = log(N) )) + 
+  geom_point(size = 1) + 
+  geom_smooth(se = T, method = "gam", method.args = list(family = quasipoisson())) +
+  geom_point(data = ast_22_23_abundance, size = 3) +
+  labs(x = "Годы", y = "Логарифм плотности (экз./кв.м)")
+
+
+Pl_abund
+
+```
+
+
+
+
+\pagebreak
+
+
+```{r}
+library(officer)
+std_border = fp_border(color="gray", width = 1)
+
+ast_print <- 
+  ast_22_23 %>% 
+  select(Year, Sample, L, Status)
+
+
+levels(ast_print$Status) <- c("Живая", "Мертвая")
+
+colname <- c("Год", "Проба", "Длина раковины (мм)", "Живые / Мертвые")
+
+ ast_print %>% 
+  flextable() %>% 
+  fontsize(part = "all") %>% 
+   border_inner_h(border = std_border ) %>% 
+  border_inner_v(border = std_border ) %>% 
+  fontsize(size = 10, part = "all") %>% 
+  set_header_labels(values = colname) %>% 
+  colformat_double(j = 1,  big.mark = "", digits = 0) %>% 
+  set_caption("Таблица +.1  Размеры раковин живых и мертвых А.borealis  летом 2022-2023 гг. Shell sizes of live and dead A.borealis in the summer of 2022-2023.") %>% 
+  autofit()
+```
+
+
+\pagebreak
+
+```{r}
+
+ast_print_age <- ast_22_23_age %>% 
+  select(-Height, -ID)
+
+colname <- c("Год", "Оценка возраста по шлифам раковины", "Длина раковины (мм)")
+
+
+
+ ast_print_age %>% 
+  flextable() %>% 
+  fontsize(part = "all") %>% 
+   border_inner_h(border = std_border ) %>% 
+  border_inner_v(border = std_border ) %>% 
+  fontsize(size = 10, part = "all") %>% 
+  set_header_labels(values = colname) %>% 
+  colformat_double(j = 1,  big.mark = "", digits = 0) %>% 
+  set_caption("Таблица +.2  Возраст и размеры раковин  А.borealis  летом 2022-2023 гг. Age and shell sizes of A.borealis in the summer of 2022-2023.") %>% 
+  autofit()
+
+
+```
+
+
