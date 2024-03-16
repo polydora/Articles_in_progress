@@ -1,0 +1,188 @@
+---
+title: "Cтруктуры смешанных поселений *Mytilus edulis* и *M.trossulus* в вершине Кандалакшского залива летом 2023 г."
+author: "В. М. Хайтов"
+output: 
+      word_document:
+                reference_docx: Letopis_template.docx
+                fig_width: 7
+                fig_height: 7
+
+ 
+abstract: |
+    **Хайтов В. М. Cтруктуры смешанных поселений *Mytilus edulis* и *M.trossulus* в вершине Кандалакшского залива летом 2023 г. ** // Толмачева Е. Л.  (ред.) Летопись природы Кадалакшского заповедника за 2023 год (ежегодный отчет). Кандалакша. Т.1 (Летопись природы Кандалакшского заповедника, кн. ++)
+    Рассматриваются данные по соотношению обилий двух видов мидий, формирующих смешанные поселения в стандартных точках наблюдений (четыре оcтрова, расположенных на разном расстоянии от кута залива). 
+    
+    **Khaitov V.M. Structure of *Mytilus edulis* and *M.trossulus* mixed settlements in the top of Kandalaksha Bay in the summer of 2023. ** // Marchenkov A. V. (ed.)  The Chronicle of Nature by the Kandalaksha Reserve for 2021 (Annual report).  Kandalaksha. V.1. (The Chronicle of Nature by the Kandalaksha Reserve, Book N ++)
+    Data on abundance ratios of two mussel species forming mixed settlements at standard observation points (four islands located at different distances from the bay top) are considered.  
+           
+---
+
+```{r setup, include=FALSE}
+
+
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, dpi=300)
+
+library(reshape2)
+library(knitr)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(cowplot)
+library(flextable)
+library(officer)
+library(lubridate)
+library(ggmap)
+
+
+editor <- "Толмачева Е. Л."
+editor_eng <- "Tolmacheva E.L."
+
+Year <- 2023
+
+# Функция, задающая нумерацию рисунков
+
+figRef <- local({
+    tag <- numeric()
+    created <- logical()
+    used <- logical()
+    function(label, caption, prefix = options("figcap.prefix"), 
+        sep = options("figcap.sep"), prefix.highlight = options("figcap.prefix.highlight")) {
+        i <- which(names(tag) == label)
+        if (length(i) == 0) {
+            i <- length(tag) + 1
+            tag <<- c(tag, i)
+            names(tag)[length(tag)] <<- label
+            used <<- c(used, FALSE)
+            names(used)[length(used)] <<- label
+            created <<- c(created, FALSE)
+            names(created)[length(created)] <<- label
+        }
+        if (!missing(caption)) {
+            created[label] <<- TRUE
+            paste0(prefix.highlight, prefix, " ", i, sep, prefix.highlight, 
+                " ", caption)
+        } else {
+            used[label] <<- TRUE
+            paste(prefix, tag[label])
+        }
+    }
+})
+
+options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**")
+
+
+theme_set(theme_bw())
+
+
+```
+
+
+
+```{r}
+# Читаем данные
+monitor <- read_excel("data/nt_ne_monitoring_2002_2023.xlsx") 
+
+monitor$PropT <- with(monitor, Nt/(Nt+Ne))
+
+monitor$Site <- factor(monitor$Site)
+
+
+monitor <- 
+  monitor %>% 
+  mutate(Site2 = case_when(Site == "Lupch" ~ "о. Б. Лубчостров",
+                                     Site == "Malij" ~ "о. Малый",
+                                     Site == "Ovech" ~ "о. Овечий",
+                                     Site == "Ryashkov" ~ "о. Ряжков")) 
+
+```
+
+
+
+**Многолетние изменения соотношения численности двух видов мидий на мидиевых банках**
+
+
+**Методика сбора материала**
+Материал был собран на пяти мидиевых банках, расположенных в Вороньей губе и в Лувеньгском архипелаге. В данной главе использованы обозначения мидиевых банок, устоявшиеся в предыдущих изданиях «Летописи природы Кандалакшского заповедника». 
+
+Мидиевая банка *«korg»*
+N 67 6.655
+E 32 38.523
+Расположена на корге в районе о-вов Малый и Большой Куртяжные (Лувеньгский архипелаг).
+
+Мидиевая банка *«mat»*
+N 67 6.790
+E 32 38.567
+Расположена на косе, идущей от материка, на расстоянии 260 м от предыдущей банки.
+
+Мидиевая банка *«vor2»*
+N 67 56.460
+E 32 26.056 
+Банка расположена на нижней части литорали острова Воронинского, расположенного  в куту Вороньей губы. 
+
+Мидиевая банка *«vor4»*
+N 67 56.072
+E 32 30.417
+Банка расположена на косе, идущей от материка на расстоянии около 500 м от входа в Воронью губу. 
+
+Мидиевая банка *«vor5»*
+N 67 55.673
+E 32 29.465
+Банка расположена в проливе, соединяющем губу Воронью и губу Белую.  
+ 
+
+
+
+```{r}
+bed <- read_excel("data/E_T_abundance_in_mussel_beds_2010_2021_not_completed.xlsx")
+```
+
+
+Методика отбора проб и их первичной обработки описана в соответствующих главах Летописи за предыдущие годы. Кратко методика сводится к следующему. На каждой из банок были отобраны количественные пробы с помощью рамки с площадью 1/182 м^2^. Пробы промыты через сито с размером ячеи 0.5 мм. Начиная с 2010 года раковины мидий с длиной более 10 мм сохранялись в сухом виде. С каждой банки в коллекцию сухих створок попали выборки из  `r bed %>% group_by(Year, Bank) %>% summarise(N_samp = n()) %>% pull(N_samp) %>% min()` - `r bed %>% group_by(Year, Bank) %>% summarise(N_samp = n()) %>% pull(N_samp) %>% max()` количесвтенных проб.      
+
+В данной главе обобщены результаты изучения коллекций створок, собранных на указанных банках в `r paste(unique(bed$Year), sep = ", ")` гг (Таблица +.2).
+
+
+
+В целом, доля мидий T-морфотипа на мидиевых банках (`r figRef("bed_PropT")`) заметно ниже чем на в поселениях на фукоидах, описанных выше (`r figRef("PropT")`). Самая высокая доля мидий T-морфотипа была отмечена на банке *vor4*, расположенной на входе в Воронью губу. Однако на мидевых банках, расподоженных в той же акватории, но на значительном расстоянии от входа (*vor5* и *vor2*) наблюдалась наименьшая доля мидий T-морфотипа. Мидиевые банки, расположенные в Лувеньгском архипелаге (*mat* и *korg*), демонстрируют промежуточное значение этого показателя.   
+
+
+
+```{r fig.cap= figRef("bed_PropT", "Доля мидий T-морфотипа, на пяти мидиевых банках. Неперекрывающиеся вырезки на боксплотах свидетельствуют о статистически значимом различии медиан. Proportion of T-morphotype mussels at five mussel beds. Non-overlapping notches on boxplots indicate statistically significant difference in medians."), fig.width=7}
+
+bed <- bed %>% mutate(PropT = NT/(NT+NE))
+
+bed %>% ggplot(., aes(x = Bank, y = PropT)) + 
+  geom_boxplot(notch = T) + 
+  labs(x = "Мидевые банки", y = "Доля мидий T-морфотипа")
+```
+
+
+Поскольку в основе собранного материала лежали количественные выборки, можно проследить многолетние тенденции в изменении плотности поселения мидий двух морфотипов на разных банках (). На банках *vor4* и *vor5* обилие мидий двух морфотипов оставалось более или менее на одном уровне. В то же время на банке *korg* и *vor2* отчетливо прослеживается многолетний тренд к повышению обилия мидий T-морфотипа, на фоне которого прослеживается тренд к снижению обилия мидий E-морфотипа. На банке *mat* прослеживается тенденция к снижению обилия мидий обеих форм. Таким образом, отчетливой единой тенденции в многолетних изменениях таксономического состава смешанных поселений на мидиевых банках не выявляется. Изменения, вероятно, регулируются какими-то локальными факторами, действующими в масштабах отдельных поселений.  
+
+```{r fig.cap= figRef("bed_dynam", "Многолетние изменения плотности поселения мидий двух морфотипов на мидиевых банках. Long-term changes in abundance of mussels of different morphotypes at mussel beds."), fig.width=7}
+bed %>% select(-PropT) %>%  melt(., id.vars = c("Year", "Bank","Season", "Sample"),  variable.name = "Morph", value.name = "N") %>% mutate(Morphotype = case_when(Morph == "NT" ~ "T", Morph == "NE" ~ "E")) %>% 
+  
+  ggplot(., aes(x = Year, y = N*182)) + 
+  geom_point(aes(fill = Morphotype), shape = 21, position = position_dodge(width = 0.5)) + 
+  facet_wrap(~Bank) + 
+  geom_smooth(aes(group = Morphotype, linetype = Morphotype), method = "lm") + 
+  scale_fill_manual(values = c("white", "black")) + 
+  labs(x = "Годы", y = "Плотность поселения экз./кв.м")
+```
+
+
+
+
+
+
+
+```{r}
+bed_print <- bed %>% select(Bank, Year, NT, NE, PropT)
+
+names(bed_print) <- c("Мидиевая банка", "Год", "Численность T-морфотипа", "Численность E-морфотипа", "Доля T-морфотипа в общей численности")
+
+kable(bed_print, digits = c(0,0,0,0,2), caption = "Таблица +.1 Соотношение численностей T- и E-морфотипов в пробах на мидиевых банках в разные годы. Abundance of T- and E-morfotypes in samples from mussel beds in different years")
+
+
+
+```

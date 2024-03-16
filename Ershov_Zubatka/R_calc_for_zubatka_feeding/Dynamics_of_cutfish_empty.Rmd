@@ -53,7 +53,7 @@ zub_empty$DOY <- yday(zub_empty$Date)
 
 ```{r, echo=TRUE}
 
-mod_empty <- gam(Out  ~ s(DOY, by = Sex, bs = "cr", k = 6) + s(Year, by = Sex, bs = "cr", k = 6) + Sex, family = "binomial", data = zub_empty)
+mod_empty <- gam(Out  ~ s(DOY, by = Sex, bs = "cr", k = 6) + s(Year, bs = "cr", k = 6) + Sex, family = "binomial", data = zub_empty)
 
 
 ```
@@ -62,7 +62,7 @@ mod_empty <- gam(Out  ~ s(DOY, by = Sex, bs = "cr", k = 6) + s(Year, by = Sex, b
 Во результаты подбора этой модели 
 
 ```{r}
-kable(tidy(mod_empty))
+kable(tidy(mod_empty)[,-3], caption = "Таблица +. Описание аддиивной модели, описвающей сезонную и многолетнюю частоту пустых кишечников.")
 
 ```
 
@@ -91,17 +91,19 @@ draw(mod_empty, select = 1) +
 
 Pl_DOY_m <- 
 draw(mod_empty, select = 2) + 
-  geom_hline(yintercept = 0, linetype = 2)
+  geom_hline(yintercept = 0, linetype = 2) +
+geom_vline(xintercept = Begin_julay)+
+  geom_vline(xintercept = Begin_august) +
+  geom_text(aes(x = 175, y = 1.5, label = "June"))+
+  geom_text(aes(x = 195, y = 1.5, label = "July"))+
+  geom_text(aes(x = 225, y = 1.5, label = "August"))
 
 
 
-Pl_Year_f <- 
+Pl_Year <- 
 draw(mod_empty, select = 3) + 
   geom_hline(yintercept = 0, linetype = 2)
 
-Pl_Year_m <- 
-draw(mod_empty, select = 4) + 
-  geom_hline(yintercept = 0, linetype = 2)
 
 
 
@@ -111,9 +113,9 @@ draw(mod_empty, select = 4) +
 
 
 
-```{r}
+```{rfig.cap="Рис. +. Сезонная динамика частоты особей с пустыми кишечниками среди самок (A) и самцов (B)"}
 
-plot_grid(Pl_DOY_f, Pl_DOY_m)
+plot_grid(Pl_DOY_f, Pl_DOY_m, labels = "AUTO")
 
 ```
 
@@ -121,14 +123,214 @@ plot_grid(Pl_DOY_f, Pl_DOY_m)
 
 
 
-```{r}
-plot_grid(Pl_Year_f, Pl_Year_m)
+```{r fig.cap="Рис. +. Многолетняя динамика частоты особей с пустыми кишечниками"}
+plot_grid(Pl_Year)
 
 
 ```
 
-Многолетнюю динамику объяснить пока не могу. Возможно это связано с тем, что в годы максимальной частоты пустых желудков  отловы проводились в период нереста. Однако этому противоречит то, что у самцов, в целом, многолетние изменения были такими же, как у самок. Возможно, что, все же, в период 2015-2017 и, возможно, в 2020-2023 гг был какой-то голодный период.    
 
 
-**Вопрос.** Не следует ли отсюда, что многолетнюю динамику рациона лучше смотреть по самцам?
+## Динамика пишевого спектра
+
+
+## Видовой состав пищевых объектов
+
+```{r}
+
+zub <- read_excel("Data/Зубатка_питание2001-2023.xlsx", sheet ="С пищей")
+
+zub$Sex <- factor(zub$Sex)
+
+zub2 <- melt(zub, id.vars = c("ID","Date", "Year", "L", "W", "Sex"), variable.name = "Species",value.name = "Out" )
+
+species_freq <- 
+zub2 %>% group_by(Species) %>% summarise(Freq = mean(Out))
+
+```
+
+
+
+```{r}
+species_freq_print <-  species_freq
+species_freq_print$Species <- str_replace_all(species_freq_print$Species, "\\." , " " ) 
+kable(species_freq_print, caption = "Таблица +. Встречаемость видов в питании",digits = 3)
+```
+
+
+## Динамика общего количества видов в питании зубатки
+
+```{r fig.cap = "Рисунок +. Многолетние изменения общего количества видов, отмеченных в питании"}
+spec_num <-
+zub2 %>% 
+  group_by(Year, Species) %>% 
+  summarise(Freq = mean(Out)) %>% 
+  group_by(Year) %>% 
+  summarise(N = sum(Freq != 0)) 
+
+ggplot(spec_num, aes(x = Year, y = N)) +
+geom_line() +
+  geom_smooth()
+
+```
+
+
+
+Никакого значимого тренда не наблюдается.
+
+
+## Динамика количества видов, имеющих высокую встречаемость
+
+```{r}
+Freq_thresh <- 0.2
+
+zub2 %>% 
+  group_by(Year, Species) %>% 
+  summarise(Freq = mean(Out)) %>% 
+  mutate(Abund = ifelse(Freq >= Freq_thresh, 1, 0)) %>% 
+  group_by(Year) %>% 
+  summarise(N_abund = sum(Abund), Prop_abund = mean(Abund)) %>% 
+  ggplot(aes(x = Year, y = N_abund)) +
+  geom_line() +
+  geom_smooth(se = F)
+
+
+```
+
+
+Не уверен, что можно вытянуть статистикой какие-то значимые результаты, но глазом видно, что макисмумы в этой кривой приходятся на годы с минимумаи пустых кишечников
+
+
+
+## Динамика частоты отдельных видов в питании зубатки
+
+
+```{r}
+Freq_thresh <- 0.05
+
+rare_species <-
+  species_freq %>% filter(Freq <= Freq_thresh)
+
+zub3 <- 
+zub2 %>% filter(!Species %in% rare_species$Species) 
+
+```
+
+
+Для дальнейшего анализа было отобрано `r length(unique(zub3$Species))` видов, встречаемость которых превышала `r Freq_thresh*100`%. На основе данных по этим видам была построена аддитивная модель следущего вида.
+
+$$
+Out_i = f(Year_i|Species_k) + b_0 + b_kSpecies_k + \varepsilon_i
+$$
+где 
+$f$ - непараметрическая сглаживающая функция, описывющая связь частоты данного вида от года.
+
+Модель основана на биномиальном распределении остатков.
+
+### Результаты построения модели
+
+```{r}
+Mod_gam  <-  gam(Out ~ s(Year, by = Species) + Species, data = zub2, method = "REML", family = "binomial")
+
+```
+
+
+#### Оценка сглаживающих функций
+
+```{r}
+
+sum_Mod_gam <- tidy(Mod_gam)
+
+sum_Mod_gam$term_2 <- str_replace_all(sum_Mod_gam$term, "s\\(Year\\):Species" , "" ) 
+sum_Mod_gam$term_2 <- str_replace_all(sum_Mod_gam$term_2, "\\." , " " ) 
+
+
+sum_Mod_gam %>% select(-term_2) %>% kable()
+
+```
+
+
+Значимые межгодовые изменения были отмечены у следующих видов `r sum_Mod_gam %>% filter(p.value < 0.05) %>% pull(term_2) %>% paste(sep = ", ")`.
+
+<!-- ```{r} -->
+<!-- sum_Mod_gam %>% filter(p.value < 0.05) %>% pull(term_2) %>% paste(., sep = ", ") -->
+<!-- ``` -->
+
+
+#### Визуализация модели, описывающей многолетнюю динамику
+
+```{r}
+
+my_data <- expand.grid(Species = unique(zub3$Species), Year = seq(min(zub3$Year), max(zub3$Year))  )
+
+predicted <- predict(Mod_gam, newdata = my_data, se.fit = TRUE, type = "response")
+
+my_data$fit <- predicted$fit
+
+my_data$SE <- predicted$se.fit
+
+Pl_Mod_gam <- 
+ggplot(my_data, aes(x = Year, y = fit)) +
+  geom_line(color = "blue") +
+  facet_wrap(~Species, ncol = 3, scales = "free_y") +
+  geom_ribbon(aes(ymin = fit - 1.96*SE, ymax = fit + 1.96*SE), alpha = 0.2)
+  
+species_freq3 <-
+zub3 %>% group_by(Species, Year) %>% summarise(Freq = mean(Out)) 
+
+Pl_Mod_gam +
+  geom_point(data = species_freq3, aes(y = Freq), size = 1) +
+  theme_bw() +
+  labs(y = "Frequency")
+
+
+```
+
+
+## Варьирование струкутры рациона
+
+```{r}
+library(vegan)
+
+zub3 <- 
+  zub %>% 
+  select(-c(ID, Year, L, W, Sex))
+
+mod <- cca(zub3 ~ log(L) , data = zub)
+
+plot(mod, display = c("cn", "species"))
+
+anova(mod)
+
+anova(mod, by = "axis")
+
+anova(mod, by = "margin", permutations = 9999)
+
+
+```
+
+
+```{r}
+mod_L <- gam((L) ~ s(Year, by = Sex, bs = "cs", k = 5) + Sex, data = zub)
+
+summary(mod_L)
+
+appraise(mod_L)
+draw(mod_L, parametric = T)
+```
+
+
+```{r}
+ggplot(zub, aes(x = Year, y = L, groip = factor(Year) )) +
+         geom_boxplot() +
+  facet_wrap(~Sex)
+  
+```
+
+
+
+
+
+
+
 

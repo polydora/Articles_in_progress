@@ -1,0 +1,301 @@
+---
+title: "Сообщества мидиевых банок в Вороньей губе летом 2023 г."
+author: "В. М. Хайтов, И. М. Нужин"
+output: 
+      word_document:
+                reference_docx: Letopis_template.docx
+                fig_width: 5
+                fig_height: 4
+
+ 
+abstract: |
+    **Хайтов В. М., Нужин И. М. Сообщества мидиевых банок в Вороньей губе летом 2023 г. ** // Толмачева Е. Л.  (ред.) Летопись природы Кадалакшского заповедника за 2023 год (ежегодный отчет). Кандалакша. Т.1 (Летопись природы Кандалакшского заповедника, кн. ++)
+    Рассматриваются данные по обилию видов, наседяющих две мидиевые банки в Вороньей губе. Проводится анализ таксномической струкутры поселения вида эдификатора (соотношение T- и E-морфотипов мидий). 
+    
+    **Khaitov V.M., Nuzhin I. M. Mussel beds' communities in Voronya Bay in the summer of 2023.** // Tolmacheva E. L. (ed.)  The Chronicle of Nature by the Kandalaksha Reserve for 2023 (Annual report).  Kandalaksha. V.1. (The Chronicle of Nature by the Kandalaksha Reserve, Book N ++)
+    Data on the abundance of species inhabiting two mussel beds in Voronya Bay are reviewed. The taxonomic structure of the settlement of mussels (the ratio of T- and E-morphotypes of mussels) is analysed
+           
+---
+
+```{r setup, include=FALSE}
+
+
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, dpi=300, fig.align = "center")
+
+library(reshape2)
+library(knitr)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(cowplot)
+library(flextable)
+library(officer)
+library(lubridate)
+library(ggmap)
+
+
+editor <- "Толмачева Е. Л."
+editor_eng <- "Tolmacheva E.L."
+
+Year <- 2023
+
+# Функция, задающая нумерацию рисунков
+
+figRef <- local({
+    tag <- numeric()
+    created <- logical()
+    used <- logical()
+    function(label, caption, prefix = options("figcap.prefix"), 
+        sep = options("figcap.sep"), prefix.highlight = options("figcap.prefix.highlight")) {
+        i <- which(names(tag) == label)
+        if (length(i) == 0) {
+            i <- length(tag) + 1
+            tag <<- c(tag, i)
+            names(tag)[length(tag)] <<- label
+            used <<- c(used, FALSE)
+            names(used)[length(used)] <<- label
+            created <<- c(created, FALSE)
+            names(created)[length(created)] <<- label
+        }
+        if (!missing(caption)) {
+            created[label] <<- TRUE
+            paste0(prefix.highlight, prefix, " ", i, sep, prefix.highlight, 
+                " ", caption)
+        } else {
+            used[label] <<- TRUE
+            paste(prefix, tag[label])
+        }
+    }
+})
+
+options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**")
+
+
+theme_set(theme_bw())
+
+
+```
+
+
+
+```{r}
+# Читаем данные
+bed <- read_excel("data/Mussel_Bed_N_species_2023.xlsx") 
+
+
+```
+
+
+
+**Методика сбора материала**
+
+Материал был собран на двух мидиевых банках, расположенных в Вороньей губе. В данной главе использованы обозначения мидиевых банок, устоявшиеся в предыдущих изданиях «Летописи природы Кандалакшского заповедника». 
+
+Мидиевая банка *«vor4»*
+N 66,934386
+E 32,506852
+Банка расположена на косе, идущей от материка на расстоянии около 500 м от входа в Воронью губу. 
+
+Мидиевая банка *«vor3»*
+N 66,938023	
+E 32,478542
+Банка располагается на небольшом мысу на северном берегу Вороньей губы в центральной ее части. Последний раз эта мидиевая банка была описана в 2005 г. (см. Летопись природы за 2005 г.)
+
+
+
+Пробы брались в первой половине августа.  Для взятия проб использовали круглый пробоотборник площадью 1/182 м^2^, Который вдавливался в грунт на глубину 10-15 см. Выбор места взятия проб в пределах мидиевой банки определялся случайным образом. Все точки взятия проб располагались только на местах скопления мидий (но не на «проплешинах» грунта, свободного от поселения моллюсков). 
+
+Пробы промывали через сито с диаметром ячеи 0,5 мм. Из проб выбирались все животные и растения.  После максимально подробного определения  организмы подсчитывались. При этом, у моллюсков подсчитывали как живых особей, так и раковины мертвых животных. Мидии и водоросли были взвешены с точностью до 0.001 г. У мидий, имевших размеры более 10 мм был определен морфотип (см. главу "Cтруктура смешанных поселений *Mytilus edulis* и *M.trossulus* в вершине Кандалакшского залива летом 2023 г." данного тома Летописи). Данные по обилию организмов, отмеченных в пробах приведены в Таблице +. 1. 
+
+
+**Таксономическая структура поселения мидий**
+
+```{r}
+
+bed %>% 
+  select(Bank, NT, NE) %>% 
+  mutate(Prop_T = NT/(NT + NE)) ->
+  bed_morphotypes
+
+```
+
+
+Две исследованных мидиевых банки существенно различались по таксономическому составу поселения мидий (`r figRef("Bed_morph")`, Таблица +.2). На банке *vor4* доля мидий T-морфотиипа (медиана `r bed_morphotypes %>% filter(Bank == "vor4") %>% pull(Prop_T) %>% median() %>% round(., 2)`) была значительно выше, чем на банке *vor3* (медиана `r bed_morphotypes %>% filter(Bank == "vor3") %>% pull(Prop_T) %>% median() %>% round(., 2)`). Таким образом, на банке *vor4* частота *M.trossulus* была в несколько раз выше, чем на банке *vor3*. Вместе с тем, в пределах мидиевой банки *vor4* доля T-морфотипа варьировала в широких пределах: от `r bed_morphotypes %>% filter(Bank == "vor4") %>% pull(Prop_T) %>% min() %>% round(., 2)` до `r bed_morphotypes %>% filter(Bank == "vor4") %>% pull(Prop_T) %>% max() %>% round(., 2)`. В пределах мидиевой банки *vor3* доля T-морфотипа варьировала от `r bed_morphotypes %>% filter(Bank == "vor3") %>% pull(Prop_T) %>% min() %>% round(., 2)` до `r bed_morphotypes %>% filter(Bank == "vor3") %>% pull(Prop_T) %>% max() %>% round(., 2)`. 
+
+Возможной причиной различий в таксономической структуре двух банок может быть различие в их положении относительно устья Вороньей губы - банка *vor4* располагается ближе ко входу в акваторию, что, возможно, определяет приток личинок *M.trossulus*, приходящих из открытой части акватории Кандалакшского залива, где наблюдается экспансия этого вида в последние десятилетия. 
+
+
+```{r fig.cap=figRef("Bed_morph", "Доля мидий T-морфотипа на двух мидевых банках в 2023 г.. Proportion of T-morphotype mussels on two mussel beds in 2023."), fig.width= 4}
+  
+ggplot(bed_morphotypes, aes(x = Bank, y = Prop_T)) +
+  geom_boxplot() +
+  labs(x = "Мидевая банка", y = "Доля мидий T-морфотипа")
+  
+```
+
+
+
+**Сообщества, связанные с мидиевыми банками**
+
+```{r}
+library(vegan)
+
+bed_community <- 
+  bed %>% 
+  select(-c(Year, Bank,  Sample,N, B, NT, NE))
+
+PERMANOVA <- adonis2(bed_community ~ Bank, data = bed, permutations = 999)
+
+
+```
+
+
+```{r}
+simper_results <- simper(bed_community, bed$Bank)
+
+simper_results <- summary(simper_results)$vor3_vor4
+
+most_contrib_species <- row.names(simper_results)[1:3]
+
+most_contrib_species <- gsub("_", " ", most_contrib_species)
+most_contrib_species <- gsub(" dead", " (мертв.) ", most_contrib_species)
+
+```
+
+
+
+Сообщества двух мидевых банок существенно отличались (`r figRef("MDS")`, PERMANOVA: F = `r round(PERMANOVA$F[1], 2)`, p = `r PERMANOVA$'Pr(>F)'[1]`). Оценка вклада в формирование отличий между двумя банками с помощью метода SIMPER (Таблица +.3) показало, что наибольший вклад в формирование различий между двумя банками (до 80% различий) вносят следующие виды: `r paste(most_contrib_species, sep = ", ")`. В настоящий момент однозначно утверждать, что наблюдаемые различия сообществ связаны с различием таксономического состава поселений мидий, как вида-эдификатора, пока нельзя.   
+
+
+
+
+
+```{r fig.cap=figRef("MDS", "Многомерное шкалирование проб, взятых на двух мидиевых банках (анализ основан на коэффициенте Брея-Кертиса). Multidimensional scaling of samples from two mussel beds (the analyses based on the Bray-Curtis coefficient).")}
+
+ord <- metaMDS(bed_community, trace = FALSE) 
+  
+mds <- data.frame(Bank = bed$Bank, scores(ord)$sites)  
+
+ggplot(mds, aes(NMDS1, NMDS2)) + 
+  geom_point(aes(fill = Bank), shape = 21, size = 4) +
+  scale_fill_manual(values = c("white", "black")) +
+  ggtitle(paste("Stress =", round(ord$stress, 3)))
+
+  
+```
+
+
+
+
+\pagebreak
+
+
+```{r}
+bed_print <- 
+  bed %>%
+  select(-c(Year, N, B, NT, NE )) %>% 
+  melt(., id.vars = c("Bank", "Sample")) %>% 
+  filter(value != 0) %>%
+  arrange(Bank, Sample)
+
+bed_print$variable <- gsub("_", " ", bed_print$variable)
+bed_print$variable  <- gsub(" dead", " (мертв.) ", bed_print$variable)
+
+colname <- c("Банка", "Номер пробы", "Вид", "Обилие")
+
+library(officer)
+std_border = fp_border(color="gray", width = 1)
+
+biomass <- which(bed_print$variable %in% c("Нитчатые водоросли", "Fucus sp."))
+
+
+bed_print %>% 
+ flextable() %>% 
+  fontsize(part = "all") %>% 
+   border_inner_h(border = std_border ) %>% 
+  border_inner_v(border = std_border ) %>% 
+  fontsize(size = 10, part = "all") %>% 
+  set_header_labels(values = colname) %>% 
+  colformat_double(j = 4,  digits = 0) %>% 
+  colformat_double(j = 4, i = biomass,  digits = 3) %>%
+  set_caption("Таблица +.1 Обилие (для животных численность, для растений биомасса в граммах) в пробах (1/182 кв.м) на двух мидиевых банках. Abundance (for animals individuals' number, for plants biomass) in samples (1/182 square metres) from two mussel beds.") %>% 
+  autofit()
+
+```
+
+
+
+\pagebreak
+
+
+```{r}
+bed_print2 <- 
+  bed %>%
+  select(c(Bank, Sample, N, B, NT, NE )) %>%
+  mutate(Ptop_T = NT/(NT+NE))  %>% 
+  arrange(Bank, Sample)
+
+
+colname <- c("Банка", "Номер пробы", "Численность мидий", "Биомасса мидий", "Число осбей T-морфотипа", "Число особей E-морфотипа", "Доля T-мофотипа")
+
+library(officer)
+std_border = fp_border(color="gray", width = 1)
+
+bed_print2 %>% 
+ flextable() %>% 
+  fontsize(part = "all") %>% 
+   border_inner_h(border = std_border ) %>% 
+  border_inner_v(border = std_border ) %>% 
+  fontsize(size = 10, part = "all") %>% 
+  set_header_labels(values = colname) %>% 
+  colformat_double(j = 4,  digits = 2) %>% 
+  colformat_double(j = 7, digits = 2) %>%
+  set_caption("Таблица +.1 Параметры поселений мидий в пробах на мидиевых банках. Parameters of mussel settlement in mussel beds samples.") %>% 
+  autofit()
+
+```
+
+\pagebreak
+
+
+
+```{r}
+simper_results <-
+  simper_results %>% 
+  mutate(Species = row.names(.))
+
+simper_results$Species <- gsub("_", " ", simper_results$Species)
+simper_results$Species  <- gsub(" dead", " (мертв.) ", simper_results$Species)
+
+simper_results_print <-
+  simper_results %>%
+  mutate(Cum_perc = round(cumsum*100, 1)) %>% 
+  select(Species, average, ava, avb, Cum_perc)
+
+row.names(simper_results_print) <- NULL
+
+
+
+colname <- c("Вид", "Вклад в формирование различий", "Среднее обиле на банке vor3", "Среднее обиле на банке vor4", "Кумулята уровня различий (%)")
+
+library(officer)
+std_border = fp_border(color="gray", width = 1)
+
+simper_results_print %>% 
+ flextable() %>% 
+  fontsize(part = "all") %>% 
+   border_inner_h(border = std_border ) %>% 
+  border_inner_v(border = std_border ) %>% 
+  fontsize(size = 10, part = "all") %>% 
+  set_header_labels(values = colname) %>% 
+  colformat_double(j = 2,  digits = 3) %>% 
+  colformat_double(j = 3:4,  digits = 2) %>% 
+  colformat_double(j = 5, digits = 1) %>%
+  set_caption("Таблица +.3 Результаты процедуры SIMPER при сравнения двух мидиевых банок. Results of the SIMPER procedure to compare two mussel beds.") %>% 
+  autofit()
+
+```
+
+
+
+
