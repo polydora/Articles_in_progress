@@ -23,6 +23,8 @@ library(broom)
 library(stringr)
 library(lubridate)
 library(patchwork)
+library(vegan)
+
 
 theme_set(theme_bw())
 
@@ -86,7 +88,9 @@ draw(mod_empty, select = 1) +
   geom_vline(xintercept = Begin_august) +
   geom_text(aes(x = 175, y = 1.5, label = "June"))+
   geom_text(aes(x = 195, y = 1.5, label = "July"))+
-  geom_text(aes(x = 225, y = 1.5, label = "August"))
+  geom_text(aes(x = 225, y = 1.5, label = "August")) +
+  labs(x = "Julian Day", title = NULL, subtitle = "Female")
+  
 
 
 Pl_DOY_m <- 
@@ -96,13 +100,16 @@ geom_vline(xintercept = Begin_julay)+
   geom_vline(xintercept = Begin_august) +
   geom_text(aes(x = 175, y = 1.5, label = "June"))+
   geom_text(aes(x = 195, y = 1.5, label = "July"))+
-  geom_text(aes(x = 225, y = 1.5, label = "August"))
+  geom_text(aes(x = 225, y = 1.5, label = "August")) +
+  labs(x = "Julian Day", title = NULL, subtitle = "Male")
+
 
 
 
 Pl_Year <- 
 draw(mod_empty, select = 3) + 
-  geom_hline(yintercept = 0, linetype = 2)
+  geom_hline(yintercept = 0, linetype = 2) +
+  labs(x = "Years", title = NULL, subtitle = NULL)
 
 
 
@@ -113,7 +120,7 @@ draw(mod_empty, select = 3) +
 
 
 
-```{rfig.cap="Рис. +. Сезонная динамика частоты особей с пустыми кишечниками среди самок (A) и самцов (B)"}
+```{r fig.cap="Рис. +. Сезонная динамика частоты особей с пустыми кишечниками среди самок (A) и самцов (B)"}
 
 plot_grid(Pl_DOY_f, Pl_DOY_m, labels = "AUTO")
 
@@ -124,6 +131,7 @@ plot_grid(Pl_DOY_f, Pl_DOY_m, labels = "AUTO")
 
 
 ```{r fig.cap="Рис. +. Многолетняя динамика частоты особей с пустыми кишечниками"}
+
 plot_grid(Pl_Year)
 
 
@@ -131,7 +139,7 @@ plot_grid(Pl_Year)
 
 
 
-## Динамика пишевого спектра
+## Динамика пищевого спектра
 
 
 ## Видовой состав пищевых объектов
@@ -147,7 +155,11 @@ zub2 <- melt(zub, id.vars = c("ID","Date", "Year", "L", "W", "Sex"), variable.na
 species_freq <- 
 zub2 %>% group_by(Species) %>% summarise(Freq = mean(Out))
 
+
 ```
+
+
+
 
 
 
@@ -169,20 +181,29 @@ zub2 %>%
   summarise(N = sum(Freq != 0)) 
 
 ggplot(spec_num, aes(x = Year, y = N)) +
-geom_line() +
-  geom_smooth()
+geom_point() +
+  geom_smooth(se = F)
 
 ```
 
 
 
-Никакого значимого тренда не наблюдается.
+Никакого значимого тренда не наблюдается. Можно указать минимум числа видов приходится на промежуток между 2010 и 2015 гг. Больше всего видов в питании было в 2000 г.
 
 
 ## Динамика количества видов, имеющих высокую встречаемость
 
+
 ```{r}
 Freq_thresh <- 0.2
+```
+
+
+За порог взял частоту в `r Freq_thresh*100`%. 
+
+
+```{r fig.cap = "Рисунок +. Многолетние изменения количества видов, имеющих высокую встречаемость. Кривая - линия тренда, подобранная методом LOESS."}
+
 
 zub2 %>% 
   group_by(Year, Species) %>% 
@@ -191,14 +212,61 @@ zub2 %>%
   group_by(Year) %>% 
   summarise(N_abund = sum(Abund), Prop_abund = mean(Abund)) %>% 
   ggplot(aes(x = Year, y = N_abund)) +
-  geom_line() +
-  geom_smooth(se = F)
+  geom_point(size = 3) +
+  geom_smooth(se = F) +
+  labs(x = "Years", y = "Species number") ->
+  Pl_Abund_species
+
+Pl_Abund_species
 
 
 ```
 
 
-Не уверен, что можно вытянуть статистикой какие-то значимые результаты, но глазом видно, что макисмумы в этой кривой приходятся на годы с минимумаи пустых кишечников
+
+Не уверен, что можно вытянуть статистикой какие-то значимые результаты, но глазом видно, что макисмумы в этой кривой приходятся на годы с минимумами пустых кишечников
+
+
+На мой взгляд, вместо количества видов, имеющих встречаемость выше порога, лучше использовать какой-нибудь индекс разнообразия. Нверняка в науке о питании есть такие индексы. Специально не искал. Однако идейно близок будет индекс разнообразия Шеннона, котрый в данном контексте будет иметь вот такой вид:
+
+$$
+H = -\sum{P_i \cdot log_2P_i}
+$$
+Динамика этого индекса выглядит вот так 
+
+
+```{r fig.cap = "Рисунок +. Многолетние изменения индекса разнообразия. Кривая - линия тренда, подобранная методом LOESS."}
+
+H <- function(x){
+  -1*sum(x*log(x, base = 2))
+}
+
+zub2 %>% 
+  group_by(Year, Species) %>% 
+  summarise(Freq = mean(Out)) %>% 
+  filter(Freq != 0) %>% 
+  group_by(Year) %>% 
+  summarise(H = H(Freq)) %>% 
+  ggplot(aes(x = Year, y = H)) +
+  geom_point(size = 3) +
+  geom_smooth(se = F) ->
+  Pl_H
+
+Pl_H
+
+```
+
+
+
+Падение значений индекса говорит о снижении разнообразия пищевого спектра, что может отражать снижение разнообразия сообщества, в котором питается рыба. Это, в принципе, согласуется с тем, что рассматривается как причина изменений встречаемости отдельных видов (см. ниже).   
+
+
+
+Для сравнения привожу все три графика на одном рисунке
+
+```{r}
+plot_grid(Pl_Year, Pl_Abund_species, Pl_H, ncol = 1)
+```
 
 
 
@@ -230,7 +298,7 @@ $f$ - непараметрическая сглаживающая функция
 ### Результаты построения модели
 
 ```{r}
-Mod_gam  <-  gam(Out ~ s(Year, by = Species) + Species, data = zub2, method = "REML", family = "binomial")
+Mod_gam  <-  gam(Out ~ s(Year, by = Species) + Species, data = zub3, method = "REML", family = "binomial")
 
 ```
 
@@ -245,7 +313,7 @@ sum_Mod_gam$term_2 <- str_replace_all(sum_Mod_gam$term, "s\\(Year\\):Species" , 
 sum_Mod_gam$term_2 <- str_replace_all(sum_Mod_gam$term_2, "\\." , " " ) 
 
 
-sum_Mod_gam %>% select(-term_2) %>% kable()
+sum_Mod_gam %>% select(-term_2) %>%  select(-ref.df) %>% kable()
 
 ```
 
@@ -259,7 +327,7 @@ sum_Mod_gam %>% select(-term_2) %>% kable()
 
 #### Визуализация модели, описывающей многолетнюю динамику
 
-```{r}
+```{r fig.cap = "Рисунок +. Многолетние изменения встречаемости самых частых видов корма. Кривая - линия тренда, подобранная методом GAM."}
 
 my_data <- expand.grid(Species = unique(zub3$Species), Year = seq(min(zub3$Year), max(zub3$Year))  )
 
@@ -269,10 +337,25 @@ my_data$fit <- predicted$fit
 
 my_data$SE <- predicted$se.fit
 
+my_data$Species <- factor(my_data$Species, levels = 
+                            c("Mytilus_edulis", 
+                              "Arctica_islandica", 
+                              "Ciliatocardium_ciliatum",
+                              "Buccinum_undatum",
+                              "Littorina_littorea",
+                              "Tonicella_marmorea", 
+                              "Pagurus_pubescens",
+                              "Hyas_araneus",
+                              "Styela_rustica",
+                              "Musculus_discors",
+                              "Serripes_groenlandicus"
+                            ))
+
+
 Pl_Mod_gam <- 
 ggplot(my_data, aes(x = Year, y = fit)) +
   geom_line(color = "blue") +
-  facet_wrap(~Species, ncol = 3, scales = "free_y") +
+  facet_wrap(~Species, ncol = 3, scales = "free_y", dir = "v") +
   geom_ribbon(aes(ymin = fit - 1.96*SE, ymax = fit + 1.96*SE), alpha = 0.2)
   
 species_freq3 <-
@@ -287,45 +370,45 @@ Pl_Mod_gam +
 ```
 
 
-## Варьирование струкутры рациона
+<!-- ## Варьирование струкутры рациона -->
 
-```{r}
-library(vegan)
+<!-- ```{r} -->
+<!-- library(vegan) -->
 
-zub3 <- 
-  zub %>% 
-  select(-c(ID, Year, L, W, Sex))
+<!-- zub3 <-  -->
+<!--   zub %>%  -->
+<!--   select(-c(ID, Year, L, W, Sex)) -->
 
-mod <- cca(zub3 ~ log(L) , data = zub)
+<!-- mod <- cca(zub3 ~ log(L) , data = zub) -->
 
-plot(mod, display = c("cn", "species"))
+<!-- plot(mod, display = c("cn", "species")) -->
 
-anova(mod)
+<!-- anova(mod) -->
 
-anova(mod, by = "axis")
+<!-- anova(mod, by = "axis") -->
 
-anova(mod, by = "margin", permutations = 9999)
-
-
-```
+<!-- anova(mod, by = "margin", permutations = 9999) -->
 
 
-```{r}
-mod_L <- gam((L) ~ s(Year, by = Sex, bs = "cs", k = 5) + Sex, data = zub)
-
-summary(mod_L)
-
-appraise(mod_L)
-draw(mod_L, parametric = T)
-```
+<!-- ``` -->
 
 
-```{r}
-ggplot(zub, aes(x = Year, y = L, groip = factor(Year) )) +
-         geom_boxplot() +
-  facet_wrap(~Sex)
-  
-```
+<!-- ```{r} -->
+<!-- mod_L <- gam((L) ~ s(Year, by = Sex, bs = "cs", k = 5) + Sex, data = zub) -->
+
+<!-- summary(mod_L) -->
+
+<!-- appraise(mod_L) -->
+<!-- draw(mod_L, parametric = T) -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- ggplot(zub, aes(x = Year, y = L, groip = factor(Year) )) + -->
+<!--          geom_boxplot() + -->
+<!--   facet_wrap(~Sex) -->
+
+<!-- ``` -->
 
 
 
