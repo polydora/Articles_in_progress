@@ -28,16 +28,22 @@ theme_set(theme_bw())
 
 ```{r}
 
-finch_il <- read_excel("Data/Spinus_2020_parasitemia_IL6_survival_final.xlsx", na = "NA", sheet = "Spinus_2020_parasitemia_IL6_sur")
+finch_il <- read_excel("Data/Spinus_2020_parasitemia_IL6_survival_final_corrected.xlsx", na = "NA", sheet = "Spinus_2020_parasitemia_IL6_sur")
 finch_il$Experiment <- factor(finch_il$Experiment, labels = c("Control", "SGS1", "GRW2"))
 finch_il$Ring <- factor(finch_il$Ring)
+
+finch_il$Date <- as.Date(finch_il$Date)
+
+
 
 n_obs_il <- finch_il %>% group_by(Ring) %>% summarise(N_il_obs = n())
 
 
-finch <- read_excel("Data/Spinus_2020_parasitemia_IL6_survival_final.xlsx", na = "NA", sheet = "RMR")
+finch <- read_excel("Data/Spinus_2020_parasitemia_IL6_survival_final_corrected.xlsx", na = "NA", sheet = "RMR")
 finch$Experiment <- factor(finch$Experiment, labels = c("Control", "SGS1", "GRW2"))
 finch$Ring <- factor(finch$Ring)
+
+finch$Date <- as.Date(finch$Date) 
 
 # n_obs_rmr <- finch %>% group_by(Ring) %>% summarise(N_rmr_obs = n())
 # 
@@ -113,7 +119,15 @@ for(Selected_Ring in unique(df_all$Ring)){
 }
 
 
+# Вставляю исправленный файл
 
+df_final <- read.table("Data/df_final_Parasitemia.csv", sep = ";", dec = ",", header = TRUE)
+
+df_final$Experiment <- factor(df_final$Experiment, labels = c("Control", "SGS1", "GRW2"))
+
+df_final$Ring <- factor(df_final$Ring)
+
+df_final$Date <- as.Date(df_final$Date,format = "%d.%m.%Y" )
 
 ```
 
@@ -182,9 +196,22 @@ for(Selected_Ring in unique(df_all2$Ring)){
 }
 
 
+# Вставляю исправленный файл
+
+df_final2 <- read.table("Data/df_final2_IL.csv", sep = ";", dec = ",", header = TRUE)
+
+df_final2$Experiment <- factor(df_final2$Experiment, labels = c("Control", "SGS1", "GRW2"))
+
+df_final2$Ring <- factor(df_final2$Ring)
+
+df_final2$Date <- as.Date(df_final2$Date,format = "%d.%m.%Y" )
 
 
 ```
+
+
+
+**Внимание!** При расчетах я использовал те файлы, которые прислала Мария! То есть в качестве датафреймов  df_final и df_final2 я использовал не результаты вычислений по коду, а то, что прислали. Как я понял там находятся какие-то результаты ручного персчета. 
 
 
 

@@ -138,6 +138,20 @@ plot_grid(Pl_Year)
 ```
 
 
+Возможно пригодится еще и вот такая таблица
+
+```{r}
+zub_empty %>% 
+  group_by(Year) %>% 
+  summarise(Prop_empty = round(mean(Out)*100, 1) ) ->
+  prop_empty
+  
+kable(prop_empty, col.names = c("Year", "Frequency of empty guts (%)"))
+
+```
+
+
+
 
 ## Динамика пищевого спектра
 
@@ -202,32 +216,38 @@ Freq_thresh <- 0.2
 За порог взял частоту в `r Freq_thresh*100`%. 
 
 
-```{r fig.cap = "Рисунок +. Многолетние изменения количества видов, имеющих высокую встречаемость. Кривая - линия тренда, подобранная методом LOESS."}
+```{r fig.cap = "Рисунок +. Многолетние изменения соотношения частот видов, имеющих высокую встречаемость."}
+
+library(ggpattern)
 
 
 zub2 %>% 
   group_by(Year, Species) %>% 
   summarise(Freq = mean(Out)) %>% 
   mutate(Abund = ifelse(Freq >= Freq_thresh, 1, 0)) %>% 
-  group_by(Year) %>% 
-  summarise(N_abund = sum(Abund), Prop_abund = mean(Abund)) %>% 
-  ggplot(aes(x = Year, y = N_abund)) +
-  geom_point(size = 3) +
-  geom_smooth(se = F) +
-  labs(x = "Years", y = "Species number") ->
-  Pl_Abund_species
+  filter(Abund == 1) %>% 
+  ggplot(., aes(x = Year, y = Freq)) +
+  geom_col_pattern(aes(pattern = Species, pattern_angle = Species, pattern_spacing=Species), 
+    fill            = 'white',
+    colour          = 'black', 
+    pattern_density = 0.3, 
+    pattern_fill    = 'black',
+    pattern_colour  = 'darkgrey')
+  
 
-Pl_Abund_species
+
+
+
 
 
 ```
 
 
+То, что сумма больше 1 не должно смущать, так как в одном желудке может быть несколько разных видов.
 
-Не уверен, что можно вытянуть статистикой какие-то значимые результаты, но глазом видно, что макисмумы в этой кривой приходятся на годы с минимумами пустых кишечников
 
 
-На мой взгляд, вместо количества видов, имеющих встречаемость выше порога, лучше использовать какой-нибудь индекс разнообразия. Нверняка в науке о питании есть такие индексы. Специально не искал. Однако идейно близок будет индекс разнообразия Шеннона, котрый в данном контексте будет иметь вот такой вид:
+Индекс разнообразия пищевого спектра
 
 $$
 H = -\sum{P_i \cdot log_2P_i}
@@ -262,11 +282,27 @@ Pl_H
 
 
 
-Для сравнения привожу все три графика на одном рисунке
-
 ```{r}
-plot_grid(Pl_Year, Pl_Abund_species, Pl_H, ncol = 1)
+
+H <- function(x){
+  sum(x^2)
+}
+
+H_year <-
+  zub2 %>% 
+  group_by(Year, Species) %>% 
+  summarise(Freq = mean(Out), Out = mean(Out)) %>% 
+  filter(Freq != 0) %>% 
+  group_by(Year) %>% 
+  summarise(H = H(Freq)*sum(Out))
+
+merge(prop_empty, H_year) %>% 
+  ggplot(., aes(x = Prop_empty, y = H)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
 ```
+
 
 
 

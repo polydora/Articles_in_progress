@@ -28,14 +28,14 @@ theme_set(theme_bw())
 
 ```{r}
 
-finch_il <- read_excel("Data/Spinus_2020_parasitemia_IL6_survival_final.xlsx", na = "NA", sheet = "Spinus_2020_parasitemia_IL6_sur")
+finch_il <- read_excel("Data/Spinus_2020_parasitemia_IL6_survival_final_corrected.xlsx", na = "NA", sheet = "Spinus_2020_parasitemia_IL6_sur")
 finch_il$Experiment <- factor(finch_il$Experiment, labels = c("Control", "SGS1", "GRW2"))
 finch_il$Ring <- factor(finch_il$Ring)
 
 n_obs_il <- finch_il %>% group_by(Ring) %>% summarise(N_il_obs = n())
 
 
-finch <- read_excel("Data/Spinus_2020_parasitemia_IL6_survival_final.xlsx", na = "NA", sheet = "RMR")
+finch <- read_excel("Data/Spinus_2020_parasitemia_IL6_survival_final_corrected.xlsx", na = "NA", sheet = "RMR")
 finch$Experiment <- factor(finch$Experiment, labels = c("Control", "SGS1", "GRW2"))
 finch$Ring <- factor(finch$Ring)
 

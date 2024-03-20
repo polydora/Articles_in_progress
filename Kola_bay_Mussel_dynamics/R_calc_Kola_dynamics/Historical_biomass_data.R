@@ -122,7 +122,7 @@ meteo_reduced <-
   meteo %>% 
   filter(!Platform %in% c("Port_Vladinir", "Drozdovka"))
 
-Mod_Tw <- gam(Tw ~ s(Year, bs = "cr", k = 4) + ti(Longitude, Latitude, bs = "tp"), data = meteo_reduced)
+Mod_Tw <- gam(Tw ~ s(Year, bs = "cr", k = 4) + ti(Longitude, Latitude, bs = "tp", k = 3), data = meteo_reduced)
 
 summary(Mod_Tw)
 
@@ -130,7 +130,7 @@ draw(Mod_Tw)
 
 # Строим модель пространственной изменчивости температуры воздуха по данным метеостанций 
 
-Mod_Ta <- gam(Ta ~ s(Year, bs = "cr", k = 4) + ti(Longitude, Latitude, bs = "tp", k = 5), data = meteo_reduced)
+Mod_Ta <- gam(Ta ~ s(Year, bs = "cr", k = 4) + ti(Longitude, Latitude, bs = "tp", k = 3), data = meteo_reduced)
 
 summary(Mod_Ta)
 
@@ -175,6 +175,15 @@ myt_other <-
   myt_other %>% 
   mutate(Tw = predict(Mod_Tw, newdata = myt_other),
          Ta = predict(Mod_Ta, newdata = myt_other))
+
+myt <-
+  myt %>% 
+  mutate(Tw = predict(Mod_Tw, newdata = myt),
+         Ta = predict(Mod_Ta, newdata = myt))
+
+myt <- 
+  myt %>% 
+  mutate(Period = ifelse(Year < 2000, "XX", "XXI"))
 
 
 # Долготный градиент температур на разных данных
@@ -339,3 +348,20 @@ ggplot(Mydata, aes(x = Temp_lagged, y = Log_B_predicted, color = Period )) +
   geom_point(data = monitor, aes(y = log(B_kg))) +
   theme_bw() +
   scale_color_manual(values = c("red", "blue"))
+
+
+########## Визуализация экологических ниш в два разных периода ############
+myt$Period <- factor(myt$Period)
+
+myt_SDM2 <- gam(log(B_kg) ~ ti(Tw, Ta, k = 5, by = Period) + Period, data = myt)
+
+summary(myt_SDM2)
+
+appraise(myt_SDM2)
+draw(myt_SDM2)
+
+
+
+
+
+
