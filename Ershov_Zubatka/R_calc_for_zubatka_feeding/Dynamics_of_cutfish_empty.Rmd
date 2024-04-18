@@ -252,6 +252,42 @@ kable(spec_num, caption = "Таблица +. Количество видов, о
 
 
 ```{r}
+Freq_thresh <- 0.25
+```
+
+
+За порог взял частоту в `r Freq_thresh*100`%. 
+
+
+```{r fig.cap = "Рисунок +. Многолетние изменения соотношения частот видов, имеющих высокую встречаемость."}
+
+library(ggpattern)
+
+
+zub2 %>% 
+  group_by(Year, Species) %>% 
+  summarise(Freq = mean(Out)) %>% 
+  mutate(Abund = ifelse(Freq >= Freq_thresh, 1, 0)) %>% 
+  filter(Abund == 1) %>% 
+  ggplot(., aes(x = Year, y = Abund)) +
+  geom_col_pattern(aes(pattern = Species, pattern_angle = Species, pattern_spacing=Species), 
+    fill            = 'white',
+    colour          = 'black', 
+    pattern_density = 0.2, 
+    pattern_fill    = 'black',
+    pattern_colour  = 'darkgrey') +
+  labs(y = "Number of species") + 
+  theme(legend.position = "bottom", legend.key.size = unit(2,"line"))
+  
+
+```
+
+
+
+
+
+
+```{r}
 Freq_thresh <- 0.2
 ```
 
@@ -269,16 +305,19 @@ zub2 %>%
   summarise(Freq = mean(Out)) %>% 
   mutate(Abund = ifelse(Freq >= Freq_thresh, 1, 0)) %>% 
   filter(Abund == 1) %>% 
-  ggplot(., aes(x = Year, y = Freq)) +
+  ggplot(., aes(x = Year, y = Abund)) +
   geom_col_pattern(aes(pattern = Species, pattern_angle = Species, pattern_spacing=Species), 
     fill            = 'white',
     colour          = 'black', 
-    pattern_density = 0.3, 
+    pattern_density = 0.2, 
     pattern_fill    = 'black',
-    pattern_colour  = 'darkgrey')
+    pattern_colour  = 'darkgrey') +
+  labs(y = "Number of species") + 
+  theme(legend.position = "bottom", legend.key.size = unit(2,"line"))
   
 
 ```
+
 
 
 Паттерн заливки потом подкрутим. Пока не супер смотрится. Но проблема в том, что слишком много градаций.

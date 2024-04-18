@@ -1,0 +1,253 @@
+---
+title: "Cryptic mussels in a contact zone: towards to species distribution modelling"
+author: "**V. M. Khaitov, A. A. Zaychikova, P. Y. Safonov, M. V. Katolikova, M. V. Ivanov, P. P. Strelkov**"
+output:
+  # html_document
+  word_document:
+    reference_docx: article_template.docx
+    fig_width: 5
+    fig_height: 5
+# bibliography: Astred_english_Bibliografy_abriviated.bib
+# csl: marine-biology.csl
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+options(knitr.kable.NA = '')
+```
+
+```{r}
+## Packages ######
+
+library(ggplot2)
+library(lme4)
+library(glmmADMB)
+library(reshape2)
+library(dplyr)
+library(patchwork)
+library(broom)
+library(broom.mixed)
+library(tidyr)
+library(readxl)
+library(mgcv)
+library(gratia)
+library(flextable)
+library(cowplot)
+
+theme_set(theme_bw())
+
+```
+
+```{r training_data}
+##### Data reading
+myt_full <- read_excel(path = "data/myt_full_2024.xlsx", sheet = "Samples")
+
+
+ports <- data.frame(Shore = c("Kand", "Karel", "Kand", "Karel", "Karel", "Karel"), Port = c("Kandalaksha", "Vitino", "Umba", "Chupa", "Keret", "Kovda"), Status = c("Active", "Active", "Abandoned", "Abandoned", "Abandoned", "Abandoned"  ), Lat = c(67.137283, 67.076570,  66.677970, 66.269964, 66.294178, 66.696754), Lon = c(32.407995, 32.333630, 34.357655, 33.069534, 33.640656, 32.875396))
+
+
+# sites_fetch_df <- read.table("data/Distred_samples_fetch_values_2023.csv", sep = ",", header = T)
+# 
+# sites_fetch_df[,1:5] <- sites_fetch_df[,1:5]/1000 
+
+# Сonventional coordinates of the top of the Kandalaksha Bay
+Shore_boundary = c(67.162360, 32.332371)
+
+
+river_full <- read.table("data/Rivers_2021.csv", sep = ",", header = T)
+
+```
+
+```{r}
+myt_full <- 
+  myt_full %>%
+  mutate(Ptros =  exp(-2.4 + 5.4 * Prop_T)/(1 + exp(-2.4 + 5.4 * Prop_T)) ) %>% 
+  mutate(Log_Min_dist_port = log(Min_dist_port),
+         Log_Min_dist_river = log(Min_dist_river),
+         Log_Average_Fetch = log(Average_Fetch),
+         Log_Fetch = log(Fetch))
+  
+```
+
+
+
+
+
+
+```{r training_data_housekeepimg}
+
+myt_full$Position <- factor(myt_full$Position)
+
+myt_full$Position <- relevel(myt_full$Position, ref = "Bottom")
+
+myt_full$Port_Status <- factor(myt_full$Port_Status)
+
+myt_full$Port_Status <- relevel(myt_full$Port_Status, ref = "Abandoned")
+
+myt_full$River_Size <- factor(myt_full$River_Size)
+
+myt_full$River_Size <- relevel(myt_full$River_Size, ref = "Small")
+
+myt_full$Site <- factor(myt_full$Site)
+
+# names(myt_full)
+```
+
+
+
+```{r Boundary_of_Ptros_between_MT_and_ME_dominated_sites}
+
+boundary = 0.5
+
+```
+
+
+
+```{r training_data_sites}
+myt_site <- myt_full %>% 
+  group_by(Site) %>% 
+  # select(Lat, Lon, N_T, N_E, Salinity, Min_dist_river, River, River_Size, Min_dist_river_Large, Min_dist_port, Port, Port_Status, Average_Fetch, Fetch, Dist_cut) %>% 
+  summarise(Lat = mean(Lat), Lon = mean(Lon), N_T = sum(N_T), N_E = sum(N_E), Salinity = mean(Salinity), Min_dist_river = mean(Min_dist_river), River = unique(River), River_Size = unique(River_Size), Min_dist_river_Large = mean(Min_dist_river_Large),  Min_dist_port = mean(Min_dist_port), Port = unique(Port), Port_Status = unique(Port_Status), Average_Fetch = mean(Average_Fetch), Fetch = mean(Fetch), Dist_cut = mean(Dist_cut)) %>% 
+  mutate(Prop_T = N_T/(N_T+N_E)) %>% 
+  mutate(Ptros = exp(-2.4 + 5.4 * Prop_T)/(1 + exp(-2.4 + 5.4 * Prop_T)))
+
+```
+
+
+
+
+```{r training_data_sites_substrates }
+
+myt_site_substr <-
+  myt_full %>%
+  group_by(Site, Position) %>%
+  summarise(N_E = sum(N_E), N_T = sum(N_T),
+        Salinity = mean(Salinity),
+        Min_dist_river = mean(Min_dist_river),
+        River_Size = unique(River_Size),
+        Average_Fetch = mean(Average_Fetch),
+        Fetch = mean(Fetch),
+        Min_dist_port = mean(Min_dist_port),
+        Port_Status = unique(Port_Status),
+        Lon = mean(Lon),
+        Lat = mean(Lat)) %>%
+  mutate(Prop_T = N_T/(N_T + N_E)) %>%
+  mutate(Ptros =  exp(-2.4 + 5.4 * Prop_T)/(1 + exp(-2.4 + 5.4 * Prop_T))) %>%  
+  mutate(Mt_dominated = ifelse(Ptros >= boundary, 1, 0))
+
+
+myt_site_substr <- 
+  myt_site_substr %>% 
+  mutate(Log_Min_dist_port = log(Min_dist_port),
+         Log_Min_dist_river = log(Min_dist_river),
+         Log_Fetch = log(Fetch))
+
+```
+
+
+
+```{r myt_testing_data_set}
+myt_test <- read_excel("data/myt_White_Sea_testing_data_set.xlsx")
+
+myt_test_site <- myt_test %>% group_by(Site, Position) %>%  
+  summarise(N_E = sum(N_E), N_T = sum(N_T),
+        Salinity = mean(Salinity, na.rm = T),
+        Min_dist_river = mean(Min_dist_river),
+        River_Size = unique(River_Size),
+        Average_Fetch = mean(Average_Fetch),
+        Fetch = mean(Fetch),
+        Min_dist_port = mean(Min_dist_port),
+        Port_Status = unique(Port_Status),
+        Lon = mean(Lon),
+        Lat = mean(Lat)) %>%
+  mutate(Prop_T = N_T/(N_T + N_E)) %>%
+  mutate(Fi_T = 2*asin(sqrt(Prop_T))*180/pi) %>%
+  mutate(Ptros = exp(-2.4 + 5.4 * Prop_T)/(1 + exp(-2.4 + 5.4 * Prop_T)),
+         Fi_tros = 2*asin(sqrt(Ptros))*180/pi) %>% 
+  mutate(Mt_dominated = ifelse(Ptros >= boundary, 1, 0))
+
+myt_test_site <- 
+  myt_test_site %>% 
+  mutate(Log_Min_dist_port = log(Min_dist_port),
+         Log_Min_dist_river = log(Min_dist_river),
+         Log_Average_Fetch = log(Average_Fetch),
+         Log_Fetch = log(Fetch))
+
+
+```
+
+
+
+
+
+```{r Tyuva_testing_data_set}
+tuv <- read_excel("data/TuMyt_2009_2010_for_SDM.xlsx")
+
+tuv <- tuv %>% mutate(Mt_dominated  = ifelse(Ptros_predicted >= boundary, 1, 0))
+
+# tuv <- tuv %>% filter(Depth > -1.5)
+tuv <-
+  tuv %>% mutate(Ptros_WSBL = exp(-2.4 + 5.4 * PT)/(1 + exp(-2.4 + 5.4 * PT)),
+                 Ptros = exp(-2.3 + 3.3*PT)  /  (1 +  exp(-2.3 + 3.3*PT)))
+
+tuv <- 
+  tuv %>% 
+  mutate(Log_Min_dist_port = log(Min_dist_port),
+         Log_Min_dist_river = log(Min_dist_river + 1),
+         Log_Average_Fetch = log(Average_Fetch),
+         Log_Fetch = log(Fetch))
+```
+
+
+```{r}
+
+kola <- read_excel("data/Testing_data_from_Khaitov_et_al_2021.xlsx", sheet = "S1 Kola samples")
+kola$Port_Status <- factor(kola$Port_Status)
+kola$Position <- "Bottom"
+# kola$Position <- "Algae"
+
+kola$Position <- factor(kola$Position)
+kola$River_Size <- factor(kola$River_Size)
+
+kola$Log_Fetch <- log(kola$Fetch)
+kola$Log_Min_dist_port <- log(kola$Min_dist_port)
+kola$Log_Min_dist_river <- log(kola$Min_dist_river)
+
+kola <- 
+  kola %>% 
+  mutate(Ptros = ifelse(Sample_set == "BL", exp(-2.4 + 5.4 * PT)/(1 + exp(-2.4 + 5.4 * PT)), 
+         exp(-3.9 + 5.0 * PT)/(1 + exp(-3.9 + 5.0 * PT)))) %>% 
+  mutate(Mt_dominated = ifelse(Ptros >= boundary, 1, 0)) %>% 
+  filter(Region == "Kola Bay")
+
+```
+
+
+
+## Introduction
+
+Species distribution models (SDM) being a numerical tools describing the relationship between species occurrence and environmental parameters  allow to predict distribution patterns of species both in space and time (Elith, Leathwick, 2009). The SDM framework is very popular in terrestrial ecology (+++) but the amount of papers devoted to SDMs for marine species has also been increasing in recent years (Robinson et al 2017). The range of approaches to building such models is very wide: from regular multiple regressions up to advanced machine learning methods (+++). 
+
+SDMs are mostly applied for «good», morphologically distinct species  (e.g. Reiss et al., 2011; Lindegren et al., 2022) that can be involved in routine studies which in the case of marine ecology  require numerous samples.  The increasing evidence for cryptic species (Bastrop et al 1998; Fiser et al 2010) and polytipic species (++++REF) among marine animals makes it urgent to find out approaches to build SDMs for sympatric cryptic species, as well as to infraspecific taxa such as subspecies or phylogenetic lineages within polytypic species.  Only few studies have been conducted in this direction so far in marine ecology (Lowen et al 2019; Dennis, Hellberg, 2010). Since the relationship between species and environmental factors is the essence of the ecological niche concept (+++) SDMs are considered  as a tool of species' ecologial niche assessment (Elith, Leathwick, 2009). Such interpretation is particularly useful in the context of cryptic species coexisting in sympatry since their niches' divergence is frequently in focus of investigation (++++). Strictly speaking, in the case of several coexisting species, not SDM but JSDM (Joint Species Distribution Modelling) framework should be considered (Ovaskainen, Abreg, 2020). The JSDM paradigm implies the modelling of both ecological niche of coexisting species and their interactions as well (Ovaskainen, Abreg, 2020).   
+
+In the marine realm, the longest scientifically known and best studied complex of cryptic species is the blue mussel "*Mytilus edulis*" complex (Knowlton 1993, ???), which includes a number of species that are better distinguished genetically than morphologically and hybridize in sympatry (++++++). Blue mussels are powerful ecosystem engineers in the temperate and subpolar seas playing an important role in coastal communities (+++). They are also important objects of aquaculture (+++). In the North Atlantic sector, the dominant species are *M. edulis* (thereafter *ME*) and *M. trossulus* (*MT*), which form zones of sympatry (thereafter contact zones) in different parts of the region from Scotland and the Gulf of Man in the south to Greenland and Svalbard in the north (Wenne et al. 2020 and references therein). In contact zones, *ME*, *MT* and their hybrids are often found in the same samples from mussel settlements; such settlements are hereafter referred to as "mixed". Scientists generally agree that *ME* and *MT* are ecologically distinct in sympatry (++++ RC, Katolikova et al.), and have different economic values in aquaculture (+++), but the data on the factors of their ecological segregation i.e. ecological niche partitioning of species is fragmentary and frequently  contradictory.
+
+
+On a biogeographic scale, the distribution of *Mytilus* species is thought to be regulated primarily by temperature and its correlates (Hayhurst, Rawson, 2009; Wenne et al., 2020). Both species occur both in temperate  in parts of Atlantic, but *MT* being more stenothermic, cold-loving species does not penetrate as far south to the temperate/boreal seas as ME (Wenne et al., 2020).
+
+The greatest progress in comparative ecological studies of *ME* and *MT* in sympatry has been made in the contact zones in the Baltic Sea, in the waters around  of the Kola Peninsula (White and Barents Seas) and in the West Atlantic. In the Baltic Sea, only *MT* inhabits the brackish areas of the inner Sea parts, but the more saline areas closer to the North Sea inhabited by *ME* only. In the contact zone hybrids usually predominate in mixed settlements and the frequency of *MT* genes increases towards the inner Baltic (VS 11, Stuckas et al. 2017). As a result, species distribution is strongly correlated with salinity (++++), which acts as a selective factor affecting primarily larval stages (Knöbel et al., 2021). However such simple and understandable pattern in divergence of *MT* and *ME* ecological niches can hardly be revealed in other contact zones. For example, in the Kola region and in West Atlantic zones hybridization is limited with less than 20% of hybrids in mixed settlements (Wenne et al. 2020). Species are distributed in space in a mosaic fashion, both in regional and local scales (RC, +++++ ). The relationship between distribution of species and salinity is nowhere obvious (RC 05, Katolikova et al. 2016; Marchenko et al. 2023), but a number of other factors of ecological segregation have been proposed.
+
+In the White and Barents Seas, the frequency of *MT* is elevated in port areas, possibly due to introduction of this species into the region with ship traffic (VS11++++). The only one factor of species segregation explicitly tested in the White Sea was the substrate to which littoral mussels attach (Katolikova et al. 2016). It turned out that *MT* is more common on fucoid algae while *ME* mostly lives directly on the bottom (mud, sand, stones, gravel). The non-random distribution of species across substrates, however, cannot explain the entire local-scale mosaic in their distribution (Katolikova et al. 2016). Parallel studies in the Barents Sea did not consider mussel substrates, but verified the hypotheses of non-random distribution of species with depth. It turned out that on vertical transects, the proportion of *ME* increases with depth. As a result, *MT* appears to be a more littoral species and *ME* a more sublittoral one (Marchenko et al. 2023). In the western Atlantic, depth, level of anthropogenic pollution and surf exposure has been considered as possible factors in species segregation. It was hypothesized that *MT* may be more abundant than *ME* in littoral (++++), polluted (++++), and surf-exposed habitats (+++), but none of these hypotheses have been tested directly on sufficient material.  
+
+Summarizing the above, in the non-Baltic *MT*-*ME* contact zones  no clear pattern of species distribution along ecological gradients was revealed and some factors involved into analysis were potentially collinear masking each other. For example, ports are often located in storm-protected areas, frequently in estuaries. This makes it difficult to isolate the effects of shipping and other anthropogenic factors, surf and salinity. The same could be said about the effects of depth and fouling substrate since the littoral fucoids are rare in the sublittoral. 
+
+This state of knowledge is not surprising given that for most of the time of blue mussel research, scientists have used labor-intensive genotyping methods to identify cryptic species and therefore have been unable to precede large amounts of material needed for properly organized ecological studies. In addition, there were no reliable statistical methods available to model the distribution of sympatric taxa in the space of multiple factors, i.e. no SDM/JSDM approach was realized. To our knowledge, in the history of *ME* and *MT* studies the SDM approach (but without direct reference to this) have been applied only twice, by Kijewski et al.(+++) and by Wenne et al. (+++). Both times the machine learning techniques were used to model the macro-geographic distribution of species (technically, of allele frequencies at taxonomically informative genes) in the space of multiple climatic and oceanographic characteristics available from public databases. The conclusions of these studies are summarized by recognizing temperature and salinity as important factors influencing the geographical distribution with *MT* tolerate lower salinities and temperatures than *ME* (Kijewski et al. Wenne et al., see also above).    
+
+
+Finding a simple semi-diagnostic shell trait for *ME* and *MT* - the presence or absence of a continuous prismatic strip under the ligament on the inner side of the shell (Zolotarev +++, Katolikova et al. 2016), allowed us to reliably interpret the taxonomic structure of mixed settlements without genotyping. In the White Sea 74% of *MT*, but only 4% of *ME* have this trait (Katolikova et al., 2016), and using the regression models the frequencies of “striped” morphotypes in samples can be recalculated into proportion of *ME* and *MT* (thereafter *ME:MT* ratio; see equations in Khaitov et al., 2021). Note that hybrids are not considered as separate category under this approach.
+
+In this study, we used the SDM approach to simultaneously assess the effects of substrate, salinity, proximity to harbors, and surf on the *ME:MT* ratio in the Kandalaksha Bay of the White Sea. All these factors have been proposed in previous studies as determinants of species' ecological niche partitioning in sympatry. The last of the previously discussed factors, depth, was not studied by us, but was controlled by sampling at the same littoral level. To assess the predictive value of the obtained model, we also analyzed independent testing data sets from the same Kola contact zone.
+
+
+

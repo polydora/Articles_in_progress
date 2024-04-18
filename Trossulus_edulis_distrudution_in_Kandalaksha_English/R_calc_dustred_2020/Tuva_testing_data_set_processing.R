@@ -44,7 +44,7 @@ Tuva_y_small <- c(69.17, 69.21)
 
 
 # read shape file into R
-murm_shape <- readShapeSpatial("Maps/boundary-polygon-land-lvl4.shp", proj4string = CRS("+proj=longlat +datum=WGS84"))
+murm_shape <- readShapeSpatial("Maps/Murmanskaya_obl/boundary-polygon-land-lvl4.shp", proj4string = CRS("+proj=longlat +datum=WGS84"))
 
 
 gg_murm <- fortify(murm_shape)
@@ -98,9 +98,7 @@ fetch.df$fetch <- round(fetch.df$fetch, 1)
 # Вычисление расстояния до ближайшего порта, за который взята точка с координатами (69.190018, 33.622952)
 
 
-ports <- data.frame(Shore = c("Kand", "Karel", "Kand", "Karel", "Karel", "Murman"), Port = c("Кандалакша", "Витино", "Умба", "Чупа", "Средний", "Севеоморск"), Lat = c(67.137283, 67.076570,  66.677970, 66.269964, 66.294178, 69.085054), Lon = c(32.407995, 32.333630, 34.357655, 33.069534, 33.640656, 33.414842))
-
-
+ports <- data.frame(Shore = c("Kand", "Karel", "Kand", "Karel", "Karel", "Murman"), Port = c("Кандалакша", "Витино", "Умба", "Чупа", "Средний", "Полярный"), Lat = c(67.137283, 67.076570,  66.677970, 66.269964, 66.294178, 69.19077), Lon = c(32.407995, 32.333630, 34.357655, 33.069534, 33.640656, 33.49554))
 
 
 nearest_dist <- function(XY, objects = river, x.name = "Lon", y.name = "Lat"){
