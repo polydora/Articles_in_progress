@@ -427,6 +427,7 @@ The maximum *Ptros*  was observed in the top of the Kandalaksha Bay itself and i
 
 Mod_gam <- gam(Ptros ~ s(Salinity, bs = "cs") + s(Log_Min_dist_river, bs = "cs") + s(Log_Fetch, bs = "cs") + s(Log_Min_dist_port, bs = "cs") + Position + River_Size + Port_Status + s(Site, k = Total_site, bs = "re"), method = "REML", family = betar(link = "logit"), data = myt_full )
 
+# summary(Mod_gam)
 
 Mod_gam_ML <- gam(Ptros ~ s(Salinity, bs = "cs") + s(Log_Min_dist_river, bs = "cs") + s(Log_Fetch, bs = "cs") + s(Log_Min_dist_port, bs = "cs") + Position + River_Size + Port_Status + s(Site, k = Total_site, bs = "re"), method = "ML", family = betar(link = "logit"), data = myt_full )
 # 
@@ -499,8 +500,8 @@ Pl_sal_smoother <-
   sm %>%
   filter(smooth == "s(Salinity)") %>%
   ggplot() +
-  # geom_point(aes(x = Salinity, y = `s(Salinity)`, color = Position),
-  #            data = myt_full, cex = 1, colour = "steelblue3") +
+  geom_point(aes(x = Salinity, y = `s(Salinity)`, color = Position),
+             data = myt_full, cex = 1, colour = "steelblue3") +
   geom_rug(aes(x = Salinity),
            data = myt_full,
            sides = "b", length = grid::unit(0.02, "npc")) +
@@ -509,16 +510,15 @@ Pl_sal_smoother <-
   geom_line(aes(x = Salinity, y = est), lwd = 1) +
   labs(y = "Partial effect", x = "Salinity") +
   # geom_hline(yintercept = 0, linetype = 2) +
-  theme_bw()+
-  ylim(-0.6, 1.6)
+  theme_bw()
 
 
 Pl_riv_dist_smoother <- 
     sm %>%
   filter(smooth == "s(Log_Min_dist_river)") %>%
   ggplot() +
-  # geom_point(aes(x = Log_Min_dist_river, y = `s(Log_Min_dist_river)`, color = Position),
-  #            data = myt_full, cex = 1, colour = "steelblue3") +
+  geom_point(aes(x = Log_Min_dist_river, y = `s(Log_Min_dist_river)`, color = Position),
+             data = myt_full, cex = 1, colour = "steelblue3") +
   geom_rug(aes(x = (Log_Min_dist_river)),
            data = myt_full,
            sides = "b", length = grid::unit(0.02, "npc")) +
@@ -527,8 +527,9 @@ Pl_riv_dist_smoother <-
     geom_line(aes(x = Log_Min_dist_river, y = est), lwd = 1) +
   labs(y = "Partial effect", x = "Log Distance to the nearest river (km)") +
   # geom_hline(yintercept = 0, linetype = 2) +
-  theme_bw()+
-  ylim(-0.5, 0.5)
+  theme_bw()
+# +
+#   ylim(-0.5, 0.5)
 
 
 
@@ -538,8 +539,8 @@ Pl_port_dist_smoother <-
      sm %>%
   filter(smooth == "s(Log_Min_dist_port)") %>%
   ggplot() +
-  # geom_point(aes(x = Log_Min_dist_port, y = `s(Log_Min_dist_port)`, color = Position),
-  #            data = myt_full, cex = 1, colour = "steelblue3") +
+  geom_point(aes(x = Log_Min_dist_port, y = `s(Log_Min_dist_port)`, color = Position),
+             data = myt_full, cex = 1, colour = "steelblue3") +
   geom_rug(aes(x = Log_Min_dist_port),
            data = myt_full,
            sides = "b", length = grid::unit(0.02, "npc")) +
@@ -555,8 +556,8 @@ Pl_fetch_smoother <-
   sm %>%
   filter(smooth == "s(Log_Fetch)") %>%
   ggplot() +
-  # geom_point(aes(x = Log_Fetch, y = `s(Log_Fetch)`, color = Position),
-  #            data = myt_full, cex = 1, colour = "steelblue3") +
+  geom_point(aes(x = Log_Fetch, y = `s(Log_Fetch)`, color = Position),
+             data = myt_full, cex = 1, colour = "steelblue3") +
   geom_rug(aes(x = Log_Fetch),
            data = myt_full,
            sides = "b", length = grid::unit(0.02, "npc")) +
@@ -1223,7 +1224,7 @@ Misclassification_rate_tuv <- (b + c)/N
 
 
 
-# For Tyuva data set 2009
+# For Tyuva data set Fucoids
 a <- sum(tuv2$Ptros > boundary & Mod_gam_prediction_tuv2 > boundary)
 
 b <- sum(tuv2$Ptros < boundary & Mod_gam_prediction_tuv2 > boundary)
@@ -1236,21 +1237,21 @@ N = nrow(tuv)
 
 Kappa_tuv2 = ((a + d) - (((a + c)*(a + b) + (b + d)*(c + d))/N))/(N - (((a+c)*(a+b) + (b+d)*(c+d))/N))
 
-Overall_diagnostic_power_tuv <- (b + d)/N
+Overall_diagnostic_power_tuv_2 <- (b + d)/N
 
-Correct_classification_rate_tuv <- (a + d)/N
+Correct_classification_rate_tuv_2 <- (a + d)/N
 
-Sensitivity_tuv <- a/(a + c)
+Sensitivity_tuv_2 <- a/(a + c)
 
-Specificity_tuv <- d/(b + d)
+Specificity_tuv_2 <- d/(b + d)
 
-PPP_tuv <-  a/(a + b)
-NPP_tuv <- d/(c + d)
-Misclassification_rate_tuv <- (b + c)/N
+PPP_tuv_2 <-  a/(a + b)
+NPP_tuv_2 <- d/(c + d)
+Misclassification_rate_tuv_2 <- (b + c)/N
 
 
 
-# For Tyuva data set 2010
+# For Tyuva data set out Fucoid belt
 a <- sum(tuv3$Ptros > boundary & Mod_gam_prediction_tuv3 > boundary)
 
 b <- sum(tuv3$Ptros < boundary & Mod_gam_prediction_tuv3 > boundary)
@@ -1261,26 +1262,26 @@ d <- sum(tuv3$Ptros < boundary & Mod_gam_prediction_tuv3 < boundary)
 
 N = nrow(tuv)
 
-Kappa_tuv3 = ((a + d) - (((a + c)*(a + b) + (b + d)*(c + d))/N))/(N - (((a+c)*(a+b) + (b+d)*(c+d))/N))
+Kappa_tuv_3 = ((a + d) - (((a + c)*(a + b) + (b + d)*(c + d))/N))/(N - (((a+c)*(a+b) + (b+d)*(c+d))/N))
 
-Overall_diagnostic_power_tuv <- (b + d)/N
+Overall_diagnostic_power_tuv_3 <- (b + d)/N
 
-Correct_classification_rate_tuv <- (a + d)/N
+Correct_classification_rate_tuv_3 <- (a + d)/N
 
-Sensitivity_tuv <- a/(a + c)
+Sensitivity_tuv_3 <- a/(a + c)
 
-Specificity_tuv <- d/(b + d)
+Specificity_tuv_3 <- d/(b + d)
 
-PPP_tuv <-  a/(a + b)
-NPP_tuv <- d/(c + d)
-Misclassification_rate_tuv <- (b + c)/N
+PPP_tuv_3 <-  a/(a + b)
+NPP_tuv_3 <- d/(c + d)
+Misclassification_rate_tuv_3 <- (b + c)/N
 
 
 
 ```
 
 
-```{r Predicted_vs_observed_PT_plots, fig.cap="Fig. 5. Comparison of *Ptros*-values predicted by *Model 1* and obsreved *Ptros* for training data used for the model fitting (A), testing data from the Wite sea (B) and testing data from the Tyuva inlet colleced in (C) and out (D) of the fucoid's belt. The horizontal and vertical solid lines reflects the boundary between *MT*- and *ME*-dominated sites. Dotted lines represent the position of perfect fit when observed and predicted values are equal. Labels in the plot corners mark the quadrants with false positive (FP), true positive (TP), true negative (TN) and false negative (FN) predictions."}
+```{r Predicted_vs_observed_PT_plots, fig.cap="Fig. 5. Comparison of *Ptros*-values predicted by *Model 1* and obsreved *Ptros* for training data used for the model fitting (A), testing data from the White sea (B) and testing data from the Tyuva inlet colleced in and out of the fucoid's belt (C and D respectively). The horizontal and vertical solid lines reflects the boundary between *MT*- and *ME*-dominated sites. Dotted lines represent the position of perfect fit when observed and predicted values are equal. Labels in the plot corners mark the quadrants with false positive (FP), true positive (TP), true negative (TN) and false negative (FN) predictions."}
 
 
 Pl_training <-
@@ -1329,7 +1330,7 @@ Pl_Tuva_testing_2 <-
   xlim(0,1) +
   ylim(0,1) +
   geom_label(data = markers, aes(x, y, label = label), alpha = 0.5 ) +
-  ggtitle("Tyuva inlet testing data Part 2") 
+  ggtitle("Tyuva inlet testing data Part 1") 
 
 
 
@@ -1390,7 +1391,6 @@ The *Model 1* being applied to the first part of testing dataset from the Tyuva 
 
 
 
-
 ## Discussion
 
 
@@ -1412,15 +1412,17 @@ reasonable predictive performance.
 
 
 
-Processing a large number of samples from various sites across a wide range of environmental conditions in the Kandalaksha Bay contact zone, we developed *Model 1*. This model can be considered both as SDM describing the association with environmental predictors and JSDM reflecting the joint distribution of the two mussel species, *Mytilus edulis* and *Mytilus trossulus*. It is important to acknowledge that the model we have created represents only one of the initial efforts to characterize the relationship between cryptic mussel species and their environment. Similar to previous studies by Kijewsky et al.(+++)  and Winne et al. (+++), our analysis focused on the distribution of mussels in their contact zones exclusively. The broader pattern of species distributions, including their relationships with various factors across the entire range of the cryptic species, falls outside the scope of this study. Nevertheless, the most significant events related to species interactions with environmental factors and with each other (including intraspecific interactions) occur primarily in contact zones.
+Processing a large number of samples from various sites across a wide range of environmental conditions in the Kandalaksha Bay contact zone, we developed *Model 1*. This model can be considered both as SDM describing the association with environmental predictors and JSDM reflecting the joint distribution of the two mussel species, *Mytilus edulis* and *M. trossulus*. It is important to acknowledge that the model we have constructed represents only one of the initial efforts to characterize the relationship between cryptic mussel species and their environment. Similar to previous studies by Kijewsky et al.(+++)  and Winne et al. (+++), our analysis focused on the distribution of mussels in their contact zones exclusively. The broader pattern of species distributions, including their relationships with various factors across the entire range of the cryptic species, falls outside the scope of this study. Nevertheless, the most significant events related to species interactions with environmental factors and with each other (including intraspecific relationships) occur primarily in contact zones.
 
 
-The set of environmental predictors included in the *Model 1*  obtained most of factors that were generally considered as the important regulators of the taxonomic structure of mussel's populations in *MT-ME* contact zones (+++++). Being included in one SDM these factors possessed significant influence on *Ptros*  (i.e. on proportion of *MT* ). Thus, our analysis provided the consistent evidence that factors such as salinity, proximity to harbours, level of wave action and substrate type influence the taxonomic composition of mixed mussel populations. In addition, we found that the predictors included in the model are not collinear. This means that we can consider all these factors as independent entities that do not mask each other, which is important for SDM construction (De Marco and Nobrega, 2011). In addition we considered environment variation in a relatively small contact zone in the Kandalaksha Bay. This means that the patterns revealed on more extensive contact zones (e.g. in the Baltic - North Sea contact zone, see Kijewsky et al, 2019) with longer ecological gradients retain their influence in essentially smaller spatial scales. This fact allow to optimistically expect the ability to construct working SDM describing distribution of *MT* and *ME* in contact zones of different sizes.
+The set of environmental predictors included in the *Model 1*  obtained most  of those factors that were generally considered as the important regulators of the taxonomic structure of mussel's populations in *MT-ME* contact zones (+++++). Being included in one SDM these factors possessed significant influence on *Ptros*  (i.e. proportion of *MT* ). Thus, our analysis provided the consistent evidence that factors such as salinity, proximity to harbours, level of wave action and substrate type influence the taxonomic composition of mixed mussel populations. In addition, we found that the predictors included in the model are not collinear. This means that we can consider all these factors as relatively independent ecological axis that do not mask each other, which is important for SDM construction (De Marco and Nobrega, 2011). In addition we considered environment variation in a relatively small contact zone in the Kandalaksha Bay. We can state that the patterns revealed on more extensive contact zones (e.g. in the Baltic - North Sea contact zone, see Kijewsky et al, 2019) with longer ecological gradients retain their influence in essentially smaller spatial scales. This fact allow to optimistically expect the ability to construct working SDM describing distribution of *MT* and *ME* in contact zones of different sizes.
 
 
-The SDMs are frequently considered as models reflecting structure of species' ecological niche (Elith, Leathwick, 2009). Although the very concept of 'niche' is under the  criticism (+++) analysing the relationship of cryptic species to environmental factors and investigation of mechanismes of their distribution along environmental gradients is undoubtedly an important task. In this sense, a statistically significant association of *Ptros* with some environmental predictor would reflect the divergence of *MT* and *ME* in ecological space (i.e. partitioning of niches). 
+The SDMs are frequently considered as models reflecting structure of species' ecological niche (Elith, Leathwick, 2009). Although the very concept of 'niche' is under the  criticism (McInerny, Etienne, 2012 a,b,c) analysing the relationship of cryptic species to environmental factors and investigation of mechanismes of their distribution along environmental gradients is undoubtedly an important task. In this sense, any statistically significant association of *Ptros* with some environmental predictor would reflect the divergence of *MT* and *ME* in ecological space (i.e. partitioning of niches). 
 
-From all environmental variables included into analysis the distance to the nearest port and its status (*Abandoned* VS *Active*) may have dual interpretation. We revealed higher *MT* proportion close to active ports. On the one hand, active ports tend to have a higher degree of anthropogenic pollution, leading to stress of mussels (Hellou & Law, 2003). Different mussel species are known to interact differently with pollutants (Beyer et al., 2017). For example, in the Halifax area *MT* are more abundant in the most polluted habitats than *ME*, but show less stress tolerance than *ME* (Hellou & Law, 2003). However, studies of the immune systems of *MT* and *ME* in the Canadian contact zone suggest a greater suppression of the *MT* immune system in areas prone to pollution (Coray et al., 2006), making them more sensitive to stress than *ME*. The last fact contradicts the hypothesis of better performance of *MT* to pollutant influence allowing them to set populations in active port harbors. Another explanation may be that there is some foci of disease associated with port areas that affect *MT* and *ME* diferently. For example we can look for the reason in the bivalve transmittable neoplasia which is associated with harbors (Hammel et al., 2023) or in other parasite diseases for which ports are hot-spots for invasion (Feis et al., 2019).
+From all environmental variables included into analysis the distance to the nearest port and its status (*Abandoned* VS *Active*) may have dual interpretation. We revealed higher *MT* proportion close to active ports. On the one hand, active ports tend to have a higher degree of anthropogenic pollution, leading to stress of mussels (Hellou & Law, 2003). Different mussel species are known to interact differently with pollutants (Beyer et al., 2017). For example, in the Halifax area *MT* are more abundant in the most polluted habitats than *ME*, but show less stress tolerance than *ME* (Hellou & Law, 2003). ~~However, studies of the immune systems of *MT* and *ME* in the Canadian contact zone suggest a greater suppression of the *MT* immune system in areas prone to pollution (Coray et al., 2006), making them more sensitive to stress than *ME*. The last fact contradicts the hypothesis of better performance of *MT* to pollutant influence allowing them to set populations in active port harbors.~~ 
+############
+Another explanation may be that there is some foci of disease associated with port areas that affect *MT* and *ME* diferently. For example we can look for the reason in such infections as the bivalve transmittable neoplasia which is associated with harbors (Hammel et al., 2023) or in other parasite diseases for which ports are hot-spots for invasion (Feis et al., 2019).
 
 From the other hand the dependency of *PT* on distance to the nearest port and its status can reflect not true axis in ecological space but some trace of historical processes. It is believed that *MT* was introduced into the Barents and the White Seas due to ship traffic during World War II (Vainola & Strelkov, 2011). This hypothesis was based primarily on the fact that high concentrations of *MT* were found in the vicinity of currently active or abandoned ports in the region (Vainola & Strelkov, 2011; Katolikova et al. 2016). The results of our study are inline with this hypothesis. The *Ptros* value  increased with approaching to harbors in the studied area. Apparently, the degree of port activity also plays an important role. According to our data, if the port nearest to the mixed settlement is active, i.e. it serves the ships coming from outside the White Sea (in our case it is "Kandlaksha" and "Vitino" ports), then the *Ptros* value in such settlements is higher than in the settlements adjacent to the abandoned harbors.  The observed relationship may be related to the fact that the currently active ports were the largest and most economically sustainable systems in the region. This may be based on the higher shipping traffic, which has led to a more massive invasion of *MT* from other regions (primarily from the ports of Murmansk in the Kola Bay, where the abundance of *MT* is high, Vainola&Strelrov, 2013; Marchenko et al., 2023). In the abandoned ports, the introduction of the alien species occurred during the times of their active operation. However, during several decades of inactivity of abandoned ports *MT* were probably displaced by native *ME*.
 
