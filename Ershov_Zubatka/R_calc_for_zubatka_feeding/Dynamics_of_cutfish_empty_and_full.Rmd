@@ -74,7 +74,7 @@ zub_empty$DOY <- yday(zub_empty$Date)
 
 mod_empty <- gam(Out  ~ s(DOY, by = Sex, bs = "cr", k = 6) + s(Year, bs = "cr", k = 6) + Sex, family = "binomial", data = zub_empty)
 
-
+# summary(mod_empty)
 ```
 
 
@@ -317,7 +317,7 @@ df %>%
 
 df <- merge(cbind(df, positions),  species, by = "Species") 
 
-
+Pl_freq_specie <-
 df %>% 
   ggplot(., aes(x = Year, y = Abund)) +
   geom_col(aes(fill = Species)) +
@@ -326,6 +326,7 @@ df %>%
 # +
 #   geom_text(aes(y = Position - 0.5, label = Number))
   
+# ggsave("freq_species.svg", Pl_freq_specie, width = 297,height = 210, units = "mm", dpi = 600 )
 
 ```
 
@@ -514,23 +515,66 @@ my_data$Species <- factor(my_data$Species, levels =
                               "Styela_rustica",
                               "Musculus_discors",
                               "Serripes_groenlandicus"
+                            ),
+                          labels = c("Mytilus edulis", 
+                              "Arctica islandica", 
+                              "Ciliatocardium ciliatum",
+                              "Buccinum undatum",
+                              "Littorina littorea",
+                              "Tonicella marmorea", 
+                              "Pagurus pubescens",
+                              "Hyas araneus",
+                              "Styela rustica",
+                              "Musculus discors",
+                              "Serripes groenlandicus"
                             ))
+
+
 
 
 Pl_Mod_gam <- 
 ggplot(my_data, aes(x = Year, y = fit)) +
-  geom_line(color = "blue") +
+  geom_line(color = "black") +
   facet_wrap(~Species, ncol = 3, scales = "free_y", dir = "v") +
   geom_ribbon(aes(ymin = fit - 1.96*SE, ymax = fit + 1.96*SE), alpha = 0.2)
   
 species_freq3 <-
 zub3 %>% group_by(Species, Year) %>% summarise(Freq = mean(Out)) 
 
+species_freq3$Species <- factor(species_freq3$Species, levels = 
+                            c("Mytilus_edulis", 
+                              "Arctica_islandica", 
+                              "Ciliatocardium_ciliatum",
+                              "Buccinum_undatum",
+                              "Littorina_littorea",
+                              "Tonicella_marmorea", 
+                              "Pagurus_pubescens",
+                              "Hyas_araneus",
+                              "Styela_rustica",
+                              "Musculus_discors",
+                              "Serripes_groenlandicus"
+                            ),
+                          labels = c("Mytilus edulis", 
+                              "Arctica islandica", 
+                              "Ciliatocardium ciliatum",
+                              "Buccinum undatum",
+                              "Littorina littorea",
+                              "Tonicella marmorea", 
+                              "Pagurus pubescens",
+                              "Hyas araneus",
+                              "Styela rustica",
+                              "Musculus discors",
+                              "Serripes groenlandicus"
+                            ))
+ 
+
+
+Pl_Mod_gam <-
 Pl_Mod_gam +
   geom_point(data = species_freq3, aes(y = Freq), size = 1) +
   theme_bw() +
   labs(y = "Frequency")
 
-
+# ggsave("species_dynamics.svg", Pl_Mod_gam, width = 297,height = 210, units = "mm", dpi = 300 )
 ```
 

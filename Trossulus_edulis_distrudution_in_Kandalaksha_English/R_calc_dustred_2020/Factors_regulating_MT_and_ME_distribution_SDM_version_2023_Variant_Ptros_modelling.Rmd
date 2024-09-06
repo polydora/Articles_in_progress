@@ -5,7 +5,7 @@ output:
   # html_document
   word_document:
     reference_docx: article_template.docx
-    fig_width: 5
+    fig_width: 8
     fig_height: 5
 # bibliography: Astred_english_Bibliografy_abriviated.bib
 # csl: marine-biology.csl
@@ -450,7 +450,7 @@ Mod_gam <- gam(Ptros ~ s(Salinity, bs = "cs") + s(Log_Min_dist_river, bs = "cs")
 
 # summary(Mod_gam)
 
-Mod_gam_ML <- gam(Ptros ~ s(Salinity, bs = "cs") + s(Log_Min_dist_river, bs = "cs") + s(Log_Fetch, bs = "cs") + s(Log_Min_dist_port, bs = "cs") + Position + River_Size + Port_Status + s(Site, k = Total_site, bs = "re"), method = "ML", family = betar(link = "logit"), data = myt_full )
+# Mod_gam_ML <- gam(Ptros ~ s(Salinity, bs = "cs") + s(Log_Min_dist_river, bs = "cs") + s(Log_Fetch, bs = "cs") + s(Log_Min_dist_port, bs = "cs") + Position + River_Size + Port_Status + s(Site, k = Total_site, bs = "re"), method = "ML", family = betar(link = "logit"), data = myt_full )
 # 
 # Mod_gam_ML2 <- gam(Ptros ~ s(Salinity, bs = "cs") + s(Log_Fetch, bs = "cs") + s(Log_Min_dist_port, bs = "cs") + Position + River_Size + Port_Status + s(Site, k = Total_site, bs = "re"), method = "ML", family = betar(link = "logit"), data = myt_full )
 # 
@@ -716,7 +716,9 @@ ggplot(., aes(x = Position, y = Pi, fill = Port_Status)) +
   ggtitle("The nearest River: Small") +
   ylim(0, 0.8)+
   theme(legend.position = c(0.25, 0.8)) +
-  labs(x = "", y = "Partial effect", fill = "Nearest port status")
+  labs(x = "", y = "Partial effect", fill = "Nearest port status") +
+  geom_hline(yintercept = 0.5, color = "red")
+
 #
 Pl_Large_Pi <-
 ds %>% filter(River_Size == "Large") %>%
@@ -729,7 +731,8 @@ ggplot(., aes(x = Position, y = Pi, fill = Port_Status)) +
   ylim(0, 0.8)+
   guides(fill = "none") +
   theme(legend.position = c(0.19, 0.8)) +
-  labs(x = "", y = "Partial effect")
+  labs(x = "", y = "Partial effect")+
+  geom_hline(yintercept = 0.5, color = "red")
     
 
 # appraise(Mod_gam)
@@ -756,7 +759,7 @@ VIF <- vif(Mod_dummy)
 
 The values of VIF calculated for the predictors' set included in the analysis were rather small (the maximal VIF was detected for `r paste(names(VIF)[which.max(VIF)])`: `r round(max(VIF), 2)`). Although some pairwise correlation  between environmental factors were found (see above) the low VIF values can be interpreted as a negligible collinearity between predictors (i.e. they don't mask influence of each for other).   
 
-To assess the dependency of *Ptros* on all predictors considered we constructed the *Model 1* (Table +, R^2^ = `r round(sum_Model_1$r.sq, 2)`) which explained  `r round(sum_Model_1$ dev.expl*100, 1)`% of total deviance. The *Model 1* revealed statistically significant dependency of *Ptros* on all predictors except one.
+To assess the dependency of *Ptros* on all predictors considered we constructed the *Model 1* which explained  `r round(sum_Model_1$ dev.expl*100, 1)`% of total deviance. The *Model 1* revealed statistically significant dependency of *Ptros* on all predictors except one.
 
 The effective degrees of freedom (*edf*, Table ++) for most smoothers were close to 1, reflecting the linear dependence of *Ptros* on such continuous predictors as distance to the nearest port (*DistPort*) and fetch (*Fetch*). The exception was *Salinity*, where a pronounced curvilinear dependence was revealed.     
 
@@ -849,7 +852,11 @@ width(j = 1:5, width = c(8, 4,2,2,2), unit = "cm")
 
 ```{r Model1_prediction_Figure, fig.height= 8,fig.width=8, fig.cap= "Fig. 3. Predictions of the *Model 1* describing the dependency of *Ptros* on distance to the nearest port (A), average fetch (B), distance to the nearest river (C), salinity (E) and substrate type, nearest port status and size of the largest river (E, F). The  gray ribbons and wiskers demonstrate 95% confidence interval. The dotted lines in panels A-D represent the median predicted value, this value is given to track the trend in the change in model predictions. Points on panels A-D reflect partial residuals but not raw data for each sample."}
 
-plot_grid(Pl_port_dist_smoother, Pl_fetch_smoother, Pl_riv_dist_smoother,  Pl_sal_smoother, Pl_Small_Pi, Pl_Large_Pi,  ncol = 2, labels = "AUTO")
+Pl_Model_1 <- plot_grid(Pl_port_dist_smoother, Pl_fetch_smoother, Pl_riv_dist_smoother,  Pl_sal_smoother, Pl_Small_Pi, Pl_Large_Pi,  ncol = 2, labels = "AUTO")
+
+Pl_Model_1
+
+# ggsave(filename = "Fig_2.svg", plot = Pl_Model_1, width = 297,height = 210, units = "mm", dpi = 600)
 
 ```
 
@@ -980,8 +987,25 @@ myt_site_substr_reguced %>%
   summarise(D_E = mean(D_E, na.rm = TRUE), D_T = mean(D_T, na.rm = TRUE))
 
 
+df5 <-
+myt_site_substr_reguced %>% 
+  group_by(Site, Position) %>% 
+  summarise(D_E = mean(D_E, na.rm = TRUE), D_T = mean(D_T, na.rm = TRUE)) %>%
+  melt() %>% 
+  dcast(., formula = Site ~ Position + variable)
 
-all_sites <- merge(df1, df2) %>% merge(., df3) %>% merge(., df4) %>% 
+
+
+
+
+```
+
+
+
+
+```{r Model_Substrate_PT_Difference}
+
+all_sites <- merge(df1, df2) %>% merge(., df3) %>% merge(., df4) %>% merge(., df5) %>%  
     mutate(Dif_Ptros = Ptros_Algae - Ptros_Bottom) %>% 
   mutate(D_mean = (D_Bottom + D_Algae)/2) %>% 
   mutate(Dif_D = log(D_Algae/D_Bottom)) %>% 
@@ -989,19 +1013,84 @@ all_sites <- merge(df1, df2) %>% merge(., df3) %>% merge(., df4) %>%
 
 all_sites <- 
   all_sites %>%
-  mutate(Log_D_total = log(D_total))
+  mutate(Log_D_total = log(D_total + 1),
+         Log_Bottom_D_T = log(Bottom_D_T + 1),
+         Log_Bottom_D_E = log(Bottom_D_E + 1),
+         Log_Algae_D_T = log(Algae_D_T + 1),
+         Log_Algae_D_E = log(Algae_D_E + 1),
+         Log_D_T = log(D_T + 1),
+         Log_D_E = log(D_E + 1)
+         )
 
 # qplot(y = all_sites$Dif_Ptros, x = all_sites$Total_Ptros) + geom_smooth()
 
 
-```
+
+all_sites <- 
+  all_sites %>% 
+  filter(complete.cases(.))
+
+abundance <- 
+  all_sites %>% 
+  select(Log_Bottom_D_T, Log_Bottom_D_E, Log_Algae_D_T, Log_Algae_D_E)
+
+# abundance <- 
+#   all_sites %>% 
+#   select(Bottom_D_T, Bottom_D_E, Algae_D_T, Algae_D_E)
+
+library(vegan)
+
+pca_abundance <- 
+  rda(abundance)
+
+# summary(pca_abundance)
+# 
+# plot(pca_abundance, type = "t", display = "species")
+
+all_sites <-
+  all_sites %>% 
+  mutate(PC1 = scores(pca_abundance)$site[, 1], PC2 = scores(pca_abundance)$site[, 2])
 
 
-```{r Model_Substrate_PT_Difference}
+#PC interpretation
 
-Mod_Dif <- gam(Dif_Ptros ~ s(Total_Ptros, bs = "cs") + s(Log_D_total, bs = "cs"), method = "REML", data = all_sites)
+# Pl_PC1_1 <- qplot(all_sites$PC1, all_sites$Log_Bottom_D_E) + labs(x = "", y = "Log(N)", title = paste("E-morphotype on Bottom, r = ", round(cor(all_sites$PC1, all_sites$Log_Bottom_D_E), 2)))
+# 
+# 
+# Pl_PC1_2 <- qplot(all_sites$PC1, all_sites$Log_Algae_D_E) + labs(x = "", y = "Log(N)", title = paste("E-morphotype on Algae, r = ", round(cor(all_sites$PC1, all_sites$Log_Algae_D_E), 2)))
+# 
+# Pl_PC1_3 <- qplot(all_sites$PC1, all_sites$Log_Bottom_D_T) + labs(x = "", y = "Log(N) T on Bottom") + labs(x = "", y = "Log(N)", title = paste("T-morphotype on Bottom, r = ", round(cor(all_sites$PC1, all_sites$Log_Bottom_D_T), 2)))
+# 
+# 
+# Pl_PC1_4 <- qplot(all_sites$PC1, all_sites$Log_Algae_D_T) + labs(x = "PC1", y = "Log(N) T on Algae") + labs(x = "PC 1", y = "Log(N)", title = paste("T-morphotype on Algae, r = ", round(cor(all_sites$PC1, all_sites$Log_Algae_D_T), 2)))
+# 
+# 
+# 
+# Pl_PC2_1 <- qplot(all_sites$PC2, all_sites$Log_Bottom_D_E)  + labs(x = "", y = "Log(N)", title = paste("E-morphotype on Bottom, r = ", round(cor(all_sites$PC2, all_sites$Log_Bottom_D_E), 2)))
+# 
+# 
+# Pl_PC2_2 <- qplot(all_sites$PC2, all_sites$Log_Algae_D_E)  + labs(x = "", y = "Log(N)", title = paste("E-morphotype on Algae, r = ", round(cor(all_sites$PC2, all_sites$Log_Algae_D_E), 2)))
+# 
+# 
+# Pl_PC2_3 <- qplot(all_sites$PC2, all_sites$Log_Bottom_D_T) + labs(x = "", y = "Log(N)", title = paste("T-morphotype on Bottom, r = ", round(cor(all_sites$PC2, all_sites$Log_Bottom_D_T), 2)))
+# 
+# 
+# Pl_PC2_4 <- qplot(all_sites$PC2, all_sites$Log_Algae_D_T)  + labs(x = "", y = "Log(N)", title = paste("T-morphotype on Algae, r = ", round(cor(all_sites$PC2, all_sites$Log_Algae_D_T), 2)))
+# 
+
+
+
+Mod_Dif <- gam(Dif_Ptros ~ s(Total_Ptros) +  s(PC1) + s(PC2), method = "REML", data = all_sites)    
+
+
+# foo_mod <- lm(Dif_Ptros ~ Total_Ptros + PC1 + PC2, data = all_sites)
+# 
+# vif(foo_mod)
 
 # appraise(Mod_Dif)
+# summary(Mod_Dif)
+
+# draw(Mod_Dif, residuals = T)
 
 # draw(Mod_Dif, residuals = TRUE)
 
@@ -1022,18 +1111,77 @@ sm %>%
   geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), alpha=0.2 ) +
   # geom_hline(yintercept = median(sm$est), linetype = 2) +
   geom_point(data = all_sites, aes(y = Residuals),cex = 1, colour = "steelblue3") +
-  labs(x = "Ptros \n in Site", y = "Partial effect")
+  labs(x = "Ptros in Site", y = "Partial effect")+
+  geom_hline(yintercept = 0, linetype = 2)
  
 
-Pl_Dif_model_N <- 
+
+library(ggtext)
+library(glue)
+
+#Correlations of PC1 with mussel abundance
+df_PC1 <- data.frame(
+  x = -0.7,
+  y = -0.68,
+  label = glue("**Correlation of PC1:** <br>E-morph on Bottom, r =  {round(cor(all_sites$PC1, all_sites$Log_Bottom_D_E), 2)} <br> E-morph on Algae,  r =  {round(cor(all_sites$PC1, all_sites$Log_Algae_D_E), 2)} <br> T-morph on Bottom,  r =  **{round(cor(all_sites$PC1, all_sites$Log_Bottom_D_T), 2)}** <br> T-morph on Algae,  r =  **{round(cor(all_sites$PC1, all_sites$Log_Algae_D_T), 2)}**"))
+
+
+#The model for visualization of linear dependence of T-morphotype abundance on PC1 
+Mod_D_T_PC1 <- lm(log(D_T + 1) ~ PC1, data = all_sites)
+Pred_Mod_D_T_PC1 <- expand.grid(Part_eff = c(0.5, 0.55), PC1 = seq(min(all_sites$PC1), max (all_sites$PC1), length.out = 100))
+Pred_Mod_D_T_PC1$Log_D_T_predicted = predict(Mod_D_T_PC1, newdata = Pred_Mod_D_T_PC1)
+Pred_Mod_D_T_PC1$D_T_predicted <- exp(Pred_Mod_D_T_PC1$Log_D_T_predicted) - 1
+
+
+
+
+Pl_Dif_model_PC1 <- 
 sm %>% 
-  filter(smooth == "s(Log_D_total)") %>% 
-  ggplot(., aes(x = Log_D_total, y = est)) +
+  filter(smooth == "s(PC1)") %>% 
+  ggplot(., aes(x = PC1, y = est)) +
   geom_line(color = "blue", linewidth = 1) +
   geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), alpha=0.2 ) +
   # geom_hline(yintercept = median(sm$est), linetype = 2) +
+  geom_textbox(data = df_PC1, aes(x, y, label = label), width = grid::unit(0.7, "npc"), size = 2.3) +
   geom_point(data = all_sites, aes(y = Residuals),cex = 1, colour = "steelblue3") +
-  labs(x = "Log Mussel abundance \n in Site", y = "Partial effect")
+  geom_hline(yintercept = 0, linetype = 2) +
+  geom_tile(data = Pred_Mod_D_T_PC1, aes(x = PC1, y = Part_eff, fill = D_T_predicted)) + 
+  scale_fill_gradient(low = "white", high = "red") +
+  labs(x = "PC1", y = "Partial effect", fill = "T-morphotype \nabundance \n(ind./sq.m)") +
+  theme(legend.position = "bottom")
+
+
+
+df_PC2 <- data.frame(
+  x = -0.55,
+  y = -0.68,
+  label = glue("**Correlation of PC2:** <br> E-morph on Bottom, r =  **{round(cor(all_sites$PC2, all_sites$Log_Bottom_D_E), 2)}** <br> E-morph on Algae,  r =  **{round(cor(all_sites$PC2, all_sites$Log_Algae_D_E), 2)}** <br> T-morph on Bottom,  r =  {round(cor(all_sites$PC2, all_sites$Log_Bottom_D_T), 2)} <br> T-morph on Algae,  r =  {round(cor(all_sites$PC2, all_sites$Log_Algae_D_T), 2)}"))
+
+
+
+#The model for visualization of linear dependence of E-morphotype abundance on PC2 
+Mod_D_E_PC2 <- lm(log(D_E + 1) ~ PC2, data = all_sites)
+# summary(Mod_D_E_PC2)
+Pred_Mod_D_E_PC2 <- expand.grid(Part_eff = c(0.5, 0.55), PC2 = seq(min(all_sites$PC2), max (all_sites$PC2), length.out = 100))
+Pred_Mod_D_E_PC2$Log_D_E_predicted = predict(Mod_D_E_PC2, newdata = Pred_Mod_D_E_PC2)
+Pred_Mod_D_E_PC2$D_E_predicted <- exp(Pred_Mod_D_E_PC2$Log_D_E_predicted) - 1
+
+Pl_Dif_model_PC2 <- 
+sm %>% 
+  filter(smooth == "s(PC2)") %>% 
+  ggplot(., aes(x = PC2, y = est)) +
+  geom_line(color = "blue", linewidth = 1) +
+  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), alpha=0.2 ) +
+  # geom_hline(yintercept = median(sm$est), linetype = 2)+
+    geom_textbox(data = df_PC2, aes(x, y, label = label), width = grid::unit(0.7, "npc"), size = 2.3) +
+  geom_point(data = all_sites, aes(y = Residuals),cex = 1, colour = "steelblue3") +
+  geom_hline(yintercept = 0, linetype = 2) +
+  geom_tile(data = Pred_Mod_D_E_PC2, aes(x = PC2, y = Part_eff, fill = D_E_predicted)) + 
+  scale_fill_gradient(low = "white", high = "blue") +
+  labs(x = "PC2", y = "Partial effect", fill = "E-morphotype \nabundance \n(ind./sq.m)") +
+  theme(legend.position = "bottom")
+
+
 
 # draw(Mod_Dif, residuals = TRUE)
 
@@ -1042,13 +1190,89 @@ sm %>%
 
 ```{r Plot_Model_Dif, fig.cap="Fig. 4. The dependence of difference between *PT* on Algae and Bottom subatrates on Ptros~Site~ (A) and total mussel abundance (B)."}
 
-plot_grid(Pl_Dif_model, Pl_Dif_model_N, labels = "AUTO")
+Pl_Model_2 <-
+  plot_grid(Pl_Dif_model, Pl_Dif_model_PC1, Pl_Dif_model_PC2, labels = "AUTO", nrow = 1)
+
+# Pl_PC_interpretation <- plot_grid(Pl_PC1_1,Pl_PC2_1, Pl_PC1_2, Pl_PC2_2, Pl_PC1_3, Pl_PC2_3, Pl_PC1_4, Pl_PC2_4, ncol = 2)
+
+Pl_Model_2
+
+ggsave(filename = "Fig_3.svg", plot = Pl_Model_2, width = 297,height = 210, units = "mm", dpi = 600)
 
 ```
 
 The difference between *Ptros~Algae~* and *Ptros~Bottom~* substrates was significantly dependent on *Ptros~Site~*, i.e. prevalence of *MT* (STable +, Fig. 4 A). The dependency revealed was curvelinear (edf = `r round(summ_Mod_Dif$edf[1],1)`, STable +) with minimal *Dif* values in sites with minimal and maximal values of *Ptros~Site~*. The maximal *Dif* values were associated with intermediate *Ptros~Site~*. This pattern reflect the prevalence of *MT* at *Algae* substrate and prevalence of *ME* at *Bottom* substrate in those sites where  both species are presented in equal amount. No significant dependency was revealed with total absolute mussel abundance (STable +, Fig. 4 B).
 
 
+
+```{r e-space-visualization, eval=FALSE}
+myt_site %>% 
+  select(Salinity, Min_dist_port, Fetch, Min_dist_river) %>% 
+  ungroup() ->
+  e_space
+
+e_space$Port_Status <- as.numeric(e_space$Port_Status)
+e_space$River_Size <- as.numeric(e_space$River_Size)
+e_space$Min_dist_port <- log(e_space$Min_dist_port)
+e_space$Fetch <- log(e_space$Fetch)
+e_space$Min_dist_river <- log(e_space$Min_dist_river)
+
+library(vegan)
+
+# mod_mds <- metaMDS(e_space, distance = "gower")
+# plot(mod_mds)
+
+mod_mds <- rda(e_space)
+# summary(mod_mds)
+
+
+
+
+
+# plot(mod_mds, display = "species", type = "t")
+# plot(ef)
+
+# mod_mds <- cca(e_space)
+# summary(mod_mds)
+
+mds_points <- as.data.frame(scores(mod_mds)$sites)
+
+scor <- as.data.frame(scores(mod_mds)$species)
+
+
+
+
+ggplot(mds_points, aes(PC1, PC2)) + 
+  geom_point(aes(fill = myt_site$Ptros), size = 3, shape = 21) +
+  scale_fill_gradient(low = "yellow", high = "red")+ 
+  geom_segment(data = arrows, aes(x = 0, y = 0, xend = PC1, yend = PC2), arrow = arrow()) +
+  geom_text_repel(data = arrows, aes(x = PC1, y = PC2, label = row.names(arrows)))
+
+
+library(gratia)
+
+mod_pc_gam <- gam(myt_site$Ptros ~ s(PC1, PC2), data = mds_points)
+
+draw(mod_pc_gam)
+
+
+ef <- envfit(mod_mds ~ River_Size + Port_Status + Salinity + Min_dist_port + Fetch + Min_dist_river, data = myt_site)
+
+
+arrows <- as.data.frame(ef$vectors$arrows)
+
+centroids <- as.data.frame(ef$factors$centroids)
+
+library(ggrepel)
+
+draw(mod_pc_gam) + 
+  geom_point(data = mds_points, aes(PC1, PC2, color = myt_site$Ptros), size = 3) +
+  scale_color_gradient(low = "yellow", high = "black") +
+  geom_segment(data = arrows, aes(x = 0, y = 0, xend = PC1, yend = PC2), arrow = arrow()) +
+  geom_text_repel(data = arrows, aes(x = PC1, y = PC2, label = row.names(arrows)))+
+  geom_text_repel(data = centroids, aes(x = PC1, y = PC2, label = row.names(centroids))) 
+
+```
 
 
 
@@ -1085,13 +1309,13 @@ tuv2 <-
   tuv %>%
   filter(Depth >= 0.5 & Depth <= 1.5  )
   
-tuv3 <-
-  tuv %>%
-  filter(Depth < 0.5 |  Depth > 1.5 )
-
 # tuv3 <-
 #   tuv %>%
-#   filter(Depth < 0.5)
+#   filter(Depth < 0.5 |  Depth > 1.5 )
+
+tuv3 <-
+  tuv %>%
+  filter(Depth < 0.5)
 
 
 Mod_gam_prediction_tuv <- predict(Mod_gam, newdata = tuv, type = "response", exclude = "s(Site)")
@@ -1328,7 +1552,7 @@ Pl_Tuva_testing_2 <-
   xlim(0,1) +
   ylim(0,1) +
   geom_label(data = markers, aes(x, y, label = label), alpha = 0.5 ) +
-  ggtitle("Tyuva inlet testing data Part 1") 
+  ggtitle("Tyuva inlet testing data (Litoral)") 
 
 
 
@@ -1337,7 +1561,7 @@ tuv3$Mod_gam_prediction_tuv <- Mod_gam_prediction_tuv3
 Pl_Tuva_testing_3 <-
   ggplot(tuv3, aes(x = Ptros_predicted,  y = Mod_gam_prediction_tuv3)) +
   labs(x = "Obseved Ptros", y = "Predicted Ptros") +
-  geom_point(shape = 21, aes(fill = Sample_position)) +
+  geom_point(shape = 21, fill = "gray") +
   scale_fill_manual(values = c("white", "black")) +
   guides(fill= "none") +
   geom_abline(linetype = 2) +
@@ -1346,10 +1570,14 @@ Pl_Tuva_testing_3 <-
   xlim(0,1) +
   ylim(0,1) +
   geom_label(data = markers, aes(x, y, label = label), alpha = 0.5 ) +
-  ggtitle("Tyuva inlet testing data Part 2") 
+  ggtitle("Tyuva inlet testing data (Sublitoral)") 
 
 
+Pl_Testing_data <-
 plot_grid(Pl_training, Pl_Kand_testing, Pl_Tuva_testing_2, Pl_Tuva_testing_3, labels = "AUTO")
+
+# ggsave(filename = "Fig_4.svg", plot = Pl_Testing_data, width = 297,height = 210, units = "mm", dpi = 600)
+
 # 
 # library(patchwork)
 # 
@@ -1476,182 +1704,183 @@ In our analysis, we did not aim to construct some perfect SDM it is the task for
 
 # Supplementary electronic materials (SEM)
 
-<!-- ### Environmental parameters characteristics  -->
+### Environmental parameters characteristics
 
-<!-- <!-- There are 6 ports presented in Kandalaksha Bay (STable +++). Most localities sampled (34 sites) had "Vitino" as the closest harbor, which came into service in the 1990s. The remaining ports, in operation since the beginning of the 20th century, were attributed as closest to 14-17 sites. The distance from sampling sites to the nearest ports varied in broad range (0.11 - 82 km) but on average the distance from port to the corresponding sites ranges in more narrow limits (17 - 26 km, Fig ++, A).  --> -->
+<!-- There are 6 ports presented in Kandalaksha Bay (STable +++). Most localities sampled (34 sites) had "Vitino" as the closest harbor, which came into service in the 1990s. The remaining ports, in operation since the beginning of the 20th century, were attributed as closest to 14-17 sites. The distance from sampling sites to the nearest ports varied in broad range (0.11 - 82 km) but on average the distance from port to the corresponding sites ranges in more narrow limits (17 - 26 km, Fig ++, A).  -->
 
 
-<!-- ```{r Table_with_Ports_coordinates, eval=FALSE} -->
+```{r Table_with_Ports_coordinates, eval=FALSE}
 
-<!-- ports %>%  -->
-<!--   select(-Shore) %>%  -->
-<!--   kable(col.names = c("Port", "Status", "Latitude", "Longitude"), caption = "STable +. Ports presented in the Kandalaksha bay") -->
-<!-- ``` -->
+ports %>%
+  select(-Shore) %>%
+  kable(col.names = c("Port", "Status", "Latitude", "Longitude"), caption = "STable +. Ports presented in the Kandalaksha bay")
+```
 
-<!-- \pagebreak -->
+\pagebreak
 
-<!-- ### Associations between environmental parameters -->
+### Associations between environmental parameters
 
-<!-- Pearson correlation between environmental parameters -->
-<!-- ```{r Pearson_correlation_between_environmental_parameters} -->
-<!-- # names(myt_site) -->
-<!-- cor_df <-  -->
-<!-- myt_site %>% select(Salinity, Min_dist_river, Min_dist_port,Fetch) %>% as.data.frame(.) %>%  cor(., method = "pearson") %>% as.data.frame(.) %>% round(., 3) %>% mutate(Predictor = names(.))   -->
+Pearson correlation between environmental parameters
+```{r Pearson_correlation_between_environmental_parameters}
+# names(myt_site)
+cor_df <-
+myt_site %>% select(Salinity, Min_dist_river, Min_dist_port,Fetch) %>% as.data.frame(.) %>%  cor(., method = "pearson") %>% as.data.frame(.) %>% round(., 3) %>% mutate(Predictor = names(.))
 
-<!-- cor_df <- cor_df[-4,] -->
-<!-- cor_df[2:3, 1] <- NA -->
-<!-- cor_df[3, 2] <- NA -->
+cor_df <- cor_df[-4,]
+cor_df[2:3, 1] <- NA
+cor_df[3, 2] <- NA
 
-<!-- cor_df <- cor_df %>% select(Predictor, Min_dist_river, Min_dist_port, Fetch) -->
+cor_df <- cor_df %>% select(Predictor, Min_dist_river, Min_dist_port, Fetch)
 
-<!-- ft_cor <- flextable(cor_df) -->
+ft_cor <- flextable(cor_df)
 
-<!-- ft_cor -->
+ft_cor
 
-<!-- # cor.test(myt_site$Min_dist_river, myt_site$Min_dist_port) -->
-<!-- ``` -->
+# cor.test(myt_site$Min_dist_river, myt_site$Min_dist_port)
+```
 
-<!-- \pagebreak -->
+\pagebreak
 
-<!-- ```{r Rivers_parameters} -->
+```{r Rivers_parameters}
 
-<!-- site_river <- -->
-<!--   myt_site %>%  -->
-<!--   group_by(River) %>%  -->
-<!--   summarise(Site_Number = n()) -->
+site_river <-
+  myt_site %>%
+  group_by(River) %>%
+  summarise(Site_Number = n())
 
 
 
-<!-- river_full <- -->
-<!--   merge(river_full, site_river, all.x = T) %>%  -->
-<!--   relocate(Site_Number, .after = Lon) %>%  -->
-<!--   mutate(Site_Number = replace_na(Site_Number, replace = 0)) -->
+river_full <-
+  merge(river_full, site_river, all.x = T) %>%
+  relocate(Site_Number, .after = Lon) %>%
+  mutate(Site_Number = replace_na(Site_Number, replace = 0))
 
 
-<!-- ft_river <-  -->
-<!-- river_full %>%  -->
-<!--   # filter(River %in% unique(myt_full$River)) %>%  -->
-<!--   select(-Shore, -Source) %>%  -->
-<!--   flextable(.) -->
+ft_river <-
+river_full %>%
+  # filter(River %in% unique(myt_full$River)) %>%
+  select(-Shore, -Source) %>%
+  flextable(.)
 
-<!-- headers <- c("River", "Drainage Area sq. km", "River Size", "Mouth Latitude", "Mauth Longitude", "Number of sampling sites near the river") -->
+headers <- c("River", "Drainage Area sq. km", "River Size", "Mouth Latitude", "Mauth Longitude", "Number of sampling sites near the river")
 
 
-<!-- ft_river <- -->
-<!--   ft_river %>%  -->
-<!--   set_header_labels(values = headers) %>%  -->
-<!--   set_caption(caption = "Table +. Parameters of river and other fresh-water discharging source associated with Kandalaksha Bay.") -->
+ft_river <-
+  ft_river %>%
+  set_header_labels(values = headers) %>%
+  set_caption(caption = "Table +. Parameters of river and other fresh-water discharging source associated with Kandalaksha Bay.")
 
-<!-- ft_river -->
+ft_river
 
-<!-- ``` -->
+```
 
-<!-- \pagebreak -->
+\pagebreak
 
 
 
 
 
-<!-- ```{r SFigure_preparation} -->
-<!-- text_size <- 9 -->
+```{r SFigure_preparation}
+text_size <- 9
 
-<!-- theme_set(theme_bw() + theme(panel.grid = element_blank(), axis.title = element_text(size = text_size), axis.text.x = element_text(size = text_size))) -->
+theme_set(theme_bw() + theme(panel.grid = element_blank(), axis.title = element_text(size = text_size), axis.text.x = element_text(size = text_size)))
 
-<!-- port_neghbourds <- myt_site %>% group_by(Port) %>% summarise(Site_Number = n(), Median_Dist = median(Min_dist_port)) -->
+port_neghbourds <- myt_site %>% group_by(Port) %>% summarise(Site_Number = n(), Median_Dist = median(Min_dist_port))
 
-<!-- # range(round(port_neghbourds$Median_Dist)) -->
+# range(round(port_neghbourds$Median_Dist))
 
-<!-- Pl_Ports <-  -->
-<!--   myt_site %>%  -->
-<!--   ggplot(., aes(x = Port, y = Min_dist_port)) +  -->
-<!--   geom_boxplot(fill = "gray80") +  -->
-<!--   geom_text(data = port_neghbourds, aes(y = Median_Dist - 3, label = Site_Number)) +  -->
-<!--   labs(x = "Ports", y = "Distance to the nearest port (km)") + -->
-<!--   theme(axis.text.x = element_text(angle = 60, vjust = 0.6)) -->
+Pl_Ports <-
+  myt_site %>%
+  ggplot(., aes(x = Port, y = Min_dist_port)) +
+  geom_boxplot(fill = "gray80") +
+  geom_text(data = port_neghbourds, aes(y = Median_Dist - 3, label = Site_Number)) +
+  labs(x = "Ports", y = "Distance to the nearest port (km)") +
+  theme(axis.text.x = element_text(angle = 60, vjust = 0.6))
 
 
 
-<!-- sites_fetch_df2 <-  -->
-<!--   sites_fetch_df %>%  -->
-<!--   melt(., id.vars = c("Site", "Site_Exposition"), value.name = "Fetch", variable.name = "Direction") -->
+sites_fetch_df2 <-
+  myt_full %>%
+  select(Site, Site_Exposition, North_Fetch, East_Fetch, South_Fetch, West_Fetch, Average_Fetch) %>% 
+  melt(., id.vars = c("Site", "Site_Exposition"), value.name = "Fetch", variable.name = "Direction")
 
-<!-- sites_fetch_df2$Direction <- factor(sites_fetch_df2$Direction, labels = c("Nort", "East", "South", "West", "Average Fetch")) -->
+sites_fetch_df2$Direction <- factor(sites_fetch_df2$Direction, labels = c("Nort", "East", "South", "West", "Average Fetch"))
 
-<!-- sites_fetch_df2 <- sites_fetch_df2 %>% filter(Direction == "Fetch") -->
+# sites_fetch_df2 <- sites_fetch_df2 %>% filter(Direction == "Fetch")
 
-<!-- Pl_Fetch <- -->
-<!--   ggplot(sites_fetch_df2, aes(x = Site_Exposition, y = Fetch)) +  -->
-<!--   geom_boxplot() +  -->
-<!--   # scale_fill_manual(values = c("gray95", "gray80", "gray70", "gray60", "gray40")) +  -->
-<!--   labs(x = "Visual assessment of \nsite exposition", y = "Wind fetch (km)") + -->
-<!--   theme(axis.text.x = element_text(angle = 60, vjust = 0.6)) -->
-<!-- # theme(legend.position = c(0.7, 0.75)) + -->
+Pl_Fetch <-
+  ggplot(sites_fetch_df2, aes(x = Site_Exposition, y = Fetch)) +
+  geom_boxplot() +
+  # scale_fill_manual(values = c("gray95", "gray80", "gray70", "gray60", "gray40")) +
+  labs(x = "Visual assessment of \nsite exposition", y = "Wind fetch (km)") +
+  theme(axis.text.x = element_text(angle = 60, vjust = 0.6))
+# theme(legend.position = c(0.7, 0.75)) +
 
 
 
-<!-- # range(myt_site$Salinity) -->
+# range(myt_site$Salinity)
 
-<!-- # median(myt_site$Salinity) -->
+# median(myt_site$Salinity)
 
 
-<!-- Pl_Salinity <- -->
-<!--   myt_full %>% group_by(Site, River_Size) %>%  -->
-<!--   summarise(Salinity = mean(Salinity)) %>%  -->
-<!--   ggplot(., aes(x = River_Size, y = Salinity)) +  -->
-<!--   geom_violin(fill = "gray") + -->
-<!--   labs(x = "The size of the nearest river", y = "Salinity") + -->
-<!--   theme(axis.text.x = element_text(angle = 60, vjust = 0.6)) -->
+Pl_Salinity <-
+  myt_full %>% group_by(Site, River_Size) %>%
+  summarise(Salinity = mean(Salinity)) %>%
+  ggplot(., aes(x = River_Size, y = Salinity)) +
+  geom_violin(fill = "gray") +
+  labs(x = "The size of the nearest river", y = "Salinity") +
+  theme(axis.text.x = element_text(angle = 60, vjust = 0.6))
 
 
-<!-- Pl_Salinity_vs_Dist <-  -->
-<!--   ggplot(myt_site, aes(x = Min_dist_river, y = Salinity)) +  -->
-<!--   geom_point() + -->
-<!--   labs(x = "Distfnce to the nearest River", y = "Salinity") -->
+Pl_Salinity_vs_Dist <-
+  ggplot(myt_site, aes(x = Min_dist_river, y = Salinity)) +
+  geom_point() +
+  labs(x = "Distfnce to the nearest River", y = "Salinity")
 
 
-<!-- Pl_Salinity_vs_Dist_to_Large_riv <-  -->
-<!--   ggplot(myt_site, aes(x = Min_dist_river_Large, y = Salinity)) +  -->
-<!--   geom_point() + -->
-<!--   labs(x = "Distfnce to the nearest Large River", y = "Salinity") -->
+Pl_Salinity_vs_Dist_to_Large_riv <-
+  ggplot(myt_site, aes(x = Min_dist_river_Large, y = Salinity)) +
+  geom_point() +
+  labs(x = "Distfnce to the nearest Large River", y = "Salinity")
 
 
-<!-- Pl_Fetch_vs_Dist_to_Port <-  -->
-<!--   ggplot(myt_site, aes(x = Min_dist_port, y = Fetch)) +  -->
-<!--   geom_point() + -->
-<!--   labs(x = "Distance to the nearest port", y = "Wind Fetch") -->
+Pl_Fetch_vs_Dist_to_Port <-
+  ggplot(myt_site, aes(x = Min_dist_port, y = Fetch)) +
+  geom_point() +
+  labs(x = "Distance to the nearest port", y = "Wind Fetch")
 
 
-<!-- Pl_Salinity_vs_Dist_to_Port <-  -->
-<!--   ggplot(myt_site, aes(x = Min_dist_port, y = Salinity)) +  -->
-<!--   geom_point() + -->
-<!--   labs(x = "Distance to the nearest port", y = "Salinity") -->
+Pl_Salinity_vs_Dist_to_Port <-
+  ggplot(myt_site, aes(x = Min_dist_port, y = Salinity)) +
+  geom_point() +
+  labs(x = "Distance to the nearest port", y = "Salinity")
 
 
-<!-- ``` -->
+```
 
 
 
 
-<!-- ```{r SFigure_Save, fig.width=8, fig.height=8, fig.cap="SFigure 1. Associations between environmental factors. "} -->
+```{r SFigure_Save, fig.width=8, fig.height=8, fig.cap="SFigure 1. Associations between environmental factors. "}
 
-<!-- Pl_predictors <- -->
-<!-- (Pl_Ports + Pl_Fetch) / -->
-<!-- (Pl_Salinity + Pl_Salinity_vs_Dist) / -->
-<!-- (Pl_Salinity_vs_Dist_to_Port + Pl_Fetch_vs_Dist_to_Port) + plot_annotation(tag_levels = "A") -->
+Pl_predictors <-
+(Pl_Ports + Pl_Fetch) /
+(Pl_Salinity + Pl_Salinity_vs_Dist) /
+(Pl_Salinity_vs_Dist_to_Port + Pl_Fetch_vs_Dist_to_Port) + plot_annotation(tag_levels = "A")
 
-<!-- ggsave(plot = Pl_predictors, filename = "figures/Pl_predictors.jpg", device = "jpeg", dpi = 600, width = 20, height = 20, units = "cm") -->
+ggsave(plot = Pl_predictors, filename = "figures/Pl_predictors.jpg", device = "jpeg", dpi = 600, width = 20, height = 20, units = "cm")
 
 
-<!-- ``` -->
+```
 
 
-<!-- <!-- ![SFigure +. Associations between environmental factors. (A) Boxplots showing the variation in distances to the nearest port. Numbers insite the box indicate the number of sites for which the corresponding port is the nearest. (B) Boxplots showing the variation of wind fetch for two groups of sites (Exposed vs Sheltered) choosen for material collection. (C) The kernel density violin-plots showing salinity variation for sites near Small and Large rivers. (D) The association of salinity with distance to the mouth of the nearest river. (E) The association of salinity with distance to the nearest port. (F) The association between wind fetch and distance to the nearest port.](figures/Pl_predictors.jpg) --> -->
+<!-- ![SFigure +. Associations between environmental factors. (A) Boxplots showing the variation in distances to the nearest port. Numbers insite the box indicate the number of sites for which the corresponding port is the nearest. (B) Boxplots showing the variation of wind fetch for two groups of sites (Exposed vs Sheltered) choosen for material collection. (C) The kernel density violin-plots showing salinity variation for sites near Small and Large rivers. (D) The association of salinity with distance to the mouth of the nearest river. (E) The association of salinity with distance to the nearest port. (F) The association between wind fetch and distance to the nearest port.](figures/Pl_predictors.jpg) -->
 
 
-<!-- ```{r SFigure_plot,  fig.cap= "SFigure +. Associations between environmental factors. (A) Boxplots showing the variation in distances to the nearest port. Numbers insite the box indicate the number of sites for which the corresponding port is the nearest. (B) Boxplots showing the variation of wind fetch for two groups of sites (Exposed vs Sheltered) choosen for material collection. (C) The kernel density violin-plots showing salinity variation for sites near Small and Large rivers. (D) The association of salinity with distance to the mouth of the nearest river. (E) The association of salinity with distance to the nearest port. (F) The association between wind fetch and distance to the nearest port", fig.width=8, fig.height=8} -->
+```{r SFigure_plot,  fig.cap= "SFigure +. Associations between environmental factors. (A) Boxplots showing the variation in distances to the nearest port. Numbers insite the box indicate the number of sites for which the corresponding port is the nearest. (B) Boxplots showing the variation of wind fetch for two groups of sites (Exposed vs Sheltered) choosen for material collection. (C) The kernel density violin-plots showing salinity variation for sites near Small and Large rivers. (D) The association of salinity with distance to the mouth of the nearest river. (E) The association of salinity with distance to the nearest port. (F) The association between wind fetch and distance to the nearest port", fig.width=8, fig.height=8}
 
-<!-- Pl_predictors -->
-<!-- ``` -->
+Pl_predictors
+```
 
 
 
