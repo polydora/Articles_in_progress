@@ -3,20 +3,311 @@ library(readxl)
 library(dplyr)
 
 
-
+# Данные по разновидности BTN
 myt <- read_excel("Data/summary table_Magadan_itog.xlsx", sheet = "data")
 
 
+# Характеристики точек
+points <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", sheet = "Points  characteristic 2021-23", na = "NA")
+
+load(file =  "Data/gg_Magadan_large.RData")
+
+points <- points %>% mutate(fPort = factor(ifelse(Site %in% c("KHOL", "MAM", "MAR_II", "MCHK", "PORT"), "Close", "Distant")))
+
+
+
+# Данные по размерной структуре
+
+size <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", na = "NA", sheet = "Размерная струкутра 2023 2021")
+
+size <- size[complete.cases(size), ]
+
+library(reshape2)
+
+scam <- dcast(Year + Site ~ Size_class, data = size)
+
+area <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", na = "NA", sheet = "Площадь проб на размер")
+
+sample_area <- 
+  area %>% group_by(Year, Site) %>% summarise(Total_area = sum(Area))
+
+scam <- 
+  scam %>% group_by(Year, Site)
+
+
+scam [ ,3:ncol(scam)] <- 
+  round((scam[ ,3:ncol(scam)] / sample_area$Total_area) *10000, 0)
+
+
+scam_23 <- scam %>% filter(Year == 2023)
+
+
+pca_scam_23 <- cca(scam_23[ , -c(1,2)])
+
+sum_pca_scam_23 <- summary(pca_scam_23)
+
+pca_scam_23_size_scores <- as.data.frame(scores(pca_scam_23)$species)
+
+# pca_scam_23_size_scores %>% arrange(CA1)
+
+pca_scam_23_scores <- as.data.frame(scores(pca_scam_23)$sites)
+
+pca_scam_23_scores$N_Juv <- scam_23$L3  
+pca_scam_23_scores$N_Large = scam_23$L8 + scam_23$L13 + scam_23$L18 + scam_23$L23 + scam_23$L28 + scam_23$L33 + scam_23$L38 + scam_23$L43 + scam_23$L48 + scam_23$L53 + scam_23$L58
+
+
+pca_scores_scam_23 <- data.frame(Year = scam_23$Year, Site = scam_23$Site, pca_scam_23_scores)
 
 
 
 
-dat<-
+# Проективное покрытие мидий
+
+cover <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", sheet = "Покрытия миидий 2023")
+
+mean_cover <-
+  cover %>%
+  group_by(Site) %>%
+  summarise(Cover = mean(`Number of squares`/30))
+
+
+
+
+
+
+
+
+
+
+# 
+# Карта с общей характеристикой точек
+
+library(ggplot2)
+
+ggplot(gg_Magadan_large, aes(x = long, y = lat, group = group)) + 
+  geom_polygon() + 
+  # coord_map(xlim = c(150., 151.52), ylim = c(59.4, 59.8) )+
+  geom_point(data = points %>% filter(Year == 2023), aes(x = lon, y = lat, group = 1, size = (fetch), fill = fPort ), shape = 21) +
+  scale_fill_manual(values =  c("gray", "yellow"))
+
+
+# Анализ без объедиения проб сайтов
+
+cancer <- 
+  myt %>% 
+  mutate(Prop_BTN1 = BTN1/N, Prop_BTN2 = (BTN2.1 + BTN2.2 + BTN2.SAM)/N) 
+
+
+cancer2 <-
+  cancer %>% 
+  filter(Year == 2023) %>% 
+  select(-Site) %>% 
+  rename(Site = Site_code)
+
+
+
+
+cancer_2023 <- 
+  merge(points, cancer2) %>% 
+  filter(Year == 2023)
+
+cancer_2023 <- 
+merge(cancer_2023, pca_scores_scam_23)
+
+cancer_2023 <- 
+  merge(cancer_2023, mean_cover)
+
+
+cancer_2023 <- 
+  cancer_2023 %>% 
+  mutate(Prop_BTN1_corrected = case_when(Prop_BTN1 == 0 ~ 0.0000001,
+                                         Prop_BTN1 > 0 ~ Prop_BTN1),
+         Prop_BTN2_corrected = case_when(Prop_BTN2 == 0 ~ 0.0000001,
+                                         Prop_BTN2 > 0 ~ Prop_BTN2)
+         )
+
+
+library(lme4)
+library(glmmADMB)
+library(glmmTMB)
+
+
+# Модель для BTN1
+
+foo_model <- lm(Prop_BTN1_corrected ~ Cover +  fetch + Dist_Port + CA1 + CA2 , data = cancer_2023)
+
+library(car)
+vif(foo_model)
+
+
+mod_glmm_BTN1 <- glmmTMB(Prop_BTN1_corrected ~ Cover + fetch + Dist_Port + CA1 + CA2  + (1|Site), data = cancer_2023, family = beta_family())
+
+summary(mod_glmm_BTN1)
+
+drop1(mod_glmm_BTN1)
+
+mod_glmm_BTN1_1 <- update(mod_glmm_BTN1, . ~ . - CA2) 
+drop1(mod_glmm_BTN1_1)
+
+
+mod_glmm_BTN1_2 <- update(mod_glmm_BTN1_1, . ~ . - fetch) 
+drop1(mod_glmm_BTN1_2)
+
+summary(mod_glmm_BTN1_2)
+
+
+
+# Модель для BTN2
+mod_glmm_BTN2 <- glmmTMB(Prop_BTN2_corrected ~ Cover + fetch + Dist_Port + CA1 + CA2 + (1|Site), data = cancer_2023, family = beta_family())
+
+
+summary(mod_glmm_BTN2)
+
+drop1(mod_glmm_BTN2)
+
+mod_glmm_BTN2_1 <- update(mod_glmm_BTN2, . ~ . - Cover) 
+drop1(mod_glmm_BTN2_1)
+
+
+mod_glmm_BTN2_2 <- update(mod_glmm_BTN2_1, . ~ . - Dist_Port) 
+drop1(mod_glmm_BTN2_2)
+
+mod_glmm_BTN2_3 <- update(mod_glmm_BTN2_2, . ~ . - CA2) 
+drop1(mod_glmm_BTN2_3)
+
+mod_glmm_BTN2_4 <- update(mod_glmm_BTN2_3, . ~ . - CA1) 
+drop1(mod_glmm_BTN2_4)
+
+
+summary(mod_glmm_BTN2_4)
+
+
+
+
+###########################
+
+
+df <- 
+cancer_2023 %>% 
+  mutate(BTN2 = BTN2.1 + BTN2.2 + BTN2.SAM, Prop_Juv = N_Juv/(N_Juv + N_Large)) %>% 
+  dplyr::select(Site, Cover, Dist_Port, fPort, fetch, CA1, CA2, N_Juv, N_Large, Prop_Juv, N, BTN1, BTN2) 
+
+cancer_2023_long <- 
+melt(df, id.vars = c("Site", "Cover", "Dist_Port", "fPort", "fetch", "CA1", "CA2", "N_Juv", "N_Large", "Prop_Juv", "N"), variable.name = "Cancer_Type", value.name = "Freq" )
+
+
+cancer_2023_long$Site <- factor(cancer_2023_long$Site)
+
+
+cancer_2023_long <-
+  cancer_2023_long %>% 
+  mutate(Fi = 2 * asin(sqrt(Freq/N)) * 180/pi)
+
+library(mgcv)
+Mod_cancer_type <- gam(Fi ~ 
+                         s(fetch, k = 8, by = Cancer_Type) + 
+                         s(Dist_Port, k = 8, by = Cancer_Type) +
+                                                  Cancer_Type +
+                         s(Site, bs = "re"), 
+                       data = cancer_2023_long)
+
+
+library(gratia)
+appraise(Mod_cancer_type)
+
+
+summary(Mod_cancer_type)
+
+
+draw(Mod_cancer_type)
+
+
+
+
+
+#### Анализ по объединенным пробам для каждого сайта
+
+btn <-
 myt %>% 
   group_by(Site_code, Year) %>% 
   dplyr::select(Site_code, N, DN_FC, BTN1, BTN2.1, BTN2.2, BTN2.SAM) %>% 
   mutate(Helth = N - BTN1 - BTN2.1 - BTN2.2 - BTN2.SAM) %>% 
-  summarise_all(.funs = sum) 
+  summarise_all(.funs = sum) %>% 
+  rename(Site = Site_code) 
+
+
+
+btn_points <- merge(btn, points)
+
+btn_points<-
+btn_points %>% filter(Site != "ON")
+
+
+
+df_Site <-
+btn_points %>% 
+  dplyr::select(DN_FC, BTN1, BTN2.1, BTN2.2, Helth)
+
+df_Site <-
+df_Site/btn_points$N
+
+
+mod_cca <- rda(df_Site  ~ fetch + Dist_Port + Salinity + factor(Year) , data = btn_points)
+
+vif.cca(mod_cca)
+
+
+plot(mod_cca, display = c("cn", "sp"))
+
+anova(mod_cca, by = "margin")
+anova(mod_cca)
+anova(mod_cca, by = "axis")
+
+
+
+btn_points <- 
+  btn_points %>% 
+  mutate(Prop_BTN1 = BTN1/(BTN1 + BTN2.1 + BTN2.2 + BTN2.SAM))
+
+
+ggplot(gg_Magadan_large, aes(x = long, y = lat, group = group)) + 
+  geom_polygon() + 
+  coord_map(xlim = c(150., 151.52), ylim = c(59.4, 59.8) )+
+  geom_point(data = btn_points, aes(x = lon, y = lat, group = 1, size = Prop_BTN1, fill = fPort ), shape = 21) +
+  scale_fill_manual(values =  c("gray", "yellow"))
+
+ggplot(btn_points, aes(x = Salinity, y = Prop_BTN1)) +
+  geom_point()
+
+ggplot(btn_points, aes(x = fetch, y = Prop_BTN1)) +
+  geom_point()
+
+ggplot(btn_points, aes(x = Dist_Port, y = Prop_BTN1)) +
+  geom_point()
+
+
+library(betareg)
+
+library(gratia)
+
+
+btn_points$Prop_BTN1_corrected <- btn_points$Prop_BTN1
+
+btn_points$Prop_BTN1_corrected [btn_points$Prop_BTN1 == 0] <- 0.000001 
+btn_points$Prop_BTN1_corrected [btn_points$Prop_BTN1 == 1] <- 0.999999 
+
+
+Mod_btn <- gam(Prop_BTN1 ~ Salinity + s(fetch, k = 4) + Dist_Port + DN_FC, data = btn_points, family = "gaussian")
+
+
+appraise(Mod_btn)
+
+summary(Mod_btn)
+
+draw(Mod_btn, residuals = T, parametric = T)
+
+
+
 
 
 

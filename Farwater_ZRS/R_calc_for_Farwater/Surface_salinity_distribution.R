@@ -124,6 +124,9 @@ ggsave(plot = Pl_sal_2024, filename = "Salinity_map_2024.png", dpi = 600)
 ####################
 # Вертикальное распределине солености
 
+
+sal_depth <- read_excel("Data/Salinity_vs_Depth_Bouy_19.xlsx")
+
 Pl_slinity_depth <- 
 ggplot(sal %>% filter(Year == "2007"), aes(x = Depth, y = S, group = Depth)) +
   geom_point(position = position_jitter(width = 0.3), color = "blue")+
@@ -131,6 +134,9 @@ ggplot(sal %>% filter(Year == "2007"), aes(x = Depth, y = S, group = Depth)) +
   theme_bw() +
   labs(x = "Горизонт глубины", y = "Соленость (промилле)")
   
+Pl_slinity_depth <-
+Pl_slinity_depth +
+  geom_point(data = sal_depth, aes(x = Depth, y = Salinity), size = 4, color = "red")
 
 ggsave(plot = Pl_slinity_depth, filename = "Salinity_Depth_2007.png", dpi = 600)
 
