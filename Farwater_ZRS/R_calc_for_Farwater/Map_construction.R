@@ -39,11 +39,6 @@ library(raster)
 
 Kand_shape <- bind(murm_shape, karel_shape)
 
-proj4string(Kand_shape)
-proj4string(Laminaria)
-
-
-plot(Kand_shape)
 
 
 # Карта для ggplot
@@ -53,7 +48,7 @@ gg_murm_karel <- fortify(Kand_shape)
 
 Kand_map <- 
   ggplot(gg_murm_karel, aes(x = long, y = lat, group = group)) + 
-  geom_polygon(fill = "gray20") +
+  geom_polygon(fill = "gray") +
   # coord_map(xlim = c(150., 151.52), ylim = c(59.45, 59.8) )+
   coord_map(xlim = Kand_x, ylim = Kand_y) +
   theme_bw()
@@ -118,6 +113,18 @@ gg_Islands <- fortify(Islands)
 
 
 
+Mussel_beds <- readShapeSpatial("Maps/Mytilus/Mussel_beds_points.shp", proj4string = 
+                              CRS("+proj=longlat +datum=WGS84"))
+
+gg_Mussel_beds <- data.frame(
+  long = coordinates(Mussel_beds)[, 1],
+  lat = coordinates(Mussel_beds)[, 2])
+
+
+farvater <- read_excel("Data/Farvater_coordinates.xlsx", sheet = "Farvater")
+otval <- read_excel("Data/Farvater_coordinates.xlsx", sheet = "Otval")
+
+
 Kand_x <- c(32.5, 32.65)
 Kand_y <- c(66.96, 67.06)
 
@@ -128,141 +135,121 @@ ggplot() +
   geom_polygon(data = gg_Laminaria, aes(x = long, y = lat, group = group), fill = "green") +
   geom_polygon(data = gg_Portlandia, aes(x = long, y = lat, group = group), fill = "yellow") +
   geom_polygon(data = gg_Rhodophyta, aes(x = long, y = lat, group = group), fill = "red") +
-  geom_polygon(data = gg_Rhynchonella, aes(x = long, y = lat, group = group), fill = "cyan") +
-  geom_polygon(data = gg_Hydralmania, aes(x = long, y = lat, group = group), fill = "lightblue") +
-  geom_polygon(data = gg_Macoma, aes(x = long, y = lat, group = group), fill = "sienna") +
-  geom_polygon(data = gg_Pista, aes(x = long, y = lat, group = group), fill = "orange") +
+  geom_polygon(data = gg_Rhynchonella, aes(x = long, y = lat, group = group), fill = "blue") +
+  geom_polygon(data = gg_Hydralmania, aes(x = long, y = lat, group = group), fill = "blue") +
+  geom_polygon(data = gg_Macoma, aes(x = long, y = lat, group = group), fill = "black") +
+  geom_polygon(data = gg_Pista, aes(x = long, y = lat, group = group), fill = "black") +
     geom_polygon(data = gg_Portlandia_Macoma, aes(x = long, y = lat, group = group), fill = "black") +
   geom_polygon(data = gg_Mud, aes(x = long, y = lat, group = group),
                        fill = "black",
                        alpha = 0.2) +
   geom_polygon(data = Islands, aes(x = long, y = lat, group = group), fill = "gray") +
   geom_polygon(data = gg_murm_karel, aes(x = long, y = lat, group = group), fill = "gray", color = "black") +
-  geom_polygon(data = gg_Polydora, aes(x = long, y = lat, group = group), fill = "gray40") +
+  geom_polygon(data = gg_Polydora, aes(x = long, y = lat, group = group), fill = "black") +
   coord_map(xlim = Kand_x, ylim = Kand_y) +
-  theme_bw()
+  theme_bw() 
+# +
+#   geom_polygon(data = farvater,  aes(x = long, y = lat), fill = "brown")
   
+
+
+# Карта распределеиня мидиевых банок
+ggplot() + 
+  geom_polygon(data = Islands, aes(x = long, y = lat, group = group), fill = "gray") +
+  geom_polygon(data = gg_murm_karel, aes(x = long, y = lat, group = group), fill = "gray", color = "black") +
+  geom_point(data = gg_Mussel_beds, aes(x = long, y = lat, group = 1), fill = "black", size = 3) +
+  coord_map(xlim = Kand_x, ylim = Kand_y) +
+  theme_bw() 
+
+
+# Карта распределеиня зарослей ламинарии
+
+ggplot() + 
+  geom_polygon(data = Islands, aes(x = long, y = lat, group = group), fill = "gray") +
+  geom_polygon(data = gg_Laminaria, aes(x = long, y = lat, group = group), fill = "green") +
+  geom_polygon(data = gg_murm_karel, aes(x = long, y = lat, group = group), fill = "gray", color = "black") +
+  geom_polygon(data = farvater, aes(x = long, y = lat, group = 1), fill = "brown") +
+  coord_map(xlim = Kand_x, ylim = Kand_y) +
+  theme_bw() 
+
+
+
+# Карта распределеиня сообществ мелководных илов
+
+ggplot() + 
+  geom_polygon(data = Islands, aes(x = long, y = lat, group = group), fill = "gray") +
+  geom_polygon(data = gg_Macoma, aes(x = long, y = lat, group = group), fill = "black") +
+  geom_polygon(data = gg_Pista, aes(x = long, y = lat, group = group), fill = "black") +
+  geom_polygon(data = gg_Portlandia_Macoma, aes(x = long, y = lat, group = group), fill = "black") +
+  geom_polygon(data = gg_Polydora, aes(x = long, y = lat, group = group), fill = "black") +
+  geom_polygon(data = gg_Mud, aes(x = long, y = lat, group = group),
+               fill = "black") +
+  geom_polygon(data = gg_murm_karel, aes(x = long, y = lat, group = group), fill = "gray", color = "black") +
+  geom_polygon(data = farvater, aes(x = long, y = lat, group = 1), fill = "brown", alpha = 0.5) +
+  coord_map(xlim = Kand_x, ylim = Kand_y) +
+  theme_bw() 
+
+
+# Карта распределеиня сообществ глубоководных илов
+
+ggplot() + 
+  geom_polygon(data = gg_Portlandia, aes(x = long, y = lat, group = group), fill = "yellow") +
+  geom_polygon(data = gg_murm_karel, aes(x = long, y = lat, group = group), fill = "gray", color = "black") +
+  geom_polygon(data = farvater, aes(x = long, y = lat, group = 1), fill = "brown", alpha = 0.5) +
+  coord_map(xlim = Kand_x, ylim = Kand_y) +
+  theme_bw() 
+
+
+
+# Карта распределеиня зарослей багрянок
+
+ggplot() + 
+  geom_polygon(data = gg_Rhynchonella, aes(x = long, y = lat, group = group), fill = "blue") +
+  geom_polygon(data = gg_Hydralmania, aes(x = long, y = lat, group = group), fill = "blue") +
+  geom_polygon(data = gg_murm_karel, aes(x = long, y = lat, group = group), fill = "gray", color = "black") +
+  geom_polygon(data = farvater, aes(x = long, y = lat, group = 1), fill = "brown", alpha = 0.5) +
+  coord_map(xlim = Kand_x, ylim = Kand_y) +
+  theme_bw() 
+
+
+
+# Карта распределеиня сообщества промытого гравийно-галичного грунта
+
+ggplot() + 
+  geom_polygon(data = gg_Rhodophyta, aes(x = long, y = lat, group = group), fill = "red") +
+  geom_polygon(data = gg_murm_karel, aes(x = long, y = lat, group = group), fill = "gray", color = "black") +
+  geom_polygon(data = farvater, aes(x = long, y = lat, group = 1), fill = "brown", alpha = 0.5) +
+  coord_map(xlim = Kand_x, ylim = Kand_y) +
+  theme_bw() 
 
 
 ########################################
 
 
-# Создаем карту по обычным лекалам
+# Карта границ заповедника
+
+reserve_boundary <- read.csv("Maps/Nature_reserve_boundary/Вершина_залива_координаты_положение.csv")
 
 
-# Fin_x <- c(27.29, 31)
-# Fin_y <- c(59.20, 60.13)
+farvater <- read_excel("Data/Farvater_coordinates.xlsx", sheet = "Farvater")
+otval <- read_excel("Data/Farvater_coordinates.xlsx", sheet = "Otval")
 
-Fin_x <- c(28.06, 29.9)
-Fin_y <- c(59.61, 60.11)
-
-#
-gshhs.l.b <- "d:/Data_LMBE/Maps/Gshhs/gshhs_l.b"
-
-gshhs.f.b <- "d:/Data_LMBE/Maps/Gshhs/gshhs_f.b"
-wdb_rivers.f.b <- "d:/Data_LMBE/Maps/Gshhs/wdb_rivers_f.b"
-
-wdb_borders.f.b <- "d:/Data_LMBE/Maps/Gshhs/wdb_borders_f.b"
-
-wdb_rivers.shp <- "D:/Data_LMBE/Maps/GSHHS/WDBII_shp/f/WDBII_river_f_L05.shp"
-
-wdb_borders.f.b <- "d:/Data_LMBE/Maps/Gshhs/wdb_borders_f.b"
-#
-#
-Fin_f <- getRgshhsMap(fn = gshhs.f.b, xlim = Fin_x, ylim = Fin_y)
-plot(Fin_f)
-
-# Rivers <- Rgshhs(wdb_rivers.f.b, xlim = Fin_x, ylim = Fin_y) 
-
-
-Rivers <- importGSHHS(wdb_rivers.f.b, xlim = Fin_x, ylim = Fin_y)
-
-str(Rivers)
-
-as.data.frame(unlist(unclass(Rivers)))
-
-Borders <- Rgshhs(wdb_borders.f.b, xlim = Fin_x, ylim = Fin_y)
-
-#
-# Fin_df <- fortify(Fin_f)
-#
-# write.csv(Fin_df, file = "Data/Finnish_South_2023_plan.csv")
+Kand_map +
+  geom_polygon(data = reserve_boundary, aes(x = Y, y = X, group = Part), color = "blue", fill= NA) +
+  geom_polygon(data = farvater, aes(x = long, y = lat, group = 1), fill = "brown") +
+  geom_polygon(data = otval, aes(x = long, y = lat, group = 1), fill = "brown")
+  
 
 
 
-#
-# map <- esp_get_prov("Asturias") %>%
-#   st_transform(27572) %>%
-#   st_bbox()
+# Карта располодения станций мониторинга в раоне фарватера
 
+monitor_samples <- read_excel("Data/ZRS_Monitoring_Samples.xlsx")
 
-
-
-map <- st_as_sfc(Fin_f)
-plot(map)
-
-rivers <- st_read(dsn =  wdb_rivers.shp)
-
-st_as_sfc(rivers, xmin = Fin_x[1], xmax = Fin_x[2])
-
-
-plot(rivers)
-
-save(map, file = "Finnish_gulf_South.RData")
-
-
-# Pl_Finnish_Gulf_1 <-
-# ggplot(map) +
-#   geom_sf()
-
-
-
-Fin_df <- read.csv("Data/Finnish_Gulf_East.csv") # Map poligones
-
-# Basic map layer####################
-
-theme_set(theme_bw())
-
-
-
-Pl_Finnish_Gulf <- 
-  ggplot(Fin_df, aes(x=long, y=lat, group=group)) +
-  geom_polygon(fill = "gray90", colour = "gray20") + 
-  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
-  theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
-  theme(axis.ticks = element_blank())
-
-Pl_Finnish_Gulf + geom_path(data = Rivers, aes(x = X, y = Y, group = PID))
-
-
-
-
-# Data reading
-
-stations <- read_excel("Data/Finnish_gulf_working_data.xlsx", sheet = "Station parameters")
-
-points <- stations %>% select(lat, long) %>% filter(long >= 27.054848)
-
-
-Pl_Finnish_Gulf + 
-  geom_point(data = points, aes(group = 1), color = "blue", size = 2)
-
-
-
-points_sf <- st_as_sf(points, coords = c("long", "lat"), crs = 4326 )
-
-# crs - система отсчета координат см https://spatialreference.org/
-# st_crs(Fin_f)
-
-point_in_pol <- as.numeric(st_within(points_sf, map))
-str(point_in_pol)
-
-
-# point_in_pol <- as.vector(st_intersects(map, points_sf, sparse = FALSE))
-# Там еще много функций на сравнение полигонов
-
-stations_on_land <- stations %>% filter(point_in_pol == 1)
-
-Pl_Finnish_Gulf + 
-  geom_point(data = stations_on_land, aes(group = 1), color = "blue", size = 2)
+Kand_map +
+  geom_point(data = monitor_samples, aes(fill = Source, group = 1), size = 3, shape = 21) +
+  scale_fill_manual(values = c("blue", "yellow")) + 
+  geom_polygon(data = farvater, aes(x = long, y = lat, group = 1), fill = "brown", alpha = 0.5) +
+  geom_polygon(data = otval, aes(x = long, y = lat, group = 1), fill = "brown", alpha = 0.5) 
+  
 
