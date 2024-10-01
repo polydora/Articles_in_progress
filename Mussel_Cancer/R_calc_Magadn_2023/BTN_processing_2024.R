@@ -12,7 +12,9 @@ points <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", sheet = "Points  cha
 
 load(file =  "Data/gg_Magadan_large.RData")
 
-points <- points %>% mutate(fPort = factor(ifelse(Site %in% c("KHOL", "MAM", "MAR_II", "MCHK", "PORT"), "Close", "Distant")))
+points <- 
+  points %>% 
+  mutate(fPort = factor(ifelse(Site %in% c("KHOL", "MAM", "MAR_II", "MCHK", "PORT"), "Close", "Distant")))
 
 
 
@@ -39,10 +41,14 @@ scam [ ,3:ncol(scam)] <-
   round((scam[ ,3:ncol(scam)] / sample_area$Total_area) *10000, 0)
 
 
+
+
 scam_23 <- scam %>% filter(Year == 2023)
 
 
-pca_scam_23 <- cca(scam_23[ , -c(1,2)])
+pca_scam_23 <- rda(decostand(scam_23[ , -c(1,2)], method = "hellinger" ))
+
+plot(pca_scam_23, display = "sp")
 
 sum_pca_scam_23 <- summary(pca_scam_23)
 
@@ -52,9 +58,11 @@ pca_scam_23_size_scores <- as.data.frame(scores(pca_scam_23)$species)
 
 pca_scam_23_scores <- as.data.frame(scores(pca_scam_23)$sites)
 
-pca_scam_23_scores$N_Juv <- scam_23$L3  
-pca_scam_23_scores$N_Large = scam_23$L8 + scam_23$L13 + scam_23$L18 + scam_23$L23 + scam_23$L28 + scam_23$L33 + scam_23$L38 + scam_23$L43 + scam_23$L48 + scam_23$L53 + scam_23$L58
+pca_scam_23_scores$N_Juv <- scam_23$L3 + scam_23$L8 + scam_23$L13 + scam_23$L18   
 
+pca_scam_23_scores$N_Large =   scam_23$L23 + scam_23$L28 + scam_23$L33 + scam_23$L38 + scam_23$L43 + scam_23$L48 + scam_23$L53 + scam_23$L58
+
+pca_scam_23_scores$N_Total <- scam_23$L3 + scam_23$L8 + scam_23$L13 + scam_23$L18 + scam_23$L23 + scam_23$L28 + scam_23$L33 + scam_23$L38 + scam_23$L43 + scam_23$L48 + scam_23$L53 + scam_23$L58
 
 pca_scores_scam_23 <- data.frame(Year = scam_23$Year, Site = scam_23$Site, pca_scam_23_scores)
 
@@ -63,17 +71,12 @@ pca_scores_scam_23 <- data.frame(Year = scam_23$Year, Site = scam_23$Site, pca_s
 
 # Проективное покрытие мидий
 
-cover <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", sheet = "Покрытия миидий 2023")
+cover_23 <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", sheet = "Покрытия миидий 2023")
 
-mean_cover <-
-  cover %>%
+mean_cover_23 <-
+  cover_23 %>%
   group_by(Site) %>%
   summarise(Cover = mean(`Number of squares`/30))
-
-
-
-
-
 
 
 
@@ -89,6 +92,10 @@ ggplot(gg_Magadan_large, aes(x = long, y = lat, group = group)) +
   # coord_map(xlim = c(150., 151.52), ylim = c(59.4, 59.8) )+
   geom_point(data = points %>% filter(Year == 2023), aes(x = lon, y = lat, group = 1, size = (fetch), fill = fPort ), shape = 21) +
   scale_fill_manual(values =  c("gray", "yellow"))
+
+
+
+
 
 
 # Анализ без объедиения проб сайтов
@@ -115,16 +122,127 @@ cancer_2023 <-
 merge(cancer_2023, pca_scores_scam_23)
 
 cancer_2023 <- 
-  merge(cancer_2023, mean_cover)
+  merge(cancer_2023, mean_cover_23)
+
 
 
 cancer_2023 <- 
   cancer_2023 %>% 
-  mutate(Prop_BTN1_corrected = case_when(Prop_BTN1 == 0 ~ 0.0000001,
-                                         Prop_BTN1 > 0 ~ Prop_BTN1),
-         Prop_BTN2_corrected = case_when(Prop_BTN2 == 0 ~ 0.0000001,
-                                         Prop_BTN2 > 0 ~ Prop_BTN2)
-         )
+  mutate(BTN2 = BTN2.1 + BTN2.2 + BTN2.SAM)
+
+
+# library(ggplot2)
+qplot(cancer_2023$fetch,  cancer_2023$Prop_BTN1)
+
+
+cancer_2023 %>% 
+  group_by(Site) %>% 
+  summarise(fetch = mean(fetch), Prop_BTN1 = sum(BTN1)/sum(N)) %>% 
+  ggplot(., aes(fetch, Prop_BTN1)) +
+  geom_point()
+
+
+cancer_2023 %>% 
+  group_by(Site) %>% 
+  summarise(fetch = mean(fetch), Prop_BTN2 = sum(BTN2)/sum(N)) %>% 
+  ggplot(., aes(fetch, Prop_BTN2)) +
+  geom_point()
+
+
+# Модель для Prop_BTN1 и Prop_BTN2 в одной модели #################
+
+library(reshape2)
+
+cancer_2023_long <- 
+cancer_2023 %>% 
+  select(Site, Salinity, Dist_Port, fetch, fPort, Sample, PC1, PC2, N_Large, N_Juv, N_Total, Cover, N, BTN1, BTN2) %>%
+  mutate(Sample = 1:nrow(.)) %>% 
+  melt(., id.vars = c("Site", "Salinity", "Dist_Port", "fetch", "fPort", "Sample", "PC1", "PC2", "N_Large", "N_Juv", "N_Total",  "Cover", "N"), variable.name = "Lineage", value.name = "N_cancer") %>% 
+  mutate(N_helthy = N - N_cancer)
+
+
+
+
+library(mgcv)
+library(gratia)
+
+
+Mod_btn1_btn2 <- gam(cbind(N_cancer, N_helthy) ~ s((Dist_Port), by = Lineage) + s(fetch, by = Lineage) + s(N_Large, by = Lineage) + Lineage + s(Sample, bs = "re"), data = cancer_2023_long, family = "binomial", method = "REML" )
+
+
+Mod_btn1_btn2 <- gam(cbind(N_cancer, N_helthy) ~ s((Dist_Port), by = Lineage) + s(fetch, by = Lineage) + Lineage + s(Sample, bs = "re"), data = cancer_2023_long, family = "binomial", method = "REML" )
+
+
+
+appraise(Mod_btn1_btn2)
+
+summary(Mod_btn1_btn2)
+
+
+draw(Mod_btn1_btn2)
+
+
+############################## Соотвтствие предсказаний наблюдениям
+
+
+
+
+scam_21 <- scam %>% filter(Year == 2021)
+
+
+scam_21$N_Juv <- scam_21$L3 + scam_21$L8 + scam_21$L13 + scam_21$L18   
+
+scam_21$N_Large =  scam_21$L28 + scam_21$L33 + scam_21$L38 + scam_21$L43 + scam_21$L48 + scam_21$L53 + scam_21$L58
+
+cancer_21 <- 
+  cancer %>% 
+  filter(Year == 2021) %>% 
+  select(-Site) %>% 
+  rename(Site = Site_code)
+
+
+cancer_21 <- 
+  merge(cancer_21, scam_21)
+
+cancer_21 <- 
+  merge(cancer_21, points) 
+
+cancer_21_summ <-
+cancer_21 %>% 
+  group_by(Site) %>% 
+  summarise(BTN1 = sum(BTN1), BTN2 = sum(BTN2.1) + sum(BTN2.2) + sum(BTN2.SAM), N = sum(N), fetch = mean(fetch), N_Large = mean(N_Large), Dist_Port = mean(Dist_Port)) %>% 
+  mutate(Prop_BTN1 = BTN1/N, Prop_BTN2 = BTN2/N)
+
+cancer_21_summ$Lineage  = "BTN1"
+
+
+################# 
+
+predictions_2021 <-
+  cancer_21_summ %>% 
+  select(Site, Prop_BTN1, Prop_BTN2)
+
+predictions_2021$Prop_BTN1_prdicted <-  predict(Mod_btn1_btn2, newdata = cancer_21_summ, exclude = "s(Sample)", newdata.guaranteed=TRUE, type = "response")
+
+predictions_2021$Prop_BTN2_prdicted <-  predict(Mod_btn1_btn2, newdata = cancer_21, exclude = "s(Sample)", newdata.guaranteed=TRUE, type = "response")
+
+
+
+qplot(predictions_2021$Prop_BTN1_prdicted, predictions_2021$Prop_BTN1) + geom_abline()
+
+
+
+cor.test(predictions_2021$Prop_BTN1, predictions_2021$Prop_BTN1_prdicted) 
+
+qplot(x = predictions_2021$Prop_BTN2_prdicted, y = predictions_2021$Prop_BTN2) + geom_abline()
+
+
+#########################################
+
+
+
+
+
 
 
 library(lme4)

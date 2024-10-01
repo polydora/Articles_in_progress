@@ -2,7 +2,7 @@ library(readxl)
 library(dplyr)
 library(ggplot2)
 
-point <- read_excel("Data/Point_presence.xlsx", na = "NA") 
+  point <- read_excel("Data/Point_presence.xlsx", na = "NA") 
 
 
 point <- point %>%  mutate(Npoint = pmax(Left,Right))
@@ -17,3 +17,4 @@ point %>% filter(!is.na(Seria)) %>%
 
 point %>% filter(Seria == "J") %>% 
   ggplot(., aes(x = Cancer, y = Npoint)) + geom_boxplot()
+

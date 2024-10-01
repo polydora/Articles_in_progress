@@ -42,15 +42,19 @@ gg_murm_karel <- fortify(Kand_shape)
 
 
 Kand_x <- c(32.25, 32.9)
-Kand_y <- c(66.93, 67.17)
+Kand_y <- c(66.9, 67.17)
 
 
 Kand_map <- 
   ggplot(gg_murm_karel, aes(x = long, y = lat, group = group)) + 
-  geom_polygon(fill = "gray70", color = "black") +
+  geom_polygon(fill = "gray70") +
   # coord_map(xlim = c(150., 151.52), ylim = c(59.45, 59.8) )+
   coord_map(xlim = Kand_x, ylim = Kand_y) +
   theme_bw()
+
+ggsave("Kand_map.svg", Kand_map,  dpi = 600, width = 20, units = "cm")
+
+
 
 sal <- read_excel("Data/Surface_salinity_2007_2015_2024.xlsx")
 
@@ -58,6 +62,19 @@ sal$Year <- factor(sal$Year)
 
 farvater <- read_excel("Data/Farvater_coordinates.xlsx", sheet = "Farvater")
 otval <- read_excel("Data/Farvater_coordinates.xlsx", sheet = "Otval")
+
+
+Kand_map_farwater <-
+Kand_map +
+  geom_polygon(data = farvater, aes(group = 1), fill = "brown") + 
+  geom_polygon(data = otval, aes(group = 1), fill = "brown") +
+  theme(axis.title = element_blank(), axis.text = element_blank())
+
+ggsave("Kand_map_farwater.svg", Kand_map_farwater,  dpi = 600, width = 10, units = "cm")
+
+
+
+
 
 
 Kand_map +

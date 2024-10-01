@@ -39,20 +39,48 @@ zrs_zoo <-
 
 nrow(zrs_zoo)
 
+
+zin <- read_excel("Data/Материалы отчетов ЗИН_2005_2011.xlsx", sheet = "Abundance")
+zin_stations <- read_excel("Data/Материалы отчетов ЗИН_2005_2011.xlsx", sheet = "Stations")
+
+zin_stations <- 
+  zin_stations %>%
+  mutate(long = E_degr + E_min/60, lat = N_degr + N_min/60 )
+
+
+
+
+zin_zrs_zoo <- 
+  zin %>% 
+  dplyr::select(valid_name,phylum, class, Type,  ZIN_2006_Bank6, ZIN_2007_Bank4, ZIN_2007_Bank6) %>% 
+  filter (Type == "N") %>% 
+  filter(! phylum %in% c("Rhodophyta", "Chlorophyta", "Ochrophyta", "Tracheophyta")) %>% 
+  filter(ZIN_2006_Bank6 + ZIN_2007_Bank4 + ZIN_2007_Bank6 !=0) %>% 
+  dplyr::select(-c(phylum, class, Type))
+  
+
+zrs_zoo <-   
+zrs_zoo %>%  
+  dplyr::select(-c(phylum, class, Species))
+
+all_zrs_zoo <- merge(zrs_zoo, zin_zrs_zoo, all = TRUE)
+
+
+nrow(all_zrs_zoo)
+
 library(vegan)
 
-str(zrs_zoo)
-nrow(zrs_zoo)
 
-zrs_zoo2 <- 
-zrs_zoo %>% 
-  dplyr::select(-c(1:4)) %>% 
-  t()
+all_zrs_zoo2 <- 
+all_zrs_zoo %>% 
+  dplyr::select(-c(1:4))
 
+all_zrs_zoo2[is.na(all_zrs_zoo2)] <- 0
 
 
 
-  plot(specaccum(zrs_zoo2, method = "collector"), col = "blue")
+
+plot(specaccum(t(all_zrs_zoo2), method = "random"), ci.col = "gray", col = "blue", ci.type = "polygon" )
 
   
   
@@ -88,3 +116,40 @@ Pl_Total_N <-
 library(cowplot)
 
 plot_grid(Pl_H, Pl_Total_N, nrow = 1, labels = "AUTO")
+
+
+# Оценка обилия видов в ЗРС
+
+zin_zrs <- 
+zin %>% 
+  dplyr::select(valid_name, Type, ZIN_2006_Bank6, ZIN_2007_Bank4, ZIN_2007_Bank6) %>%
+  melt(id.vars = c("valid_name", "Type"))
+
+
+
+  zin_zrs %>% 
+  filter(Type == "N") %>% 
+  group_by(valid_name) %>% 
+  dplyr::summarise(Mean = mean(value), SE = sd(value)/length(value)) %>% 
+  arrange(desc(Mean)) %>% 
+  mutate(Order = 1:nrow(.), Value = "N") ->
+  Mean_N
+
+  zin_zrs %>% 
+  filter(Type == "B") %>% 
+  group_by(valid_name) %>% 
+  dplyr::summarise(Mean = mean(value), SE = sd(value)/length(value)) %>% 
+  arrange(desc(Mean)) %>% 
+  mutate(Order = 1:nrow(.), Value = "B") ->
+  Mean_B
+
+
+library(tidyr)
+  
+  rbind(Mean_N, Mean_B) %>%
+    as.data.frame() %>% 
+    pivot_wider(names_from = Value, values_from = c("Mean", "SE", "Order")) %>% 
+    filter(Order_N <= 10 | Order_B <= 0) %>% 
+    dplyr::select(valid_name, Mean_N, SE_N, Mean_B, SE_B ) %>% 
+    write.table("clipboard", row.names = F, sep = "\t", dec = ",")
+

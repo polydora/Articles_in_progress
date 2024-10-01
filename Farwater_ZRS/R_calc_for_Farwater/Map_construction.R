@@ -142,7 +142,7 @@ ggplot() +
     geom_polygon(data = gg_Portlandia_Macoma, aes(x = long, y = lat, group = group), fill = "black") +
   geom_polygon(data = gg_Mud, aes(x = long, y = lat, group = group),
                        fill = "black",
-                       alpha = 0.2) +
+                       alpha = 0.95) +
   geom_polygon(data = Islands, aes(x = long, y = lat, group = group), fill = "gray") +
   geom_polygon(data = gg_murm_karel, aes(x = long, y = lat, group = group), fill = "gray", color = "black") +
   geom_polygon(data = gg_Polydora, aes(x = long, y = lat, group = group), fill = "black") +
@@ -151,6 +151,16 @@ ggplot() +
 # +
 #   geom_polygon(data = farvater,  aes(x = long, y = lat), fill = "brown")
   
+legend_color <- data.frame(x = c(1, 2, 2, 1), y = c(1, 1, 2, 2))
+
+ggplot() +
+  geom_polygon(data = legend_color, aes(x = x, y = y), fill = "green") +
+  geom_polygon(data = legend_color, aes(x = x, y = y+1), fill = "red") +
+  geom_polygon(data = legend_color, aes(x = x, y = y+2), fill = "yellow") +
+  geom_polygon(data = legend_color, aes(x = x, y = y+3), fill = "black") +
+  geom_polygon(data = legend_color, aes(x = x, y = y+4), fill = "blue") 
+
+
 
 
 # Карта распределеиня мидиевых банок
