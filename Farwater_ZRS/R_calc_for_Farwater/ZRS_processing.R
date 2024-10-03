@@ -14,6 +14,10 @@
 # 
 
 library(readxl)
+library(dplyr)
+library(reshape2)
+
+
 
 zrs <- read_excel("Data/west_sound_1995_2024_cleaned.xlsx")
 zrs_stations <- read_excel("Data/west_sound_1995_2024_cleaned.xlsx", sheet = "Stations")
@@ -152,4 +156,40 @@ library(tidyr)
     filter(Order_N <= 10 | Order_B <= 0) %>% 
     dplyr::select(valid_name, Mean_N, SE_N, Mean_B, SE_B ) %>% 
     write.table("clipboard", row.names = F, sep = "\t", dec = ",")
+
+
+  
+# Литоральные сборы ЗИН в районе ЗРС отбраны только станции, в которых много фукоидов. Эти описания используются для описания сообщества, связанного с фукоидами
+
+zin_long <-  
+zin %>% 
+  select(valid_name,	Type,	ZIN_2005_St1,	ZIN_2005_St2,	ZIN_2005_St3,	ZIN_2005_St4,	ZIN_2006_St1,	ZIN_2006_St2,	ZIN_2006_St3,	ZIN_2006_St4,	ZIN_2007_St1,	ZIN_2007_St2,	ZIN_2007_St3,	ZIN_2007_St4,	ZIN_2009_St3,	ZIN_2009_St4,	ZIN_2010_St1,	ZIN_2010_St2,	ZIN_2010_St3,	ZIN_2010_St4,	ZIN_2011_St1,	ZIN_2011_St2,	ZIN_2011_St3,	ZIN_2011_St4)%>%
+  melt(id.vars = c("valid_name", "Type"))
+
+zin_long %>% 
+  filter(Type == "N") %>% 
+  group_by(valid_name) %>% 
+  dplyr::summarise(Mean = mean(value), SE = sd(value)/length(value)) %>% 
+  arrange(desc(Mean)) %>% 
+  mutate(Order = 1:nrow(.), Value = "N") ->
+  Mean_N
+
+zin_long %>% 
+  filter(Type == "B") %>% 
+  group_by(valid_name) %>% 
+  dplyr::summarise(Mean = mean(value), SE = sd(value)/length(value)) %>% 
+  arrange(desc(Mean)) %>% 
+  mutate(Order = 1:nrow(.), Value = "B") ->
+  Mean_B
+
+
+library(tidyr)
+
+rbind(Mean_N, Mean_B) %>%
+  as.data.frame() %>% 
+  pivot_wider(names_from = Value, values_from = c("Mean", "SE", "Order")) %>% 
+  filter(Order_N <= 20 | Order_B <= 20) %>% 
+  dplyr::select(valid_name, Mean_N, SE_N, Mean_B, SE_B ) %>% 
+  write.table("clipboard", row.names = F, sep = "\t", dec = ",")
+
 

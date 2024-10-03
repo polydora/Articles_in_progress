@@ -149,28 +149,58 @@ cancer_2023 %>%
   geom_point()
 
 
+# Данные по росту ###############3
+
+growth <- read_excel("Data/Growth_Magadan2023_itog.xlsx")
+
+growth_data <- 
+growth %>% 
+  group_by(Site, Sample) %>% 
+  summarise(OGP_sample = mean(OGP_sample), OGP_site = mean(OGP_site) )
+  
+
+cancer_2023 <- merge(cancer_2023, growth_data)
+
+
+
+
 # Модель для Prop_BTN1 и Prop_BTN2 в одной модели #################
 
 library(reshape2)
 
 cancer_2023_long <- 
 cancer_2023 %>% 
-  select(Site, Salinity, Dist_Port, fetch, fPort, Sample, PC1, PC2, N_Large, N_Juv, N_Total, Cover, N, BTN1, BTN2) %>%
+  select(Site, Salinity, Dist_Port, fetch, fPort, Sample, PC1, PC2, N_Large, N_Juv, N_Total, Cover, N, BTN1, BTN2, OGP_sample, OGP_site) %>%
   mutate(Sample = 1:nrow(.)) %>% 
-  melt(., id.vars = c("Site", "Salinity", "Dist_Port", "fetch", "fPort", "Sample", "PC1", "PC2", "N_Large", "N_Juv", "N_Total",  "Cover", "N"), variable.name = "Lineage", value.name = "N_cancer") %>% 
+  melt(., id.vars = c("Site", "Salinity", "Dist_Port", "fetch", "fPort", "Sample", "PC1", "PC2", "N_Large", "N_Juv", "N_Total",  "Cover", "N", "OGP_sample", "OGP_site"), variable.name = "Lineage", value.name = "N_cancer") %>% 
   mutate(N_helthy = N - N_cancer)
 
 
+df <- 
+cancer_2023_long %>% 
+  filter(Lineage == "BTN1")
+
+mod_foo <- lm(BTN1 ~ Dist_Port + fetch + PC1 + PC2 + N_Large  + OGP_sample, data = cancer_2023)
+
+vif(mod_foo)
+
+ggplot(cancer_2023, aes(y = Prop_BTN1, x = OGP_sample)) +
+  geom_point()
 
 
 library(mgcv)
 library(gratia)
 
 
-Mod_btn1_btn2 <- gam(cbind(N_cancer, N_helthy) ~ s((Dist_Port), by = Lineage) + s(fetch, by = Lineage) + s(N_Large, by = Lineage) + Lineage + s(Sample, bs = "re"), data = cancer_2023_long, family = "binomial", method = "REML" )
+Mod_btn1_btn2 <- gam(cbind(N_cancer, N_helthy) ~ s((Dist_Port), by = Lineage) + s(fetch, by = Lineage) + s(PC1, by = Lineage) + s(PC2, by = Lineage) + s(N_Large, by = Lineage) + s(OGP_sample, by = Lineage) + Lineage + s(Sample, bs = "re"), data = cancer_2023_long, family = "binomial", method = "REML" )
 
 
-Mod_btn1_btn2 <- gam(cbind(N_cancer, N_helthy) ~ s((Dist_Port), by = Lineage) + s(fetch, by = Lineage) + Lineage + s(Sample, bs = "re"), data = cancer_2023_long, family = "binomial", method = "REML" )
+# 
+# Mod_btn1_btn2 <- gam(cbind(N_cancer, N_helthy) ~ s((Dist_Port), by = Lineage) + s(fetch, by = Lineage) + s(PC1, by = Lineage) + s(OGP_sample, by = Lineage) + Lineage + s(Sample, bs = "re"), data = cancer_2023_long, family = "binomial", method = "REML" )
+# 
+
+
+# Mod_btn1_btn2 <- gam(cbind(N_cancer, N_helthy) ~ s((Dist_Port), by = Lineage) + s(fetch, by = Lineage) + Lineage + s(Sample, bs = "re"), data = cancer_2023_long, family = "binomial", method = "REML" )
 
 
 
@@ -184,6 +214,9 @@ draw(Mod_btn1_btn2)
 
 ############################## Соотвтствие предсказаний наблюдениям
 
+library(car)
+
+mod_foo <- lm()
 
 
 

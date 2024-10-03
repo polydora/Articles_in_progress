@@ -16,8 +16,9 @@ library(worms)
 
 
 
-df <- read_excel("Data/Материалы отчетов ЗИН_2005_2011.xlsx", sheet = "Abundance")
+# df <- read_excel("Data/Материалы отчетов ЗИН_2005_2011.xlsx", sheet = "Abundance")
 
+df <- read.table("clipboard", sep = "\t", header = T)
 
 sp_df <- wormsbymatchnames(taxon_names = df$Species)
 
