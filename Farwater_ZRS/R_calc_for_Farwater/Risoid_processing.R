@@ -22,14 +22,26 @@ lam %>%
   select(Species)
 
 
-lam <- 
-merge(sp_df, lam)
+# lam <- 
+# merge(sp_df, lam)
 
 lam2 <-
 lam %>% 
-  select(-c(Species, Accepted_name, Value))
+  select(-c(Species, Value))
+
+
+
 
 lam_sqm <- lam2/riz_area
+
+cbind(lam[,1:2], lam_sqm) %>% 
+  filter(Value == "B") %>% 
+  melt() %>% 
+  group_by(variable) %>% 
+  summarise(Sum_B = sum(value, na.rm = T)) %>% 
+  summarise(Mean = mean(Sum_B, na.rm = T), SD = sd(Sum_B, na.rm = T)/sqrt(length(Sum_B)))
+
+
 
 lam_sqm <-
 lam %>% 
@@ -66,6 +78,7 @@ lam_sqm %>%
   arrange(desc(Mean)) %>% 
   mutate(Order = 1:nrow(.), Value = "B") ->
   Mean_B
+
 
 
   

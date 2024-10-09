@@ -63,6 +63,16 @@ zin_zrs_zoo <-
   dplyr::select(-c(phylum, class, Type))
   
 
+
+  zin %>% 
+  dplyr::select(valid_name,phylum, class, Type,  ZIN_2006_Bank6, ZIN_2007_Bank4, ZIN_2007_Bank6) %>% 
+  filter (Type == "B") %>% 
+    melt(id.vars = c("valid_name", "phylum", "class", "Type")) %>% 
+    group_by(variable) %>% 
+    summarise(Sum_B = sum(value)) %>% 
+    summarise(Mean = mean(Sum_B), SE = sd(Sum_B)/sqrt(length(Sum_B)) )
+
+
 zrs_zoo <-   
 zrs_zoo %>%  
   dplyr::select(-c(phylum, class, Species))
@@ -181,6 +191,12 @@ zin_long %>%
   arrange(desc(Mean)) %>% 
   mutate(Order = 1:nrow(.), Value = "B") ->
   Mean_B
+
+zin_long %>% 
+  filter(Type == "B") %>% 
+  group_by(variable) %>% 
+  summarise(Sum_B = sum(value)) %>% 
+  summarise(Mean = mean(Sum_B), SE = sd(Sum_B)/sqrt(length(Sum_B)) )
 
 
 library(tidyr)

@@ -22,6 +22,14 @@ zin_portland %>%
   mutate(Order = 1:nrow(.), Value = "B") ->
   Mean_B
 
+zin_portland %>% 
+  filter(Type == "B") %>% 
+  group_by(variable) %>% 
+  summarise(Sum_B = sum(value)) %>% 
+  summarise(Mean = mean(Sum_B), SE = sd(Sum_B)/sqrt(length(Sum_B)) )
+
+
+
 
 library(tidyr)
 

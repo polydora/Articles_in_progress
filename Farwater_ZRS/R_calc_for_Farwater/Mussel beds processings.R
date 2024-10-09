@@ -1,5 +1,6 @@
 
 library(readxl)
+library(tidyr)
 
 myt <- read_excel("Data/Mussel beds 96-12 species abundance proofed 19.05.13.xls", sheet = "All_data_transposed")
 
@@ -29,6 +30,18 @@ myt %>%
   arrange(desc(Mean)) %>% 
   mutate(Order = 1:nrow(.), Value = "B") ->
   Mean_B
+
+
+
+myt %>% 
+  filter(Value == "B") %>% 
+  pivot_longer(cols = starts_with(c("Vor", "Korg", "Mat")), 
+               names_to = "Sample",
+               values_to = "B") %>% 
+  group_by(Sample) %>% 
+  summarise(Sum_B = sum(B)) %>% 
+  summarise(Mean = mean(Sum_B), SE = sd(Sum_B)/length(Sum_B))
+
 
 
 rbind(Mean_N, Mean_B) %>%

@@ -19,6 +19,13 @@ il <- read.csv("Data/Ilistaya_inlet_data_1987_2019.csv")
     mutate(Order = 1:nrow(.), Value = "B") ->
     Mean_B
   
+  il %>% 
+    filter(Type == "B") %>% 
+    group_by(Year, Station) %>% 
+    summarise(Sum_B = sum(Value)) %>%
+    ungroup() %>% 
+    summarise(Mean = mean(Sum_B), SE = sd(Sum_B)/sqrt(length(Sum_B)))
+  
   
   rbind(Mean_N, Mean_B) %>%
     as.data.frame() %>% 
