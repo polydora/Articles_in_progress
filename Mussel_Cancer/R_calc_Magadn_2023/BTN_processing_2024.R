@@ -78,7 +78,17 @@ mean_cover_23 <-
   group_by(Site) %>%
   summarise(Cover = mean(`Number of squares`/30))
 
+# Ранжируем сайты по покрытию мидий
 
+library(tidyverse)
+library(magrittr)
+
+mean_cover_23 %<>% 
+  arrange(desc(Cover)) %>% 
+  mutate(Cover_class = case_when(
+    Cover >= median(Cover) ~ "Dense",
+    Cover < median(Cover) ~ "Sparse",
+  )) 
 
 
 
@@ -141,7 +151,8 @@ qplot(cancer_2023$fetch,  cancer_2023$Prop_BTN2)
 qplot(cancer_2023$fetch,  cancer_2023$Prop_BTN2.1)
 qplot(cancer_2023$fetch,  cancer_2023$Prop_BTN2.2)
 
-
+boxplot(cancer_2023$Prop_BTN1 ~ cancer_2023$Cover_class)
+boxplot(cancer_2023$Prop_BTN2 ~ cancer_2023$Cover_class)
 
 
 cancer_2023 %>% 
@@ -201,7 +212,7 @@ df <-
 cancer_2023_long %>% 
   filter(Lineage == "BTN1")
 
-mod_foo <- lm(BTN1 ~ Dist_Port + fetch + PC1 + PC2 + N_Large  + OGP_sample, data = cancer_2023)
+mod_foo <- lm(BTN1 ~ Dist_Port + fetch + PC1 + N_Large  + OGP_sample, data = cancer_2023)
 
 library(car)
 vif(mod_foo)
@@ -212,7 +223,11 @@ library(mgcv)
 library(gratia)
 
 
-Mod_btn1_btn2 <- gam(cbind(N_cancer, N_helthy) ~ s((Dist_Port), by = Lineage) + s(fetch, by = Lineage) + s(PC1, by = Lineage) + s(PC2, by = Lineage) + s(N_Large, by = Lineage) + s(OGP_sample, by = Lineage) + Lineage + s(Sample, bs = "re"), data = cancer_2023_long, family = "binomial", method = "REML" )
+
+Mod_btn1_btn2 <- gam(cbind(N_cancer, N_helthy) ~ s((Dist_Port), by = Lineage) + s(fetch, by = Lineage) + s(PC1, by = Lineage) + s(N_Large, by = Lineage) + s(OGP_sample, by = Lineage) + Lineage  + s(Sample, bs = "re"), data = cancer_2023_long, family = "binomial", method = "REML" )
+
+
+# Mod_btn1_btn2 <- gam(cbind(N_cancer, N_helthy) ~ s((Dist_Port), by = Lineage) + s(fetch, by = Lineage) + s(PC1, by = Lineage) + s(PC2, by = Lineage) + s(N_Large, by = Lineage) + s(OGP_sample, by = Lineage) + Lineage  + s(Sample, bs = "re"), data = cancer_2023_long, family = "binomial", method = "REML" )
 
 
 # 
@@ -229,8 +244,30 @@ appraise(Mod_btn1_btn2)
 summary(Mod_btn1_btn2)
 
 
-draw(Mod_btn1_btn2)
+draw(Mod_btn1_btn2, residuals = T)
 
+
+cancer_2023_long %>% 
+  filter(Lineage == "BTN1") %>% 
+  ggplot(aes(x = PC1, y = N_cancer/N_helthy )) +
+  geom_point()
+
+cancer_2023_long %>% 
+  filter(Lineage == "BTN1") %>% 
+  ggplot(aes(x = fetch, y = N_cancer/N_helthy )) +
+  geom_point()
+
+
+cancer_2023_long %>% 
+  filter(Lineage == "BTN1") %>% 
+  ggplot(aes(x = Dist_Port, y = N_cancer/N_helthy )) +
+  geom_point()
+
+
+cancer_2023_long %>% 
+  filter(Lineage == "BTN1") %>% 
+  ggplot(aes(x = OGP_site , y = N_cancer/N_helthy )) +
+  geom_point()
 
 ############################## Соотвтствие предсказаний наблюдениям
 
