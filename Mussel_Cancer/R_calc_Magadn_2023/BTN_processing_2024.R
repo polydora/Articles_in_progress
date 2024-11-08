@@ -166,7 +166,7 @@ cancer_2023 %>%
   group_by(Site) %>% 
   summarise(fetch = mean(fetch), Prop_BTN2 = sum(BTN2)/sum(N)) %>% 
   ggplot(., aes(fetch, Prop_BTN2)) +
-  geom_point()
+  geom_point() 
 
 cancer_2023 %>% 
   group_by(Site) %>% 
@@ -224,7 +224,15 @@ library(gratia)
 
 
 
-Mod_btn1_btn2 <- gam(cbind(N_cancer, N_helthy) ~ s((Dist_Port), by = Lineage) + s(fetch, by = Lineage) + s(PC1, by = Lineage) + s(N_Large, by = Lineage) + s(OGP_sample, by = Lineage) + Lineage  + s(Sample, bs = "re"), data = cancer_2023_long, family = "binomial", method = "REML" )
+Mod_btn1_btn2 <- gam(cbind(N_cancer, N_helthy) ~ s(scale(Dist_Port), by = Lineage) + s(scale(fetch), by = Lineage) + s(scale(PC1), by = Lineage) + s(scale(N_Large), by = Lineage) + s(scale(OGP_sample), by = Lineage) + Lineage  + s(Sample, bs = "re"), data = cancer_2023_long, family = "binomial", method = "REML" )
+
+
+
+# Mod_btn1_btn2_gamm <- gamm(cbind(N_cancer, N_helthy) ~ s(Dist_Port, by = Lineage) + s(fetch, by = Lineage) + s(PC1, by = Lineage) + s(PC2, by = Lineage)  + s(N_Large, by = Lineage) + s(OGP_sample, by = Lineage) + Lineage, random = list(Sample = ~1), data = cancer_2023_long, family = "binomial")
+# 
+# 
+# summary(Mod_btn1_btn2_gamm$lme)
+
 
 
 # Mod_btn1_btn2 <- gam(cbind(N_cancer, N_helthy) ~ s((Dist_Port), by = Lineage) + s(fetch, by = Lineage) + s(PC1, by = Lineage) + s(PC2, by = Lineage) + s(N_Large, by = Lineage) + s(OGP_sample, by = Lineage) + Lineage  + s(Sample, bs = "re"), data = cancer_2023_long, family = "binomial", method = "REML" )
@@ -244,7 +252,7 @@ appraise(Mod_btn1_btn2)
 summary(Mod_btn1_btn2)
 
 
-draw(Mod_btn1_btn2, residuals = T)
+draw(Mod_btn1_btn2, residuals = F)
 
 
 cancer_2023_long %>% 
@@ -268,6 +276,18 @@ cancer_2023_long %>%
   filter(Lineage == "BTN1") %>% 
   ggplot(aes(x = OGP_site , y = N_cancer/N_helthy )) +
   geom_point()
+
+##############################
+
+library(glmmTMB)
+
+
+Mod_btn1_btn2 <- glmmTMB(cbind(N_cancer, N_helthy) ~ scale(Dist_Port) * Lineage + scale(fetch) *Lineage +  scale(PC1) * Lineage +    scale(OGP_sample) * Lineage + (1|Sample), data = cancer_2023_long, family = "binomial")
+
+summary(Mod_btn1_btn2)
+
+
+
 
 ############################## Соотвтствие предсказаний наблюдениям
 
