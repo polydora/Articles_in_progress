@@ -517,7 +517,7 @@ astr <-read_excel("Data/BysTrEd2022.xlsx", na = "NA")
 
 astr2022 <- astr %>% filter(complete.cases(.)) 
 
-astr2022 <- astr2022 %>% mutate(Treatment2 = case_when(Treatment == "AT" | Treatment == "AE" | Treatment == "AH" ~ "Asterias",Treatment == "0" ~ "Control")) %>% mutate(True_Force = Force - 9.81*W/1000) 
+astr2022 <- astr2022 %>% mutate(Treatment2 = case_when(Treatment == "AT" | Treatment == "AE" | Treatment == "AH" ~ "Asterias",Treatment == "0" ~ "Control")) %>% mutate(True_Force = Force - 9.81*W/1000) %>% filter(Treatment %in% c("AH", "0")) 
 
 astr2022 <- astr2022 %>% filter(Force > 0)
 

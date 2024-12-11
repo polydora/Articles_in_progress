@@ -112,7 +112,7 @@ ggplot(gg_Magadan_large, aes(x = long, y = lat, group = group)) +
 
 cancer <- 
   myt %>% 
-  mutate(Prop_BTN1 = BTN1/N, Prop_BTN2 = (BTN2.1 + BTN2.2 + BTN2.SAM)/N, Prop_BTN2.1 = (BTN2.1)/N,  Prop_BTN2.2 = (BTN2.2)/N ) 
+  mutate(Prop_BTN1 = BTN1/N, Prop_BTN2 = (BTN2.1 + BTN2.2)/N, Prop_BTN2.1 = (BTN2.1)/N,  Prop_BTN2.2 = (BTN2.2)/N ) 
 
 
 cancer2 <-
@@ -142,17 +142,11 @@ cancer_2023 <-
 
 cancer_2023 <- 
   cancer_2023 %>% 
-  mutate(BTN2 = BTN2.1 + BTN2.2 + BTN2.SAM)
+  mutate(BTN2 = BTN2.1 + BTN2.2,
+         BTN2.1 = BTN2.1,
+         BTN2.2 = BTN2.2)
 
 
-# library(ggplot2)
-qplot(cancer_2023$fetch,  cancer_2023$Prop_BTN1)
-qplot(cancer_2023$fetch,  cancer_2023$Prop_BTN2)
-qplot(cancer_2023$fetch,  cancer_2023$Prop_BTN2.1)
-qplot(cancer_2023$fetch,  cancer_2023$Prop_BTN2.2)
-
-boxplot(cancer_2023$Prop_BTN1 ~ cancer_2023$Cover_class)
-boxplot(cancer_2023$Prop_BTN2 ~ cancer_2023$Cover_class)
 
 
 cancer_2023 %>% 
@@ -224,26 +218,7 @@ library(gratia)
 
 
 
-Mod_btn1_btn2 <- gam(cbind(N_cancer, N_helthy) ~ s(scale(Dist_Port), by = Lineage) + s(scale(fetch), by = Lineage) + s(scale(PC1), by = Lineage) + s(scale(N_Large), by = Lineage) + s(scale(OGP_sample), by = Lineage) + Lineage  + s(Sample, bs = "re"), data = cancer_2023_long, family = "binomial", method = "REML" )
-
-
-
-# Mod_btn1_btn2_gamm <- gamm(cbind(N_cancer, N_helthy) ~ s(Dist_Port, by = Lineage) + s(fetch, by = Lineage) + s(PC1, by = Lineage) + s(PC2, by = Lineage)  + s(N_Large, by = Lineage) + s(OGP_sample, by = Lineage) + Lineage, random = list(Sample = ~1), data = cancer_2023_long, family = "binomial")
-# 
-# 
-# summary(Mod_btn1_btn2_gamm$lme)
-
-
-
-# Mod_btn1_btn2 <- gam(cbind(N_cancer, N_helthy) ~ s((Dist_Port), by = Lineage) + s(fetch, by = Lineage) + s(PC1, by = Lineage) + s(PC2, by = Lineage) + s(N_Large, by = Lineage) + s(OGP_sample, by = Lineage) + Lineage  + s(Sample, bs = "re"), data = cancer_2023_long, family = "binomial", method = "REML" )
-
-
-# 
-# Mod_btn1_btn2 <- gam(cbind(N_cancer, N_helthy) ~ s((Dist_Port), by = Lineage) + s(fetch, by = Lineage) + s(PC1, by = Lineage) + s(OGP_sample, by = Lineage) + Lineage + s(Sample, bs = "re"), data = cancer_2023_long, family = "binomial", method = "REML" )
-# 
-
-
-# Mod_btn1_btn2 <- gam(cbind(N_cancer, N_helthy) ~ s((Dist_Port), by = Lineage) + s(fetch, by = Lineage) + Lineage + s(Sample, bs = "re"), data = cancer_2023_long, family = "binomial", method = "REML" )
+Mod_btn1_btn2 <- gam(cbind(N_cancer, N_helthy) ~ s((Dist_Port), by = Lineage, k = 9, bs = "tp") + s((fetch), by = Lineage, k = 9, bs = "tp")  + s((PC1), by = Lineage, k = 9, bs = "tp") + s((N_Large), by = Lineage, k = 9, bs = "tp") +  Lineage  + s(Sample, bs = "re"), data = cancer_2023_long, family = "binomial", method = "REML" )
 
 
 
@@ -251,6 +226,7 @@ appraise(Mod_btn1_btn2)
 
 summary(Mod_btn1_btn2)
 
+# DHARMa
 
 draw(Mod_btn1_btn2, residuals = F)
 
@@ -282,11 +258,32 @@ cancer_2023_long %>%
 library(glmmTMB)
 
 
-Mod_btn1_btn2 <- glmmTMB(cbind(N_cancer, N_helthy) ~ scale(Dist_Port) * Lineage + scale(fetch) *Lineage +  scale(PC1) * Lineage +    scale(OGP_sample) * Lineage + (1|Sample), data = cancer_2023_long, family = "binomial")
+Mod_btn1_btn2 <- glmmTMB(cbind(N_cancer, N_helthy) ~ scale(Dist_Port) * Lineage + scale(fetch) *Lineage +  scale(PC1) * Lineage + scale(N_Large)*Lineage + scale(OGP_sample) * Lineage + (1|Sample), data = cancer_2023_long, family = "binomial")
 
 summary(Mod_btn1_btn2)
 
+drop1(Mod_btn1_btn2)
 
+
+Mod_btn1_btn2_2 <- update(Mod_btn1_btn2, . ~ . - Lineage:scale(fetch))
+drop1(Mod_btn1_btn2_2)
+
+Mod_btn1_btn2_3 <- update(Mod_btn1_btn2_2, . ~ . -Lineage:scale(OGP_sample))
+drop1(Mod_btn1_btn2_3)
+
+
+Mod_btn1_btn2_4 <- update(Mod_btn1_btn2_3, . ~ . -Lineage:scale(PC1))
+drop1(Mod_btn1_btn2_4, test = "Chi")
+
+
+Mod_btn1_btn2_5 <- update(Mod_btn1_btn2_4, . ~ . -scale(Dist_Port):Lineage)
+drop1(Mod_btn1_btn2_5, test = "Chi")
+
+Mod_btn1_btn2_6 <- update(Mod_btn1_btn2_5, . ~ . - Lineage:scale(N_Large))
+drop1(Mod_btn1_btn2_6, test = "Chi")
+
+Mod_btn1_btn2_7 <- update(Mod_btn1_btn2_6, . ~ . - scale(N_Large))
+drop1(Mod_btn1_btn2_7, test = "Chi")
 
 
 ############################## Соотвтствие предсказаний наблюдениям
@@ -343,12 +340,41 @@ qplot(x = predictions_2021$Prop_BTN2_prdicted, y = predictions_2021$Prop_BTN2) +
 
 
 #########################################
+cancer_2023_site <- 
+cancer_2023 %>% 
+  group_by(Site) %>% 
+  summarise(Year = mean(Year),
+            lon = mean(lon),
+            lat = mean(lat),
+            Salinity = mean(Salinity),
+            Dist_Port = mean(Dist_Port),  
+            fetch = mean(fetch),
+            fPor = unique(fPort),
+            N = sum(N), 
+            PC1 = mean(PC1),
+            PC2 = mean(PC2),
+            N_Juv = mean(N_Juv),
+            N_Large = mean(N_Large), 
+            N_Total = mean(N_Total),
+            Cover = mean(Cover),
+            OGP_site = mean(OGP_site),
+            BTN1 = sum(BTN1),
+            BTN2 = sum(BTN2.1 + BTN2.2 + BTN2.SAM))
 
 
 
-cancer 
-qplot(cancer$Prop_BTN1, cancer$Prop_BTN2) + 
-  geom_abline()
+cancer_2023_site_long <- 
+  cancer_2023_site %>% 
+  select(Site, Salinity, Dist_Port, fetch, PC1, PC2, N_Large, N_Juv, N_Total, Cover, N, BTN1, BTN2, OGP_site) %>%
+  melt(., id.vars = c("Site", "Salinity", "Dist_Port", "fetch", "PC1", "PC2", "N_Large", "N_Juv", "N_Total",  "Cover", "N", "OGP_site"), variable.name = "Lineage", value.name = "N_cancer") %>% 
+  mutate(N_helthy = N - N_cancer, Prop_BTN = N_cancer/N, Fi_BTN = 2*asin(sqrt(Prop_BTN))*180/pi)
 
 
-hist(cancer$Prop_BTN1 - cancer$Prop_BTN2)
+
+Mod_site <- gam(N_cancer ~ s(scale(Dist_Port), by = Lineage) + s(scale(fetch), by = Lineage)  + s(scale(OGP_site), by = Lineage) + s(N, by = Lineage, k = 5) + Lineage , data = cancer_2023_site_long, family = "nb", method = "REML" )
+
+
+appraise(Mod_site)
+
+summary(Mod_site)
+

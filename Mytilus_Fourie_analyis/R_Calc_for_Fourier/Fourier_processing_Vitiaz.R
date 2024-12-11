@@ -24,7 +24,9 @@ coords <- import_txt(txt.paths = folder)
 
 myt <- Out(coords)
 
+names(myt)
 
+df_names_myt <- data.frame(ID = as.numeric(names(myt)) )
 
 coo_check(myt)
 
@@ -34,10 +36,7 @@ panel(myt, names = T)
 
 df_gen <- read_excel("морфология таблица.xlsx")
 
-
-str(myt)
-
-names(myt$coo)
+df_gen <- merge(df_names_myt, df_gen,  sort = F)
 
 
 
@@ -79,67 +78,37 @@ library(RColorBrewer)
 pca_results%T>%    # Principal Component Analysis
   plot_PCA(~Genotype, axes = c(1, 2), points = T, morphospace = T, chull= T, chullfilled =F, labelpoints = F, labelgroups = T, palette = col_autumn) 
 
-palette(nlevels(f))
-
-# %>% 
-# LDA(~Gabitus) %>%                # Linear Discriminant Analysis
-# plot_CV()              
 
 str(pca_results)
 
-qplot(pca_results$fac$L, pca_results$x[,2]) + geom_smooth()
 
-pca_results$fac
 
-pca_df <- data.frame(pca_results$fac, PC1 = pca_results$x[,1], PC2 = pca_results$x[,2])
 
-ggplot(pca_df, aes(x =Genotype, y = PC1)) +
+pca_results$x %>% 
+  as.data.frame() ->
+  pca_df
+
+pca_df$ID <- as.numeric(row.names(pca_df))
+
+pca_df_fac <-
+merge(pca_df, pca_results$fac)
+
+pca_df_fac$Genotype <- factor(pca_df_fac$Genotype, levels = c("tr", "tr/ga", "ga"))
+
+ggplot(pca_df_fac, aes(x = Genotype, y = PC1)) +
   geom_boxplot()
 
-ggplot(pca_df, aes(x =Morphotype, y = PC1)) +
+ggplot(pca_df_fac, aes(x = L, y = PC1, color = Genotype)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+ggplot(pca_df_fac, aes(x = Morphotype, y = PC1)) +
   geom_boxplot()
 
-ggplot(pca_df, aes(x =Visual_Type, y = PC1)) +
+
+ggplot(pca_df_fac, aes(x = Visual_Type, y = PC1)) +
   geom_boxplot()
 
 
 
-
-pca_df <- 
-  pca_df %>% 
-  mutate(GA_pure = case_when(
-    Genotype == "ga" ~ 1,
-    Genotype != "ga" ~ 0)) %>% 
-    mutate(TR_pure = case_when(
-      Genotype == "tr" ~ 1,
-      Genotype != "tr" ~ 0)) %>% 
-  mutate(Hybr = case_when(
-    Genotype == "tr/ga" ~ 1,
-    Genotype != "tr/ga" ~ 0))
-  
-  
-
-model_GA <- glm(GA_pure ~ Morphotype + Visual_Type +   L  +  PC1 + PC2, data = pca_df )
-
-car::vif(model_GA)
-
-car::Anova(model_GA)
-
-
-model_TR <- glm(TR_pure ~ Morphotype + Visual_Type +   L  +  PC1 + PC2, data = pca_df )
-
-car::vif(model_TR)
-
-car::Anova(model_TR)
-
-summary(model_TR)
-
-
-model_Hybr <- glm(Hybr ~ Morphotype + Visual_Type +   L  +  PC1 + PC2, data = pca_df )
-
-car::vif(model_Hybr)
-
-car::Anova(model_Hybr)
-
-summary(model_Hybr)
 
