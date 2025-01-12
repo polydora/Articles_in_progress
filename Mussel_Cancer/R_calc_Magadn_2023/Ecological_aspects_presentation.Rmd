@@ -1,13 +1,15 @@
 ---
 title: "Экологические аспекты существования трансмиссивного рака мидий в окрестностях Магадана"
 author: "В. М. Хайтов"
-date: "`r Sys.Date()`"
-output: ioslides_presentation
+output:
+ ioslides_presentation:
+  widescreen: true
+  css: assets/my_styles.css
 ---
 
 ```{r setup, include=FALSE}
 library(knitr)
-opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.align = "center")
 ```
 
 
@@ -20,6 +22,17 @@ library(mgcv)
 library(gratia)
 library(ggplot2)
 library(DHARMa)
+library(cowplot)
+library(reshape2)
+library(vegan)
+library(tidyverse)
+library(broom)
+
+```
+
+
+```{r}
+theme_set(theme_bw())
 ```
 
 ```{r}
@@ -89,17 +102,26 @@ myt_ind_clean$Fi_Increment <- 2*asin(sqrt(myt_ind_clean$Prop_Increment)) * 180/p
 
 ## "Индивидуальный" уровень: отдельная мидия, как биотоп для паразита
 
-![](Figures/Individual mussel as biotope.png)
+<img src="Figures/Individual mussel as biotope.png" width="600">
 
-## "Популяционный" уровень: Мидиевая банка, как биотоп для "популяционной групировки" паразита
-
-![](Figures/Mussel bed as biotope.png)
+<!-- ![](Figures/Individual mussel as biotope.png  =10x10) -->
 
 
 
+## "Популяцинный" уровень: поселение мидий, как биотоп для паразита
+
+<img src="Figures/Mussel bed as biotope.png" width="1000">
+
+<!-- ![](Figures/Individual mussel as biotope.png  =10x10) -->
 
 
-# Индивидуальный уровень: Влияние зараженности BTN1 и BTN2 на продукцию гамет 
+
+
+# Индивидуальный уровень
+
+
+
+## Индивидуальный уровень: Влияние зараженности BTN1 и BTN2 на продукцию гамет 
 
 
 ```{r}
@@ -116,8 +138,6 @@ table(myt_ind_clean$BTN_Type, myt_ind_clean$Gonad_quality) %>%
 ```
 
 
-# Индивидуальный уровень: Влияние зараженности BTN1 и BTN2 на продукцию гамет 
-
 ```{r}
 
 myt_ind_clean_btn <-
@@ -127,37 +147,840 @@ myt_ind_clean_btn <-
 
 # names(myt_ind_clean_btn)
 
-Mod_gonad_quality <- gam(Out_gonad ~ s(Rate_of_aneuploid_cells, by = BTN_Type) + BTN_Type + s(Sample, bs = "re"), family = "binomial", method = "REML", data = myt_ind_clean_btn)
+Mod_gonad_quality_btn <- gam(Out_gonad ~ s(Rate_of_aneuploid_cells, by = BTN_Type) + BTN_Type + s(Sample, bs = "re"), family = "binomial", method = "REML", data = myt_ind_clean_btn)
 
-summary(Mod_gonad_quality)
+# summary(Mod_gonad_quality_btn)
 
-draw(Mod_gonad_quality, select = 1:2)
 
-# simulateResiduals(Mod_gonad_quality, plot = TRUE)
+# simulateResiduals(Mod_gonad_quality_btn, plot = TRUE)
 ```
 
+## **Индивидуальный уровень**: Влияние зараженности BTN1 и BTN2 на продукцию гамет 
 
-
-
-# Индивидуальный уровень: Влияние зараженности на рост 
 
 ```{r}
-Mod_tmb_prop_incr_btn <- gam(Fi_Increment ~ BTN_Type + s(Last_ring, by = BTN_Type, bs = "cr") + s(Sample, bs = "re"), data = myt_ind_clean)
+library(kableExtra)
+tidy(Mod_gonad_quality_btn)[,-3] %>% 
+  kable(col.names = c("Член модели", "edf", "Chi^2^", "p-value"),
+      digits = c(NA, 1, 2, 4)) %>% 
+  kable_styling("striped", full_width = TRUE, font_size = 15) 
 
-myt_ind_clean_btn <- 
-  myt_ind_clean %>% 
-  filter(BTN_Type != "healthy")
-
-Mod_prop_incr_btn <- gam(Fi_Increment ~ s(Last_ring, by = BTN_Type, bs = "cr") + s(Rate_of_aneuploid_cells, by = BTN_Type, bs = "cr") + s(Sample, bs = "re"), data = myt_ind_clean_btn)
-
-summary(Mod_prop_incr_btn)
-
-draw(Mod_prop_incr_btn, select = 3:4)
-
-simulateResiduals(Mod_prop_incr_btn, plot = T)
 
 ```
+
+## **Индивидуальный уровень**: Влияние зараженности BTN1 и BTN2 на продукцию гамет 
+
+```{r}
+
+draw(Mod_gonad_quality_btn, select = 1:2, scales = "fixed", residuals = T)
+
+```
+
+
+```{r}
+
+Mod_Fi_incr_btn <- gam(Fi_Increment ~ s(Last_ring, by = BTN_Type) + s(Rate_of_aneuploid_cells, by = BTN_Type) + BTN_Type + s(Sample, bs = "re"), data = myt_ind_clean_btn)
+
+# summary(Mod_Fi_incr_btn)
+
+# simulateResiduals(Mod_Fi_incr_btn, plot = T)
+
+```
+
+## **Индивидуальный уровень**: связь роста с интенсивностью инвазии
+
+```{r}
+tidy(Mod_Fi_incr_btn)[,-3] %>% 
+  kable(col.names = c("Член модели", "edf", "Chi^2^", "p-value"),
+      digits = c(NA, 1, 2, 4)) %>% 
+  kable_styling("striped", full_width = TRUE, font_size = 15) 
+
+```
+
+
+## **Индивидуальный уровень**: связь роста с интенсивностью инвазии
+
+```{r}
+
+draw(Mod_Fi_incr_btn, select = 3:4, residuals = T, scales = "fixed")
+
+```
+
+
+## **Индивидуальный уровень**: связь роста с присутcтвием BTN разных линий
+
+
+
+```{r}
+
+points <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", sheet = "Points  characteristic 2021-23", na = "NA")
+
+points_2023 <- 
+  points %>% 
+  filter(Year == 2023) %>% 
+  rename(Site_code = Site)
+
+myt_ind_clean <- merge(myt_ind_clean, points_2023)
+
+
+Mod_prop_incr_btn <- gam(Fi_Increment ~ BTN_Type   + s(Last_ring, by = BTN_Type, bs = "cr")  + s(Sample, bs = "re"), family = "gaussian", data = myt_ind_clean, method = "REML")
+
+
+# gam.check(Mod_prop_incr_btn)
+# 
+# appraise(Mod_prop_incr_btn)
+# 
+# res <- simulateResiduals(Mod_prop_incr_btn, plot = T)
+# 
+# testResiduals(Mod_prop_incr_btn)
+
+
+Pl_Last_ring <- 
+  draw(Mod_prop_incr_btn, grouped_by = T, select = c(1, 2, 3)) + 
+  xlim(20, 55) +
+  ylim(-30, 30) +
+  labs(fill = "Статус", color = "Статус", x = "Расстояние до последнего кольца") +
+  ggtitle(NULL, subtitle = NULL)
+  
+  
+
+
+My_data <- data.frame(BTN_Type = levels(myt_ind_clean$BTN_Type), Last_ring = mean(myt_ind_clean$Last_ring))
+
+
+
+Predicted <- predict(Mod_prop_incr_btn, newdata = My_data, exclude = "s(Sample)", newdata.guaranteed=TRUE, se.fit = TRUE)
+
+My_data$Fit <- Predicted$fit
+My_data$SE <- Predicted$se.fit
+
+Fi_back <- function(x) (sin((x*pi)/360))^2
+
+My_data$P_incr <- Fi_back(My_data$Fit)
+My_data$upr <- Fi_back(My_data$Fit + 1.96*My_data$SE)
+My_data$lwr <- Fi_back(My_data$Fit - 1.96*My_data$SE)
+
+
+
+library(ggeffects)
+
+My_data <-
+as.data.frame(ggpredict(Mod_prop_incr_btn, terms = "BTN_Type", typical = "weighted.mean")) %>% 
+  select(x, predicted, conf.low, conf.high) %>% 
+  mutate(P_incr = Fi_back(predicted), upr = Fi_back(conf.high), lwr = Fi_back(conf.low), BTN_Type = x )
+
+library(ggsignif)
+
+Pl_Status <-
+  ggplot(My_data, aes(x = BTN_Type, y = P_incr)) +
+  geom_col(fill = "gray") +
+  geom_errorbar(aes(ymin = lwr, ymax = upr), width = 0.2) +
+  labs(x = "Статус", y = "Partial effect") +
+  geom_signif(comparisons = list(
+      c("BTN1", "BTN2"),
+      c("BTN2", "healthy")),
+      annotations = c("W = 8.01, p = 0.005", "W = 9.65, p = 0.002")
+      )
+  
+Pl_Status
+
+
+```
+
+
 
 
 
 # Популяционный уровень 
+
+
+<!-- ## Факторы, потенциально регулирующие распределение BTN1 и BTN2  -->
+
+
+<!-- 1. Близость к порту - расстояние вдоль береговой линии от морского торгового порта г. Магадан. -->
+
+<!-- 2. Открытость берега для прибоя (Fetch) - среднее значение расстояния на протяжении которого волна, идущая из моря, не встречает географически препятсвий.  -->
+
+<!-- 3. Размерная структура поселения мидий: обилие отдельных размерных классов -->
+
+<!-- 4. Общее обилие мидий в локации (проективное покрытие) -->
+
+<!-- 5. Групповой рост, как показатель благосостояния популяционной группировки мидий (OGP) -->
+
+
+
+
+```{r}
+# Данные по разновидности BTN
+myt <- read_excel("Data/summary table_Magadan_itog.xlsx", sheet = "data")
+
+myt <-
+myt %>% 
+  select(-Site) %>% 
+  mutate(Site = Site_code)
+
+
+myt %<>%
+  mutate(BTN2 = BTN2.1 + BTN2.2)
+
+myt_23 <- 
+  myt %>% 
+  filter(Year == 2023)
+
+Prob_BTN1_total <- sum(myt$BTN1)/sum(myt$N)
+Prob_BTN2_total <- sum(myt$BTN2)/sum(myt$N)
+
+
+myt_23 %<>%
+  select(-c(Site, Lat, Lon,  Date, BTN2.1, BTN2.2,  DN_FC  )) %>% 
+  mutate(Site = Site_code)
+
+
+
+redistribution <- function(x, probability){
+  rbinom(n = nrow(x), size = x$N,  prob = probability)
+}
+```
+
+
+```{r}
+points <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", sheet = "Points  characteristic 2021-23", na = "NA")
+
+load(file =  "Data/gg_Magadan_large.RData")
+
+points <- 
+  points %>% 
+  mutate(fPort = factor(ifelse(Site %in% c("KHOL", "MAM", "MAR_II", "MCHK", "PORT"), "Close", "Distant")))
+
+```
+
+```{r}
+# Частоты линий на сайтах
+myt_23 %>% 
+  group_by(Site) %>% 
+ summarise(Prop_BTN1 = sum(BTN1)/sum(N), Prop_BTN2 = sum(BTN2)/sum(N), N = sum(N), BTN1 = sum(BTN1), BTN2 = sum(BTN2))%>% 
+  merge(points) ->
+  myt_23_points
+
+
+myt %>% 
+  group_by(Site) %>% 
+  summarise(Prop_BTN1 = sum(BTN1)/sum(N), Prop_BTN2 = sum(BTN2)/sum(N), N = sum(N), BTN1 = sum(BTN1), BTN2 = sum(BTN2)) %>% 
+  merge(points) ->
+  myt_points
+
+```
+
+
+
+
+
+## Имеет ли смысл данный анализ?
+
+Любая связь с тем или иным предиктором будет выражена в связи с ним пространственного варьирования экстенсивности инвазии (встречаемости зараженных мидий). 
+
+Если пространственное распределение экстенсивности инвазии случайно, то искать факторы, регулирующие распределение смысла не имеет. 
+
+
+## Имеет ли смысл данный анализ?
+
+### Введем статистики
+
+1. Варьирование частот в пределах локации (масштаб нескольких метров) оценивалась, как сумма квадратов отклонений частоты в выборке от среднего значения для данной локации:
+
+$$
+SS_{within} = \Sigma\Sigma(p_{i,j} - \overline{p_i})^2
+$$ 
+
+
+где $p_{i,j}$ - частота в j-й выборке в i-й локации, $\overline{p_i}$ - среднее значение частоты для i-й локации.
+
+
+## Имеет ли смысл данный анализ?
+
+### Введем статистики
+
+2. Варьирование частот между локациями (масштаб километров) оценивали, как сумму квадратов отклонений частоты в локации от среднего значения по всем локациям
+
+$$
+SS_{between} = \Sigma(p_{i} - \overline{p_{total}})^2
+$$
+
+где $p_{i}$ - частота в i-й локации, $\overline{p_{total}}$ - среднее значение частоты, для всех локаций.
+
+
+```{r}
+N_perm <- 10000
+```
+
+
+```{r}
+
+Prob_BTN1 <- sum(myt_23$BTN1)/sum(myt_23$N)
+Prob_BTN2 <- sum(myt_23$BTN2)/sum(myt_23$N)
+
+
+df_samples <- 
+  myt_23 %>% 
+  group_by(Site_code) %>% 
+  summarise(N_samples = length(N), SD_BTN1 = sd(BTN1/N), SD_BTN2 = sd(BTN2/N)) %>% 
+  mutate(SS_BTN1 = SD_BTN1^2*(N_samples - 1), SS_BTN2 = SD_BTN2^2*(N_samples - 1))
+
+SS_BTN1_samples <- sum(df_samples$SS_BTN1)#/ nrow(df_samples)
+SS_BTN2_samples <- sum(df_samples$SS_BTN2)#/ nrow(df_samples)
+
+
+
+myt_sites <- 
+  myt_23 %>% 
+  group_by(Site_code) %>% 
+  summarise(N = sum(N), BTN1 = sum(BTN1), BTN2 = sum(BTN2))
+
+
+SS_BTN1_sites <- ((sd(myt_sites$BTN1/myt_sites$N))^2*(nrow(myt_sites)-1))#/nrow(myt_sites)
+SS_BTN2_sites <- ((sd(myt_sites$BTN2/myt_sites$N))^2*(nrow(myt_sites)-1))#/nrow(myt_sites)
+
+
+
+
+
+# df_perm <-
+#   myt_23 %>%
+#   select(Site_code, Sample, N, BTN1, BTN2)
+# 
+# perm_SS <- data.frame(SS_BTN1_perm_samples = rep(NA, N_perm), SS_BTN2_perm_samples = NA)
+# perm_SS_sites <- data.frame(SS_BTN1_perm_sites = rep(NA, N_perm), SS_BTN2_perm_sites = NA)
+# 
+# 
+# 
+# for(i in 1:N_perm){
+#   df_perm$BTN1 = redistribution(x = df_perm, probability = Prob_BTN1)
+#   df_perm$BTN2 = redistribution(x = df_perm, probability = Prob_BTN2)
+# 
+#   dd <-
+#     df_perm %>%
+#     group_by(Site_code) %>%
+#     summarise(N_samples = length(N), SD_BTN1 = sd(BTN1/N), SD_BTN2 = sd(BTN2/N)) %>%
+#     mutate(SS_BTN1 = SD_BTN1^2*(N_samples - 1), SS_BTN2 = SD_BTN2^2*(N_samples - 1))
+# 
+#   perm_SS$SS_BTN1_perm_samples[i] <- sum(dd$SS_BTN1)#/ nrow(dd)
+#   perm_SS$SS_BTN2_perm_samples[i] <- sum(dd$SS_BTN2)#/ nrow(dd)
+# 
+# 
+#   dd2 <-
+#     df_perm %>%
+#     group_by(Site_code) %>%
+#     summarise(N = sum(N), BTN1 = sum(BTN1), BTN2 = sum(BTN2))
+# 
+#   perm_SS_sites$SS_BTN1_perm_sites[i] <- (sd(dd2$BTN1/dd2$N)^2*(nrow(dd2)-1))#/nrow(dd2)
+# 
+#   perm_SS_sites$SS_BTN2_perm_sites[i] <- (sd(dd2$BTN2/dd2$N)^2*(nrow(dd2)-1))#/nrow(dd2)
+# 
+#   # print(i)
+# }
+
+# perm_SS_samples_sites <- cbind(perm_SS, perm_SS_sites)
+# 
+# save(perm_SS_samples_sites, file = "Data/reasmples.RData")
+
+load(file = "Data/reasmples.RData")
+
+
+
+```
+
+
+```{r}
+
+options(scipen = 999)
+
+Pl_hist_BTN1_sample <- 
+  ggplot(perm_SS_samples_sites, aes(x = SS_BTN1_perm_samples)) +
+  geom_density(fill = "gray") + 
+  annotate(x = SS_BTN1_samples, xend = SS_BTN1_samples, y = 5, yend = 0, geom = "segment", arrow = arrow(type = "closed", angle = 10 ), color = "blue" ) +
+  ggtitle(paste("BTN1, в пределах локации \n(p = ", mean(perm_SS_samples_sites$SS_BTN1_perm_samples >= SS_BTN1_samples),")")) +
+  labs(x = "SS", y = "Частота")
+
+  
+
+
+Pl_hist_BTN2_sample <- 
+  ggplot(perm_SS_samples_sites, aes(x = SS_BTN2_perm_samples)) +
+  geom_density(fill = "gray") + 
+  annotate(x = SS_BTN2_samples, xend = SS_BTN2_samples, y = 5, yend = 0, geom = "segment", arrow = arrow(type = "closed", angle = 10 ), color = "blue" ) +
+  ggtitle(paste("BTN2, в пределах локации \n(p = ", mean(perm_SS_samples_sites$SS_BTN2_perm_samples >= SS_BTN2_samples),")")) +
+  labs(x = "SS", y = "Частота")
+
+
+
+Pl_hist_BTN1_site <- 
+  ggplot(perm_SS_samples_sites, aes(x = SS_BTN1_perm_sites)) +
+  geom_density(fill = "gray") + 
+  annotate(x = SS_BTN1_sites, xend = SS_BTN1_sites, y = 5, yend = 0, geom = "segment", arrow = arrow(type = "closed", angle = 10 ), color = "blue" ) +
+  ggtitle(paste("BTN1, между локациями \n(p = ", mean(perm_SS_samples_sites$SS_BTN1_perm_sites >= SS_BTN1_sites),")"))+
+  labs(x = "SS", y = "Частота")
+
+
+Pl_hist_BTN2_site <- 
+  ggplot(perm_SS_samples_sites, aes(x = SS_BTN2_perm_sites)) +
+  geom_density(fill = "gray") + 
+  annotate(x = SS_BTN2_sites, xend = SS_BTN2_sites, y = 5, yend = 0, geom = "segment", arrow = arrow(type = "closed", angle = 10 ), color = "blue" ) +
+  ggtitle(paste("BTN2, между локациями \n(p = ", mean(perm_SS_samples_sites$SS_BTN2_perm_sites >= SS_BTN2_sites),")"))+
+  labs(x = "SS", y = "Частота")
+
+```
+
+
+## Случайно ли распределение BTN1 и BTN2?
+
+```{r}
+plot_grid(Pl_hist_BTN1_sample, Pl_hist_BTN2_sample, Pl_hist_BTN1_site, Pl_hist_BTN2_site, nrow = 2)
+
+```
+
+Можно думать о том, что распределение BTN регулируется некоторыми факторами как на локальном (в масштабах метров), так и на региональном (в масштабах километров) уровне.
+
+Локальный уровень нам пока недоступен для анализа
+
+
+## **Предикторы для модели**: абиотические
+Самый очевидный абиотичесикй фактор - соленость варьирует в очень узких пределах: `r range(round(points_2023$Salinity), na.rm =T)` промилле. 
+
+```{r}
+
+points_2023 %>% 
+  ggplot(aes(x = Salinity)) +
+  geom_histogram(bins = 10)
+
+```
+
+
+
+## **Предикторы для модели**: абиотические
+
+
+```{r}
+ggplot(gg_Magadan_large, aes(x = long, y = lat, group = group)) + 
+  geom_polygon() + 
+  # coord_map(xlim = c(150., 151.52), ylim = c(59.4, 59.8) )+
+  geom_point(data = points %>% filter(Year == 2023), aes(x = lon, y = lat, group = 1, size = (fetch), fill = fPort ), shape = 21) +
+  scale_fill_manual(values =  c("gray", "yellow"))
+
+
+```
+
+
+
+```{r}
+
+# Данные по размерной структуре
+
+size <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", na = "NA", sheet = "Размерная струкутра 2023 2021")
+
+size <- size[complete.cases(size), ]
+
+
+
+scam <- dcast(Year + Site ~ Size_class, data = size)
+
+area <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", na = "NA", sheet = "Площадь проб на размер")
+
+sample_area <- 
+  area %>% group_by(Year, Site) %>% summarise(Total_area = sum(Area))
+
+scam <- 
+  scam %>% group_by(Year, Site)
+
+
+scam [ ,3:ncol(scam)] <- 
+  round((scam[ ,3:ncol(scam)] / sample_area$Total_area) *10000, 0)
+
+
+
+
+scam_23 <- scam %>% filter(Year == 2023)
+
+
+pca_scam <- rda(decostand(scam_23[ , -c(1,2)], method = "log" ))
+
+
+
+pca_scam_size_scores <- as.data.frame(scores(pca_scam)$species)
+
+# pca_scam_23_size_scores %>% arrange(CA1)
+
+pca_scam_scores <- as.data.frame(scores(pca_scam)$sites)
+
+
+pca_scam_scores$N_settlers <- scam_23$L3   
+
+
+pca_scam_scores$N_Juv <- scam_23$L8 + scam_23$L13 + scam_23$L18   
+
+pca_scam_scores$N_Large =   scam_23$L23 + scam_23$L28 + scam_23$L33 + scam_23$L38 + scam_23$L43 + scam_23$L48 + scam_23$L53 + scam_23$L58
+
+pca_scam_scores$N_Total <- pca_scam_scores$N_settlers + pca_scam_scores$N_Juv + pca_scam_scores$N_Large  
+  
+  
+pca_scores_scam <- data.frame(Year = scam_23$Year, Site = scam_23$Site, pca_scam_scores)
+
+
+# Проективное покрытие мидий
+
+cover_23 <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", sheet = "Покрытия миидий 2023")
+
+mean_cover_23 <-
+  cover_23 %>%
+  group_by(Site) %>%
+  summarise(Cover = mean(`Number of squares`/30))
+
+# Ранжируем сайты по покрытию мидий
+
+
+mean_cover_23 %<>% 
+  arrange(desc(Cover)) %>% 
+  mutate(Cover_class = case_when(
+    Cover >= median(Cover) ~ "Dense",
+    Cover < median(Cover) ~ "Sparse",
+  )) 
+
+
+```
+
+
+## **Биотические предикторы для модели**: Размерная структура{.columns-2}
+
+```{r, fig.width=3}
+plot(pca_scam, display = "sp")
+
+```
+
+
+```{r, fig.width=5}
+pca_scam_scores$Site <- scam_23$Site
+
+ggplot(pca_scam_scores, aes(PC1, PC2)) +
+  geom_text(aes(label = Site)) +
+  geom_hline(yintercept = 0) +
+  geom_vline(xintercept = 0)
+
+```
+
+## **Биотические предикторы для модели**: Размерная структура
+
+```{r , fig.width=7}
+
+
+size_23 <- 
+  size %>% 
+  filter(Year == 2023)
+size_23$Site <- factor(size_23$Site)
+
+levels(size_23$Site) <- pca_scores_scam$Site[order(pca_scores_scam$PC1)]
+
+ggplot(size_23, aes(x = L)) + 
+  geom_histogram() +
+  facet_wrap(~Site, ncol = 3, scales = "free_y", dir = "v")
+```
+
+
+
+
+```{r}
+
+growth <- read_excel("Data/Growth_Magadan2023_itog.xlsx")
+
+growth_data <- 
+growth %>% 
+  group_by(Site, Sample) %>% 
+  summarise(OGP_sample = mean(OGP_sample), OGP_site = mean(OGP_site) )
+  
+
+```
+
+
+
+```{r}
+# Анализ без объедиения проб сайтов
+
+cancer <- 
+  myt %>% 
+  mutate(Prop_BTN1 = BTN1/N, Prop_BTN2 = (BTN2.1 + BTN2.2)/N, Prop_BTN2.1 = (BTN2.1)/N,  Prop_BTN2.2 = (BTN2.2)/N ) 
+
+
+cancer2 <-
+  cancer %>% 
+  filter(Year == 2023) %>% 
+  select(-Site) %>% 
+  rename(Site = Site_code)
+
+
+
+
+cancer_2023 <- 
+  merge(points, cancer2) %>% 
+  filter(Year == 2023)
+
+pca_scores_scam_23 <- 
+  pca_scores_scam %>% 
+  filter(Year == 2023)
+
+cancer_2023 <- 
+merge(cancer_2023, pca_scores_scam_23)
+
+cancer_2023 <- 
+  merge(cancer_2023, mean_cover_23)
+
+
+
+cancer_2023 <- 
+  cancer_2023 %>% 
+  mutate(BTN2 = BTN2.1 + BTN2.2,
+         BTN2.1 = BTN2.1,
+         BTN2.2 = BTN2.2)
+
+
+
+
+# cancer_2023 %>% 
+#   group_by(Site) %>% 
+#   summarise(fetch = mean(fetch), Prop_BTN2 = sum(BTN2)/sum(N)) %>% 
+#   ggplot(., aes(fetch, Prop_BTN2)) +
+#   geom_point() 
+
+# cancer_2023 %>% 
+#   group_by(Site) %>% 
+#   summarise(fetch = mean(fetch), Prop_BTN2.1 = sum(BTN2.1)/sum(N)) %>% 
+#   ggplot(., aes(fetch, Prop_BTN2.1)) +
+#   geom_point()
+
+# cancer_2023 %>% 
+#   group_by(Site) %>% 
+#   summarise(fetch = mean(fetch), Prop_BTN2.2 = sum(BTN2.2)/sum(N)) %>% 
+#   ggplot(., aes(fetch, Prop_BTN2.2)) +
+#   geom_point()
+
+
+
+cancer_2023 <- merge(cancer_2023, growth_data)
+
+
+```
+
+
+```{r}
+cancer_2023_long <- 
+cancer_2023 %>% 
+  select(Site, Salinity, Dist_Port, fetch, fPort, Sample, PC1, PC2, N_Large, N_Juv, N_Total, Cover, N, BTN1, BTN2, OGP_sample, OGP_site) %>%
+  mutate(Sample = 1:nrow(.)) %>% 
+  melt(., id.vars = c("Site", "Salinity", "Dist_Port", "fetch", "fPort", "Sample", "PC1", "PC2", "N_Large", "N_Juv", "N_Total",  "Cover", "N", "OGP_sample", "OGP_site"), variable.name = "Lineage", value.name = "N_cancer") %>% 
+  mutate(N_helthy = N - N_cancer)
+```
+
+```{r, include=FALSE}
+df <- 
+cancer_2023_long %>% 
+  filter(Lineage == "BTN1")
+
+mod_foo <- lm(BTN1 ~ Dist_Port + fetch + PC1 + PC2  + OGP_sample + Cover , data = cancer_2023)
+
+library(car)
+vif(mod_foo)
+
+```
+
+## **Биотические предикторы для модели**: Размерная структура{.columns-2}
+
+```{r}
+ggplot(gg_Magadan_large, aes(x = long, y = lat, group = group)) + 
+  geom_polygon() + 
+  coord_map(xlim = c(150., 151.52), ylim = c(59.4, 59.8) )+
+  geom_point(data = cancer_2023, aes(x = lon, y = lat, group = 1, size = PC1), fill = "yellow", shape = 21) +
+  ggtitle("PC1") +
+  guides(size = "none")
+
+```
+
+
+```{r}
+ggplot(gg_Magadan_large, aes(x = long, y = lat, group = group)) + 
+  geom_polygon() + 
+  coord_map(xlim = c(150., 151.52), ylim = c(59.4, 59.8) )+
+  geom_point(data = cancer_2023, aes(x = lon, y = lat, group = 1, size = PC2), fill = "yellow", shape = 21) +
+  ggtitle("PC2") +
+  guides(size = "none")
+```
+
+
+##  **Биотические предикторы для модели**: Скорость роста (OGP)
+
+```{r}
+ggplot(gg_Magadan_large, aes(x = long, y = lat, group = group)) + 
+  geom_polygon() + 
+  coord_map(xlim = c(150., 151.52), ylim = c(59.4, 59.8) )+
+  geom_point(data = cancer_2023, aes(x = lon, y = lat, group = 1, size = OGP_site), fill = "yellow", shape = 21)  +
+  guides(size = "none")
+
+```
+
+
+
+##  **Биотические предикторы для модели**: Общее обиле мидий в локации (проективное покрытие){.columns-2}
+
+<img src="Figures/IMG_20230703_133755.jpg_sample.jpg" width="400">
+
+```{r, fig.width=6}
+ggplot(gg_Magadan_large, aes(x = long, y = lat, group = group)) + 
+  geom_polygon() + 
+  coord_map(xlim = c(150., 151.52), ylim = c(59.4, 59.8) )+
+  geom_point(data = cancer_2023, aes(x = lon, y = lat, group = 1, size = Cover), fill = "yellow", shape = 21)  +
+  guides(size = "none")
+
+```
+
+
+
+
+## Модель со всеми предикторами
+
+```{r}
+Mod_btn1_btn2 <- gam(cbind(N_cancer, N_helthy) ~ 
+                       s((Dist_Port), by = Lineage, k = 9, bs = "cs") + 
+                       s((fetch), by = Lineage, k = 9, bs = "cs")  + 
+                       s((Cover), by = Lineage, k = 9, bs = "cs")  +
+                       s((PC1), by = Lineage, k = 9, bs = "cs") +
+                       s((PC2), by = Lineage, k = 9, bs = "cs") + 
+                       s((OGP_sample), by = Lineage, k = 9, bs = "cs")   +  
+                       Lineage  + 
+                       s(Sample, bs = "re"), 
+                     data = cancer_2023_long, family = "binomial", method = "REML" )
+
+# summary(Mod_btn1_btn2)
+
+```
+
+
+
+```{r}
+
+tidy(Mod_btn1_btn2)[,-3] %>% 
+  kable(col.names = c("Член модели", "edf", "Chi^2^", "p-value"),
+      digits = c(NA, 1, 2, 4)) %>% 
+  kable_styling("striped", full_width = TRUE, font_size = 15) 
+
+```
+
+
+## Визуализация значимых связей
+
+```{r}
+draw(Mod_btn1_btn2, select = c(1, 3, 9, 11))
+
+```
+
+
+# Проверка предсказательной силы модели 
+
+
+```{r}
+cancer_test <- 
+  cancer %>% 
+  filter(Year == "2021" | Site %in% c("PLO", "ON", "KAR"))
+
+# cancer$Site_code 
+
+cancer_test <- 
+  merge(points, cancer_test, by = "Site") 
+
+cancer_test <-
+  merge(scam, cancer_test, by = "Site")
+
+
+cancer_test_means <- 
+  cancer_test %>%
+  select(Site, Year, lon, lat,Dist_Port, fetch, fPort, DN_FC, N, Dist_Port, BTN1, BTN2, L3, L8) %>% 
+  group_by(Site) %>% 
+  summarise(Year = mean(Year), lon = mean(lon), lat = mean(lon), Dist_Port = mean(Dist_Port), fetch = mean(fetch), fPort = unique(fPort), DN_FC = sum(DN_FC), N = sum(N), BTN1 = sum(BTN1), BTN2 = sum(BTN2), L3 = mean(L3), L8 = mean(L8))
+
+
+
+
+```
+
+
+
+```{r}
+
+Pl_fetch_btn1 <- 
+  ggplot(cancer_test_means, aes(x = fetch, y = BTN1/N)) +
+  geom_point(size = 3) +
+  ggtitle("BTN1")
+
+Pl_dist_port_btn1 <-
+ggplot(cancer_test_means, aes(x = Dist_Port, y = BTN1/N)) +
+  geom_point(size = 3) +
+  ggtitle("BTN1") 
+
+Pl_fPort_btn1 <- 
+ggplot(cancer_test_means, aes(x = fPort, y = BTN1/N)) +
+  geom_boxplot() +
+  ggtitle("BTN1")
+
+
+Pl_fetch_btn2 <- 
+  ggplot(cancer_test_means, aes(x = fetch, y = BTN2/N)) +
+  geom_point(size = 3) +
+  ggtitle("BTN2")
+
+Pl_dist_port_btn2 <-
+ggplot(cancer_test_means, aes(x = Dist_Port, y = BTN2/N)) +
+  geom_point(size = 3) +
+  ggtitle("BTN2")
+
+Pl_fPort_btn2 <- 
+ggplot(cancer_test_means, aes(x = fPort, y = BTN2/N)) +
+  geom_boxplot() +
+  ggtitle("BTN2") 
+
+```
+
+## Связь с ключевыми предикторами на данных 2021 г
+
+### Fetch
+
+```{r}
+plot_grid(Pl_fetch_btn1, Pl_fetch_btn2)
+```
+
+
+## Связь с ключевыми предикторами на данных 2021 г
+
+### Расстояние до порта
+
+```{r}
+plot_grid(Pl_dist_port_btn1, Pl_dist_port_btn2)
+```
+
+## Связь с ключевыми предикторами на данных 2021 г.
+
+### Положение относительно порта
+
+```{r}
+ggplot(gg_Magadan_large, aes(x = long, y = lat, group = group)) + 
+  geom_polygon() + 
+  # coord_map(xlim = c(150., 151.52), ylim = c(59.4, 59.8) )+
+  geom_point(data = points %>% filter(Year == 2023), aes(x = lon, y = lat, group = 1, fill = fPort ), shape = 21, size = 3) +
+  scale_fill_manual(values =  c("gray", "yellow"))
+
+```
+
+## Связь с ключевыми предикторами на данных 2021 г.
+
+### Положение относительно порта
+
+
+```{r}
+plot_grid(Pl_fPort_btn1, Pl_fPort_btn2)
+```
+
+# Спасибо за внимание!
