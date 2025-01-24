@@ -347,7 +347,7 @@ Mod_gam <- gam(Ptros ~ s(Salinity, bs = "cs") + s(Log_Min_dist_river, bs = "cs")
 
 # summary(Mod_gam_reduced)
 
-# draw(Mod_gam)
+# draw(Mod_gam, residuals = T)
 
 ```
 
@@ -360,9 +360,9 @@ sm <- smooth_estimates(Mod_gam) %>%
   add_confint()
 
 sm <- sm %>% 
-  mutate(Pi = logit_back(est + coef(Mod_gam)[1]), 
-         CI_Pi_low = logit_back(lower_ci + coef(Mod_gam)[1]),
-         CI_Pi_up = logit_back(upper_ci + coef(Mod_gam)[1]))
+  mutate(Pi = logit_back(.estimate + coef(Mod_gam)[1]), 
+         CI_Pi_low = logit_back(.lower_ci + coef(Mod_gam)[1]),
+         CI_Pi_up = logit_back(.upper_ci + coef(Mod_gam)[1]))
 
 myt_full <- myt_full %>% 
   add_partial_residuals(Mod_gam)
@@ -385,16 +385,16 @@ myt_full <-
 
 Pl_sal_smoother <-
   sm %>%
-  filter(smooth == "s(Salinity)") %>%
+  filter(.smooth == "s(Salinity)") %>%
   ggplot() +
   geom_point(aes(x = Salinity, y = `s(Salinity)`, color = Position),
              data = myt_full, cex = 1, colour = "steelblue3") +
   geom_rug(aes(x = Salinity),
            data = myt_full,
            sides = "b", length = grid::unit(0.02, "npc")) +
-  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci, x = Salinity),
+  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = Salinity),
               alpha = 0.2) +
-  geom_line(aes(x = Salinity, y = est), lwd = 1) +
+  geom_line(aes(x = Salinity, y = .estimate), lwd = 1) +
   labs(y = "Partial effect", x = "Salinity") +
   geom_hline(yintercept = 0, linetype = 2) +
   theme_bw()
@@ -402,7 +402,7 @@ Pl_sal_smoother <-
 
 Pl_riv_dist_smoother <- 
     sm %>%
-  filter(smooth == "s(Log_Min_dist_river)") %>%
+  filter(.smooth == "s(Log_Min_dist_river)") %>%
   ggplot() +
   geom_point(aes(x = Log_Min_dist_river, y = `s(Log_Min_dist_river)`, color = Position),
              data = myt_full, cex = 1, colour = "steelblue3") +
@@ -424,16 +424,16 @@ Pl_riv_dist_smoother <-
 
 Pl_port_dist_smoother <-
      sm %>%
-  filter(smooth == "s(Log_Min_dist_port)") %>%
+  filter(.smooth == "s(Log_Min_dist_port)") %>%
   ggplot() +
   geom_point(aes(x = Log_Min_dist_port, y = `s(Log_Min_dist_port)`, color = Position),
              data = myt_full, cex = 1, colour = "steelblue3") +
   geom_rug(aes(x = Log_Min_dist_port),
            data = myt_full,
            sides = "b", length = grid::unit(0.02, "npc")) +
-  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci, x = Log_Min_dist_port),
+  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = Log_Min_dist_port),
               alpha = 0.2) +
-    geom_line(aes(x = Log_Min_dist_port, y = est), lwd = 1) +
+    geom_line(aes(x = Log_Min_dist_port, y = .estimate), lwd = 1) +
   labs(y = "Partial effect", x = "Log Distance to the nearest port (km)") +
   geom_hline(yintercept = 0, linetype = 2) +
   theme_bw() 
@@ -441,7 +441,7 @@ Pl_port_dist_smoother <-
 
 Pl_fetch_smoother <-
   sm %>%
-  filter(smooth == "s(Log_Fetch)") %>%
+  filter(.smooth == "s(Log_Fetch)") %>%
   ggplot() +
   geom_point(aes(x = Log_Fetch, y = `s(Log_Fetch)`, color = Position),
              data = myt_full, cex = 1, colour = "steelblue3") +
@@ -709,7 +709,8 @@ width(j = 1:5, width = c(8, 4,2,2,2), unit = "cm")
 
 ```{r Model1_prediction_Figure, fig.height= 8,fig.width=8, fig.cap= "Fig. 3. Predictions of the *Model 1* describing the dependency of *Ptros* on distance to the nearest port (A), average fetch (B), distance to the nearest river (C), salinity (E) and substrate type, nearest port status and size of the largest river (E, F). The  gray ribbons and wiskers demonstrate 95% confidence interval. The dotted lines in panels A-D represent the median predicted value, this value is given to track the trend in the change in model predictions. Points on panels A-D reflect partial residuals but not raw data for each sample."}
 
-Pl_Model_1 <- plot_grid(Pl_port_dist_smoother, Pl_fetch_smoother, Pl_riv_dist_smoother,  Pl_sal_smoother, Pl_Small_Pi, Pl_Large_Pi,  ncol = 2, labels = "AUTO")
+Pl_Model_1 <- 
+  plot_grid(Pl_port_dist_smoother, Pl_fetch_smoother, Pl_riv_dist_smoother,  Pl_sal_smoother, Pl_Small_Pi, Pl_Large_Pi,  ncol = 2, labels = "AUTO")
 
 Pl_Model_1
 

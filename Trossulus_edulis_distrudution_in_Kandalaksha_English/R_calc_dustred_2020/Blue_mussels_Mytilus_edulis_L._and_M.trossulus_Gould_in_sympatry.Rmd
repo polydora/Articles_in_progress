@@ -459,6 +459,10 @@ Ranges and median values of the continuous predictors are summarized in **Table 
 ```{r Models_calculations}
 
 Mod_gam <- gam(Ptros ~ s(Salinity, bs = "cs") + s(Log_Min_dist_river, bs = "cs") + s(Log_Fetch, bs = "cs") + s(Log_Min_dist_port, bs = "cs") + Position + River_Size + Port_Status + s(Site, k = Total_site, bs = "re"), method = "REML", family = betar(link = "logit"), data = myt_full )
+# 
+# myt_full$Fi_Ptros <- 2*asin(sqrt(myt_full$Ptros)) * 180/pi 
+# 
+# Mod_gam <- gam(Fi_Ptros ~ s(Salinity, bs = "cs") + s(Log_Min_dist_river, bs = "cs") + s(Log_Fetch, bs = "cs") + s(Log_Min_dist_port, bs = "cs") + Position + River_Size + Port_Status + s(Site, k = Total_site, bs = "re"), method = "REML", family = "gaussian", data = myt_full )
 
 # summary(Mod_gam)
 
@@ -487,6 +491,9 @@ Mod_gam <- gam(Ptros ~ s(Salinity, bs = "cs") + s(Log_Min_dist_river, bs = "cs")
 
 # appraise(Mod_gam)
 
+# library(DHARMa)
+# simulateResiduals(Mod_gam, plot = T)
+
 # appraise(Mod_gam_reduced)
 
 # summary(Mod_gam)
@@ -506,12 +513,18 @@ sm <- smooth_estimates(Mod_gam) %>%
   add_confint()
 
 sm <- sm %>% 
-  mutate(Pi = logit_back(est + coef(Mod_gam)[1]), 
-         CI_Pi_low = logit_back(lower_ci + coef(Mod_gam)[1]),
-         CI_Pi_up = logit_back(upper_ci + coef(Mod_gam)[1]))
+  mutate(Pi = logit_back(.estimate + coef(Mod_gam)[1]), 
+         CI_Pi_low = logit_back(.lower_ci + coef(Mod_gam)[1]),
+         CI_Pi_up = logit_back(.upper_ci + coef(Mod_gam)[1]))
 
-myt_full <- myt_full %>% 
-  add_partial_residuals(Mod_gam)
+# myt_full <- myt_full %>% 
+#   add_partial_residuals(Mod_gam)
+
+dd <- partial_residuals(Mod_gam)
+
+
+myt_full <- cbind(myt_full, partial_residuals(Mod_gam))
+
 
 # Recalculation of smoothers into probability
 myt_full <- 
@@ -531,16 +544,16 @@ myt_full <-
 
 Pl_sal_smoother <-
   sm %>%
-  filter(smooth == "s(Salinity)") %>%
+  filter(.smooth == "s(Salinity)") %>%
   ggplot() +
   geom_point(aes(x = Salinity, y = `s(Salinity)`, color = Position),
              data = myt_full, cex = 1, colour = "steelblue3") +
   geom_rug(aes(x = Salinity),
            data = myt_full,
            sides = "b", length = grid::unit(0.02, "npc")) +
-  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci, x = Salinity),
+  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = Salinity),
               alpha = 0.2) +
-  geom_line(aes(x = Salinity, y = est), lwd = 1) +
+  geom_line(aes(x = Salinity, y = .estimate), lwd = 1) +
   labs(y = "Partial effect", x = "Salinity") +
   geom_hline(yintercept = 0, linetype = 2) +
   theme_bw()
