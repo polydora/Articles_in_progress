@@ -15,7 +15,9 @@ library(readxl)
 
 add_PNIS <- read_excel("Data/export_gisd_PNIS.xlsx")
 
-
+add_PNIS <- 
+  add_PNIS %>% 
+  filter(From == "CMI_report")
 
 for(name in add_PNIS$Species){
 
@@ -28,6 +30,8 @@ for(name in add_PNIS$Species){
   write.table(file = paste("Data/", name,".csv", sep = ""), x = df_add_PNIS_short, sep = ";", row.names = F)
   print(name)
 }
+
+
 
 
 
