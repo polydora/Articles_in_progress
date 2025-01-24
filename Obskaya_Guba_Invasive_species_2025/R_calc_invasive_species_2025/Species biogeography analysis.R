@@ -17,17 +17,26 @@ add_PNIS <- read_excel("Data/export_gisd_PNIS.xlsx")
 
 
 
+for(name in add_PNIS$Species){
 
-df_add_PNIS_1 <- occ2df(occ(query = add_PNIS$Species[1:10], from = "gbif", limit = 5000, has_coords = TRUE))
+  df_add_PNIS <- occ2df(occ(query = name, from = "gbif", limit = 5000, has_coords = TRUE))
+  df_add_PNIS_short <- 
+    df_add_PNIS %>% 
+    select(name, longitude, latitude) %>% unique
+  names(df_add_PNIS_short) <- c("species", "lon", "lat")
+  df_add_PNIS_short$species <- name
+  write.table(file = paste("Data/", name,".csv", sep = ""), x = df_add_PNIS_short, sep = ";", row.names = F)
+  print(name)
+}
 
 
 
 
 
 
-df_add_PNIS_short <- df_add_PNIS %>% select(name, longitude, latitude) %>% unique
-
-names(df_add_PNIS_short) <- c("species", "lon", "lat")
+# df_add_PNIS_short <- df_add_PNIS %>% select(name, longitude, latitude) %>% unique
+# 
+# names(df_add_PNIS_short) <- c("species", "lon", "lat")
 
 
 
