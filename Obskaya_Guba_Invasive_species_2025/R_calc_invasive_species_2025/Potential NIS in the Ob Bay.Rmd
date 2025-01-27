@@ -1,0 +1,565 @@
+---
+title: "Non Indigenous Species in benthic and Planktonic realm of the Ob Bay"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+
+```
+
+
+```{r packages}
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+library(cowplot)
+library(vegan)
+library(e1071)
+
+theme_set(theme_bw())
+
+setwd("D:/Text/Article/Articles_in_progress/Obskaya bay invasive species/R_calc_for_invasive_species")
+```
+
+# Гидрологические условия в акватории Обской губы
+
+### Влияние гидротехничеких работ на гидрологический рещим в районах портов
+Гидрологическая модель (**надо дать ей какое-то название**) позволила рассмотреть значения двух ключевых гидрологических параметров (температура воды и соленость) в участках расположенных в непосредственной близости от ныне действующего порта ("Сабетта") и проектируемого порта (Терминал "Утренний"). Области, для которых проводится анализ приведены на следующем рисунке. 
+
+
+```{r}
+hydrol_model <- read.csv("Data/hydrological modelling data.csv")
+
+
+hydrol_model$Season <- factor(hydrol_model$Season, levels = c("Winter", "Spring", "Summer", "Autumn")) 
+
+forecast_points <- hydrol_model %>% select(lon, lat) %>% unique
+
+
+```
+
+```{r}
+
+Ob_df <- read.csv("Data/Obskaya_bay_map.csv") # Map poligones
+
+
+Ob_x <- c(71, 75)
+Ob_y <- c(70, 73.2)
+
+
+hotspot <- read.table("Data/Obskaya_bay_ports.csv", sep = ",", header = T) 
+
+grid_data <- expand.grid(Lat = seq(from = 70.01, to =72.89, length.out = 100), Long =  seq(from = 71, to =75.2 , length.out = 100))
+
+
+
+
+
+Pl_Obskaya_bay <- 
+  ggplot(Ob_df, aes(x=long, y=lat, group=group)) +
+  geom_polygon(fill = "gray90", colour = "gray20") + 
+  coord_map(xlim = Ob_x, ylim = Ob_y) +
+  theme_bw() +  
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
+  theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+  theme(axis.ticks = element_blank())
+
+
+Ob_x_port <- c(72, 74)
+Ob_y_port <- c(70.8, 71.4)
+
+
+Pl_Obskaya_bay_ports <- 
+  ggplot(Ob_df, aes(x=long, y=lat, group=group)) +
+  geom_polygon(fill = "gray90", colour = "gray20") + 
+  coord_map(xlim = Ob_x_port, ylim = Ob_y_port) + 
+  theme_bw() +  
+  theme(axis.title.x = element_blank(),  axis.title.y = element_blank(), plot.background = element_blank(), panel.border = element_blank(), panel.grid = element_blank()) + 
+  theme(axis.text.x =element_blank(), axis.text.y= element_blank()) + 
+  theme(axis.ticks = element_blank())
+
+
+Pl_Ob_bay <-
+Pl_Obskaya_bay + geom_point(data = hotspot,  aes(x = Lon, y = Lat, group =1), size = 4, shape = 22, fill = "yellow") + geom_point(data = forecast_points, aes(x = lon, y = lat, group =1), size = 0.1, color = "blue")
+
+Pl_ports_area <- 
+Pl_Obskaya_bay_ports + geom_point(data = hotspot,  aes(x = Lon, y = Lat, group =1), size = 4, shape = 22, fill = "yellow") + geom_point(data = forecast_points, aes(x = lon, y = lat, group =1), size = 0.1, color = "blue")
+
+plot_grid(Pl_Ob_bay, Pl_ports_area, ncol = 2)
+
+
+```
+
+
+Модель была рассчитана для двух сценариев: без дноуглубительных работ и строительства гидротехнических сооружений и после построения гидротехнических сооружений в районе терминала "Утренний". Следующий рисунок демонстрирует распределение значений температуры и солености для двух сценариев.
+
+```{r}
+ggplot(hydrol_model, aes(x = Port, y = Sal, fill = Scenario)) + geom_boxplot(notch = T) + facet_wrap(~Season) + labs(y = "Salinity")
+```
+
+
+```{r}
+ggplot(hydrol_model, aes(x = Port, y = Temp, fill = Scenario)) + geom_boxplot(notch = T) + facet_wrap(~Season) + labs(y = "Temperature")
+```
+
+
+Строительство гидротехнических сооружений, согласно модели, не приводит к значительному изменению солености в районе портов. Вместе с тем, выявляется некоторое увеличение температуры воды в летний период в районе терминала "Утренний". 
+
+Поскольку работы по строительству гидротехнических сооружений уже выполнены в дальнейшем анализе будут использованы данные, соответствующие этому сценарию. 
+
+
+### Гидрологические условия в районе портов 
+
+T-S диаграммы (Рис. ++) показывают, что в районе портов зимой и весной присутствует холодная, осолоненная вода. Cоленость в данный период варьирует в пределах `r range(hydrol_model %>% filter(Season %in% c("Winter", "Spring")) %>% pull(Sal) %>% round(.,1) )` промилле, а температура в пределах `r range(hydrol_model %>% filter(Season %in% c("Winter", "Spring")) %>% pull(Temp) %>% round(.,1) )` градуса.
+
+В летний и осенний период осолонение незначительное, но при этом наблюдается значительный прогрев воды. В этот период соленость варьирует в пределах `r range(hydrol_model %>% filter(Season %in% c("Summer", "Autumn")) %>% pull(Sal) %>% round(.,1) )` промилле, а температура:  `r range(hydrol_model %>% filter(Season %in% c("Summer", "Autumn")) %>% pull(Temp) %>% round(.,1) )`
+
+Наиболее прогретая водная масса представлена в акватории в осенний период. Именно этот период следует считать наиболее опасным с точки зрения вероятности заноса видов из умеренных широт.
+
+
+
+```{r}
+env_limits <- hydrol_model %>% group_by(Season) %>% summarise(Sal_low = quantile(Sal, probs = 0.005), Sal_up = quantile(Sal, probs = 0.995), Temp_low = quantile(Temp, probs = 0.005), Temp_up = quantile(Temp, probs = 0.995))
+
+
+# ggplot(hydrol_model2, aes(x = Temp, y = Sal)) + 
+#   geom_point(size = 0.1, alpha = 0.1) 
+   
+
+ggplot(data = env_limits) +  geom_rect(aes(xmin = Temp_low, xmax = Temp_up, ymin = Sal_low, ymax = Sal_up), fill = "white", color = "blue", alpha = 0.1) + facet_wrap(~Season) + geom_point(data = hydrol_model, aes(x = Temp, y = Sal), size = 0.1, alpha = 0.1) + labs(x = "Water temperature", y = "Salinity")
+
+
+```
+
+
+Для описания границ "экологической лицензии" биотопа (Ozerskii, 2011) который может быть потенциально заселен NIS,  были вычислены пределы солености и температуры в акватории, прилегающей к районам портов, как значения 0.5% и 99.5% квантилей каждого из параметров. На рисунке эти границы обозначены прямоугольниками. 
+
+
+Полученные значения ограничивают гидрологические условия, которые могу быть предоставлены акваторией для вселения NIS в настоящее время в районе портов, как наиболее вероятных областей вселения NIS. Однако, согласно прогнозам развития климатических изменений (https://interactive-atlas.ipcc.ch/), температура  поверхности океана в районе Российской Арктики будет постепенно повышаться (приблизительно на 2 градуса за столетие. **At! Я не уверен, что это правильно. Может есть и другие прогнозы.**). Стало быть границы экологической лицензии по оси температуры будут смещаться с сторону большей температуры, что будет расширять возможности вселения NIS в будущем. 
+
+Значения температуры воды закономерно увеличиваются по мере удаления от устья Обской губы вверх по течению (Рис. ++). 
+
+```{r}
+
+
+path = "D:/Data_LMBE/Obskaya Bay additional data/nc_files_from_model/After_construction_building"
+
+
+
+##### Данные модели на осень
+
+library(ncdf4)
+library(raster)
+
+name <- "inmom_20161015.nc"
+ncin <- nc_open(paste(path, "/",name, sep = ""))
+
+
+lon <- ncvar_get(ncin,"lon")
+lat <- ncvar_get(ncin,"lat")
+time <- ncvar_get(ncin,"time")
+date_from_model <- as.POSIXct(time, origin = "1900-01-01 00:00:00")
+
+tmp_array <- ncvar_get(ncin,"temp")
+  
+  tmp_slice_0 <- tmp_array[,,1]
+  tmp_slice_5 <- tmp_array[,,2]
+  tmp_slice_10 <- tmp_array[,,3]
+  tmp_slice_15 <- tmp_array[,,4]
+  tmp_slice_20 <- tmp_array[,,5]
+  
+ salt_array <- ncvar_get(ncin,"salt")
+  
+  salt_slice_0 <- salt_array[,,1]
+  salt_slice_5 <- salt_array[,,2]
+  salt_slice_10 <- salt_array[,,3]
+  salt_slice_15 <- salt_array[,,4]
+  salt_slice_20 <- salt_array[,,5]
+ lonlat <- as.matrix(expand.grid(lon = lon,lat = lat))
+  
+  
+  df_model <- data.frame(cbind(lonlat, T_0 = as.vector(tmp_slice_0), T_5 = as.vector(tmp_slice_5), T_10 = as.vector(tmp_slice_10), T_15 = as.vector(tmp_slice_15), T_20 = as.vector(tmp_slice_20), S_0 = as.vector(salt_slice_0), S_5 = as.vector(salt_slice_5), S_10 = as.vector(salt_slice_10), S_15 = as.vector(salt_slice_15), S_20 = as.vector(salt_slice_20)), Date = date_from_model)
+  
+detach("package:raster", unload = TRUE)
+detach("package:dplyr", unload = TRUE)
+
+  library(dplyr)  
+df_model_Spt1<- df_model %>% filter(!is.na(T_0))
+  
+
+
+
+##### Данные модели на зиму
+library(ncdf4)
+library(raster)
+
+
+name <- "inmom_20170115.nc"
+ncin <- nc_open(paste(path, "/",name, sep = ""))
+
+
+lon <- ncvar_get(ncin,"lon")
+lat <- ncvar_get(ncin,"lat")
+time <- ncvar_get(ncin,"time")
+date_from_model <- as.POSIXct(time, origin = "1900-01-01 00:00:00")
+
+tmp_array <- ncvar_get(ncin,"temp")
+  
+  tmp_slice_0 <- tmp_array[,,1]
+  tmp_slice_5 <- tmp_array[,,2]
+  tmp_slice_10 <- tmp_array[,,3]
+  tmp_slice_15 <- tmp_array[,,4]
+  tmp_slice_20 <- tmp_array[,,5]
+  
+ salt_array <- ncvar_get(ncin,"salt")
+  
+  salt_slice_0 <- salt_array[,,1]
+  salt_slice_5 <- salt_array[,,2]
+  salt_slice_10 <- salt_array[,,3]
+  salt_slice_15 <- salt_array[,,4]
+  salt_slice_20 <- salt_array[,,5]
+ lonlat <- as.matrix(expand.grid(lon = lon,lat = lat))
+  
+  
+  df_model <- data.frame(cbind(lonlat, T_0 = as.vector(tmp_slice_0), T_5 = as.vector(tmp_slice_5), T_10 = as.vector(tmp_slice_10), T_15 = as.vector(tmp_slice_15), T_20 = as.vector(tmp_slice_20), S_0 = as.vector(salt_slice_0), S_5 = as.vector(salt_slice_5), S_10 = as.vector(salt_slice_10), S_15 = as.vector(salt_slice_15), S_20 = as.vector(salt_slice_20)), Date = date_from_model)
+
+detach("package:raster", unload = TRUE)
+detach("package:dplyr", unload = TRUE)
+
+library(dplyr)  
+df_model_Dec1<- df_model %>% filter(!is.na(T_0))
+  
+  
+
+  
+  
+  
+  
+##### Данные модели на весну
+library(ncdf4)
+library(raster)
+
+name <- "inmom_20170415.nc"
+ncin <- nc_open(paste(path, "/",name, sep = ""))
+
+
+lon <- ncvar_get(ncin,"lon")
+lat <- ncvar_get(ncin,"lat")
+time <- ncvar_get(ncin,"time")
+date_from_model <- as.POSIXct(time, origin = "1900-01-01 00:00:00")
+
+tmp_array <- ncvar_get(ncin,"temp")
+  
+  tmp_slice_0 <- tmp_array[,,1]
+  tmp_slice_5 <- tmp_array[,,2]
+  tmp_slice_10 <- tmp_array[,,3]
+  tmp_slice_15 <- tmp_array[,,4]
+  tmp_slice_20 <- tmp_array[,,5]
+  
+ salt_array <- ncvar_get(ncin,"salt")
+  
+  salt_slice_0 <- salt_array[,,1]
+  salt_slice_5 <- salt_array[,,2]
+  salt_slice_10 <- salt_array[,,3]
+  salt_slice_15 <- salt_array[,,4]
+  salt_slice_20 <- salt_array[,,5]
+ lonlat <- as.matrix(expand.grid(lon = lon,lat = lat))
+  
+  
+  df_model <- data.frame(cbind(lonlat, T_0 = as.vector(tmp_slice_0), T_5 = as.vector(tmp_slice_5), T_10 = as.vector(tmp_slice_10), T_15 = as.vector(tmp_slice_15), T_20 = as.vector(tmp_slice_20), S_0 = as.vector(salt_slice_0), S_5 = as.vector(salt_slice_5), S_10 = as.vector(salt_slice_10), S_15 = as.vector(salt_slice_15), S_20 = as.vector(salt_slice_20)), Date = date_from_model)
+  
+
+  detach("package:raster", unload = TRUE)
+detach("package:dplyr", unload = TRUE)
+
+library(dplyr)  
+  df_model_Mar1<- df_model %>% filter(!is.na(T_0))
+  
+  
+  
+  
+
+##### Данные модели на лето
+
+library(ncdf4)
+library(raster)
+
+name <- "inmom_20170715.nc"
+ncin <- nc_open(paste(path, "/",name, sep = ""))
+
+
+lon <- ncvar_get(ncin,"lon")
+lat <- ncvar_get(ncin,"lat")
+time <- ncvar_get(ncin,"time")
+date_from_model <- as.POSIXct(time, origin = "1900-01-01 00:00:00")
+
+tmp_array <- ncvar_get(ncin,"temp")
+  
+  tmp_slice_0 <- tmp_array[,,1]
+  tmp_slice_5 <- tmp_array[,,2]
+  tmp_slice_10 <- tmp_array[,,3]
+  tmp_slice_15 <- tmp_array[,,4]
+  tmp_slice_20 <- tmp_array[,,5]
+  
+ salt_array <- ncvar_get(ncin,"salt")
+  
+  salt_slice_0 <- salt_array[,,1]
+  salt_slice_5 <- salt_array[,,2]
+  salt_slice_10 <- salt_array[,,3]
+  salt_slice_15 <- salt_array[,,4]
+  salt_slice_20 <- salt_array[,,5]
+ lonlat <- as.matrix(expand.grid(lon = lon,lat = lat))
+  
+  
+  df_model <- data.frame(cbind(lonlat, T_0 = as.vector(tmp_slice_0), T_5 = as.vector(tmp_slice_5), T_10 = as.vector(tmp_slice_10), T_15 = as.vector(tmp_slice_15), T_20 = as.vector(tmp_slice_20), S_0 = as.vector(salt_slice_0), S_5 = as.vector(salt_slice_5), S_10 = as.vector(salt_slice_10), S_15 = as.vector(salt_slice_15), S_20 = as.vector(salt_slice_20)), Date = date_from_model)
+  
+df_model_Jun1<- df_model %>% filter(!is.na(T_0))
+    
+  
+  
+  
+df_model_Spt1$Season <- "Autumn"
+df_model_Dec1$Season <- "Winter"
+df_model_Mar1$Season <- "Spring"
+df_model_Jun1$Season <- "Summer"
+
+detach("package:raster", unload = TRUE)
+detach("package:dplyr", unload = TRUE)
+library(dplyr)
+df_model <- rbind(df_model_Spt1, df_model_Dec1, df_model_Mar1,df_model_Jun1)
+  
+df_model$Season <- factor(df_model$Season, levels = c("Winter", "Spring", "Summer", "Autumn"))
+  
+```
+
+```{r}
+
+ggplot(df_model) + geom_tile(aes(x = lon, y = lat, color = T_0, group = 1)) + scale_color_gradient(low = "yellow", high = "red") + geom_polygon(data = Ob_df, aes(x=long, y=lat, group=group), fill = "gray90", colour = "gray20") + labs(color = "Surface water temperature") + theme(legend.position = "bottom") + facet_wrap(~Season)
+
+
+```
+
+
+Соленость в акватории испытывает сезонные колебания (Рис. ++). Наиболее высокая соленость наблюдается весной, когда язык саленой воды заходит далеко вверх по течению.
+
+```{r}
+
+ggplot(df_model) + geom_tile(aes(x = lon, y = lat, color = S_0, group = 1)) + scale_color_gradient(low = "white", high = "blue") + geom_polygon(data = Ob_df, aes(x=long, y=lat, group=group), fill = "gray90", colour = "gray20") + labs(color = "Surface water salinity") + theme(legend.position = "bottom") + facet_wrap(~Season)
+
+
+```
+
+
+## Биогеографический анализ потенциальных NIS
+
+
+```{r}
+
+# Загрузка данных с координатами встреч видов
+library(dplyr)
+
+
+benthic_species <- read.csv("Data/benthos_occurence_all_final.csv")
+benthic_species <- benthic_species[,-1] 
+
+Plankton_species <- read.csv("Data/Plankton_occurence_all_final.csv")
+
+benthic_species$Group <- "Benthos"
+Plankton_species$Group <- "Plankton"
+
+all_species <- rbind(benthic_species, Plankton_species)
+
+
+```
+
+
+## Селекция видов по их биогеографическим характеристикам
+
+Используя базу [данных по инвазивным видам России](http://www.sevin.ru/top100worst/) и публикацию Goldsmit et al. (2019) был создан список  видов, которые уже были отмечены, как инвазивные (или потенциально инвазивные) виды на территории России. Далее такие виды будут обозначаться как Potentialy Non Indigenous Species (**PNIS**). Всего в этот long list of potential NIS  вошло `r all_species %>% filter(Status == "PNIS") %>%  select(species) %>% unique %>% nrow` видов. 
+
+Данные бентосной съемки в Обской губе (**ссылка на Отчет**), позволили выбрать те виды, которые наиболее обильны на тех участках акватории, где расположены порты или в еще более опресненных участках, расположенных на юге акватории. Морскую часть сообщества нами не рассматривалась, так как вся морская фауна, будучи завезенной в сильно опресненные акватории портов, однозначно погибнет. Далее местные виды, будут обозначаться как нативные (**Native**).
+
+Для всех этих видов, используя базу [GBIF](https://www.gbif.org/) были получены координаты локаций, где эти виды были обнаружены.  
+
+Поскольку температура играет существенную роль в распространении NIS (**ссылки на теоретические работы +++**) и она коррелирует с географической широтой, то анализ широтных границы ареалов видов позволяет отсечь те PNIS, центры распространения которых далеки от географических границ анализируемой акватории.
+
+
+```{r}
+species_stat <- all_species %>% group_by(species, Status, Group) %>% summarise(Median_lat = median(lat), Upper_lat = max(lat), Q_low = quantile(lat, probs = 0.025), Q_up = quantile(lat, probs = 0.975), N_S_skewness = skewness(lat, type = 1), N_S_asymmetry = log(abs(Q_up - Median_lat)/abs(Q_low - Median_lat)), Prop_polar = mean(lat > 66.5622))
+
+```
+
+
+
+Каждый вид был охарактеризован несколькими переменными, описывающими их биогеографические характеристики:
+
+
+*Median_lat* - медиана значений широты. Предполагается, что эта величина характеризует широтное "ядро" ареала. 
+
+*Upper_lat* - Максимальное значение широты, на которой встретился вид
+
+*Q_low* - значение 2.5% квантиля широты
+
+*Q_up* - значение 97.5% квантиля широты
+
+*Prop_polar* - отношение количества точек с широтой выше Северного полярного круга к общему количеству встреч. Предполагается, что чем выше это значение тем с большей вероятностью данный вид встречается в Заполярье. 
+
+*N_S_skewness* - величина асимметрии распределения значений широт. Предполагается, что чем асимметричнее распределение тем более выражена тенденция в смещении вида из ареала. 
+
+*N_S_asymmetry* - величина похожая на предыдущую. Это отношение расстояния от медианы широты до Q_low к расстоянию от медианы до Q_up. 
+
+$$
+asymmetry = \ln(\frac{|Q_{up} - M|}{|Q_{low}-M|})
+$$
+
+
+
+Полученная матрица значений этих переменных была использована в анализе главных компонент (Principal component analysis).
+
+
+```{r}
+
+mod <- rda(species_stat[ , -c(1, 2, 3)])
+
+
+scores_rda_all <- scores(mod)
+
+species_rda_all <- as.data.frame(scores_rda_all$sites)
+
+
+species_rda_all$species <- species_stat$species 
+species_rda_all$Status <-species_stat$Status 
+species_rda_all$Group <-species_stat$Group 
+
+
+Low_PC1 <- species_rda_all %>% filter(Status == "Native") %>% group_by(Group) %>% summarise (Q_3 = quantile(PC1, probs = 0.95))
+
+bent_boundary <- Low_PC1[1,2]
+planct_boundary <- Low_PC1[2,2]
+
+
+# ggplot(species_rda_all, aes(PC1, PC2, color = Status)) + geom_point(size = 3) + scale_color_manual(values = c("blue", "red"))
+
+
+```
+
+Первая главная компонента, описывающая `r round(summary(mod)$cont$importance[3,1]*100,1)`% общего варьирования биогеографических характеристик видов, демонстрирует высокую отрицательную корреляцию с южной границей распространения видов (Q_low), медианой широты (Median_lat) и северной границей распространения видов (Q_up). Таким образом, значения PC1 могут трактоваться как широтный градиент в распространении видов. Меньшие значения PC1 соответствуют более высоким широтам. 
+
+Можно заметить, что нативные формы бентоса имеют несколько более северное распространение, чем нативные планктонные формы. Широтное ядро распространения потенциальных NIS, вовлеченных в анализ, смещено к более  южным широтам как у представителей бентоса, так и у планктонных потенциальных вселенцев. 
+
+
+```{r}
+ggplot(species_rda_all, aes(x = PC1)) + geom_density(aes(fill = Status), alpha = 0.5, bw = "ucv") + geom_vline(data = Low_PC1, aes(xintercept = Q_3), linetype =2) + scale_fill_manual(values = c("blue", "red")) + facet_wrap(~Group, ncol = 1)
+
+```
+
+
+
+Если рассматривать в качестве южной границы распространения нативных видов величину 95% квантиля значений PC1 (вертикальные линии на Рис. ++), то в число видов ареалы которых близки к нативным видам среди бентосных организмов попадает `r species_rda_all %>% filter(Group == "Benthos") %>% filter(PC1 < bent_boundary) %>% filter(Status == "PNIS")%>% nrow `, а среди  планктонных `r species_rda_all %>% filter(Group == "Plankton") %>% filter(PC1 < planct_boundary) %>% filter(Status == "PNIS")%>% nrow ` видов.
+
+Биогеографические характеристики потенциальных NIS приведены в таблице ++.
+
+```{r}
+
+benthic_PNIS <- species_rda_all %>% filter(Group == "Benthos") %>% filter(PC1 < bent_boundary) %>% filter(Status == "PNIS")%>% pull(species)
+
+Planktonic_PNIS <- species_rda_all %>% filter(Group == "Plankton") %>% filter(PC1 < planct_boundary) %>% filter(Status == "PNIS")%>% pull(species)
+
+
+all_spec_biogeogr <- species_stat %>% filter(species %in% c(benthic_PNIS, Planktonic_PNIS)) %>% select(species, Group, Q_low, Median_lat, Q_up)
+
+
+```
+
+
+  Для всех видов, включенных в анализ (нативных и PNIS), производилась оценка значений солености и температуры в точках их встреч, взятых из базы GBIF. Для оценки гидрологических параметров в морских акваториях использовалась ГИС Bio-ORACLE (Tyberghein et al. 2021; Assis et al. 2017). Для каждой точки встреч из этой ГИС извлекали значения Sea water salinity (mean at mean depth) and Sea water temperature (mean at mean depth). Поскольку часть географических локаций видов приходилось на пресноводные акватории, дополнительно проводился поиск данных по температуре с использованием ГИС EarthEnv (Domisch et al., 2015).  Ключевым сезоном потенциального вселения NIS является осень (см. выше), то для оценки температуры в данной локации бралось среднее значение температуры в осенний период. Для локаций, параметры которых оценивались по ГИС EarthEnv значение солености принималось равным нулю.   
+
+Область максимальной концентрации точек, соответствующих нативным видам бентосных организмов, очень хорошо согласуется с границами экологической лицензии акватории Обской губы. В качестве условных границ ниш нативных видов бентоса Обской губы можно рассматривать значения солености в диапазоне 0-10 промилле и 0-10 градусов. В случае нативных видов планктона в указанных границах также представлено некоторое скопление точек. Однако максимальная концентрация точек, хоть и приходится на холдноводный диапазон (меньше 10 градусов), но при этом приходится на нормальные океанические диапазоны солености.
+
+Среди бентосных PNIS отчетливо выделяется зона сгущения точек, попадающая в те же границы, на которые приходится концентрация точек нативных видов. Лишь незначительное количество точек, соответствующих планктонных PNIS попадают в этот диапазон.    
+
+
+
+```{r}
+
+
+
+benthic_env <- read.csv("Data/benthos_environment_all_final.csv")
+benthic_env <- benthic_env[,-1] 
+
+Plankton_env <- read.csv("Data/Plankton_environment_all_final.csv")
+
+benthic_env$Group <- "Benthos"
+Plankton_env$Group <- "Plankton"
+
+all_species_env <- rbind(benthic_env, Plankton_env)
+
+
+env_limits_cold <- env_limits %>% filter(Season %in% c("Winter", "Spring"))
+env_limits_warm <- env_limits %>% filter(Season %in% c("Wummer", "Autumn"))
+
+
+ggplot(all_species_env, aes(x = Temp, y = Sal)) + 
+  geom_point(size = 0.1, position = position_jitter(width = 0.1, height = 0.5)) +
+  facet_grid(Status ~ Group) + 
+  geom_density2d(color = "green") + 
+  geom_rect(aes(xmin = min(env_limits_cold$Temp_low), xmax = max(env_limits_cold$Temp_up), ymin = min(env_limits_cold$Sal_low), ymax = min(env_limits_cold$Sal_up)), fill = NA, color = "blue") +
+  geom_rect(aes(xmin = min(env_limits_warm$Temp_low), xmax = max(env_limits_warm$Temp_up), ymin = min(env_limits_warm$Sal_low), ymax = min(env_limits_warm$Sal_up)), fill = NA, color = "blue") +  
+  geom_rect(aes(xmin = 0, xmax = 10, ymin = 0, ymax = 10), fill = NA, color = "red", linetype = 2)
+
+
+```
+
+
+
+Для количественной оценки вероятности вселения PNIS в условия Обской губы мы ввели величину P_inv. Для вычисления этой оценки мы вычислили количество локаций, полученных из базы GBIF, для которых соленостно-температурные условия приблизительно соответствуют экологической лицензии акватории Обской губы (Соленость:0-10 промилле, Температура 0-10 градусов). Эта величина была отнесена к общему количеству локаций (отмеченных для данного вида в базе GBIF), для которых была проведена оценка солености и температуры. Значения этих величин приведены в таблице ++.
+
+
+
+
+
+```{r}
+all_env_stat <- all_species_env %>% filter(Status == "PNIS") %>% group_by(species, Group) %>% summarise(N_occ_total = n())
+  
+
+all_env_stat_in_env <- all_species_env %>% filter(Status == "PNIS") %>% filter(Sal <= 10 & Temp <= 10) %>% group_by(species, Group) %>% summarise(N_occ_in_env = n())
+
+
+all_occur_probability <- merge(all_env_stat_in_env, all_env_stat)
+
+all_occur_probability <- all_occur_probability %>% mutate(P_inv = round(N_occ_in_env/N_occ_total, 3)) %>% arrange(desc(P_inv)) 
+
+
+
+```
+
+```{r}
+PNIS_table <- merge(all_spec_biogeogr, all_occur_probability, all = T ) %>% arrange(desc(P_inv)) 
+```
+
+
+```{r}
+kable(PNIS_table, caption = "Table ++. Potencial NIS for the Ob estuary ecosystem. Biogeographical characteristics: Q_low - 2.5% quantile of latitude, Median_lat - median of latitude, Q_up - 97.5% quantile of latitude. N_occ_in_env - number of references in GBIF with environmental parameters close to those in the Ob estuary. N_occ_total - total number of references in GBIF with salinity and temperature assessed. ")
+```
+
+
+```{r}
+PNIS_table_short <- PNIS_table %>% filter(N_occ_total > 100 & P_inv >0.05)
+
+```
+
+
+Для формирования short list of PNAS из данной таблицы были удалены те виды, у которых число локаций, для которых произведена оценка параметров среды, была меньше 100. Кроме того, были удалены виды, у которых оценка вероятности инвазии (P_inv) была меньше 5%. Всего в short list  наиболее вероятных ивайдеров вошло `r  nrow(PNIS_table_short)` видов: `r paste(PNIS_table_short %>% pull(species), sep = ", ")`. Ниже приводится их описание с оценкой возможных последствий вселения этих видов в экосистему Обской губы.
+
+
+
+## Описание наиболее вероятных инвайдеров
+
+
+
+
+
+
