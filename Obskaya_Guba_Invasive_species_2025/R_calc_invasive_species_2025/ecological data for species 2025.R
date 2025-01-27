@@ -12,14 +12,19 @@ library(dplyr)
 ## Дополнительные PNIS 2025
 # Сводим все встречи дополнительных PNIS в один датафрейм
 
-file_list <- dir("Data/Additional_PNIS_2025/")
+path <- "Data/Additional_Native_Phytoplancton/"
+  
+
+file_list <- dir(path)
+
 
 df_all_PNIS <- NULL
   
   
 for(file_name in file_list){
-  df <- read.table(file = paste("Data/Additional_PNIS_2025/", file_name, sep =""), sep = ";", header = T)
+  df <- read.table(file = paste(path, file_name, sep =""), sep = ";", header = T)
   df_all_PNIS <- rbind(df_all_PNIS, df)
+  print(file_name)
 }
 
 
@@ -86,10 +91,21 @@ my.sites
 my.sites_points <- as.matrix(my.sites[,-1])
 
 
-library(raster)
-
 my.sites.environment <- data.frame(species = my.sites$species, Lat = my.sites$Lat, Lon = my.sites$Lon, Temp = extract(temp,my.sites_points), Sal = extract(salinity, my.sites_points) )
 
+
+dat_for_species <-
+my.sites.environment %>% 
+  group_by(species) %>% 
+  summarise(Marine = sum(!is.na(Sal)), Not_Marine = sum(is.na(Sal) & is.na(Temp))) %>% 
+  mutate(Not_Marine_Prop = Not_Marine/(Marine + Not_Marine)) %>% 
+  arrange(Not_Marine_Prop)
+
+
+dat_for_species %>% 
+  filter(Not_Marine_Prop >= 0.5) %>% 
+  pull(species) -> 
+  not_marine_species
 
 
 my.sites.environment_marine <- 
@@ -99,14 +115,22 @@ my.sites.environment_marine <-
 names(my.sites.environment_marine) <- c("species", "Lat", "Lon", "Temp", "Sal")
 
 # Записываем данные по встречаемостям PNIS и температуре и солености в морских местообитаниях
-write.csv(my.sites.environment_marine, "Data/additional_PNIS_2025_marine.csv")
+write.csv(my.sites.environment_marine, "Data/additional_Native_Phytoplancton_2025_marine.csv")
 
 
 
 
 
 
-my.sites.environment_not_marine <- my.sites.environment %>%  filter(is.na(Temp) & is.na(Sal))
+my.sites.environment_not_marine <- 
+  my.sites.environment %>%  
+  filter(is.na(Temp) & is.na(Sal))
+
+my.sites.environment_not_marine <-
+  my.sites.environment_not_marine %>% 
+  filter(species %in% not_marine_species)
+
+nrow(my.sites.environment_not_marine)
 
 
 my.sites.environment_not_marine <- my.sites.environment_not_marine[,1:3] 

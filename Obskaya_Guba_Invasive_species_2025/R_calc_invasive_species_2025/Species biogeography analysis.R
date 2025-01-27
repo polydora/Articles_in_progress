@@ -13,11 +13,20 @@ library(readxl)
 
 # add_PNIS <- read.csv("Data/additional_PNIS.csv")
 
-add_PNIS <- read_excel("Data/export_gisd_PNIS.xlsx")
+# add_PNIS <- read_excel("Data/export_gisd_PNIS.xlsx")
 
-add_PNIS <- 
-  add_PNIS %>% 
-  filter(From == "CMI_report")
+add_PNIS <- read_excel("Data/Additional_Native_and_PNIS_species.xlsx")
+
+# add_PNIS <- 
+#   add_PNIS %>% 
+#   filter(From == "CMI_report")
+
+add_PNIS <-
+  add_PNIS %>%
+  filter(Status == "DNA_PNIS" & Group == "Phytoplancton")
+
+
+
 
 for(name in add_PNIS$Species){
 
