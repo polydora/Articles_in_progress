@@ -12,7 +12,7 @@ library(dplyr)
 ## Дополнительные PNIS 2025
 # Сводим все встречи дополнительных PNIS в один датафрейм
 
-path <- "Data/Additional_Native_Phytoplancton/"
+path <- "Data/Additional_DNA_PNIS_Plancton/"
   
 
 file_list <- dir(path)
@@ -94,28 +94,29 @@ my.sites_points <- as.matrix(my.sites[,-1])
 my.sites.environment <- data.frame(species = my.sites$species, Lat = my.sites$Lat, Lon = my.sites$Lon, Temp = extract(temp,my.sites_points), Sal = extract(salinity, my.sites_points) )
 
 
-dat_for_species <-
-my.sites.environment %>% 
-  group_by(species) %>% 
-  summarise(Marine = sum(!is.na(Sal)), Not_Marine = sum(is.na(Sal) & is.na(Temp))) %>% 
-  mutate(Not_Marine_Prop = Not_Marine/(Marine + Not_Marine)) %>% 
-  arrange(Not_Marine_Prop)
+# dat_for_species <-
+# my.sites.environment %>% 
+#   group_by(species) %>% 
+#   summarise(Marine = sum(!is.na(Sal)), Not_Marine = sum(is.na(Sal) & is.na(Temp))) %>% 
+#   mutate(Not_Marine_Prop = Not_Marine/(Marine + Not_Marine)) %>% 
+#   arrange(Not_Marine_Prop)
 
+# 
+# dat_for_species %>% 
+#   filter(Not_Marine_Prop >= 0.5) %>% 
+#   pull(species) -> 
+#   not_marine_species
+# 
+# 
 
-dat_for_species %>% 
-  filter(Not_Marine_Prop >= 0.5) %>% 
-  pull(species) -> 
-  not_marine_species
-
-
-my.sites.environment_marine <- 
-  my.sites.environment %>%  
+my.sites.environment_marine <-
+  my.sites.environment %>%
   filter(!is.na(Temp) & !is.na(Sal))
 
 names(my.sites.environment_marine) <- c("species", "Lat", "Lon", "Temp", "Sal")
 
 # Записываем данные по встречаемостям PNIS и температуре и солености в морских местообитаниях
-write.csv(my.sites.environment_marine, "Data/additional_Native_Phytoplancton_2025_marine.csv")
+write.csv(my.sites.environment_marine, "Data/DNA_PNIS_Benthos_2025_marine.csv")
 
 
 
@@ -142,9 +143,9 @@ my.sites.environment_not_marine <- my.sites.environment_not_marine[,1:3]
 
 # Оценка температуры для тех точек, которые предположитеьно не являются морскими
 
-dir <- "D:/Data_LMBE/Obskaya Bay additional data/freshwater_variables/"
-dir.create(dir)
-setwd(dir)
+# dir <- "D:/Data_LMBE/Obskaya Bay additional data/freshwater_variables/"
+# dir.create(dir)
+# setwd(dir)
 
 library(raster); 
 library(ncdf4); 
@@ -152,14 +153,14 @@ library(maps);
 library(foreach); 
 library(doParallel)
 
-temp_avg <- brick("monthly_tmin_average.nc")
+temp_avg <- brick("D:/Data_LMBE/Obskaya Bay additional data/freshwater_variables/monthly_tmin_average.nc")
 
 ### Check the number of layers
 nlayers(temp_avg)
 
 
 ### Check the metadata for units, scale factors etc.
-nc_open("monthly_tmin_average.nc")
+nc_open("D:/Data_LMBE/Obskaya Bay additional data/freshwater_variables/monthly_tmin_average.nc")
 
 ### Add layer names. See Table S1 or the ReadMe for the sequence of the single layers 
 names(temp_avg) <- paste(c("temp_avg"), sprintf("%02d", seq(1:12)), sep="_")
@@ -169,8 +170,19 @@ library(raster)
 
 # extract(temp_avg,my.sites.environment_not_marine[1000:1200,2:3])
 
-my.sites.stream <- data.frame(species = my.sites.environment_not_marine$species, extract(temp_avg,my.sites.environment_not_marine[,2:3]))
+my.sites.stream <- NULL
 
+for(spec_name in unique(my.sites.environment_not_marine$species)){
+  print(spec_name)
+  df <- 
+    my.sites.environment_not_marine %>% 
+    filter(species == spec_name) 
+  df2 <- data.frame(species = df$species, extract(temp_avg,df[,2:3]))
+  my.sites.stream <- rbind(my.sites.stream, df2)
+}
+  
+  
+  
 my.sites.stream_cleaned <- cbind(my.sites.environment_not_marine, my.sites.stream[,-1])
 
 
