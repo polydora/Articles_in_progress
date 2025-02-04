@@ -15,7 +15,7 @@ plancton_species$Group <- "Plancton"
 all_species <- rbind(benthic_species, plancton_species)
 
 
-species_list <- unique(all_species$species)
+species_list <- unique(PNIS_table_short$species)
 
 taxonomy <- wormsbynames(taxon_names = species_list, marine_only = F)
 
@@ -27,4 +27,4 @@ taxonomy <- taxonomy %>% select(scientificname, authority, kingdom, phylum, clas
 
 
 
-write.csv(taxonomy,"Data/taxonomy2.csv", row.names = F )
+write.csv(taxonomy,"Data/taxonomy_PNIS.csv", row.names = F )

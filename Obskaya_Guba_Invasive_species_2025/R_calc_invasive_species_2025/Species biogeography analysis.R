@@ -17,6 +17,7 @@ library(readxl)
 
 # add_PNIS <- read_excel("Data/Additional_Native_and_PNIS_species.xlsx")
 
+add_PNIS <- read_excel("Data/Additional_PNIS_Phytoplancton_2025.xlsx")
 
 # add_PNIS <- 
 #   add_PNIS %>% 
@@ -24,9 +25,8 @@ library(readxl)
 
 # add_PNIS <-
 #   add_PNIS %>%
-#   filter(Status == "PNIS" & Group == "Plancton")
+#   filter(Status == "DNA_PNIS" & Group == "Phytoplancton")
 
-add_PNIS <- data.frame(Species = c("Cylichna occulta", "Cylichna alba"), Group = "Benthos", Status = "DNA_PNIS")
 
 
 
@@ -35,7 +35,7 @@ for(name in add_PNIS$Species){
   df_add_PNIS <- occ2df(occ(query = name, from = "gbif", limit = 5000, has_coords = TRUE))
   df_add_PNIS_short <- 
     df_add_PNIS %>% 
-    dplyr::select(name, longitude, latitude) %>% unique
+    select(name, longitude, latitude) %>% unique
   names(df_add_PNIS_short) <- c("species", "lon", "lat")
   df_add_PNIS_short$species <- name
   write.table(file = paste("Data/", name,".csv", sep = ""), x = df_add_PNIS_short, sep = ";", row.names = F)

@@ -12,7 +12,7 @@ library(dplyr)
 ## Дополнительные PNIS 2025
 # Сводим все встречи дополнительных PNIS в один датафрейм
 
-path <- "Data/Additional_DNA_PNIS_Plancton/"
+path <- "Data/Additional_PNIS_Phytoplancton/"
   
 
 file_list <- dir(path)
@@ -94,29 +94,28 @@ my.sites_points <- as.matrix(my.sites[,-1])
 my.sites.environment <- data.frame(species = my.sites$species, Lat = my.sites$Lat, Lon = my.sites$Lon, Temp = extract(temp,my.sites_points), Sal = extract(salinity, my.sites_points) )
 
 
-# dat_for_species <-
-# my.sites.environment %>% 
-#   group_by(species) %>% 
-#   summarise(Marine = sum(!is.na(Sal)), Not_Marine = sum(is.na(Sal) & is.na(Temp))) %>% 
-#   mutate(Not_Marine_Prop = Not_Marine/(Marine + Not_Marine)) %>% 
-#   arrange(Not_Marine_Prop)
+dat_for_species <-
+my.sites.environment %>% 
+  group_by(species) %>% 
+  summarise(Marine = sum(!is.na(Sal)), Not_Marine = sum(is.na(Sal) & is.na(Temp))) %>% 
+  mutate(Not_Marine_Prop = Not_Marine/(Marine + Not_Marine)) %>% 
+  arrange(Not_Marine_Prop)
 
-# 
-# dat_for_species %>% 
-#   filter(Not_Marine_Prop >= 0.5) %>% 
-#   pull(species) -> 
-#   not_marine_species
-# 
-# 
 
-my.sites.environment_marine <-
-  my.sites.environment %>%
+dat_for_species %>% 
+  filter(Not_Marine_Prop >= 0.5) %>% 
+  pull(species) -> 
+  not_marine_species
+
+
+my.sites.environment_marine <- 
+  my.sites.environment %>%  
   filter(!is.na(Temp) & !is.na(Sal))
 
 names(my.sites.environment_marine) <- c("species", "Lat", "Lon", "Temp", "Sal")
 
 # Записываем данные по встречаемостям PNIS и температуре и солености в морских местообитаниях
-write.csv(my.sites.environment_marine, "Data/DNA_PNIS_Benthos_2025_marine.csv")
+write.csv(my.sites.environment_marine, "Data/additional_PNIS_Phytoplancton_2025_marine.csv")
 
 
 
@@ -127,9 +126,9 @@ my.sites.environment_not_marine <-
   my.sites.environment %>%  
   filter(is.na(Temp) & is.na(Sal))
 
-my.sites.environment_not_marine <-
-  my.sites.environment_not_marine %>% 
-  filter(species %in% not_marine_species)
+# my.sites.environment_not_marine <-
+#   my.sites.environment_not_marine %>% 
+#   filter(species %in% not_marine_species)
 
 nrow(my.sites.environment_not_marine)
 
@@ -160,7 +159,7 @@ nlayers(temp_avg)
 
 
 ### Check the metadata for units, scale factors etc.
-nc_open("D:/Data_LMBE/Obskaya Bay additional data/freshwater_variables/monthly_tmin_average.nc")
+nc_open("monthly_tmin_average.nc")
 
 ### Add layer names. See Table S1 or the ReadMe for the sequence of the single layers 
 names(temp_avg) <- paste(c("temp_avg"), sprintf("%02d", seq(1:12)), sep="_")
@@ -170,19 +169,8 @@ library(raster)
 
 # extract(temp_avg,my.sites.environment_not_marine[1000:1200,2:3])
 
-my.sites.stream <- NULL
+my.sites.stream <- data.frame(species = my.sites.environment_not_marine$species, extract(temp_avg,my.sites.environment_not_marine[,2:3]))
 
-for(spec_name in unique(my.sites.environment_not_marine$species)){
-  print(spec_name)
-  df <- 
-    my.sites.environment_not_marine %>% 
-    filter(species == spec_name) 
-  df2 <- data.frame(species = df$species, extract(temp_avg,df[,2:3]))
-  my.sites.stream <- rbind(my.sites.stream, df2)
-}
-  
-  
-  
 my.sites.stream_cleaned <- cbind(my.sites.environment_not_marine, my.sites.stream[,-1])
 
 
@@ -202,30 +190,31 @@ my.sites.stream_cleaned_final$Sal <- 0
 write.table(my.sites.stream_cleaned_final, file = "clipboard", sep = "\t")
 
 
-#######
+####### Получение данных для Обской губы для будущего для точек, соответствующих станциям 2020 года в Обской губе
+
+library(raster); 
+library(ncdf4); 
+library(maps); 
+library(foreach); 
+library(doParallel)
+library(readxl)
 
 
+stations_2020 <- read_excel("Data/Obskaya_bay_2020.xlsx", sheet = "Station parameters")
+
+my.sites <- 
+  stations_2020 %>% 
+  dplyr::select(Station, Long, Lat)
+  
+
+temp <- brick("D:/Data_LMBE/BIO_Oracle_predictors/Future.Temperature.Mean.Depth.nc")
+sal <- brick("D:/Data_LMBE/BIO_Oracle_predictors/Future.Salinity.Mean.Depth.nc")
 
 
+ob_temp_sal_future_data <- 
+  data.frame(forecast_points, Temp = extract(temp,forecast_points), Sal = extract(sal,forecast_points))
 
+names(ob_temp_sal_future_data) <- c("lon", "lat", "Future_Temp", "Future_Sal")
 
-
-
-
-library(ggplot2)
-
-ggplot(my.sites.environment_marine, aes(x = Temp, y = Sal)) + geom_point() + geom_density_2d()
-
-
-PNIS_selected <- my.sites.environment %>% filter(BO2_tempmean_bdmean<8 & BO2_salinitymean_bdmean < 10) %>% group_by(species) %>% summarise(N = n())
-
-
-unique(PNIS_selected$species)
-
-
-
-
-
-
-
-
+ggplot(ob_temp_sal_future_data, aes(x = Future_Temp, y = Future_Sal)) + 
+  geom_point()
