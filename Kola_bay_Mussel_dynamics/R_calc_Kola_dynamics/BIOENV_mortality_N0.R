@@ -387,3 +387,27 @@ for(i in 1:nrow(generation_limits)){
   
 }
 
+
+df_lm_filtered %>%
+  filter(term == "(Intercept)") %>%
+  dplyr::  select(Generation, estimate) %>%
+  mutate(Anundance_0 = exp(estimate)) %>% 
+  select(-Anundance_0) %>% 
+  rename(N0 = estimate) ->
+  recruitment
+
+
+# Вытаскиваем данные по угловым коэфициентам
+df_lm_filtered %>%
+  filter(term == "Age") %>% 
+  dplyr::  select(Generation, estimate) %>% 
+  rename(M = estimate)-> 
+  mortality
+
+mort_No <- merge(recruitment, mortality)
+
+library(vegan)
+
+bioenv_res <- bioenv(comm = mort_No[,-1], env = generation_limits %>% select(-c(Generation, min_Year, max_Year, N_lifespan, B_lifespan)), method = "spearman", index = "euclidean", metric = "euclidean", parallel = 2)
+
+

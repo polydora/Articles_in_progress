@@ -88,11 +88,11 @@ df %>%
   filter(Generation %in% c(1995:2014)) %>% 
   group_modify( ~ tidy(lm(log(mean_N) ~ Age, data = .))) -> df_lm_filtered 
 
-# df_lm_filtered %>%
-#   filter(term == "(Intercept)") %>% 
-#   dplyr::  select(Generation, estimate) %>% 
-#   mutate(Anundance_0 = exp(estimate)) -> 
-#   recruitment
+df_lm_filtered %>%
+  filter(term == "(Intercept)") %>%
+  dplyr::  select(Generation, estimate) %>%
+  mutate(Anundance_0 = exp(estimate)) ->
+  recruitment
 
 
 # Вытаскиваем данные по угловым коэфициентам
