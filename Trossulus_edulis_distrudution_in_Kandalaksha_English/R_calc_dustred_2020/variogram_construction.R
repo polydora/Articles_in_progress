@@ -32,9 +32,9 @@ E <- resid(fittedModel, type = "pearson")
 
 
 
-df <- data.frame(x = myt_full$Lon, y = myt_full$Lat, z = E)
+df <- data.frame(x = myt_site_substr$Lon, y = myt_site_substr$Lat, z = E)
 
-df <- data.frame(x = testData$x, y = testData$y, z = E)
+# df <- data.frame(x = testData$x, y = testData$y, z = E)
 
 coordinates(df)= ~ x+y
 
