@@ -468,7 +468,7 @@ myt_full <-
 
 Mod_gam <- gam(Ptros ~ s(Salinity, bs = "cs") + s(Log_Min_dist_river, bs = "cs") + s(Log_Fetch, bs = "cs") + s(Log_Min_dist_port, bs = "cs") + Position + River_Size + Port_Status + s(Site, k = Total_site, bs = "re"), method = "REML", family = betar(link = "logit"), data = myt_full )
 
-Mod_gam <- gam(Ptros ~ s(Salinity, bs = "cs") + s(Log_Min_dist_river, bs = "cs") + s(Log_Fetch, bs = "cs") + s(Log_Min_dist_port, bs = "cs") + Position + River_Size + Port_Status + s(Site, k = Total_site, bs = "re"), method = "REML", family = betar(link = "logit"), data = myt_full )
+Mod_gam <- gam(Ptros ~ s(Salinity, bs = "cs") + s(Log_Min_dist_river, bs = "cs") + s(Log_Fetch, bs = "cs") + s(Log_Min_dist_port, bs = "cs") + Position + River_Size + Port_Status, method = "REML", family = betar(link = "logit"), data = myt_site_substr )
 
 
 
@@ -516,7 +516,7 @@ testQuantiles(simulationOutput)
 
 plotResiduals(simulationOutput, form = myt_full$Position)
 
-testSpatialAutocorrelation(simulationOutput, x = myt_full$Lon2, y = myt_full$Lat2)
+testSpatialAutocorrelation(simulationOutput, x = myt_site_substr$Lon, y = myt_site_substr$Lat)
 
 testQuantiles(simulationOutput)
 
@@ -528,7 +528,7 @@ testOutliers(simulationOutput)
 
 testUniformity(simulationOutput, )
 
-testCategorical(simulationOutput, catPred = myt_full$Position)
+testCategorical(simulationOutput, catPred = myt_site_substr$Position)
 
 E_dharm <- residuals(simulationOutput)
 
@@ -546,18 +546,18 @@ qplot(Pred_pi, E_dharm) + geom_smooth()+ geom_hline(yintercept = 0.5)
 
 
 
-qplot(myt_full$Ptros, E_pears) + geom_smooth() 
+qplot(myt_site_substr$Ptros, E_pears) + geom_smooth() 
 
-qplot(myt_full$Ptros, Pred_pi ) + geom_smooth() + geom_abline()
+qplot(myt_site_substr$Ptros, Pred_pi ) + geom_smooth() + geom_abline()
 
-hist(abs(myt_full$Ptros-Pred_pi))
-median(abs(myt_full$Ptros-Pred_pi))
+hist(abs(myt_site_substr$Ptros-Pred_pi))
+median(abs(myt_site_substr$Ptros-Pred_pi))
 
-mod_foo <- lm(Pred_pi ~ myt_full$Ptros)
+mod_foo <- lm(Pred_pi ~ myt_site_substr$Ptros)
 
 
 
-qplot(myt_full$Prop_T, Pred_pi) + geom_smooth() + geom_abline()
+qplot(myt_site_substr$Prop_T, Pred_pi) + geom_smooth() + geom_abline()
 
 qplot(E_pears, E_dharm)
 
@@ -593,12 +593,12 @@ sm <- sm %>%
 dd <- partial_residuals(Mod_gam)
 
 
-myt_full <- cbind(myt_full, partial_residuals(Mod_gam))
+myt_site_substr <- cbind(myt_site_substr, partial_residuals(Mod_gam))
 
 
 # Recalculation of smoothers into probability
-myt_full <- 
-  myt_full %>% 
+myt_site_substr <- 
+  myt_site_substr %>% 
   mutate(Pi_Salinity = logit_back(`s(Salinity)` + coef(Mod_gam)[1]),
          Pi_Min_dist_river = logit_back(`s(Log_Min_dist_river)` + coef(Mod_gam)[1]),
          Pi_Average_Fetch = logit_back(`s(Log_Fetch)` + coef(Mod_gam)[1]),
@@ -617,7 +617,7 @@ Pl_sal_smoother <-
   filter(.smooth == "s(Salinity)") %>%
   ggplot() +
   geom_point(aes(x = Salinity, y = `s(Salinity)`, color = Position),
-             data = myt_full, cex = 1, colour = "steelblue3") +
+             data = myt_site_substr, cex = 1, colour = "steelblue3") +
   geom_rug(aes(x = Salinity),
            data = myt_full,
            sides = "b", length = grid::unit(0.02, "npc")) +
@@ -842,7 +842,7 @@ sum_Model_1 <- summary(Mod_gam)
 
 # sum_Model_2 <- summary(Mod_gam_reduced)
 
-Mod_dummy <- lm(Prop_T ~ Salinity + Min_dist_river + Fetch + Min_dist_port + Position + River_Size + Port_Status,  data = myt_full )
+Mod_dummy <- lm(Prop_T ~ Salinity + Min_dist_river + Fetch + Min_dist_port + Position + River_Size + Port_Status,  data = myt_site_substr )
 
 library(car)
 
