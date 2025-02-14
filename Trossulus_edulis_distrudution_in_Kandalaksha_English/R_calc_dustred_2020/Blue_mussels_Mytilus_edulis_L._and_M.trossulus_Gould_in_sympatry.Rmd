@@ -629,7 +629,22 @@ myt_full <-
 #Predicted values in the terms of smoothers
 
 
+# Technically this should read "Partial effect" (and I'll be fixing this shortly). This is the smooth effect of the covariate on the response conditional upon the other estimated terms.
+
+# Most smooths in {mgcv} are subject to a sum-to-zero identifiability constraint (so we can include an intercept in the model, which is especially useful when we have factor parametric terms in the model also), so they are centred about 0. The 0 line then means the overall mean (on the link scale) of the response (or the reference levels if factor parametric terms are involved in the model); negative values on the axis indicate where the effect of the covariate reduces the response below the average value, and positive values on the axis indicate those covariate values where the response is increased above the average. All conditional upon the other estimated model terms.
+
+
+# data_slice(Mod_gam,  Salinity = evenly(Salinity, n = 100)) %>% 
+#   fitted_values(Mod_gam, data = ., scale = "response", exclude = "s(Site)") %>% 
+#   ggplot(aes(x = Salinity, y = .fitted)) +
+#   geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci), alpha = 0.2) +
+#    geom_line() + 
+#   geom_point(data = myt_full, aes(x = Salinity, y = `s(Salinity)`, color = Position), cex = 1, colour = "steelblue3") 
+
   
+
+
+# overview(Mod_gam)
 
 Pl_sal_smoother <-
   sm %>%
@@ -642,28 +657,43 @@ Pl_sal_smoother <-
               alpha = 0.2) +
   geom_line(aes(x = Salinity, y = .estimate), lwd = 1) +
   labs(y = "Partial effect", x = "Salinity") +
-  geom_hline(yintercept = 0, linetype = 2) +
-  theme_bw() +
-  geom_point(data = myt_full, aes(x = Salinity, y = `s(Salinity)`, color = Position), cex = 1, colour = "steelblue3") 
+  # geom_hline(yintercept = 0, linetype = 2) +
+  theme_bw() 
+  # geom_point(data = myt_full, aes(x = Salinity, y = `s(Salinity)`, color = Position), cex = 1, colour = "steelblue3") 
 
-myt_full$`s(Salinity)`
+
 
 
 Pl_riv_dist_smoother <- 
     sm %>%
-  filter(smooth == "s(Log_Min_dist_river)") %>%
+  filter(.smooth == "s(Log_Min_dist_river)") %>%
   ggplot() +
-  geom_point(aes(x = Log_Min_dist_river, y = `s(Log_Min_dist_river)`, color = Position),
-             data = myt_full, cex = 1, colour = "steelblue3") +
-  geom_rug(aes(x = (Log_Min_dist_river)),
+    geom_rug(aes(x = Log_Min_dist_river),
            data = myt_full,
            sides = "b", length = grid::unit(0.02, "npc")) +
-  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci, x = Log_Min_dist_river),
+  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = Log_Min_dist_river),
               alpha = 0.2) +
-    geom_line(aes(x = Log_Min_dist_river, y = est), lwd = 1) +
+  geom_line(aes(x = Log_Min_dist_river, y = .estimate), lwd = 1) +
   labs(y = "Partial effect", x = "Log Distance to the nearest river (km)") +
-  geom_hline(yintercept = 0, linetype = 2) +
-  theme_bw()
+  # geom_hline(yintercept = 0, linetype = 2) +
+  theme_bw() +
+  ylim(-0.6, 1.6)
+# 
+#   
+#       sm %>%
+#   filter(smooth == "s(Log_Min_dist_river)") %>%
+#   ggplot() +
+#   geom_point(aes(x = Log_Min_dist_river, y = `s(Log_Min_dist_river)`, color = Position),
+#              data = myt_full, cex = 1, colour = "steelblue3") +
+#   geom_rug(aes(x = (Log_Min_dist_river)),
+#            data = myt_full,
+#            sides = "b", length = grid::unit(0.02, "npc")) +
+#   geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci, x = Log_Min_dist_river),
+#               alpha = 0.2) +
+#     geom_line(aes(x = Log_Min_dist_river, y = est), lwd = 1) +
+#   labs(y = "Partial effect", x = "Log Distance to the nearest river (km)") +
+#   geom_hline(yintercept = 0, linetype = 2) +
+#   theme_bw()
 # +
 #   ylim(-0.5, 0.5)
 
@@ -672,38 +702,67 @@ Pl_riv_dist_smoother <-
   
 
 Pl_port_dist_smoother <-
-     sm %>%
-  filter(smooth == "s(Log_Min_dist_port)") %>%
+    sm %>%
+  filter(.smooth == "s(Log_Min_dist_port)") %>%
   ggplot() +
-  geom_point(aes(x = Log_Min_dist_port, y = `s(Log_Min_dist_port)`, color = Position),
-             data = myt_full, cex = 1, colour = "steelblue3") +
-  geom_rug(aes(x = Log_Min_dist_port),
+    geom_rug(aes(x = Log_Min_dist_port),
            data = myt_full,
            sides = "b", length = grid::unit(0.02, "npc")) +
-  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci, x = Log_Min_dist_port),
+  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = Log_Min_dist_port),
               alpha = 0.2) +
-    geom_line(aes(x = Log_Min_dist_port, y = est), lwd = 1) +
+  geom_line(aes(x = Log_Min_dist_port, y = .estimate), lwd = 1) +
   labs(y = "Partial effect", x = "Log Distance to the nearest port (km)") +
-  geom_hline(yintercept = 0, linetype = 2) +
+  # geom_hline(yintercept = 0, linetype = 2) +
   theme_bw() 
+
+  
+  #      sm %>%
+  # filter(smooth == "s(Log_Min_dist_port)") %>%
+  # ggplot() +
+  # geom_point(aes(x = Log_Min_dist_port, y = `s(Log_Min_dist_port)`, color = Position),
+  #            data = myt_full, cex = 1, colour = "steelblue3") +
+  # geom_rug(aes(x = Log_Min_dist_port),
+  #          data = myt_full,
+  #          sides = "b", length = grid::unit(0.02, "npc")) +
+  # geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci, x = Log_Min_dist_port),
+  #             alpha = 0.2) +
+  #   geom_line(aes(x = Log_Min_dist_port, y = est), lwd = 1) +
+  # labs(y = "Partial effect", x = "Log Distance to the nearest port (km)") +
+  # geom_hline(yintercept = 0, linetype = 2) +
+  # theme_bw() 
     
 
 Pl_fetch_smoother <-
-  sm %>%
-  filter(smooth == "s(Log_Fetch)") %>%
+    sm %>%
+  filter(.smooth == "s(Log_Fetch)") %>%
   ggplot() +
-  geom_point(aes(x = Log_Fetch, y = `s(Log_Fetch)`, color = Position),
-             data = myt_full, cex = 1, colour = "steelblue3") +
-  geom_rug(aes(x = Log_Fetch),
+    geom_rug(aes(x = Log_Fetch),
            data = myt_full,
            sides = "b", length = grid::unit(0.02, "npc")) +
-  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci, x = Log_Fetch),
+  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = Log_Fetch),
               alpha = 0.2) +
-    geom_line(aes(x = Log_Fetch, y = est), lwd = 1) +
+  geom_line(aes(x = Log_Fetch, y = .estimate), lwd = 1) +
   labs(y = "Partial effect", x = "Log Fetch (km)") +
-  geom_hline(yintercept = 0, linetype = 2) +
-  theme_bw()
+  # geom_hline(yintercept = 0, linetype = 2) +
+  theme_bw() 
+
   
+  
+  #   sm %>%
+  # filter(smooth == "s(Log_Fetch)") %>%
+  # ggplot() +
+  # geom_point(aes(x = Log_Fetch, y = `s(Log_Fetch)`, color = Position),
+  #            data = myt_full, cex = 1, colour = "steelblue3") +
+  # geom_rug(aes(x = Log_Fetch),
+  #          data = myt_full,
+  #          sides = "b", length = grid::unit(0.02, "npc")) +
+  # geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci, x = Log_Fetch),
+  #             alpha = 0.2) +
+  #   geom_line(aes(x = Log_Fetch, y = est), lwd = 1) +
+  # labs(y = "Partial effect", x = "Log Fetch (km)") +
+  # geom_hline(yintercept = 0, linetype = 2) +
+  # theme_bw()
+  # 
 
 
 ##################################
@@ -964,7 +1023,7 @@ width(j = 1:5, width = c(8, 4,2,2,2), unit = "cm")
 
 Pl_Model_1 <- plot_grid(Pl_port_dist_smoother, Pl_fetch_smoother, Pl_riv_dist_smoother,  Pl_sal_smoother, Pl_Small_Pi, Pl_Large_Pi,  ncol = 2, labels = "AUTO")
 
-Pl_Model_1
+# Pl_Model_1
 
 # ggsave(filename = "Fig_2.svg", plot = Pl_Model_1, width = 297,height = 210, units = "mm", dpi = 600)
 
@@ -1008,31 +1067,31 @@ The ability of **Model 1** to classify samples into *ME*- and *MT*-dominated one
 
 
 
-```{r Salinity_discription_values }
-# Different values needed for salinity effect discription
+<!-- ```{r Salinity_discription_values } -->
+<!-- # Different values needed for salinity effect discription -->
 
-sal_smoother <- 
-sm %>% 
-  filter(smooth == "s(Salinity)")  
+<!-- sal_smoother <-  -->
+<!-- sm %>%  -->
+<!--   filter(smooth == "s(Salinity)")   -->
 
-sm_low_salinity <- 
-# sal_smoother %>% filter(est > median(est)) %>% filter(Salinity < 20) 
-sal_smoother %>% filter(est > 0) %>% filter(Salinity < 20) 
-
-  
-Min_salinity <- round(max(sm_low_salinity$Salinity))
-
-sm_high_salinity <- 
-sal_smoother %>% filter(est > 0) %>% filter(Salinity > 20) 
-
-Max_salinity <- round(min(sm_high_salinity$Salinity))
+<!-- sm_low_salinity <-  -->
+<!-- # sal_smoother %>% filter(est > median(est)) %>% filter(Salinity < 20)  -->
+<!-- sal_smoother %>% filter(est > 0) %>% filter(Salinity < 20)  -->
 
 
-Number_sites_low_salinity <- myt_site %>% filter(Salinity <= round(Min_salinity, 0)) %>% nrow()
+<!-- Min_salinity <- round(max(sm_low_salinity$Salinity)) -->
 
-Number_sites_high_salinity <- myt_site %>% filter(Salinity >= round(Max_salinity, 0)) %>% nrow()
+<!-- sm_high_salinity <-  -->
+<!-- sal_smoother %>% filter(est > 0) %>% filter(Salinity > 20)  -->
 
-```
+<!-- Max_salinity <- round(min(sm_high_salinity$Salinity)) -->
+
+
+<!-- Number_sites_low_salinity <- myt_site %>% filter(Salinity <= round(Min_salinity, 0)) %>% nrow() -->
+
+<!-- Number_sites_high_salinity <- myt_site %>% filter(Salinity >= round(Max_salinity, 0)) %>% nrow() -->
+
+<!-- ``` -->
 
 
 
@@ -1156,7 +1215,7 @@ all_sites <-
 
 abundance <- 
   all_sites %>% 
-  select(Log_Bottom_D_T, Log_Bottom_D_E, Log_Algae_D_T, Log_Algae_D_E)
+  dplyr::select(Log_Bottom_D_T, Log_Bottom_D_E, Log_Algae_D_T, Log_Algae_D_E)
 
 # abundance <- 
 #   all_sites %>% 
@@ -1208,15 +1267,22 @@ Mod_Dif <- gam(Dif_Ptros ~ s(Total_Ptros) +  s(PC1) + s(PC2), method = "REML", d
 
 
 # foo_mod <- lm(Dif_Ptros ~ Total_Ptros + PC1 + PC2, data = all_sites)
+
+# foo_mod <- lm(Dif_Ptros ~ Total_Ptros + Log_D_T + Log_D_E, data = all_sites)
 # 
 # vif(foo_mod)
 
 # appraise(Mod_Dif)
 # summary(Mod_Dif)
 
-# draw(Mod_Dif, residuals = T)
+# library(DHARMa)
+# simulateResiduals(Mod_Dif, plot = T)
+# 
+# summary(Mod_Dif)
 
-# draw(Mod_Dif, residuals = TRUE)
+# draw(Mod_Dif, parametric = T, nrow = 1)
+
+# draw(Mod_Dif, residuals = TRUE, parametric = T)
 
 summ_Mod_Dif <- tidy(Mod_Dif)
 
@@ -1230,12 +1296,12 @@ all_sites <-  add_residuals(data = all_sites,model = Mod_Dif, value = "Residuals
 
 Pl_Dif_model <- 
 sm %>% 
-  filter(smooth == "s(Total_Ptros)") %>% 
-  ggplot(., aes(x = Total_Ptros, y = est)) +
+  filter(.smooth == "s(Total_Ptros)") %>% 
+  ggplot(., aes(x = Total_Ptros, y = .estimate)) +
   geom_line(color = "blue", linewidth = 1) +
-  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), alpha=0.2 ) +
+  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci), alpha=0.2 ) +
   # geom_hline(yintercept = median(sm$est), linetype = 2) +
-  geom_point(data = all_sites, aes(y = Residuals),cex = 1, colour = "steelblue3") +
+  # geom_point(data = all_sites, aes(y = Residuals),cex = 1, colour = "steelblue3") +
   labs(x = "Ptros in Site", y = "Partial effect")+
   geom_hline(yintercept = 0, linetype = 2)
  
@@ -1262,13 +1328,13 @@ Pred_Mod_D_T_PC1$D_T_predicted <- exp(Pred_Mod_D_T_PC1$Log_D_T_predicted) - 1
 
 Pl_Dif_model_PC1 <- 
 sm %>% 
-  filter(smooth == "s(PC1)") %>% 
-  ggplot(., aes(x = PC1, y = est)) +
+  filter(.smooth == "s(PC1)") %>% 
+  ggplot(., aes(x = PC1, y = .estimate)) +
   geom_line(color = "blue", linewidth = 1) +
-  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), alpha=0.2 ) +
+  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci), alpha=0.2 ) +
   # geom_hline(yintercept = median(sm$est), linetype = 2) +
   geom_textbox(data = df_PC1, aes(x, y, label = label), width = grid::unit(0.7, "npc"), size = 2.3) +
-  geom_point(data = all_sites, aes(y = Residuals),cex = 1, colour = "steelblue3") +
+  # geom_point(data = all_sites, aes(y = Residuals),cex = 1, colour = "steelblue3") +
   geom_hline(yintercept = 0, linetype = 2) +
   geom_tile(data = Pred_Mod_D_T_PC1, aes(x = PC1, y = Part_eff, fill = D_T_predicted)) + 
   scale_fill_gradient(low = "white", high = "red") +
@@ -1293,10 +1359,10 @@ Pred_Mod_D_E_PC2$D_E_predicted <- exp(Pred_Mod_D_E_PC2$Log_D_E_predicted) - 1
 
 Pl_Dif_model_PC2 <- 
 sm %>% 
-  filter(smooth == "s(PC2)") %>% 
-  ggplot(., aes(x = PC2, y = est)) +
+  filter(.smooth == "s(PC2)") %>% 
+  ggplot(., aes(x = PC2, y = .estimate)) +
   geom_line(color = "blue", linewidth = 1) +
-  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), alpha=0.2 ) +
+  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci), alpha=0.2 ) +
   # geom_hline(yintercept = median(sm$est), linetype = 2)+
     geom_textbox(data = df_PC2, aes(x, y, label = label), width = grid::unit(0.7, "npc"), size = 2.3) +
   geom_point(data = all_sites, aes(y = Residuals),cex = 1, colour = "steelblue3") +
@@ -1308,7 +1374,7 @@ sm %>%
 
 
 
-# draw(Mod_Dif, residuals = TRUE)
+# draw(Mod_Dif, residuals = FALSE)
 
 ```
 
@@ -1633,7 +1699,199 @@ plot_grid(Pl_training, Pl_Kand_testing, Pl_Tuva_testing_2, Pl_Tuva_testing_3, la
 
 ```
 
+```{r Absolute abundance modelling}
+# Model for absolute abundance
+# 
+# # Assessment of abyndance by PC1 and PC2
+# 
+# all_sites <- 
+#   merge(myt_site, all_sites)
+# 
+# all_sites$Log_Min_dist_river <- log(all_sites$Min_dist_river)
+# all_sites$Log_Fetch <- log(all_sites$Fetch)
+# all_sites$Log_Min_dist_port <- log(all_sites$Min_dist_port)
+# 
+# 
+# 
+# Mod_gam_PC1 <- gam(PC1 ~ s(Salinity, bs = "cs") + s(Log_Min_dist_river, bs = "cs") + s(Log_Fetch, bs = "cs") + s(Log_Min_dist_port, bs = "cs") + River_Size + Port_Status, method = "REML", family = "gaussian", data = all_sites )
+# 
+# library(DHARMa)
+# simulateResiduals(Mod_gam_PC1, plot = T)
+# 
+# summary(Mod_gam_PC1)
+# 
+# draw(Mod_gam_PC1, residuals = T)
+# 
+# 
+# Mod_gam_PC2 <- gam(PC2 ~ s(Salinity, bs = "cs") + s(Log_Min_dist_river, bs = "cs") + s(Log_Fetch, bs = "cs") + s(Log_Min_dist_port, bs = "cs") + River_Size + Port_Status, method = "REML", family = "gaussian", data = all_sites )
+# 
+# simulateResiduals(Mod_gam_PC2, plot = T)
+# 
+# summary(Mod_gam_PC2)
+# 
+# 
+# draw(Mod_gam_PC2, residuals = T)
+# 
+################################################################################
+# Assessment of abundance by total dencity of T-morphotype (Log_D_T) and E-morphotype (Log_D_E) 
 
+# One common model
+
+all_sites_long <-
+all_sites %>% 
+  dplyr::select(Site, Salinity, Log_Min_dist_river, Log_Fetch, Log_Min_dist_port, River_Size, Port_Status, Log_D_T, Log_D_E) %>% 
+  rename(T_morphotype = Log_D_T, E_morphotype = Log_D_E) %>% 
+  melt(id.vars = c("Site", "Salinity", "Log_Min_dist_river", "Log_Fetch", "Log_Min_dist_port", "River_Size", "Port_Status"), variable.name = "Morphotype", value.name = "Abundance")
+
+all_sites_long$Morphotype <- factor(all_sites_long$Morphotype)
+
+
+Mod_gam_Abundance <- gam(Abundance ~ s(Salinity, bs = "cs", by = Morphotype) + s(Log_Min_dist_river, bs = "cs", by = Morphotype) + s(Log_Fetch, bs = "cs", by = Morphotype) + s(Log_Min_dist_port, bs = "cs", by = Morphotype) + River_Size*Morphotype + Port_Status*Morphotype, method = "REML", family = "gaussian", data = all_sites_long )
+
+# simulateResiduals(Mod_gam_Abundance, plot = T)
+
+# summary(Mod_gam_Abundance)
+
+# draw(Mod_gam_Abundance, grouped_by = F)
+
+
+sm_abund <- 
+  smooth_estimates(Mod_gam_Abundance) %>%
+  add_confint()
+
+sm_abund$.smooth <- gsub(pattern = ":MorphotypeE_morphotype", x =  sm_abund$.smooth, replacement = "")
+sm_abund$.smooth <- gsub(pattern = ":MorphotypeT_morphotype", x =  sm_abund$.smooth, replacement = "")
+
+
+
+```
+
+```{r Visualization of Mod_gam_Abundance}
+ 
+Pl_sal_smoother_abund <- 
+sm_abund %>%
+  filter(.smooth == "s(Salinity)") %>%
+  ggplot() +
+    geom_rug(aes(x = Salinity),
+           data = myt_full,
+           sides = "b", length = grid::unit(0.02, "npc")) +
+  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = Salinity, group = Morphotype),
+              alpha = 0.2) +
+  geom_line(aes(x = Salinity, y = .estimate, color = Morphotype), lwd = 1) +
+  labs(y = "Partial effect", x = "Salinity") +
+  geom_hline(yintercept = 0, linetype = 2) +
+  theme_bw() +
+  scale_color_manual(values = c("red", "blue")) +
+  guides(color = "none")
+
+
+Pl_dist_riv_smoother_abund <- 
+sm_abund %>%
+  filter(.smooth == "s(Log_Min_dist_river)") %>%
+  ggplot() +
+    geom_rug(aes(x = Log_Min_dist_river),
+           data = myt_full,
+           sides = "b", length = grid::unit(0.02, "npc")) +
+  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = Log_Min_dist_river, group = Morphotype),
+              alpha = 0.2) +
+  geom_line(aes(x = Log_Min_dist_river, y = .estimate, color = Morphotype), lwd = 1) +
+  labs(y = "Partial effect", x = "Log Distance to the nearest river (km)") +
+  geom_hline(yintercept = 0, linetype = 2) +
+  theme_bw() +
+  scale_color_manual(values = c("red", "blue")) +
+  guides(color = "none")
+
+
+Pl_dist_port_smoother_abund <- 
+sm_abund %>%
+  filter(.smooth == "s(Log_Min_dist_port)") %>%
+  ggplot() +
+    geom_rug(aes(x = Log_Min_dist_port),
+           data = myt_full,
+           sides = "b", length = grid::unit(0.02, "npc")) +
+  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = Log_Min_dist_port, group = Morphotype),
+              alpha = 0.2) +
+  geom_line(aes(x = Log_Min_dist_port, y = .estimate, color = Morphotype), lwd = 1) +
+  labs(y = "Partial effect", x = "Log Distance to the nearest port (km)") +
+  geom_hline(yintercept = 0, linetype = 2) +
+  theme_bw() +
+  scale_color_manual(values = c("red", "blue")) +
+  guides(color = "none")
+
+
+Pl_fetch_smoother_abund <- 
+sm_abund %>%
+  filter(.smooth == "s(Log_Fetch)") %>%
+  ggplot() +
+    geom_rug(aes(x = Log_Fetch),
+           data = myt_full,
+           sides = "b", length = grid::unit(0.02, "npc")) +
+  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = Log_Fetch, group = Morphotype),
+              alpha = 0.2) +
+  geom_line(aes(x = Log_Fetch, y = .estimate, color = Morphotype), lwd = 1) +
+  labs(y = "Partial effect", x = "Log Fetch (km)") +
+  geom_hline(yintercept = 0, linetype = 2) +
+  theme_bw() +
+  scale_color_manual(values = c("red", "blue")) +
+  guides(color = "none")
+
+
+
+
+```
+
+```{r Parametric term visualization Abundance}
+
+# Predictions for parametric terms 
+
+ds_abund <-  data_slice(Mod_gam_Abundance, Morphotype = evenly(Morphotype),  Port_Status = evenly(Port_Status), River_Size = evenly(River_Size)) 
+
+
+Fit_abund <- predict.gam(Mod_gam_Abundance, newdata = ds_abund, se = T, type = "link", exclude = c("s(Salinity)", "s(Log_Min_dist_river)",  "s(Log_Average_Fetch)",  "s(Log_Min_dist_port)", "s(Site)"))
+
+ds_abund$Fit = Fit_abund$fit
+
+ds_abund$SE = Fit_abund$se.fit
+ds_abund$CI_low <- (Fit_abund$fit - 1.96*Fit_abund$se.fit)
+ds_abund$CI_up <- (Fit_abund$fit + 1.96*Fit_abund$se.fit)
+
+
+Pl_Small_abund <-
+ds_abund %>% 
+  filter(River_Size == "Small") %>%
+ggplot(., aes(x = Morphotype, y = Fit, fill = Port_Status)) +
+  geom_col(position = position_dodge()) +
+  scale_fill_manual(values = c("blue", "gray")) +
+  geom_errorbar(aes(ymin = CI_low, ymax = CI_up), width = 0.2, position = position_dodge(width = 0.9)) +
+  theme_bw()+
+  ggtitle("The nearest River: Small") +
+  theme(legend.position = c(0.8, 0.2)) +
+  labs(x = "", y = "Partial effect", fill = "Nearest port status")
+
+#
+
+Pl_Large_abund <-
+ds_abund %>% 
+  filter(River_Size == "Large") %>%
+ggplot(., aes(x = Morphotype, y = Fit, fill = Port_Status)) +
+  geom_col(position = position_dodge()) +
+  scale_fill_manual(values = c("blue", "gray")) +
+  geom_errorbar(aes(ymin = CI_low, ymax = CI_up), width = 0.2, position = position_dodge(width = 0.9)) +
+  theme_bw()+
+  ggtitle("The nearest River: Large") +
+  guides(fill = "none") +
+  theme(legend.position = c(0.19, 0.5)) +
+  labs(x = "", y = "Partial effect")
+#
+
+```
+
+
+
+
+```{r}
+plot_grid(Pl_sal_smoother, Pl_sal_smoother_abund, Pl_riv_dist_smoother, Pl_dist_riv_smoother_abund, Pl_port_dist_smoother, Pl_dist_port_smoother_abund, Pl_fetch_smoother,Pl_fetch_smoother_abund, Pl_Small_Pi, Pl_Small_abund, Pl_Large_Pi, Pl_Large_abund, ncol = 2)
+```
 
 
 
