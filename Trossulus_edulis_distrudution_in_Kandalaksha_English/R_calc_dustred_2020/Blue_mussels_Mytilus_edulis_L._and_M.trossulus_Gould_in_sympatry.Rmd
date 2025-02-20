@@ -354,8 +354,11 @@ Mussels are present everywhere in the waters of the Bay. They are particularly a
 Mussels were sampled at 95 sites within the littoral fucoid belt in 2011-2018 (**Fig. 1**). Data for 17 of these sites were included in the study by @katolikova2016genetic, the other data are new (**STable 2**). Sites were chosen to describe littoral populations of the Bay in as much detail as possible and to account for the heterogeneity of their habitat by substrate type, surf level, and distance from rivers and ports. All samples were taken within the fucoid belt to minimize differences in depth. At each site, three samples from fucoid thalli (hereinafter, algal samples) and three samples from bottom substrates (bottom samples) were collected a few meters from each other using 0.25 m^2^ and 0.025 m^2^ frames, respectively. The frames were placed not randomly but in such a way as to capture the dense mussel aggregations.
 
 
-We used mussels with a shell length larger than 10 mm to identify the shell morphotypes reliably [@Khaitov2021]. In the bottom samples all mussels from a frame were used. In the algal samples the procedure was different. One bundle of algae, containing at least a few dozen mussels, was chosen and weighed together with the attached mussels. The rest of the algae from a frame were weighted too. Mussels from the bundle were counted and used for further analysis. The ratio between the counted number of mussels and the bundle weight was applied to the total algal weight to reconstruct the total number of mussels in the sample (**STable 3**). For 12 sites the information on total number of mussels in algal samples was lacking, and they were excluded from the analyses which required data on mussel abundance (**Model 2**, see below).
+We used mussels with a shell length larger than 10 mm to identify the shell morphotypes reliably [@Khaitov2021]. In the bottom samples all mussels from a frame were used. In the algal samples the procedure was different. One bundle of algae, containing at least a few dozen mussels, was chosen and weighed together with the attached mussels. The rest of the algae from a frame were weighted too. Mussels from the bundle were counted and used for further analysis. The ratio between the counted number of mussels and the bundle weight was applied to the total algal weight to reconstruct the total number of mussels in the sample (**STable 3**). For 12 sites the information on total number of mussels in algal samples was lacking, and they were excluded from the analyses which required data on mussel abundance 
+___________________________________
 
+(**Model 2** and **Model 3**, see below).
+___________________________________
 
 Shell morphotypes (E-morphotype, characteristic of *ME*, and T-morphotype, characteristic of *MT*) were identified for all selected mussels as in @Khaitov2021. Further, the proportion of morphotypes was converted to the proportion of *MT* (*Ptros*) in each sample, in pooled samples from each substrate from each site (*Ptros~Algae~* and *Ptros~Bottom~*) and in pooled samples from each site (*Ptros~Site~*), using equation
 
@@ -437,9 +440,22 @@ We used GAM [generalized additive model, @wood2017generalized] as a modeling tec
 
 To check for the predictors’ collinearity in the model, we calculated the variance inflation factor [VIF, @Fox1992]. Additionally, we calculated Pearson correlation between continuous predictors. To verify that **Model 1** met the assumptions of sampling independence, we examined the presence of residuals’ spatial autocorrelation by means of spline correlogram construction [@Bjornstad2001] with the function spline.correlog() from the package “ncf” [@Bjornstad2022] and found no evidence of spatial autocorrelation.
 
+________________________________________
+**Dependency of mussels abundance on environmental parameters in modeling dataset (Model 2)**
+
+For this part of the analysis, we used a matrix of abundance of T-mophotype and E-morphotype mussels. A mean abundance was calculated for each morphotype in each site, without considering the substrate on which samples were taken. The omission of substrate as a factor in this case was due to the fact that mussel abundance on different substrates was estimated by different techniques (see above). The latter made it impossible to isolate the effect of substrate from the effect of the abundance estimation technique. The relative *Ptros* value used in the Model1 is devoid of this drawback. 
+
+The resulting mean abundances of the two morphotypes were log-transformed and used as the dependent variable in the Model 2. This model was constructed as an generalized additive model (GAM with Gaussian residuals’ distribution) and included the same set of predictors as **Model 1**, except for the factor “Substrate” and the random factor “Site”. The factor “Morphotype” was included in the **Model 2**, as well as its interactions with other predictors. 
+
+The model validity was assessed following the same approach as in the case of Model 1. No collinearity of predictors and spatial patterns in the residuals was detected.
+
+________________________________________
+
+
+
 **Association between *Ptros*, substrate and mussel abundance**
 
-The ultimate goal of the analysis was to find out how the segregation of *ME* and *MT* between algal and bottom substrates depended on the abundance of each species on each substrate. For each site we calculated the difference between proportion of *MT* in algal and bottom samples: *Dif* = *Ptros~Algae~* - *Ptros~Bottom~*. The obtained Dif values were used as a dependent variable in **Model 2**, which was constructed as GAM with Gaussian residuals’ distribution. 
+The ultimate goal of the analysis was to find out how the segregation of *ME* and *MT* between algal and bottom substrates depended on the abundance of each species on each substrate. For each site we calculated the difference between proportion of *MT* in algal and bottom samples: *Dif* = *Ptros~Algae~* - *Ptros~Bottom~*. The obtained Dif values were used as a dependent variable in **Model 3**, which was constructed as GAM with Gaussian residuals’ distribution. 
 
 Assessing the dependence of *Diff* on *Ptros~Site~* and mussel abundances, we could not directly operate with *ME* and *MT* densities because they could be calculated otherwise than through *Ptros*, which would have inevitably resulted in the collinearity of the predictors. Therefore, we performed principal component analysis for the abundance matrix of T- and E-morphotypes on algal and bottom substrates and used PC1 and PC2 values as independent variables, along with *Ptros~Site~*, in **Model 2**. This means that we had to equate morphotypes with species in this case. However, this assumption should not have crucially biased the results of the analysis, given the proportional relationship between *PT* and *Ptros* in mussel settlements from the study area [@Khaitov2021]. We used VIF to control for the level of collinearity of the final set of predictors considering the value less than 3.5 as acceptable [@quinn2002experimental].
 
@@ -473,35 +489,6 @@ Mod_gam <- gam(Ptros ~ s(Salinity, bs = "cs") + s(Log_Min_dist_river, bs = "cs")
 # Mod_gam <- gam(Ptros ~ s(Salinity, bs = "cs") + s(Log_Min_dist_river, bs = "cs") + s(Log_Fetch, bs = "cs") + s(Log_Min_dist_port, bs = "cs") + Position + River_Size + Port_Status, method = "REML", family = betar(link = "logit"), data = myt_site_substr )
 
 
-
-# myt_full$Fi_Ptros <- 2*asin(sqrt(myt_full$Ptros)) * 180/pi
-# 
-# Mod_gam <- gam(Fi_Ptros ~ s(Salinity, bs = "cs") + s(Log_Min_dist_river, bs = "cs") + s(Log_Fetch, bs = "cs") + s(Log_Min_dist_port, bs = "cs") + Position + River_Size + Port_Status + s(Site, k = Total_site, bs = "re"), method = "REML", family = "gaussian", data = myt_full )
-# 
-# summary(Mod_gam)
-
-# Mod_gam_ML <- gam(Ptros ~ s(Salinity, bs = "cs") + s(Log_Min_dist_river, bs = "cs") + s(Log_Fetch, bs = "cs") + s(Log_Min_dist_port, bs = "cs") + Position + River_Size + Port_Status + s(Site, k = Total_site, bs = "re"), method = "ML", family = betar(link = "logit"), data = myt_full )
-# 
-# Mod_gam_ML2 <- gam(Ptros ~ s(Salinity, bs = "cs") + s(Log_Fetch, bs = "cs") + s(Log_Min_dist_port, bs = "cs") + Position + River_Size + Port_Status + s(Site, k = Total_site, bs = "re"), method = "ML", family = betar(link = "logit"), data = myt_full )
-# 
-# 
-# Mod_gam_ML3 <- gam(Ptros ~ s(Salinity, bs = "cs") + s(Log_Min_dist_port, bs = "cs") + Position + River_Size + Port_Status + s(Site, k = Total_site, bs = "re"), method = "ML", family = betar(link = "logit"), data = myt_full )
-# 
-# Mod_gam_ML4 <- gam(Ptros ~ s(Log_Min_dist_port, bs = "cs") + Position + River_Size + Port_Status + s(Site, k = Total_site, bs = "re"), method = "ML", family = betar(link = "logit"), data = myt_full )
-# 
-# Mod_gam_ML5 <- gam(Ptros ~ Position + River_Size + Port_Status + s(Site, k = Total_site, bs = "re"), method = "ML", family = betar(link = "logit"), data = myt_full )
-# 
-# Mod_gam_ML6 <- gam(Ptros ~ Position + Port_Status + s(Site, k = Total_site, bs = "re"), method = "ML", family = betar(link = "logit"), data = myt_full )
-# 
-# Mod_gam_ML7 <- gam(Ptros ~ Position + s(Site, k = Total_site, bs = "re"), method = "ML", family = betar(link = "logit"), data = myt_full )
-# 
-# Mod_gam_ML8 <- gam(Ptros ~ s(Site, k = Total_site, bs = "re"), method = "ML", family = betar(link = "logit"), data = myt_full )
-
-
-# summary(Mod_gam_ML7)
-
-# AIC(Mod_gam_ML, Mod_gam_ML2, Mod_gam_ML3, Mod_gam_ML4, Mod_gam_ML5, Mod_gam_ML6, Mod_gam_ML7, Mod_gam_ML8)
-# AIC(Mod_gam_ML, Mod_gam_reduced_ML)
 
 # appraise(Mod_gam, use_worm = F, method = "simulate", type = "deviance")
 # 
@@ -606,6 +593,9 @@ myt_full <-
   cbind(partial_residuals(Mod_gam))
 
   
+sm_Ptros <- sm
+
+
 # dd <- partial_residuals(Mod_gam)
 # 
 # 
@@ -747,82 +737,6 @@ Pl_fetch_smoother <-
   theme_bw() 
 
   
-  
-  #   sm %>%
-  # filter(smooth == "s(Log_Fetch)") %>%
-  # ggplot() +
-  # geom_point(aes(x = Log_Fetch, y = `s(Log_Fetch)`, color = Position),
-  #            data = myt_full, cex = 1, colour = "steelblue3") +
-  # geom_rug(aes(x = Log_Fetch),
-  #          data = myt_full,
-  #          sides = "b", length = grid::unit(0.02, "npc")) +
-  # geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci, x = Log_Fetch),
-  #             alpha = 0.2) +
-  #   geom_line(aes(x = Log_Fetch, y = est), lwd = 1) +
-  # labs(y = "Partial effect", x = "Log Fetch (km)") +
-  # geom_hline(yintercept = 0, linetype = 2) +
-  # theme_bw()
-  # 
-
-
-##################################
-#Predicted values in the terms of probabilities
-
-# Pl_sal_smoother_Pi <-
-#   sm %>%
-#   filter(smooth == "s(Salinity)") %>%
-#   ggplot() +
-#   geom_point(aes(x = Salinity, y = Pi_Salinity), data = myt_full, cex = 1, colour = "steelblue3") +
-#   geom_rug(aes(x = Salinity),data = myt_full, sides = "b", length = grid::unit(0.02, "npc")) +
-#   geom_ribbon(aes(ymin = CI_Pi_low, ymax = CI_Pi_up, x = Salinity),alpha = 0.2) +
-#   geom_line(aes(x = Salinity, y = Pi), lwd = 1) +
-#   labs(y = "Partial effect", x = "Salinity (PPT)") +
-#   # geom_hline(yintercept = median(myt_full$Pi_Salinity), linetype = 2)+
-#   theme_bw()+
-#   ylim(0, 0.8)
-# 
-# 
-# Pl_riv_dist_smoother_Pi <-
-#   sm %>%
-#   filter(smooth == "s(Log_Min_dist_river)") %>%
-#   ggplot() +
-#   geom_point(aes(x = Log_Min_dist_river, y = Pi_Min_dist_river), data = myt_full, cex = 1, colour = "steelblue3") +
-#   geom_rug(aes(x = Log_Min_dist_river),data = myt_full, sides = "b", length = grid::unit(0.02, "npc")) +
-#   geom_ribbon(aes(ymin = CI_Pi_low, ymax = CI_Pi_up, x = Log_Min_dist_river),alpha = 0.2) +
-#   geom_line(aes(x = Log_Min_dist_river, y = Pi), lwd = 1) +
-#   labs(y = "Partial effect", x = "Distance to the nearest river (km)") +
-#   # geom_hline(yintercept = median(myt_full$Pi_Min_dist_river), linetype = 2) +
-#   theme_bw()+
-#   ylim(0, 0.8)
-# 
-# 
-# 
-# Pl_port_dist_smoother_Pi <-
-#   sm %>%
-#   filter(smooth == "s(Min_dist_port)") %>%
-#   ggplot() +
-#   geom_point(aes(x = Min_dist_port, y = Pi_Min_dist_port), data = myt_full, cex = 1, colour = "steelblue3") +
-#   geom_rug(aes(x = Min_dist_port),data = myt_full, sides = "b", length = grid::unit(0.02, "npc")) +
-#   geom_ribbon(aes(ymin = CI_Pi_low, ymax = CI_Pi_up, x = Min_dist_port),alpha = 0.2) +
-#   geom_line(aes(x = Min_dist_port, y = Pi), lwd = 1) +
-#   labs(y = "Partial effect", x = "Log Distance to the nearest port (km)") +
-#   # geom_hline(yintercept = median(myt_full$Pi_Min_dist_port), linetype = 2)+
-#   theme_bw()+
-#   ylim(0, 0.8)
-# 
-# 
-# Pl_fetch_smoother_Pi <-
-#   sm %>%
-#   filter(smooth == "s(Fetch)") %>%
-#   ggplot() +
-#   geom_point(aes(x = Fetch, y = Pi_Average_Fetch), data = myt_full, cex = 1, colour = "steelblue3") +
-#   geom_rug(aes(x = Fetch),data = myt_full, sides = "b", length = grid::unit(0.02, "npc")) +
-#   geom_ribbon(aes(ymin = CI_Pi_low, ymax = CI_Pi_up, x = Fetch),alpha = 0.2) +
-#   geom_line(aes(x = Fetch, y = Pi), lwd = 1) +
-#   labs(y = "Partial effect", x = "Log Fetch (km)") +
-#   # geom_hline(yintercept = median(myt_full$Pi_Average_Fetch), linetype = 2)+
-#   theme_bw()+
-#   ylim(0, 0.8)
 
 ```
 
@@ -969,7 +883,7 @@ all_Model_1_summ <- rbind(Model_1_summ_smoothers, Model_1_summ_parametric)
 
 ft_Model_1_summ_smoothers <- flextable(Model_1_summ_smoothers)
 
-header <- c("Smoother terms", "edf", "ref.edf", "Chi.sq", "p-value")
+header <- c("Smoother terms", "Edf", "Ref.edf", "Chi.sq", "p-value")
 
 ft_Model_1_summ_smoothers <- 
   ft_Model_1_summ_smoothers %>% 
@@ -997,7 +911,7 @@ ft_Model_1_summ_parametric <-
 ```{r Model1_print_smoothers}
 ft_Model_1_summ_smoothers <-
   ft_Model_1_summ_smoothers %>% 
-  set_caption(caption = "Table 2. Parameters of smoothers and coefficients of parametric terms for Model 1 describing dependency of proportion of M. trossulus in mixed settlements (Ptros) on environmental predictors. Edf – effective degrees of freedom.")
+  set_caption(caption = "Table 2. Parameters of smoothers and coefficients of parametric terms for **Model 1** describing dependency of proportion of *M. trossulus* in mixed settlements (Ptros) on environmental predictors. Edf – effective degrees of freedom.")
 
 ft_Model_1_summ_smoothers %>% 
   width(j = 1:5, width = c(8, 4,2,2,2), unit = "cm")
@@ -1012,90 +926,21 @@ width(j = 1:5, width = c(8, 4,2,2,2), unit = "cm")
 ```
 
 
-+++++++++
-
-**Figure 2**. Partial effects of environmental parameters on proportion of *M. trossulus* in mixed settlements (*Ptros*) evaluated by the GAM fitted (**Model 1**). A-C. Dependency of *Ptros* on distance to the nearest port (*DistPort*, A), wind exposure (*Fetch*, B), distance to the nearest river (*DistRiver*, C) and salinity at low tide (*Salinity*, D). Gray ribbons represent 95% confidence intervals. Dotted horizontal lines indicating zero partial effect are given to show the wiggling of the fitted curves. Points on panels A-D show partial residuals, not raw data. E-F. Dependency of *Ptros* on combinations of categorical predictors. Partial effects of *Substrate* (bottom vs algae) and status of the nearest port (active vs abandoned)  when the nearest river is small (E) or large (F). Whiskers represent 95% confidence intervals. Red solid lines indicating a partial effect of 0.5 are provided to facilitate visual comparison of panels E and F.
 
 
 
 
-```{r Model1_prediction_Figure, eval=FALSE, fig.height= 8,fig.width=8, fig.cap= "Fig. 3. Predictions of the *Model 1* describing the dependency of *Ptros* on distance to the nearest port (A), average fetch (B), distance to the nearest river (C), salinity (E) and substrate type, nearest port status and size of the largest river (E, F). The  gray ribbons and wiskers demonstrate 95% confidence interval. The dotted lines in panels A-D represent the median predicted value, this value is given to track the trend in the change in model predictions. Points on panels A-D reflect partial residuals but not raw data for each sample."}
 
-Pl_Model_1 <- plot_grid(Pl_port_dist_smoother, Pl_fetch_smoother, Pl_riv_dist_smoother,  Pl_sal_smoother, Pl_Small_Pi, Pl_Large_Pi,  ncol = 2, labels = "AUTO")
 
-# Pl_Model_1
+<!-- +++++++++ -->
 
-# ggsave(filename = "Fig_2.svg", plot = Pl_Model_1, width = 297,height = 210, units = "mm", dpi = 600)
-
-```
+<!-- **Figure 2**. Partial effects of environmental parameters on proportion of *M. trossulus* in mixed settlements (*Ptros*) evaluated by the GAM fitted (**Model 1**). A-C. Dependency of *Ptros* on distance to the nearest port (*DistPort*, A), wind exposure (*Fetch*, B), distance to the nearest river (*DistRiver*, C) and salinity at low tide (*Salinity*, D). Gray ribbons represent 95% confidence intervals. Dotted horizontal lines indicating zero partial effect are given to show the wiggling of the fitted curves. Points on panels A-D show partial residuals, not raw data. E-F. Dependency of *Ptros* on combinations of categorical predictors. Partial effects of *Substrate* (bottom vs algae) and status of the nearest port (active vs abandoned)  when the nearest river is small (E) or large (F). Whiskers represent 95% confidence intervals. Red solid lines indicating a partial effect of 0.5 are provided to facilitate visual comparison of panels E and F. -->
 
 
 
 
-When one examines separate maps of *Ptros* distribution across algal and bottom substrates, the universally elevated proportion of *MT* on the former is striking (**Fig. 1** D-G). While spatial distribution of *Ptros* was highly mosaic, its maximum values on both substrates were observed in the Bay’s top and in some deep inlets, while its minimum values were observed along the open part of the southeastern coast (**Fig. 1** D-G). Associations between *Ptros* and environmental predictors other than substrate could not be discerned on the maps (**Fig. 1**).
 
-
-**Relationship of Ptros and environmental parameters evaluated by Model 1**
-
-Although some non-zero pairwise correlations between environmental factors were found (see above), VIF values calculated for the predictors were generally low (maximal VIF being that for Fetch, 1.76). In our opinion, this result means that the collinearity between the predictors was negligible, i.e. they did not mask each other’s influence. 
-
-**Model 1** explained 77% of the total deviance. It revealed a significant dependency of *Ptros* on all predictors except *DistRiver*. Effective degrees of freedom for *DistPort* and *Fetch* were close to one, indicating the linear dependence of *Ptros* on them. On the contrary, the dependence on the third continuous predictor, *Salinity*, was curvilinear (**Table 2**). 
-
-
-According to the model, *Ptros* decreased both with *DistPort* (**Fig. 2** A) and with *Fetch* (**Fig. 2**, B). This means that the proportion of *MT* was higher near ports and in surf-protected areas. *PortStatus* also had a significant effect: predicted *Ptros* was higher near active ports than near abandoned ones (**Fig. 2** E, F). The curvilinear dependence of *Ptros* on *Salinity* can be described as follows: predicted *Ptros* decreases with salinity in the range from low to “normal” salinity (24 ppt in the White Sea) and increases again at higher salinities (up to 30 ppt) (**Fig. 2**, D). Besides, predicted *Ptros* was higher near large rivers than near small ones. Finally, *Ptros* was higher on algal substrates than on bottom ones (**Fig. 1** C, D; **Fig. 2** E, F). As mentioned above, distance to the nearest river did not affect *Ptros* (**Fig 2** C). 
-
-
-**Dependency of *Ptros* on substrate and mussel abundance evaluated by Model 2** 
-
-++++++++
-
-**Figure 3**. The dependence of difference between proportion of *MT* on algal and bottom substrates (*Diff*) on proportion of *MT* in a site (*Ptros~Site~*) (A) and estimations of total abundance of *MT* (B) and *ME* (D). Principal components from the matrix of T- and E-morphotypes abundances on different substrates are considered as proxies for *MT* and *ME* abundances (PC1 and PC2 respectively). Points reflect partial residuals, not raw data. Colored gradient bars at the top of the figures reflect linear associations between PC1 and T-morphotype (B) and PC2 and E-morphotype abundance (C).
-
-
-In the principal component analysis of the abundance matrix of T- and E- morphotypes on different substrates, PC1 and PC2 explained 62% and 20% of variation, respectively. A high positive correlation of PC1 with abundances of T-morphotypes and of PC2 with abundances of E-morphotypes was found on both substrates (**Fig. 3** B, C). Thus, the abundance of conspecific morphotypes varied consistently on different substrates (see also **Fig. 1** C, D). Therefore, PC1 and PC2 can be considered as proxies of *MT* and *ME* abundance, respectively. 
-
-Parameters of **Model 2**, which explained 31% of the deviance, are provided in ESM (**STable 7**). **Figure 3** demonstrates how the difference between *MT* proportion on algal (*Ptros~Algae~*) and bottom (*Ptros~Bottom~*) substrates (*Dif*) depends on *MT* prevalence at the site (*Ptros~Site~*) and mussel abundances in terms of PCs according to the model. The dependence of *Diff*  on *Ptros~Site~* was significant (p < 0.001, **STable 7**) and, expectedly, bell-shaped, with minimal values at sites absolutely dominated by *ME* or *MT* (*Ptros* close to 0 or 1) and maximal at sites with equal presence of both species (**Fig.4** A). Dependence of *Diff*  on PC1 was marginally significant (p = 0.087) and tended to decrease with increasing PC1 (**Fig.3** B). The dependence of *Diff*  on PC2 was significantly positive (p = 0.011, **STable 7**) (Fig.4 C). This means that the species were strongly segregated by substrates at sites with a high *ME* abundance but not at sites with a high *MT* abundance.
-
-
-**Assessment of predictive power of Model 1**
-
-++++++
-
-**Figure 4**. Ability of SDM (**Model 1**) to predict proportion of *MT* (*Ptros*) in mussel samples from the modeling (A) and the testing data sets (B-D). Each plot compares empirical *Ptros* in samples from algal and bottom substrates and *Ptros* predicted by the model within the particular data set. If the empirical and the predicted values were the same, the points would lie on the diagonal (dashed line). Solid lines delineate *MT*- and *ME*-dominated samples on each axis. Labels mark the quadrants with false positive (FP), true positive (TP), true negative (TN) and false negative (FN) predictions in the analysis of the ability of the model to classify samples into *ME*- and *MT*-dominated ones. Dataset names are shown in chart headers.
-
-The ability of **Model 1** to classify samples into *ME*- and *MT*-dominated ones was good for the “Kandalaksha littoral” testing dataset (AUC=0.84 vs AUC=0.85 for modeling dataset), with only a few false negatives (i.e. sites unpredictably dominated by *MT*) (**Fig. 4** A, B). Predictive value of the model for the two testing sets from the Barents Sea was lower, although not critically so: AUC = 0.71 for “Tyuva littoral” and AUC=0.69 for “Tyuva sublittoral”. Unlike the “Kandalaksha littoral” testing dataset, most false results were positive, i.e., the model overestimated *Ptros* more often. 
-
-
-
-<!-- ```{r Salinity_discription_values } -->
-<!-- # Different values needed for salinity effect discription -->
-
-<!-- sal_smoother <-  -->
-<!-- sm %>%  -->
-<!--   filter(smooth == "s(Salinity)")   -->
-
-<!-- sm_low_salinity <-  -->
-<!-- # sal_smoother %>% filter(est > median(est)) %>% filter(Salinity < 20)  -->
-<!-- sal_smoother %>% filter(est > 0) %>% filter(Salinity < 20)  -->
-
-
-<!-- Min_salinity <- round(max(sm_low_salinity$Salinity)) -->
-
-<!-- sm_high_salinity <-  -->
-<!-- sal_smoother %>% filter(est > 0) %>% filter(Salinity > 20)  -->
-
-<!-- Max_salinity <- round(min(sm_high_salinity$Salinity)) -->
-
-
-<!-- Number_sites_low_salinity <- myt_site %>% filter(Salinity <= round(Min_salinity, 0)) %>% nrow() -->
-
-<!-- Number_sites_high_salinity <- myt_site %>% filter(Salinity >= round(Max_salinity, 0)) %>% nrow() -->
-
-<!-- ``` -->
-
-
-
-```{r Data_for_Substrate_modelling}
+```{r Data on Abundance of T- and E-morphotype}
 
 myt_sample_area <- read_excel("Data/myt_full.xls", sheet = "Sampling area assesment", na = "NA") #STable 3
 
@@ -1177,17 +1022,6 @@ myt_site_substr_reguced %>%
   melt() %>% 
   dcast(., formula = Site ~ Position + variable)
 
-
-
-
-
-```
-
-
-
-
-```{r Model_Substrate_PT_Difference}
-
 all_sites <- merge(df1, df2) %>% merge(., df3) %>% merge(., df4) %>% merge(., df5) %>%  
     mutate(Dif_Ptros = Ptros_Algae - Ptros_Bottom) %>% 
   mutate(D_mean = (D_Bottom + D_Algae)/2) %>% 
@@ -1220,6 +1054,536 @@ abundance <-
 # abundance <- 
 #   all_sites %>% 
 #   select(Bottom_D_T, Bottom_D_E, Algae_D_T, Algae_D_E)
+
+
+
+
+```
+
+
+
+
+```{r Absolute abundance modelling}
+# Model for absolute abundance
+# 
+# # Assessment of abyndance by PC1 and PC2
+# 
+all_sites <-
+  merge(myt_site, all_sites)
+
+all_sites$Log_Min_dist_river <- log(all_sites$Min_dist_river)
+all_sites$Log_Fetch <- log(all_sites$Fetch)
+all_sites$Log_Min_dist_port <- log(all_sites$Min_dist_port)
+# 
+# 
+# 
+# Mod_gam_PC1 <- gam(PC1 ~ s(Salinity, bs = "cs") + s(Log_Min_dist_river, bs = "cs") + s(Log_Fetch, bs = "cs") + s(Log_Min_dist_port, bs = "cs") + River_Size + Port_Status, method = "REML", family = "gaussian", data = all_sites )
+# 
+# library(DHARMa)
+# simulateResiduals(Mod_gam_PC1, plot = T)
+# 
+# summary(Mod_gam_PC1)
+# 
+# draw(Mod_gam_PC1, residuals = T)
+# 
+# 
+# Mod_gam_PC2 <- gam(PC2 ~ s(Salinity, bs = "cs") + s(Log_Min_dist_river, bs = "cs") + s(Log_Fetch, bs = "cs") + s(Log_Min_dist_port, bs = "cs") + River_Size + Port_Status, method = "REML", family = "gaussian", data = all_sites )
+# 
+# simulateResiduals(Mod_gam_PC2, plot = T)
+# 
+# summary(Mod_gam_PC2)
+# 
+# 
+# draw(Mod_gam_PC2, residuals = T)
+# 
+################################################################################
+# Assessment of abundance by total dencity of T-morphotype (Log_D_T) and E-morphotype (Log_D_E) 
+
+# One common model
+
+all_sites_long <-
+all_sites %>% 
+  dplyr::select(Site, Salinity, Log_Min_dist_river, Log_Fetch, Log_Min_dist_port, River_Size, Port_Status, Log_D_T, Log_D_E) %>% 
+  rename(T_morphotype = Log_D_T, E_morphotype = Log_D_E) %>% 
+  melt(id.vars = c("Site", "Salinity", "Log_Min_dist_river", "Log_Fetch", "Log_Min_dist_port", "River_Size", "Port_Status"), variable.name = "Morphotype", value.name = "Abundance")
+
+all_sites_long$Morphotype <- factor(all_sites_long$Morphotype)
+
+
+Mod_gam_Abundance <- gam(Abundance ~ s(Salinity, bs = "cs", by = Morphotype) + s(Log_Min_dist_river, bs = "cs", by = Morphotype) + s(Log_Fetch, bs = "cs", by = Morphotype) + s(Log_Min_dist_port, bs = "cs", by = Morphotype) + River_Size*Morphotype + Port_Status*Morphotype, method = "REML", family = "gaussian", data = all_sites_long )
+
+
+Mod_dummy2 <- lm(Abundance ~ Salinity + Log_Min_dist_river + Log_Fetch + Log_Min_dist_port + Morphotype + River_Size + Port_Status,  data = all_sites_long )
+
+library(car)
+
+VIF2 <- vif(Mod_dummy2) 
+
+# library(DHARMa)
+# simulateResiduals(Mod_gam_Abundance, plot = T)
+
+# summary(Mod_gam_Abundance)
+
+# draw(Mod_gam_Abundance, grouped_by = F)
+
+
+sm_abund <- 
+  smooth_estimates(Mod_gam_Abundance) %>%
+  add_confint()
+
+sm_abund$.smooth <- gsub(pattern = ":MorphotypeE_morphotype", x =  sm_abund$.smooth, replacement = "")
+
+sm_abund$.smooth <- gsub(pattern = ":MorphotypeT_morphotype", x =  sm_abund$.smooth, replacement = "")
+
+
+
+```
+
+```{r Visualization of Mod_gam_Abundance}
+ 
+Pl_sal_smoother_abund <- 
+sm_abund %>%
+  filter(.smooth == "s(Salinity)") %>%
+  ggplot() +
+    geom_rug(aes(x = Salinity),
+           data = myt_full,
+           sides = "b", length = grid::unit(0.02, "npc")) +
+  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = Salinity, group = Morphotype),
+              alpha = 0.2) +
+  geom_line(aes(x = Salinity, y = .estimate, color = Morphotype), lwd = 1) +
+  labs(y = "Partial effect", x = "Salinity") +
+  geom_hline(yintercept = 0, linetype = 2) +
+  theme_bw() +
+  scale_color_manual(values = c("red", "blue")) +
+  guides(color = "none")
+
+
+Pl_dist_riv_smoother_abund <- 
+sm_abund %>%
+  filter(.smooth == "s(Log_Min_dist_river)") %>%
+  ggplot() +
+    geom_rug(aes(x = Log_Min_dist_river),
+           data = myt_full,
+           sides = "b", length = grid::unit(0.02, "npc")) +
+  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = Log_Min_dist_river, group = Morphotype),
+              alpha = 0.2) +
+  geom_line(aes(x = Log_Min_dist_river, y = .estimate, color = Morphotype), lwd = 1) +
+  labs(y = "Partial effect", x = "Log Distance to the nearest river (km)") +
+  geom_hline(yintercept = 0, linetype = 2) +
+  theme_bw() +
+  scale_color_manual(values = c("red", "blue")) +
+  guides(color = "none")
+
+
+Pl_dist_port_smoother_abund <- 
+sm_abund %>%
+  filter(.smooth == "s(Log_Min_dist_port)") %>%
+  ggplot() +
+    geom_rug(aes(x = Log_Min_dist_port),
+           data = myt_full,
+           sides = "b", length = grid::unit(0.02, "npc")) +
+  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = Log_Min_dist_port, group = Morphotype),
+              alpha = 0.2) +
+  geom_line(aes(x = Log_Min_dist_port, y = .estimate, color = Morphotype), lwd = 1) +
+  labs(y = "Partial effect", x = "Log Distance to the nearest port (km)") +
+  geom_hline(yintercept = 0, linetype = 2) +
+  theme_bw() +
+  scale_color_manual(values = c("red", "blue")) +
+  guides(color = "none")
+
+
+Pl_fetch_smoother_abund <- 
+sm_abund %>%
+  filter(.smooth == "s(Log_Fetch)") %>%
+  ggplot() +
+    geom_rug(aes(x = Log_Fetch),
+           data = myt_full,
+           sides = "b", length = grid::unit(0.02, "npc")) +
+  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = Log_Fetch, group = Morphotype),
+              alpha = 0.2) +
+  geom_line(aes(x = Log_Fetch, y = .estimate, color = Morphotype), lwd = 1) +
+  labs(y = "Partial effect", x = "Log Fetch (km)") +
+  geom_hline(yintercept = 0, linetype = 2) +
+  theme_bw() +
+  scale_color_manual(values = c("red", "blue")) +
+  guides(color = "none")
+
+
+
+
+```
+
+```{r Parametric term visualization Abundance}
+
+# Predictions for parametric terms 
+
+ds_abund <-  data_slice(Mod_gam_Abundance, Morphotype = evenly(Morphotype),  Port_Status = evenly(Port_Status), River_Size = evenly(River_Size)) 
+
+
+Fit_abund <- predict.gam(Mod_gam_Abundance, newdata = ds_abund, se = T, type = "link", exclude = c("s(Salinity)", "s(Log_Min_dist_river)",  "s(Log_Average_Fetch)",  "s(Log_Min_dist_port)", "s(Site)"))
+
+ds_abund$Fit = Fit_abund$fit
+
+ds_abund$SE = Fit_abund$se.fit
+ds_abund$CI_low <- (Fit_abund$fit - 1.96*Fit_abund$se.fit)
+ds_abund$CI_up <- (Fit_abund$fit + 1.96*Fit_abund$se.fit)
+
+
+Pl_Small_abund <-
+ds_abund %>% 
+  filter(River_Size == "Small") %>%
+ggplot(., aes(x = Morphotype, y = Fit, fill = Port_Status)) +
+  geom_col(position = position_dodge()) +
+  scale_fill_manual(values = c("blue", "gray")) +
+  geom_errorbar(aes(ymin = CI_low, ymax = CI_up), width = 0.2, position = position_dodge(width = 0.9)) +
+  theme_bw()+
+  ggtitle("The nearest River: Small") +
+  theme(legend.position = c(0.8, 0.2)) +
+  labs(x = "", y = "Partial effect", fill = "Nearest port status")
+
+#
+
+Pl_Large_abund <-
+ds_abund %>% 
+  filter(River_Size == "Large") %>%
+ggplot(., aes(x = Morphotype, y = Fit, fill = Port_Status)) +
+  geom_col(position = position_dodge()) +
+  scale_fill_manual(values = c("blue", "gray")) +
+  geom_errorbar(aes(ymin = CI_low, ymax = CI_up), width = 0.2, position = position_dodge(width = 0.9)) +
+  theme_bw()+
+  ggtitle("The nearest River: Large") +
+  guides(fill = "none") +
+  theme(legend.position = c(0.19, 0.5)) +
+  labs(x = "", y = "Partial effect")
+#
+
+```
+
+
+
+
+```{r Combination of all figures with models predictions}
+# plot_grid(Pl_sal_smoother, Pl_sal_smoother_abund, Pl_riv_dist_smoother, Pl_dist_riv_smoother_abund, Pl_port_dist_smoother, Pl_dist_port_smoother_abund, Pl_fetch_smoother,Pl_fetch_smoother_abund, Pl_Small_Pi, Pl_Small_abund, Pl_Large_Pi, Pl_Large_abund, ncol = 2)
+
+
+```
+
+
+```{r all smoothers in common figure }
+sm_Ptros2 <-
+  sm_Ptros %>% 
+  select(".smooth", ".by", ".estimate", "Salinity", "Log_Min_dist_river", "Log_Fetch", "Log_Min_dist_port", ".lower_ci", ".upper_ci") %>% 
+  mutate(Model = "Ptros", Morphotype = "Ptros")
+
+
+
+
+melt(sm_Ptros2, id.vars = c(".smooth", ".by", ".estimate", ".lower_ci", ".upper_ci", "Model", "Morphotype")) %>% 
+  filter(!is.na(value)) -> sm_Ptros_long
+
+
+################################
+
+
+sm_abund <- 
+  sm_abund %>%  
+  select(".smooth", ".by", ".estimate", "Salinity", "Log_Min_dist_river", "Log_Fetch", "Log_Min_dist_port", ".lower_ci", ".upper_ci", "Morphotype") %>% 
+  mutate(Model = "Abundance")
+
+melt(sm_abund, id.vars = c(".smooth", ".by", ".estimate", ".lower_ci", ".upper_ci", "Model", "Morphotype")) %>% 
+  filter(!is.na(value)) -> sm_abund_long
+
+
+all_sm_long <- 
+rbind(sm_Ptros_long, sm_abund_long)
+
+all_sm_long$Morphotype <- factor(all_sm_long$Morphotype, levels = c("Ptros", "E_morphotype", "T_morphotype"), labels = c("Ptros", "E-morphotype", "T-morphotype") )
+
+
+all_sm_long$Model <- factor(all_sm_long$Model, levels = c("Ptros", "Abundance"))
+
+myt_full %>% 
+  select(Site, Salinity, Log_Min_dist_river, Log_Fetch, Log_Min_dist_port) %>% 
+  melt() %>% 
+  group_by(Site, variable) %>% 
+  summarise(value = mean(value)) -> predictors_rug
+
+predictors_rug$variable <- factor(predictors_rug$variable, levels = c("Salinity", "Log_Min_dist_river", "Log_Min_dist_port", "Log_Fetch"))
+
+predictors_rug$variable <- factor(predictors_rug$variable, labels = c("Salinity", "Log Distance to river", "Log Distance to port", "Log Fetch"))
+
+
+
+all_sm_long$variable <- 
+  factor(all_sm_long$variable, levels = c("Salinity", "Log_Min_dist_river", "Log_Min_dist_port", "Log_Fetch"))
+
+all_sm_long$variable <- factor(all_sm_long$variable, labels = c("Salinity", "Log Distance to river", "Log Distance to port", "Log Fetch")) 
+
+Pl_all_smoothers <- 
+all_sm_long %>% 
+  ggplot() +
+  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = value, fill = Morphotype),
+              alpha = 0.2) +
+  geom_line(aes(x = value, y = .estimate, color = Morphotype), lwd = 0.5) +
+  labs(y = "Partial effect") +
+  geom_hline(yintercept = 0, linetype = 2, linewidth = 0.1) +
+  facet_grid(Model ~ variable, scales = "free", , switch = 'x') +
+  guides(fill = "none") +
+  scale_color_manual(values = c("black", "blue", "red") ) +
+  scale_fill_manual(values = c("black", "blue", "red")) +
+  geom_rug(data = predictors_rug, aes(x = value), lwd = 0.1) +
+  theme(strip.background.x = element_blank(), legend.position = "bottom") +
+  labs(x = "", color = "") +
+  theme(strip.placement = "outside", panel.grid = element_blank())
+  
+  
+# ggsave(filename = "Pl_all_smoothers.svg", plot = Pl_all_smoothers)
+
+
+
+```
+
+
+
+```{r}
+ds %>% 
+  select(Position, Port_Status, River_Size, Pi, Pi_CI_low, Pi_CI_up) %>% 
+  mutate(Model = "Ptros") %>% 
+  rename(Fit = Pi, OX = Position, CI_low = Pi_CI_low, CI_up = Pi_CI_up) -> ds_Pi 
+
+ds_abund %>% 
+  select(Morphotype, Port_Status, River_Size,Fit, CI_low, CI_up ) %>% 
+  mutate(Model = "Abundance") %>% 
+  rename(OX = Morphotype) -> ds_abundance
+
+all_ds <- rbind(ds_Pi, ds_abundance)
+
+all_ds$River_Size <- factor(all_ds$River_Size, labels = c("The nearest river is small", "The nearest river is large"))
+
+
+Pl_Ptros_Pi <-
+all_ds %>% 
+  filter(Model == "Ptros") %>% 
+  ggplot(aes(x = OX, y = Fit, fill = Port_Status)) +
+  geom_col(position = position_dodge()) +
+  facet_grid(Model ~ River_Size) + 
+  geom_errorbar(aes(ymin = CI_low, ymax = CI_up), width = 0.2, position = position_dodge(width = 0.9), lwd = 0.1) +
+  labs(x = "", y = "Partial effect") +
+  guides(fill = "none") +
+  scale_fill_manual(values = c("gray30", "gray") ) +
+   theme(strip.placement = "outside", panel.grid = element_blank(), strip.background.x = element_blank())
+
+# ggsave(filename = "Pl_Ptros_Pi.svg", plot = Pl_Ptros_Pi)
+
+
+  
+Pl_Abundance <- 
+all_ds %>% 
+  filter(Model == "Abundance") %>% 
+  ggplot(aes(x = OX, y = Fit, fill = Port_Status)) +
+  geom_col(position = position_dodge()) +
+  facet_grid(Model ~ River_Size) + 
+  geom_errorbar(aes(ymin = CI_low, ymax = CI_up), width = 0.2, position = position_dodge(width = 0.9), lwd = 0.1) +
+  guides(fill = "none") +
+  labs(x = "", y = "Partial effect", fill = "The nearest port status:") +
+  scale_fill_manual(values = c("gray30", "gray") ) +
+   theme(strip.placement = "outside", panel.grid = element_blank(), strip.background.x = element_blank()) +
+  scale_y_continuous(labels = scales::number_format(accuracy = 0.1))
+
+  
+# ggsave(filename = "Pl_Abundance.svg", plot = Pl_Abundance)
+
+
+```
+
+
+```{r}
+Pl_all_categorical <- 
+  plot_grid(Pl_Ptros_Pi, Pl_Abundance, ncol = 1, align = "v")
+
+# ggsave(filename = "Pl_all_categorical.svg", plot = Pl_all_categorical)
+
+
+```
+
+
+____________________________________
+
+
+
+```{r Model2_output}
+# Model 2 summary output preparation
+
+Model_2_summ_smoothers <- tidy(Mod_gam_Abundance)
+
+Model_2_summ_smoothers$term <- c(
+  "s(Salinity) T-morphotype", 
+  "s(Salinity) E-morphotype",
+  "s(DistRiver) T-morphotype",
+  "s(DistRiver) E-morphotype",
+  "s(Fetch) T-morphotype",
+  "s(Fetch) E-morphotype",
+  "s(DistPort) T-morphotype",
+  "s(DistPort) for E-morphotype")
+
+Model_2_summ_smoothers[, 2:4] <- round(Model_2_summ_smoothers[, 2:4], 1)
+Model_2_summ_smoothers[, 5] <- round(Model_2_summ_smoothers[, 5], 4)
+
+
+Model_2_summ_parametric <- tidy(Mod_gam_Abundance, parametric = T)
+
+Model_2_summ_parametric$term <- c("(Intercept)",
+                                  "RiverSize(Large)",
+                                  "Morphotype(E)",
+                                  "PortStatus(Active)",
+                                  "RiverSize(Large):Morphotype(E)",
+                                  "PortStatus(Active):Morphotype(E)")
+
+Model_2_summ_parametric[, 2:4] <- round(Model_2_summ_parametric[, 2:4], 1)
+Model_2_summ_parametric[, 5] <- round(Model_2_summ_parametric[, 5], 4)
+
+names(Model_2_summ_smoothers) <- names(Model_2_summ_parametric)
+
+
+all_Model_2_summ <- rbind(Model_2_summ_smoothers, Model_2_summ_parametric)
+
+
+
+
+ft_Model_2_summ_smoothers <- flextable(Model_2_summ_smoothers)
+
+header <- c("Smoother terms", "Edf", "Ref.df", "F-statistic", "p-value")
+
+ft_Model_2_summ_smoothers <- 
+  ft_Model_2_summ_smoothers %>% 
+  set_header_labels(values = header)
+
+
+
+
+
+
+ft_Model_2_summ_parametric <- flextable(Model_2_summ_parametric)
+header2 <- c("Parametric terms", "Parameter estimate", "SE", "t-statistic", "p-value")
+
+ft_Model_2_summ_parametric <- 
+  ft_Model_2_summ_parametric %>% 
+  set_header_labels(values = header2)
+
+
+
+
+```
+
+
+
+```{r Model1_print_smoothers}
+ft_Model_2_summ_smoothers <-
+  ft_Model_2_summ_smoothers %>% 
+  set_caption(caption = "Table 3. Parameters of smoothers and coefficients of parametric terms for Model 2 describing dependency of mussel abundance on environmental predictors. Edf – effective degrees of freedom.")
+
+ft_Model_2_summ_smoothers %>% 
+  width(j = 1:5, width = c(8, 4,2,2,2), unit = "cm")
+```
+
+
+
+```{r Model1_print_parametric}
+
+ft_Model_1_summ_parametric %>%   
+width(j = 1:5, width = c(8, 4,2,2,2), unit = "cm")
+```
+
+____________________________________
+
+
+
+
+
+
+
+<!-- ```{r Model1_prediction_Figure, eval=FALSE, fig.height= 8,fig.width=8, fig.cap= "Fig. 3. Predictions of the *Model 1* describing the dependency of *Ptros* on distance to the nearest port (A), average fetch (B), distance to the nearest river (C), salinity (E) and substrate type, nearest port status and size of the largest river (E, F). The  gray ribbons and wiskers demonstrate 95% confidence interval. The dotted lines in panels A-D represent the median predicted value, this value is given to track the trend in the change in model predictions. Points on panels A-D reflect partial residuals but not raw data for each sample."} -->
+
+<!-- Pl_Model_1 <- plot_grid(Pl_port_dist_smoother, Pl_fetch_smoother, Pl_riv_dist_smoother,  Pl_sal_smoother, Pl_Small_Pi, Pl_Large_Pi,  ncol = 2, labels = "AUTO") -->
+
+<!-- # Pl_Model_1 -->
+
+<!-- # ggsave(filename = "Fig_2.svg", plot = Pl_Model_1, width = 297,height = 210, units = "mm", dpi = 600) -->
+
+<!-- ``` -->
+
+![Fig. 3. Predictions of the *Model 1* (upper row) and *Model 2* (lower row) describing the dependency of *Ptros* and T- and E-morphotype abundance, respecively, on (A) continous predictors (salinity,  distance to the nearest river, distance to the nearest port and fetch) and (B) discrete  factors (substrate type, nearest port status and size of the largest river). The  gray ribbons and wiskers demonstrate 95% confidence interval. The dotted lines in panels (A) represent the mean smoother value.](figures/Pl_all_smoothers_and_discrete_predictors_GAM.png)
+
+
+When one examines separate maps of *Ptros* distribution across algal and bottom substrates, the universally elevated proportion of *MT* on the former is striking (**Fig. 1** D-G). While spatial distribution of *Ptros* was highly mosaic, its maximum values on both substrates were observed in the Bay’s top and in some deep inlets, while its minimum values were observed along the open part of the southeastern coast (**Fig. 1** D-G). Associations between *Ptros* and environmental predictors other than substrate could not be discerned on the maps (**Fig. 1**).
+
+
+**Relationship of Ptros and environmental parameters evaluated by Model 1**
+
+Although some non-zero pairwise correlations between environmental factors were found (see above), VIF values calculated for the predictors were generally low (maximal VIF being that for Fetch, 1.76). In our opinion, this result means that the collinearity between the predictors was negligible, i.e. they did not mask each other’s influence. 
+
+**Model 1** explained 77% of the total deviance. It revealed a significant dependency of *Ptros* on all predictors except *DistRiver*. Effective degrees of freedom for *DistPort* and *Fetch* were close to one, indicating the linear dependence of *Ptros* on them. On the contrary, the dependence on the third continuous predictor, *Salinity*, was curvilinear (**Table 2**). 
+
+
+According to the model, *Ptros* decreased both with *DistPort* (**Fig. 2** A) and with *Fetch* (**Fig. 2**, B). This means that the proportion of *MT* was higher near ports and in surf-protected areas. *PortStatus* also had a significant effect: predicted *Ptros* was higher near active ports than near abandoned ones (**Fig. 2** E, F). The curvilinear dependence of *Ptros* on *Salinity* can be described as follows: predicted *Ptros* decreases with salinity in the range from low to “normal” salinity (24 ppt in the White Sea) and increases again at higher salinities (up to 30 ppt) (**Fig. 2**, D). Besides, predicted *Ptros* was higher near large rivers than near small ones. Finally, *Ptros* was higher on algal substrates than on bottom ones (**Fig. 1** C, D; **Fig. 2** E, F). As mentioned above, distance to the nearest river did not affect *Ptros* (**Fig 2** C). 
+
+
+
+
+
+
+**Dependency of *Ptros* on substrate and mussel abundance evaluated by Model 2** 
+
+++++++++
+
+**Figure 3**. The dependence of difference between proportion of *MT* on algal and bottom substrates (*Diff*) on proportion of *MT* in a site (*Ptros~Site~*) (A) and estimations of total abundance of *MT* (B) and *ME* (D). Principal components from the matrix of T- and E-morphotypes abundances on different substrates are considered as proxies for *MT* and *ME* abundances (PC1 and PC2 respectively). Points reflect partial residuals, not raw data. Colored gradient bars at the top of the figures reflect linear associations between PC1 and T-morphotype (B) and PC2 and E-morphotype abundance (C).
+
+
+In the principal component analysis of the abundance matrix of T- and E- morphotypes on different substrates, PC1 and PC2 explained 62% and 20% of variation, respectively. A high positive correlation of PC1 with abundances of T-morphotypes and of PC2 with abundances of E-morphotypes was found on both substrates (**Fig. 3** B, C). Thus, the abundance of conspecific morphotypes varied consistently on different substrates (see also **Fig. 1** C, D). Therefore, PC1 and PC2 can be considered as proxies of *MT* and *ME* abundance, respectively. 
+
+Parameters of **Model 2**, which explained 31% of the deviance, are provided in ESM (**STable 7**). **Figure 3** demonstrates how the difference between *MT* proportion on algal (*Ptros~Algae~*) and bottom (*Ptros~Bottom~*) substrates (*Dif*) depends on *MT* prevalence at the site (*Ptros~Site~*) and mussel abundances in terms of PCs according to the model. The dependence of *Diff*  on *Ptros~Site~* was significant (p < 0.001, **STable 7**) and, expectedly, bell-shaped, with minimal values at sites absolutely dominated by *ME* or *MT* (*Ptros* close to 0 or 1) and maximal at sites with equal presence of both species (**Fig.4** A). Dependence of *Diff*  on PC1 was marginally significant (p = 0.087) and tended to decrease with increasing PC1 (**Fig.3** B). The dependence of *Diff*  on PC2 was significantly positive (p = 0.011, **STable 7**) (Fig.4 C). This means that the species were strongly segregated by substrates at sites with a high *ME* abundance but not at sites with a high *MT* abundance.
+
+
+**Assessment of predictive power of Model 1**
+
+++++++
+
+**Figure 4**. Ability of SDM (**Model 1**) to predict proportion of *MT* (*Ptros*) in mussel samples from the modeling (A) and the testing data sets (B-D). Each plot compares empirical *Ptros* in samples from algal and bottom substrates and *Ptros* predicted by the model within the particular data set. If the empirical and the predicted values were the same, the points would lie on the diagonal (dashed line). Solid lines delineate *MT*- and *ME*-dominated samples on each axis. Labels mark the quadrants with false positive (FP), true positive (TP), true negative (TN) and false negative (FN) predictions in the analysis of the ability of the model to classify samples into *ME*- and *MT*-dominated ones. Dataset names are shown in chart headers.
+
+The ability of **Model 1** to classify samples into *ME*- and *MT*-dominated ones was good for the “Kandalaksha littoral” testing dataset (AUC=0.84 vs AUC=0.85 for modeling dataset), with only a few false negatives (i.e. sites unpredictably dominated by *MT*) (**Fig. 4** A, B). Predictive value of the model for the two testing sets from the Barents Sea was lower, although not critically so: AUC = 0.71 for “Tyuva littoral” and AUC=0.69 for “Tyuva sublittoral”. Unlike the “Kandalaksha littoral” testing dataset, most false results were positive, i.e., the model overestimated *Ptros* more often. 
+
+
+
+<!-- ```{r Salinity_discription_values } -->
+<!-- # Different values needed for salinity effect discription -->
+
+<!-- sal_smoother <-  -->
+<!-- sm %>%  -->
+<!--   filter(smooth == "s(Salinity)")   -->
+
+<!-- sm_low_salinity <-  -->
+<!-- # sal_smoother %>% filter(est > median(est)) %>% filter(Salinity < 20)  -->
+<!-- sal_smoother %>% filter(est > 0) %>% filter(Salinity < 20)  -->
+
+
+<!-- Min_salinity <- round(max(sm_low_salinity$Salinity)) -->
+
+<!-- sm_high_salinity <-  -->
+<!-- sal_smoother %>% filter(est > 0) %>% filter(Salinity > 20)  -->
+
+<!-- Max_salinity <- round(min(sm_high_salinity$Salinity)) -->
+
+
+<!-- Number_sites_low_salinity <- myt_site %>% filter(Salinity <= round(Min_salinity, 0)) %>% nrow() -->
+
+<!-- Number_sites_high_salinity <- myt_site %>% filter(Salinity >= round(Max_salinity, 0)) %>% nrow() -->
+
+<!-- ``` -->
+
+
+
+```{r Model_Substrate_PT_Difference}
+
 
 library(vegan)
 
@@ -1698,202 +2062,6 @@ plot_grid(Pl_training, Pl_Kand_testing, Pl_Tuva_testing_2, Pl_Tuva_testing_3, la
 
 
 ```
-
-```{r Absolute abundance modelling}
-# Model for absolute abundance
-# 
-# # Assessment of abyndance by PC1 and PC2
-# 
-# all_sites <- 
-#   merge(myt_site, all_sites)
-# 
-# all_sites$Log_Min_dist_river <- log(all_sites$Min_dist_river)
-# all_sites$Log_Fetch <- log(all_sites$Fetch)
-# all_sites$Log_Min_dist_port <- log(all_sites$Min_dist_port)
-# 
-# 
-# 
-# Mod_gam_PC1 <- gam(PC1 ~ s(Salinity, bs = "cs") + s(Log_Min_dist_river, bs = "cs") + s(Log_Fetch, bs = "cs") + s(Log_Min_dist_port, bs = "cs") + River_Size + Port_Status, method = "REML", family = "gaussian", data = all_sites )
-# 
-# library(DHARMa)
-# simulateResiduals(Mod_gam_PC1, plot = T)
-# 
-# summary(Mod_gam_PC1)
-# 
-# draw(Mod_gam_PC1, residuals = T)
-# 
-# 
-# Mod_gam_PC2 <- gam(PC2 ~ s(Salinity, bs = "cs") + s(Log_Min_dist_river, bs = "cs") + s(Log_Fetch, bs = "cs") + s(Log_Min_dist_port, bs = "cs") + River_Size + Port_Status, method = "REML", family = "gaussian", data = all_sites )
-# 
-# simulateResiduals(Mod_gam_PC2, plot = T)
-# 
-# summary(Mod_gam_PC2)
-# 
-# 
-# draw(Mod_gam_PC2, residuals = T)
-# 
-################################################################################
-# Assessment of abundance by total dencity of T-morphotype (Log_D_T) and E-morphotype (Log_D_E) 
-
-# One common model
-
-all_sites_long <-
-all_sites %>% 
-  dplyr::select(Site, Salinity, Log_Min_dist_river, Log_Fetch, Log_Min_dist_port, River_Size, Port_Status, Log_D_T, Log_D_E) %>% 
-  rename(T_morphotype = Log_D_T, E_morphotype = Log_D_E) %>% 
-  melt(id.vars = c("Site", "Salinity", "Log_Min_dist_river", "Log_Fetch", "Log_Min_dist_port", "River_Size", "Port_Status"), variable.name = "Morphotype", value.name = "Abundance")
-
-all_sites_long$Morphotype <- factor(all_sites_long$Morphotype)
-
-
-Mod_gam_Abundance <- gam(Abundance ~ s(Salinity, bs = "cs", by = Morphotype) + s(Log_Min_dist_river, bs = "cs", by = Morphotype) + s(Log_Fetch, bs = "cs", by = Morphotype) + s(Log_Min_dist_port, bs = "cs", by = Morphotype) + River_Size*Morphotype + Port_Status*Morphotype, method = "REML", family = "gaussian", data = all_sites_long )
-
-# simulateResiduals(Mod_gam_Abundance, plot = T)
-
-# summary(Mod_gam_Abundance)
-
-# draw(Mod_gam_Abundance, grouped_by = F)
-
-
-sm_abund <- 
-  smooth_estimates(Mod_gam_Abundance) %>%
-  add_confint()
-
-sm_abund$.smooth <- gsub(pattern = ":MorphotypeE_morphotype", x =  sm_abund$.smooth, replacement = "")
-sm_abund$.smooth <- gsub(pattern = ":MorphotypeT_morphotype", x =  sm_abund$.smooth, replacement = "")
-
-
-
-```
-
-```{r Visualization of Mod_gam_Abundance}
- 
-Pl_sal_smoother_abund <- 
-sm_abund %>%
-  filter(.smooth == "s(Salinity)") %>%
-  ggplot() +
-    geom_rug(aes(x = Salinity),
-           data = myt_full,
-           sides = "b", length = grid::unit(0.02, "npc")) +
-  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = Salinity, group = Morphotype),
-              alpha = 0.2) +
-  geom_line(aes(x = Salinity, y = .estimate, color = Morphotype), lwd = 1) +
-  labs(y = "Partial effect", x = "Salinity") +
-  geom_hline(yintercept = 0, linetype = 2) +
-  theme_bw() +
-  scale_color_manual(values = c("red", "blue")) +
-  guides(color = "none")
-
-
-Pl_dist_riv_smoother_abund <- 
-sm_abund %>%
-  filter(.smooth == "s(Log_Min_dist_river)") %>%
-  ggplot() +
-    geom_rug(aes(x = Log_Min_dist_river),
-           data = myt_full,
-           sides = "b", length = grid::unit(0.02, "npc")) +
-  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = Log_Min_dist_river, group = Morphotype),
-              alpha = 0.2) +
-  geom_line(aes(x = Log_Min_dist_river, y = .estimate, color = Morphotype), lwd = 1) +
-  labs(y = "Partial effect", x = "Log Distance to the nearest river (km)") +
-  geom_hline(yintercept = 0, linetype = 2) +
-  theme_bw() +
-  scale_color_manual(values = c("red", "blue")) +
-  guides(color = "none")
-
-
-Pl_dist_port_smoother_abund <- 
-sm_abund %>%
-  filter(.smooth == "s(Log_Min_dist_port)") %>%
-  ggplot() +
-    geom_rug(aes(x = Log_Min_dist_port),
-           data = myt_full,
-           sides = "b", length = grid::unit(0.02, "npc")) +
-  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = Log_Min_dist_port, group = Morphotype),
-              alpha = 0.2) +
-  geom_line(aes(x = Log_Min_dist_port, y = .estimate, color = Morphotype), lwd = 1) +
-  labs(y = "Partial effect", x = "Log Distance to the nearest port (km)") +
-  geom_hline(yintercept = 0, linetype = 2) +
-  theme_bw() +
-  scale_color_manual(values = c("red", "blue")) +
-  guides(color = "none")
-
-
-Pl_fetch_smoother_abund <- 
-sm_abund %>%
-  filter(.smooth == "s(Log_Fetch)") %>%
-  ggplot() +
-    geom_rug(aes(x = Log_Fetch),
-           data = myt_full,
-           sides = "b", length = grid::unit(0.02, "npc")) +
-  geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = Log_Fetch, group = Morphotype),
-              alpha = 0.2) +
-  geom_line(aes(x = Log_Fetch, y = .estimate, color = Morphotype), lwd = 1) +
-  labs(y = "Partial effect", x = "Log Fetch (km)") +
-  geom_hline(yintercept = 0, linetype = 2) +
-  theme_bw() +
-  scale_color_manual(values = c("red", "blue")) +
-  guides(color = "none")
-
-
-
-
-```
-
-```{r Parametric term visualization Abundance}
-
-# Predictions for parametric terms 
-
-ds_abund <-  data_slice(Mod_gam_Abundance, Morphotype = evenly(Morphotype),  Port_Status = evenly(Port_Status), River_Size = evenly(River_Size)) 
-
-
-Fit_abund <- predict.gam(Mod_gam_Abundance, newdata = ds_abund, se = T, type = "link", exclude = c("s(Salinity)", "s(Log_Min_dist_river)",  "s(Log_Average_Fetch)",  "s(Log_Min_dist_port)", "s(Site)"))
-
-ds_abund$Fit = Fit_abund$fit
-
-ds_abund$SE = Fit_abund$se.fit
-ds_abund$CI_low <- (Fit_abund$fit - 1.96*Fit_abund$se.fit)
-ds_abund$CI_up <- (Fit_abund$fit + 1.96*Fit_abund$se.fit)
-
-
-Pl_Small_abund <-
-ds_abund %>% 
-  filter(River_Size == "Small") %>%
-ggplot(., aes(x = Morphotype, y = Fit, fill = Port_Status)) +
-  geom_col(position = position_dodge()) +
-  scale_fill_manual(values = c("blue", "gray")) +
-  geom_errorbar(aes(ymin = CI_low, ymax = CI_up), width = 0.2, position = position_dodge(width = 0.9)) +
-  theme_bw()+
-  ggtitle("The nearest River: Small") +
-  theme(legend.position = c(0.8, 0.2)) +
-  labs(x = "", y = "Partial effect", fill = "Nearest port status")
-
-#
-
-Pl_Large_abund <-
-ds_abund %>% 
-  filter(River_Size == "Large") %>%
-ggplot(., aes(x = Morphotype, y = Fit, fill = Port_Status)) +
-  geom_col(position = position_dodge()) +
-  scale_fill_manual(values = c("blue", "gray")) +
-  geom_errorbar(aes(ymin = CI_low, ymax = CI_up), width = 0.2, position = position_dodge(width = 0.9)) +
-  theme_bw()+
-  ggtitle("The nearest River: Large") +
-  guides(fill = "none") +
-  theme(legend.position = c(0.19, 0.5)) +
-  labs(x = "", y = "Partial effect")
-#
-
-```
-
-
-
-
-```{r}
-plot_grid(Pl_sal_smoother, Pl_sal_smoother_abund, Pl_riv_dist_smoother, Pl_dist_riv_smoother_abund, Pl_port_dist_smoother, Pl_dist_port_smoother_abund, Pl_fetch_smoother,Pl_fetch_smoother_abund, Pl_Small_Pi, Pl_Small_abund, Pl_Large_Pi, Pl_Large_abund, ncol = 2)
-```
-
-
 
 ## Discussion
 

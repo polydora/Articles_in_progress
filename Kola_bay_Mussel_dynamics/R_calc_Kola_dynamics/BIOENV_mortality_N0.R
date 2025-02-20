@@ -51,6 +51,11 @@ Ya_N_mean <-
   summarise(mean_N = mean(sum_N, na.rm = TRUE))
 # write.table("clipboard", sep = "\t")
 
+Ya_N_mean <- data.frame(Year = c(2000, Ya_N_mean$Year), mean_N = c(1990, Ya_N_mean$mean_N))
+
+
+
+
 Ya_gen %>% 
   filter(mean_N > 0) %>%
   filter(Generation >= 1995 & Generation <= 2014) %>% 
@@ -183,6 +188,10 @@ generation_limits$N_lifespan <- NA
 generation_limits$B_lifespan <- NA
 
 
+generation_limits$B_begin <- NA
+generation_limits$N_begin <- NA
+
+
 for(i in 1:nrow(generation_limits)){
 
   # Парамтеры для года формирования генерации 
@@ -296,6 +305,20 @@ for(i in 1:nrow(generation_limits)){
     pull(value) %>% 
     mean
   
+  
+  generation_limits$B_begin[i] <- 
+    Ya_B_mean %>% 
+    filter(Year %in% years) %>% 
+    pull(B) %>% 
+    mean
+  
+  generation_limits$N_begin[i] <- 
+    Ya_N_mean %>% 
+    filter(Year %in% years) %>% 
+    pull(mean_N) %>% 
+    mean
+  
+  
   ###############################  
   
   
@@ -388,6 +411,9 @@ for(i in 1:nrow(generation_limits)){
 }
 
 
+
+
+
 df_lm_filtered %>%
   filter(term == "(Intercept)") %>%
   dplyr::  select(Generation, estimate) %>%
@@ -406,8 +432,48 @@ df_lm_filtered %>%
 
 mort_No <- merge(recruitment, mortality)
 
+
+# Считаем BioEnv для N0 с далением данных по климату lifespan и B_lifespan N_lifespan и удаляем те строки, которые содержат NaN 
+
+env_begin <- 
+  generation_limits %>% 
+  select(Generation, Winter_Tw_begin, Spring_Tw_begin, Summer_Tw_begin, Winter_Ta_begin, Spring_Ta_begin, Summer_Ta_begin, Winter_Waves_begin, Spring_Waves_begin, Summer_Waves_begin,Autumn_Waves_begin, Winter_Wind_begin, Spring_Wind_begin, Summer_Wind_begin, Autumn_Wind_begin, N_begin, B_begin) %>% 
+  filter(!is.na(N_begin))
+
+No <- 
+  mort_No %>% 
+  filter(Generation %in%  env_begin$Generation) %>% 
+  select(N0)
+
+env_lifespan <- 
+  generation_limits %>% 
+  select(Generation, Winter_Tw_lifespan, Spring_Tw_lifespan, Summer_Tw_lifespan, Winter_Ta_lifespan, Spring_Ta_lifespan, Summer_Ta_lifespan, N_lifespan, B_lifespan) 
+
+Mort <- 
+  mort_No %>% 
+  select(M)
+
 library(vegan)
 
-bioenv_res <- bioenv(comm = mort_No[,-1], env = generation_limits %>% select(-c(Generation, min_Year, max_Year, N_lifespan, B_lifespan)), method = "spearman", index = "euclidean", metric = "euclidean", parallel = 2)
+bioenv_No <- bioenv(comm = No, env = env_begin[,-1], method = "spearman", index = "euclidean", metric = "euclidean", parallel = 2)
+
+qplot(x = env_begin$Spring_Tw_begin,  y = No$N0) + geom_smooth()
+
+qplot(x = env_begin$Spring_Ta_begin,  y = No$N0) + geom_smooth()
+
+qplot(x = env_begin$Winter_Wind_begin,  y = No$N0) + geom_smooth()
+
+qplot(x = env_begin$Spring_Wind_begin,  y = No$N0) + geom_smooth()
+
+
+bioenv_Mort <- bioenv(comm = Mort, env = env_lifespan[,-1], method = "spearman", index = "euclidean", metric = "euclidean", parallel = 2)
+
+qplot(x = env_lifespan$B_lifespan,  y = Mort$M) + geom_smooth(method ="lm")
+
+qplot(x = env_lifespan$N_lifespan,  y = Mort$M) + geom_smooth(method ="lm")
+
+
+
+# bioenv_res <- bioenv(comm = mort_No[,-1], env = generation_limits %>% select(-c(Generation, min_Year, max_Year, N_lifespan, B_lifespan)), method = "spearman", index = "euclidean", metric = "euclidean", parallel = 2)
 
 
