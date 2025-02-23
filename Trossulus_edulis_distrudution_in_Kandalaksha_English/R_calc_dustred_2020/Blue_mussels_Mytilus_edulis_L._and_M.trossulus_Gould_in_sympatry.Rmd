@@ -22,7 +22,7 @@ options(knitr.kable.NA = '')
 
 library(ggplot2)
 library(lme4)
-library(glmmADMB)
+# library(glmmADMB)
 library(reshape2)
 library(dplyr)
 library(patchwork)
@@ -1477,7 +1477,7 @@ ft_Model_2_summ_parametric <-
 
 
 
-```{r Model1_print_smoothers}
+```{r Model2_print_smoothers}
 ft_Model_2_summ_smoothers <-
   ft_Model_2_summ_smoothers %>% 
   set_caption(caption = "Table 3. Parameters of smoothers and coefficients of parametric terms for Model 2 describing dependency of mussel abundance on environmental predictors. Edf – effective degrees of freedom.")
@@ -1488,9 +1488,9 @@ ft_Model_2_summ_smoothers %>%
 
 
 
-```{r Model1_print_parametric}
+```{r Model2_print_parametric}
 
-ft_Model_1_summ_parametric %>%   
+ft_Model_2_summ_parametric %>%   
 width(j = 1:5, width = c(8, 4,2,2,2), unit = "cm")
 ```
 
