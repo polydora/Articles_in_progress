@@ -270,7 +270,7 @@ P. P. Strelkov ^1,?^
 
 Species distribution models (SDMs) describing the relationship between species occurrence and environmental parameters can be used to assess the ecological niche of a species. Usually applied to morphologically distinct species, SDMs are also a promising tool for describing niche partitioning in coexisting cryptic species. An example of the latter in the marine realm are blue mussels *Mytilus edulis* (*ME*) and *M. trossulus* (*MT*). Despite considerable research effort, little is known about how they share space and resources in sympatry anywhere except in the Baltic Sea. Salinity, substrate, surf and proximity to harbors have been suggested as candidate factors but no conclusion has been made. Here we assessed partial effects of these predictors on divergence of *ME* and *MT* in the White Sea littoral applying SDMs to 570 mussel samples with known taxonomic structure. We found that each of the predictors influenced spatial segregation. The most expected habitat of *ME* was a bottom substrate in a wind-exposed location with a “normal” salinity (24 ppt) away from ports and large rivers, while for *MT* it was an algal substrate in a wind-protected area with a lower salinity close to ports and large rivers. We also attempted to answer the question whether the species segregation by substrate was density-dependent and found that the degree of segregation positively depended on *ME* abundance, which is an indication that *ME* outcompetes *MT* on bottom substrates.We discuss whether the predictors used in our study can drive the segregation of these species outside the White Sea.
 
-Key words: Mytilus; cryptic species; species distribution models; ecological niche divergence 
+Key words: *Mytilus*; cryptic species; species distribution models; ecological niche divergence 
 
 ## Introduction
 
@@ -355,10 +355,12 @@ Mussels were sampled at 95 sites within the littoral fucoid belt in 2011-2018 (*
 
 
 We used mussels with a shell length larger than 10 mm to identify the shell morphotypes reliably [@Khaitov2021]. In the bottom samples all mussels from a frame were used. In the algal samples the procedure was different. One bundle of algae, containing at least a few dozen mussels, was chosen and weighed together with the attached mussels. The rest of the algae from a frame were weighted too. Mussels from the bundle were counted and used for further analysis. The ratio between the counted number of mussels and the bundle weight was applied to the total algal weight to reconstruct the total number of mussels in the sample (**STable 3**). For 12 sites the information on total number of mussels in algal samples was lacking, and they were excluded from the analyses which required data on mussel abundance 
+
 ___________________________________
 
 (**Model 2** and **Model 3**, see below).
 ___________________________________
+
 
 Shell morphotypes (E-morphotype, characteristic of *ME*, and T-morphotype, characteristic of *MT*) were identified for all selected mussels as in @Khaitov2021. Further, the proportion of morphotypes was converted to the proportion of *MT* (*Ptros*) in each sample, in pooled samples from each substrate from each site (*Ptros~Algae~* and *Ptros~Bottom~*) and in pooled samples from each site (*Ptros~Site~*), using equation
 
@@ -440,16 +442,16 @@ We used GAM [generalized additive model, @wood2017generalized] as a modeling tec
 
 To check for the predictors’ collinearity in the model, we calculated the variance inflation factor [VIF, @Fox1992]. Additionally, we calculated Pearson correlation between continuous predictors. To verify that **Model 1** met the assumptions of sampling independence, we examined the presence of residuals’ spatial autocorrelation by means of spline correlogram construction [@Bjornstad2001] with the function spline.correlog() from the package “ncf” [@Bjornstad2022] and found no evidence of spatial autocorrelation.
 
-________________________________________
++++++++++++++++++
 **Dependency of mussels abundance on environmental parameters in modeling dataset (Model 2)**
 
-For this part of the analysis, we used a matrix of abundance of T-mophotype and E-morphotype mussels. A mean abundance was calculated for each morphotype in each site, without considering the substrate on which samples were taken. The omission of substrate as a factor in this case was due to the fact that mussel abundance on different substrates was estimated by different techniques (see above). The latter made it impossible to isolate the effect of substrate from the effect of the abundance estimation technique. The relative *Ptros* value used in the Model1 is devoid of this drawback. 
+For this part of the analysis, we used a matrix of abundance of T-mophotype and E-morphotype mussels. A mean abundance was calculated for each morphotype in each site, without considering the substrate on which samples were taken. The omission of substrate as a factor in this case was due to the fact that mussel abundance on different substrates was estimated by different techniques (see above). The latter is not crucial for calculation of such relative values as *Ptros* but make it impossible to isolate the effect of abundance estimation technique from the effect of substrate type. 
 
-The resulting mean abundances of the two morphotypes were log-transformed and used as the dependent variable in the Model 2. This model was constructed as an generalized additive model (GAM with Gaussian residuals’ distribution) and included the same set of predictors as **Model 1**, except for the factor “Substrate” and the random factor “Site”. The factor “Morphotype” was included in the **Model 2**, as well as its interactions with other predictors. 
+The resulting mean abundances of the two morphotypes in each site were log-transformed and used as the dependent variable in the **Model 2**. This model was constructed as a generalized additive model (GAM with Gaussian residuals’ distribution) and included the same set of predictors as **Model 1**, except the factor “Substrate” and the random factor “Site”. The factor “Morphotype” was included in the **Model 2**, as well as its interactions with other predictors. 
 
-The model validity was assessed following the same approach as in the case of Model 1. No collinearity of predictors and spatial patterns in the residuals was detected.
+The model validity was assessed following the same approach as in the case of **Model 1**. No collinearity of predictors and spatial patterns in the residuals was detected.
 
-________________________________________
+++++++++++++++++++++++++++++++++++
 
 
 
@@ -1327,7 +1329,7 @@ all_sm_long %>%
   geom_line(aes(x = value, y = .estimate, color = Morphotype), lwd = 0.5) +
   labs(y = "Partial effect") +
   geom_hline(yintercept = 0, linetype = 2, linewidth = 0.1) +
-  facet_grid(Model ~ variable, scales = "free", , switch = 'x') +
+  facet_grid(Model ~ variable, scales = "free", switch = 'x') +
   guides(fill = "none") +
   scale_color_manual(values = c("black", "blue", "red") ) +
   scale_fill_manual(values = c("black", "blue", "red")) +
@@ -1406,9 +1408,7 @@ Pl_all_categorical <-
 
 ```
 
-
-____________________________________
-
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
 ```{r Model2_output}
@@ -1494,7 +1494,8 @@ ft_Model_2_summ_parametric %>%
 width(j = 1:5, width = c(8, 4,2,2,2), unit = "cm")
 ```
 
-____________________________________
+
+++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
 
@@ -1518,6 +1519,7 @@ ____________________________________
 When one examines separate maps of *Ptros* distribution across algal and bottom substrates, the universally elevated proportion of *MT* on the former is striking (**Fig. 1** D-G). While spatial distribution of *Ptros* was highly mosaic, its maximum values on both substrates were observed in the Bay’s top and in some deep inlets, while its minimum values were observed along the open part of the southeastern coast (**Fig. 1** D-G). Associations between *Ptros* and environmental predictors other than substrate could not be discerned on the maps (**Fig. 1**).
 
 
+
 **Relationship of Ptros and environmental parameters evaluated by Model 1**
 
 Although some non-zero pairwise correlations between environmental factors were found (see above), VIF values calculated for the predictors were generally low (maximal VIF being that for Fetch, 1.76). In our opinion, this result means that the collinearity between the predictors was negligible, i.e. they did not mask each other’s influence. 
@@ -1530,9 +1532,26 @@ According to the model, *Ptros* decreased both with *DistPort* (**Fig. 2** A) an
 
 
 
+++++++++++++++++++++++++
+
+Relationship of mussel abundance and environmental parameters evaluated by Model 2
+
+**Model 2** explained 66% of the total deviance. It revealed a significant interactions between the  predictors in the model and the factor “Morphotype” (Table 3). The latter indicates asymmetry in the response of two morphotypes abundance to the influence of the environmental factors included in the model (the lower panel in Fig. 2 А, B). Thus, as salinity measured at low tide increased, there was a statistically significant increase in E-morphotype abundance, but T-morphotype showed no statistical relationship with this predictor. The abundance of E-morphotype  was independent of distance from the nearest port (*DistPort*), while T-morphotype  decreased in abundance significantly when the distance from port increased.  As the coastal openness (*Fetch*) grew, the abundance of E-morphotype mussels increased, while the T-morphotype mussels declined sharply at the highest levels of this predictor. The response of abundance to the status of the nearest port also showed an asymmetric trend: T-morphotype abundance was slightly higher at sites closer to active ports than to abandoned ports but the opposite trend was observed for E-morphotype mussels. The influence of the size of the nearest river on the abundance of mussels of the two morphotypes was not significant (the lower panel in Fig. 2 B). 
+
+The only parameter to which the abundance of the two morphotypes was related in the same way was the distance to the nearest river (DistRiver). The abundance of mussels in both groups increased with distance from the river mouths (the lower panel in Fig. 2 A).
+
+Finally, model 2 revealed higher abundance of E-morphotype mussels compared to T-morphotype (Table 3; the lower panel in  Fig. 2 B).
+
+++++++++++++++++++++++++++++++++++++++++
 
 
-**Dependency of *Ptros* on substrate and mussel abundance evaluated by Model 2** 
+
+
+
+
+**Dependency of *Ptros* on substrate and mussel abundance evaluated by Model 3** 
+
+
 
 ++++++++
 
@@ -1541,7 +1560,7 @@ According to the model, *Ptros* decreased both with *DistPort* (**Fig. 2** A) an
 
 In the principal component analysis of the abundance matrix of T- and E- morphotypes on different substrates, PC1 and PC2 explained 62% and 20% of variation, respectively. A high positive correlation of PC1 with abundances of T-morphotypes and of PC2 with abundances of E-morphotypes was found on both substrates (**Fig. 3** B, C). Thus, the abundance of conspecific morphotypes varied consistently on different substrates (see also **Fig. 1** C, D). Therefore, PC1 and PC2 can be considered as proxies of *MT* and *ME* abundance, respectively. 
 
-Parameters of **Model 2**, which explained 31% of the deviance, are provided in ESM (**STable 7**). **Figure 3** demonstrates how the difference between *MT* proportion on algal (*Ptros~Algae~*) and bottom (*Ptros~Bottom~*) substrates (*Dif*) depends on *MT* prevalence at the site (*Ptros~Site~*) and mussel abundances in terms of PCs according to the model. The dependence of *Diff*  on *Ptros~Site~* was significant (p < 0.001, **STable 7**) and, expectedly, bell-shaped, with minimal values at sites absolutely dominated by *ME* or *MT* (*Ptros* close to 0 or 1) and maximal at sites with equal presence of both species (**Fig.4** A). Dependence of *Diff*  on PC1 was marginally significant (p = 0.087) and tended to decrease with increasing PC1 (**Fig.3** B). The dependence of *Diff*  on PC2 was significantly positive (p = 0.011, **STable 7**) (Fig.4 C). This means that the species were strongly segregated by substrates at sites with a high *ME* abundance but not at sites with a high *MT* abundance.
+Parameters of **Model 3**, which explained 31% of the deviance, are provided in ESM (**STable 7**). **Figure 3** demonstrates how the difference between *MT* proportion on algal (*Ptros~Algae~*) and bottom (*Ptros~Bottom~*) substrates (*Dif*) depends on *MT* prevalence at the site (*Ptros~Site~*) and mussel abundances in terms of PCs according to the model. The dependence of *Diff*  on *Ptros~Site~* was significant (p < 0.001, **STable 7**) and, expectedly, bell-shaped, with minimal values at sites absolutely dominated by *ME* or *MT* (*Ptros* close to 0 or 1) and maximal at sites with equal presence of both species (**Fig.4** A). Dependence of *Diff*  on PC1 was marginally significant (p = 0.087) and tended to decrease with increasing PC1 (**Fig.3** B). The dependence of *Diff*  on PC2 was significantly positive (p = 0.011, **STable 7**) (Fig.4 C). This means that the species were strongly segregated by substrates at sites with a high *ME* abundance but not at sites with a high *MT* abundance.
 
 
 **Assessment of predictive power of Model 1**
@@ -2065,7 +2084,13 @@ plot_grid(Pl_training, Pl_Kand_testing, Pl_Tuva_testing_2, Pl_Tuva_testing_3, la
 
 ## Discussion
 
-Having applied the SDM approach to an unprecedentedly extensive material, we demonstrated that almost all environmental predictors considered in our study — namely, surf level, distance to the port, status of the port (active vs abandoned), salinity at low tide, size of the nearest river and fouling substrate (fucoid algae vs bottom substrates) — influenced the distribution of *Mytilus edulis* (*ME*) and *M. trossulus* (*MT*) in the White Sea. The differences in the distribution, evident at scales ranging from meters to tens of kilometers, reflected the partial divergence of ecological niches of these two species. 
+Having applied the SDM approach to an unprecedentedly extensive material, we demonstrated that almost all environmental predictors considered in our study — namely, surf level, distance to the port, status of the port (active vs abandoned), salinity at low tide, size of the nearest river and fouling substrate (fucoid algae vs bottom substrates) — influenced the distribution of *Mytilus edulis* (*ME*) and *M. trossulus* (*MT*) in the White Sea. 
+
+++++++++++++++
+We revealed the influence of the environmental factors on both taxonomical structure of mixed populations and on abundance of two morphotypes, which are the proxies for mussel species.
+++++++++++
+
+The differences in the distribution, evident at scales ranging from meters to tens of kilometers, reflected the partial divergence of ecological niches of these two species. 
 
 
 Below we discuss the species adaptations that may underlie the patterns of *ME* and *MT* distribution against different predictors. Then we consider the possible role of competition in their segregation by substrates. Further, we discuss whether the same set of predictors can drive segregation of these species in other habitats than the littoral fucoid belt, elsewhere than in the White Sea and outside the Kola contact zone. Finally, we review the strengths and weaknesses of our approach to assessing ecological niche partitioning of sympatric mussels. 
@@ -2073,13 +2098,21 @@ Below we discuss the species adaptations that may underlie the patterns of *ME* 
 
 ### Ecological niche partitioning between *MT* and *ME* in the Kola contact zone
 
-Our results show that the most expected habitat for *ME* in the White Sea littoral is a bottom substrate in a surf-exposed location with a “normal” surface salinity for the White Sea (24 ppt) situated away from ports and large rivers. The most expected habitat for *MT* is an algal substrate in a wind-protected location with a lower than “normal” salinity situated close to active ports and large rivers. Only the differences related to ports and substrates have been previously noted in the White Sea [@vainola2011mytilus; @katolikova2016genetic].
+Our results show that the most expected habitat for *ME* in the White Sea littoral is a bottom substrate in a surf-exposed location with a “normal” surface salinity for the White Sea (24 ppt) situated away from ports and large rivers. The most expected habitat for *MT* is an algal substrate in a wind-protected location with a lower than “normal” salinity situated close to active ports. +++++ Both species tend to form abundant populations away from river mouth but proportion of *MT* tend to be higher if the nearest river is large. ++++ ~~and large rivers~~. Only the differences related to ports and substrates have been previously noted in the White Sea [@vainola2011mytilus; @katolikova2016genetic].
 
 **Segregation by salinity.** 
 
 In the Baltic Sea *MT* is adapted to an extremely low salinity, as confirmed by ecophysiological data [@Knobel2021 and references therein]. Comparative ecophysiological data on *MT* and *ME* elsewhere are inconclusive [@Gardner2001; @Qiu2002; @sokolova2024species]. Before our study, there has been no convincing evidence of segregation of these species by salinity in contact zones outside the Baltic, in particular, in the Kola zone [@Moreau2005; @Riginos2005; @katolikova2016genetic; @Marchenko2023]. For the White Sea, this lack of evidence could be due to at least three reasons. Firstly, the role of salinity in species segregation may be masked by other important factors. Secondly, the range of salinity in mussel habitats in the White Sea is relatively narrow as compared to the Baltic Sea. 
 
 The third reason is the curvilinear dependence of the proportion of *MT* in mixed settlements (*Ptros*) on salinity: *Ptros* increases not only when the salinity is reduced but also when it is extremely high for the White Sea (up to 30 ppt, **Fig. 2** D). This nonlinearity, which may prevent the dependence from being detected, can be explained in two ways. On the one hand, local summer surface salinity above 24 ppt in the Kandalaksha Bay, supposedly associated with irregular episodes of upwelling [@Dale2003], may be a nonspecific stress for littoral animals adapted to lower salinity, while *MT* can tolerate it better, being a more opportunistic species [@katolikova2016genetic, see also below]. On the other hand, as shown in detailed studies at the Barents Sea [@Khaitov2021; @Marchenko2023], the method of predicting *Ptros* (“morphotype test”) used in our study may slightly overestimate it at salinities close to 30 ppt. Therefore, we cannot rule out the possibility that the increased *Ptros* at sites with a high salinity is an artifact. 
+
+++++++++++
+
+Additional point arrived when we assess the dependence of mussel abundance on salinity. A clear pattern of dependency was revealed for abundance of E-morphotype (i.e. *ME*) only which expectedly prefer higher salinity.  The abundance of T-morphotype (i.e. *MT*) appears to be less dependent on salinity, indicating broader ecological niche in relation to this environmental axis. 
+
+++++++++++
+
+
 
 **Non-random distribution depending on distance to ports.** 
 
@@ -2104,11 +2137,12 @@ Spatial segregation of sympatric mussels by substrates, which is apparently dens
 
 The ability of our model to classify sites into *ME*- and *MT*- dominated ones in an independent testing dataset from the White Sea was high (AUC = 0.84). Therefore, we assume that the predictors included in the model explain most of the variation in species distribution within the studied habitat, the littoral fucoid belt. The model also showed a satisfactory performance on independent data from the Tyuva inlet in the Barents Sea (AUC ≈ 0.7), including sublittoral data. This result highlights the versatility of this set of predictors as regulators of *ME* and *MT* distribution in the Kola contact zone.
 
-The worst predictive value of the model for the Barents Sea data may be due to the following reasons. Firstly, considering that distribution of *ME* and *MT*  in the Tyuva Inlet by depth is non-random [@Marchenko2023], it may be associated with a large depth range of the sampling sites. The second reason may be a coarser categorization of the Barents Sea samples into algal and bottom ones. Since fouling substrate was not taken into account during sampling, we predicted it based on the projective cover of algae at the sampling site. Thirdly, we do not know whether the two species are non-randomly distributed across bottom and algal substrates in the sublittoral, where fucoids are replaced by kelps. Finally, the fact that SDM tended to overestimate *Ptros* in the Barents Sea data (false positive predictions) is consistent with the observation that the proportion of *MT* has been declining in the study area in the 2010s under seemingly stable environmental conditions in terms of predictors included in our model [@Marchenko2023]. This observation suggests the presence of some yet unknown factors regulating the taxonomic structure.
+The worst predictive value of the model for the Barents Sea data may be due to the following reasons. Firstly, considering that distribution of *ME* and *MT*  in the Tyuva Inlet by depth is non-random [@Marchenko2023], it may be associated with a large depth range of the sampling sites. The second reason may be a coarser categorization of the Barents Sea samples into algal and bottom ones. Since fouling substrate was not taken into account during sampling, we predicted it based on the projective cover of algae at the sampling site. Thirdly, we do not know whether the two species are non-randomly distributed across bottom and algal substrates in the sublittoral, where fucoids are replaced by kelps. ++++++ The fourth reason is associated with smaller sizes of the Tyuva inlet in comarison with the Kandalaksha Bay. In such a small inlet the variation in some predictors (*DistPort*, *DistRiver*, *Fetch*) is in narrow limits, which prevent the variation in predicted values (see **Fig. 4**).+++++
+Finally, the fact that SDM tended to overestimate *Ptros* in the Barents Sea data (false positive predictions) is consistent with the observation that the proportion of *MT* has been declining in the study area in the 2010s under seemingly stable environmental conditions in terms of predictors included in our model [@Marchenko2023]. This observation suggests the presence of some yet unknown factors regulating the taxonomic structure.
 
 ### Ecological niche partitioning between *MT* and *ME* in the Kola contact zone as compared to other zones
 
-Blue mussels are a challenging model for studying ecological niche partitioning between “cryptic” species in sympatry due to their wide distribution, biogeographic history and hybridization. *ME* and *MT* play similar ecological roles in their native oceans, Atlantic and Pacific, respectively [compare @commito2001dynamics; @bodkin2018variation] and therefore may inherently have strongly overlapping fundamental ecological niches. Contact zones between these species in the Atlantic can be considered as ecological (and evolutionary) “experiments”, set in strikingly different environments (from Baltic to Spitsbergen) at different times [from late post-glacial to the historical period, @vainola2011mytilus; @Wenne2020, and references therein]. The “design” of these “experiments” was possibly different too, because in some zones the original settler could be *ME* and in others, MT. In addition, competition [“ecological character displacement” , @pfennig2009character], hybridization [“reinforcement of prezygotic reproductive isolation”, @lukhtanov2011dobzhansky] and introgression [“adaptive introgression” , @hedrick2013adaptive] could influence the divergence of their ecological phenotypes differently in different zones. These considerations suggest that the zones should differ, and this hypothesis has been a recurrent theme in genetic research on blue mussel contact zones [@Riginos2005; @bierne2011coupling; @fraisse2016local]. Nevertheless, we believe that the differences between these two species are more fundamental and thus that conspecific ecological phenotypes (“niches”) in different zones should be similar, producing comparable patterns in species distributions. Some results of this study support this hypothesis.
+Blue mussels are a challenging model for studying ecological niche partitioning between “cryptic” species in sympatry due to their wide distribution, biogeographic history and hybridization. *ME* and *MT* play similar ecological roles in their native oceans, Atlantic and Pacific, respectively [compare @commito2001dynamics; @bodkin2018variation] and therefore may inherently have strongly overlapping fundamental ecological niches. Contact zones between these species in the Atlantic can be considered as ecological (and evolutionary) “experiments”, set in strikingly different environments (from Baltic to Spitsbergen) at different times [from late post-glacial to the historical period, @vainola2011mytilus; @Wenne2020, and references therein]. The “design” of these “experiments” was possibly different too, because in some zones the original settler could be *ME* and in others, *MT*. In addition, competition [“ecological character displacement” , @pfennig2009character], hybridization [“reinforcement of prezygotic reproductive isolation”, @lukhtanov2011dobzhansky] and introgression [“adaptive introgression” , @hedrick2013adaptive] could influence the divergence of their ecological phenotypes differently in different zones. These considerations suggest that the zones should differ, and this hypothesis has been a recurrent theme in genetic research on blue mussel contact zones [@Riginos2005; @bierne2011coupling; @fraisse2016local]. Nevertheless, we believe that the differences between these two species are more fundamental and thus that conspecific ecological phenotypes (“niches”) in different zones should be similar, producing comparable patterns in species distributions. Some results of this study support this hypothesis.
 
 The observation that *MT* frequency is elevated in low-salinity habitats not only in the Baltic but also in the White Sea seems to resolve the old conundrum about seemingly contrasting salinity adaptations of the Baltic and other Atlantic *MT* populations [e.g. @Riginos2005; @katolikova2016genetic, see also above]. Further, an increased *MT* frequency has been repeatedly observed in calm and freshened waters e.g. in the tops of fjords near Bergen in Norway [@Ridgway2004]  and Uummannaq in Greenland [@Wenne2020] and in Loch Etive in Scotland [@Beaumont2008], which is hardly a coincidence. Our observations indicate that this combination of weak surf and low salinity is also favorable for *MT* in the White Sea. 
 
