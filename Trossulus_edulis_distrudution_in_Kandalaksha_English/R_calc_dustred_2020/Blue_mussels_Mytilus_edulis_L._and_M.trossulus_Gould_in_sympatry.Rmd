@@ -1674,7 +1674,7 @@ summ_Mod_Dif <- tidy(Mod_Dif)
 sm <- smooth_estimates(Mod_Dif) %>%
   add_confint() 
 
-all_sites <-  add_residuals(data = all_sites,model = Mod_Dif, value = "Residuals")
+# all_sites <-  add_residuals(data = all_sites,model = Mod_Dif, value = "Residuals")
 
 
 Pl_Dif_model <- 
@@ -1686,7 +1686,8 @@ sm %>%
   # geom_hline(yintercept = median(sm$est), linetype = 2) +
   # geom_point(data = all_sites, aes(y = Residuals),cex = 1, colour = "steelblue3") +
   labs(x = "Ptros in Site", y = "Partial effect")+
-  geom_hline(yintercept = 0, linetype = 2)
+  geom_hline(yintercept = 0, linetype = 2) +
+  theme(panel.grid = element_blank())
  
 
 
@@ -1707,7 +1708,7 @@ Pred_Mod_D_T_PC1$Log_D_T_predicted = predict(Mod_D_T_PC1, newdata = Pred_Mod_D_T
 Pred_Mod_D_T_PC1$D_T_predicted <- exp(Pred_Mod_D_T_PC1$Log_D_T_predicted) - 1
 
 
-
+text_panel_size = 3.5
 
 Pl_Dif_model_PC1 <- 
 sm %>% 
@@ -1716,13 +1717,14 @@ sm %>%
   geom_line(color = "blue", linewidth = 1) +
   geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci), alpha=0.2 ) +
   # geom_hline(yintercept = median(sm$est), linetype = 2) +
-  geom_textbox(data = df_PC1, aes(x, y, label = label), width = grid::unit(0.7, "npc"), size = 2.3) +
+  geom_textbox(data = df_PC1, aes(x, y, label = label), width = grid::unit(0.7, "npc"), size = text_panel_size) +
   # geom_point(data = all_sites, aes(y = Residuals),cex = 1, colour = "steelblue3") +
   geom_hline(yintercept = 0, linetype = 2) +
   geom_tile(data = Pred_Mod_D_T_PC1, aes(x = PC1, y = Part_eff, fill = D_T_predicted)) + 
   scale_fill_gradient(low = "white", high = "red") +
   labs(x = "PC1", y = "Partial effect", fill = "T-morphotype \nabundance \n(ind./sq.m)") +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") +
+  theme(panel.grid = element_blank())
 
 
 
@@ -1747,13 +1749,14 @@ sm %>%
   geom_line(color = "blue", linewidth = 1) +
   geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci), alpha=0.2 ) +
   # geom_hline(yintercept = median(sm$est), linetype = 2)+
-    geom_textbox(data = df_PC2, aes(x, y, label = label), width = grid::unit(0.7, "npc"), size = 2.3) +
-  geom_point(data = all_sites, aes(y = Residuals),cex = 1, colour = "steelblue3") +
+    geom_textbox(data = df_PC2, aes(x, y, label = label), width = grid::unit(0.7, "npc"), size = text_panel_size) +
+  # geom_point(data = all_sites, aes(y = Residuals),cex = 1, colour = "steelblue3") +
   geom_hline(yintercept = 0, linetype = 2) +
   geom_tile(data = Pred_Mod_D_E_PC2, aes(x = PC2, y = Part_eff, fill = D_E_predicted)) + 
   scale_fill_gradient(low = "white", high = "blue") +
   labs(x = "PC2", y = "Partial effect", fill = "E-morphotype \nabundance \n(ind./sq.m)") +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") +
+  theme(panel.grid = element_blank())
 
 
 
@@ -1764,14 +1767,14 @@ sm %>%
 
 ```{r Plot_Model_Dif, eval=FALSE, fig.cap="Fig. 4. The dependence of difference between *PT* on Algae and Bottom subatrates on Ptros~Site~ (A) and total mussel abundance (B)."}
 
-Pl_Model_2 <-
+Pl_Model_3 <-
   plot_grid(Pl_Dif_model, Pl_Dif_model_PC1, Pl_Dif_model_PC2, labels = "AUTO", nrow = 1)
 
 # Pl_PC_interpretation <- plot_grid(Pl_PC1_1,Pl_PC2_1, Pl_PC1_2, Pl_PC2_2, Pl_PC1_3, Pl_PC2_3, Pl_PC1_4, Pl_PC2_4, ncol = 2)
 
-Pl_Model_2
+Pl_Model_3
 
-ggsave(filename = "Fig_3.svg", plot = Pl_Model_2, width = 297,height = 210, units = "mm", dpi = 600)
+ggsave(filename = "Fig_3.svg", plot = Pl_Model_3, width = 297,height = 210, units = "mm", dpi = 600)
 
 ```
 
