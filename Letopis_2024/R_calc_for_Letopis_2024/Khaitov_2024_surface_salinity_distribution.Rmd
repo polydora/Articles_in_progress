@@ -1,0 +1,240 @@
+---
+title: "Распределение поверхностной солености в акватории вершины Кандалакшского залива летом 2024 года"
+author: "В. М. Хайтов"
+output: 
+      word_document:
+                reference_docx: Letopis_template.docx
+                fig_width: 6
+                fig_height: 6
+
+ 
+abstract: |
+    **Хайтов В. М. Распределение поверхностной солености в акватории вершины Кандалакшского залива летом 2024 года** // Толмачева Е. Л. (ред.) Летопись природы Кадалакшского заповедника за 2024 год (ежегодный отчет). Кандалакша. Т.1 (Летопись природы Кандалакшского заповедника, кн. ++)
+    
+    На основе анализа проб поверхностной солености построена карта распределния этого показателя в врешине Кандалакшского залива. Проведно сравнение с аналогичной картой, полученной в 2015 г.
+    
+    **Khaitov V.M. Distribution of surface salinity in the top of Kandalaksha Bay in summer 2024** // Tolmacheva E. L. (ed.)  The Chronicle of Nature by the Kandalaksha Reserve for 2024 (Annual report).  Kandalaksha. V.1. (The Chronicle of Nature by the Kandalaksha Reserve, Book N ++)
+    
+    Based on the analysis of surface salinity samples in the top of the Kandalaksha Bay, a map of salinity distribution was constructed. A comparison with a similar map obtained in 2015 was made.
+      
+---
+-
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, dpi=300)
+
+library(reshape2)
+library(knitr)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(cowplot)
+library(flextable)
+library(officer)
+library(lubridate)
+
+
+editor <- "Толмачева Е. Л."
+editor_eng <- "Tolmacheva E.L."
+
+Year <- 2024
+
+# Функция, задающая нумерацию рисунков
+
+figRef <- local({
+    tag <- numeric()
+    created <- logical()
+    used <- logical()
+    function(label, caption, prefix = options("figcap.prefix"), 
+        sep = options("figcap.sep"), prefix.highlight = options("figcap.prefix.highlight")) {
+        i <- which(names(tag) == label)
+        if (length(i) == 0) {
+            i <- length(tag) + 1
+            tag <<- c(tag, i)
+            names(tag)[length(tag)] <<- label
+            used <<- c(used, FALSE)
+            names(used)[length(used)] <<- label
+            created <<- c(created, FALSE)
+            names(created)[length(created)] <<- label
+        }
+        if (!missing(caption)) {
+            created[label] <<- TRUE
+            paste0(prefix.highlight, prefix, " ", i, sep, prefix.highlight, 
+                " ", caption)
+        } else {
+            used[label] <<- TRUE
+            paste(prefix, tag[label])
+        }
+    }
+})
+
+options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**")
+
+
+theme_set(theme_bw())
+```
+
+
+
+```{r данные для карт}
+library(maptools)
+
+# read shape file into R
+murm_shape <- readShapeSpatial("Maps/Murmanskaya_obl/boundary-polygon-land-lvl4.shp", proj4string = CRS("+proj=longlat +datum=WGS84"))
+
+karel_shape <- readShapeSpatial("Maps/Karelia/boundary-polygon-land-lvl4.shp", proj4string = CRS("+proj=longlat +datum=WGS84"))
+
+
+# Объединение шейп-файлов
+library(raster)
+
+Kand_shape <- bind(murm_shape, karel_shape)
+
+# plot(Kand_shape)
+
+# Карта для ggplot
+gg_murm_karel <- fortify(Kand_shape)
+
+Kand_x <- c(32.25, 32.9)
+Kand_y <- c(66.9, 67.17)
+
+```
+
+
+```{r данные по солености}
+sal <- read_excel("Data/Surface_salinity_2007_2015_2024.xlsx")
+
+sal$Year <- factor(sal$Year)
+
+sal_2024 <- 
+  sal %>% 
+  filter(Year == "2024")
+
+sal_2015 <- 
+  sal %>% 
+  filter(Year == "2015")
+
+
+```
+
+
+```{r карта расположения точек отбора проб}
+Pl_sal_stations <- 
+ggplot(sal %>% filter(Year %in% c("2015", "2024")), aes(y = lat, x = long, group = 1))+
+  geom_polygon(data = gg_murm_karel, aes(x = long, y = lat, group = group), fill = "gray70" , color = "black", linewidth = 0.1) +
+  coord_map(xlim = Kand_x, ylim = Kand_y) +
+  geom_point(shape = 21, size = 1, fill = "yellow") +
+  facet_wrap(~Year)+
+  theme_bw() +
+  labs(x = "Долгота", y = "Широта")
+
+```
+
+
+Для картирования поверхностной солености было отобрано `r nrow(sal_2024)` проб которые были взяты в период с ++ по + августа (Табл. +.1). Все пробы были взяты в течение периода, ограниченного одним часом до и одним часом после времени максимального отлива. При выходе на точку взятия проб были засечены географические координаты и отобрана проба воды объемом 2 мл. Определение солености осуществлялось с помощью ручного рефрактометра. Аналогичный сбор данных был проведен в 2015 г. на `r nrow(sal_2015)` точках (`r figRef("Sal_stations")`). 
+
+
+```{r, fig.cap=figRef("Sal_stations", "Точки отбора проб солености в вершине Кандалакшского залива в 2015 и 2024 гг.  Sites of salinity samplings at the top of Kandalaksha Bay in 2015 and 2024"}
+
+Pl_sal_stations
+
+```
+
+
+Сравнение данных полученных в 2024 г. с данными, полученными аналогичным способом в 2015 гг. (см. Летопись природы за 2015 г.) показало, что поверхностная соленость в акватории была в 2024 г. заметно ниже и варьировала в более узких  пределах (`r figRef("Sal_boxplots")`) 
+
+
+```{r, fig.cap=figRef("Sal_boxplots", "Поверхностная соленость в вершине Кандалакшского залива в 2015 и 2024 гг.  Surface salinity at the top of Kandalaksha Bay in 2015 and 2024"}
+
+sal %>% 
+  filter(Year %in% c("2015", "2024")) %>% 
+  ggplot(aes(x = Year, y = S)) +
+  geom_boxplot()
+```
+
+
+Полученная карты (`r figRef("Sal_maps")`) позволяет заметить, что общие паттерны распределиня солености в два разных года очень похожи. “Язык” распреснения простирается на всю северо-восточную часть акватории залива, ограниченную материком и островами Олений и Телячий. Влияние опреснения прослеживается и вдоль Западной Ряжковой салмы до уровня северной оконечности о. Ряжкова. 
+
+
+
+```{r}
+
+# Модель распределения солености
+
+library(mgcv)
+
+mod_sal <- gam(S ~ s(x = long, y = lat, by = Year) + Year, data = sal %>% filter(Year %in% c("2015", "2024"))) 
+
+My_data <- expand.grid(Year = factor(c("2015", "2024")), long = seq(from = Kand_x[1], to = Kand_x[2] + 0.06, length.out = 100), lat = seq(from = Kand_y[1], to = Kand_y[2], length.out = 100))
+
+My_data$Predict <- predict(mod_sal, newdata = My_data)
+
+
+Kolv_cover <- data.frame(long = c(32.773191, 33, 33,  32.797910), lat = c(67.085596, 67.085596, 67.053037, 67.053037))
+
+
+Pl_sal_2015 <-
+ggplot(data = My_data %>% filter(Year == "2015"), aes(x = long, y = lat)) +
+  geom_tile(aes(fill = Predict)) +
+  geom_polygon(data = Kolv_cover, fill = "white") +
+  scale_fill_gradient(low = "yellow", high = "blue") +
+  geom_polygon(data = gg_murm_karel, aes(x = long, y = lat, group = group), fill = "gray70", color = "black", linewidth = 0.1) +
+  coord_map(xlim = Kand_x, ylim = Kand_y) +
+  labs(x = "Долгота", y = "Широта", fill = "S(ppt):") +
+  theme(legend.position = "bottom") +
+  ggtitle("2015")
+
+
+
+
+
+Pl_sal_2024 <-
+  ggplot(data = My_data %>% filter(Year == "2024"), aes(x = long, y = lat)) +
+  geom_tile(aes(fill = Predict)) +
+   geom_polygon(data = Kolv_cover, fill = "white") +
+    scale_fill_gradient(low = "yellow", high = "blue") +
+  geom_polygon(data = gg_murm_karel, aes(x = long, y = lat, group = group), fill = "gray70", color = "black", linewidth = 0.1) +
+  coord_map(xlim = Kand_x, ylim = Kand_y) +
+  labs(x = "Долгота", y = "Широта", fill = "S(ppt):") +
+  theme(legend.position = "bottom") +
+  ggtitle("2024")
+
+```
+
+
+
+```{r, fig.cap=figRef("Sal_maps", "Карты распределния поверхностной солености в вершине Кандалакшского залива в 2015 и 2024 гг.  Maps of surface salinity distribution in the top of Kandalaksha Bay in 2015 and 2024"}
+
+plot_grid(Pl_sal_2015, Pl_sal_2024)
+
+```
+
+
+
+
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+
+#установка параметров грид в таблице
+sal_2024 %>% 
+  dplyr::select(Station, lat, long, S) -> sal_print
+
+library(officer)
+std_border = fp_border(color="gray", width = 1)
+
+colname <- c("Точка сбора", "Широта", "Долгота", "Соленость")
+
+sal_print %>% 
+  flextable() %>% 
+  fontsize(part = "all") %>% 
+   border_inner_h(border = std_border ) %>% 
+  border_inner_v(border = std_border ) %>% 
+  fontsize(size = 8, part = "all") %>% 
+  set_header_labels(values = colname) %>% 
+  colformat_double(j = 1,  big.mark = "", digits = 0) %>% 
+  set_caption("Таблица +.1  Поверхностная соленость в вершине Кандалакшского залива в августе 2024. Surface salinity at the top of Kandalaksha Bay in August 2024.") %>% 
+  autofit()
+
+
+```
