@@ -1,5 +1,5 @@
 ---
-title: "Характеристика популяции *Atarte borealis* в сублиторали Илистой губы острова Горелого (Лувеньгский архипелаг) летом 2022-2023 гг. "
+title: "ХАРАКТЕРИСТИКА ПОПУЛЯЦИИ SEMIBALANUS BALANOIDES НА ЛИТОРАЛИ ОСТРОВА РЯЖКОВА ЛЕТОМ 2024 Г. "
 author: "В. М. Хайтов"
 output: 
       word_document:
@@ -9,12 +9,12 @@ output:
 
  
 abstract: |
-    **Хайтов В. М. Характеристика популяции *Atarte borealis* в сублиторали Илистой губы острова Горелого (Лувеньгский архипелаг) летом 2022-2023 гг. ** // Толмачева Е. Л.  (ред.) Летопись природы Кадалакшского заповедника за 2023 год (ежегодный отчет). Кандалакша. Т.1 (Летопись природы Кандалакшского заповедника, кн. ++)
-    Рассматриваются данные по обилию, размерной и возрастной струкутре двустворчатых моллюсков *Atarte borealis* в сублиторали Илистой губы по данным количественных сборов, проведенных летом 2022 и 2023 гг.   
+    **Хайтов В. М. Характеристика популяции Semibalanus balanoides на литорали острова Ряжкова летом 2024 г.** // Толмачева Е. Л.  (ред.) Летопись природы Кадалакшского заповедника за 2024 год (ежегодный отчет). Кандалакша. Т.1 (Летопись природы Кандалакшского заповедника, кн. ++)
+    Рассматриваются данные по учету обилия сеголеток и взрослых балянусов на литоральных валунах летом 2024 г.
     
-    **Khaitov V.M.  Population characteristics of * Atarte borealis* in the Ilistaya inlet (Gorely island) in the summer of 2022-2023** // Tolmacheva E. L. (ed.)  The Chronicle of Nature by the Kandalaksha Reserve for 2023 (Annual report).  Kandalaksha. V.1. (The Chronicle of Nature by the Kandalaksha Reserve, Book N ++)
+    **Khaitov V.M.  Characterization of the population of Semibalanus balanoides on the littoral of Ryazhkov Island in the summer of 2024.** // Tolmacheva E. L. (ed.)  The Chronicle of Nature by the Kandalaksha Reserve for 2024 (Annual report).  Kandalaksha. V.1. (The Chronicle of Nature by the Kandalaksha Reserve, Book N ++)
     
-     The data on the abundance, size and age structure of bivalves *Atarte borealis* in the sublittoral of Ilista Bay based on quantitative collections conducted in the summers of 2022 and 2023 are reviewed.   
+     DData on abundance counts of juveniles and adult barnacle on littoral boulders in the summer of 2024 are reviewed.
       
 ---
 
@@ -37,7 +37,7 @@ library(ggmap)
 editor <- "Толмачева Е. Л."
 editor_eng <- "Tolmacheva E.L."
 
-Year <- 2023
+Year <- 2024
 
 # Функция, задающая нумерацию рисунков
 
@@ -79,21 +79,39 @@ theme_set(theme_bw())
 
 
 ```{r}
+
+hydr_long <- read_excel("data/Hydrology_monitoring_Youzhnzya_inlet_2007_2024.xlsx", na = "NA")
+
+hydr_long$Air_T <- as.numeric(hydr_long$Air_T )
+hydr_long$Water_T <- as.numeric(hydr_long$Water_T)
+hydr_long$S <- as.numeric(hydr_long$S)
+
+hydr_long$Date2 <- as.POSIXct(hydr_long$Date_Time, format = "%d.%m.%Y %H", tz = "Europe/Moscow")
+
+
+
 # Читаем данные
-ast_22_23 <- read_excel("data/Tridonta_Ilistaya_inlet_2022_2023.xlsx", sheet = "Size", na = "NA")
+load("data/Ryazh_map.RData")
 
-ast_abund <- read_excel("data/Tridonta_abundance_1987_2019.xlsx", na = "NA")
+bal <- read_excel("data/Balanus_Ryazhkov_2012-2024.xlsx")
 
+bal$Site <- factor(bal$Site, labels = c("Восточный берег", "Северная губа", "Западный берег", "Южная губа"))
+  
+  
+
+bal %>% 
+  mutate(N = 67 + N/60, E = 32 + E/60) -> bal
+
+bal_24 <- 
+  bal %>% 
+  filter(Year == 2024)
 ```
 
 
-###############################
 
-
-
+## Методика учета балянусов 
 
 На четырех стандартных участках литорали  острова Ряжкова было (Южная губа, Восточный берег, Северная губа и Западный берег) проводятся ежегодные описания популяции усоногих раков *Semibalanus balanoides*. На каждом из участков ежегодно выбирается случайным образом по несколько валунов. Координаты точек расположения валунов засекаются с помощью спутникового навигатора. Расположение точек сбора материала, обследованных  в `r Year` году приведено на  `r figRef("Stone")`. Координаты обследованных в `r Year` г камней приведены в таблице +.1.
-
 
 
 Валуны, использованные в анализе, располагались не выше пояса фукоидов и имели в диаметре не менее 1 метра. Обилие балянусов подсчитывалось на двух сторонах валуна (обращенной к морю (“Sea”) и обращенной к суше (“Land”). На каждой стороне было заложено по три площадки 10х10 см, располагавшихся на высоте 30 см от поверхности грунта. Рамка, ограничивающая площадку, была разбита на 25 квадратов со стороной 2 см. В трех случайно выбранных квадратах было подсчитано обилие балянусов следующих классов: Живые сеголетки, Мертвые сеголетки, Живые особи возрастом 1+ и более (далее взрослые), Мертвые взрослые особи. Данные, по учетам балянусов в `r Year` году, приведены в таблице +.2. 
@@ -104,9 +122,9 @@ ast_abund <- read_excel("data/Tridonta_abundance_1987_2019.xlsx", na = "NA")
 
 
 
-``` {r, fig.cap=figRef("Stone", "Расположение камней, на которых проводился учет балянусов, на побережье о. Ряжкова (2023 г.). Position of stones where barnacles were counted on the shore of Ryazhkov island in 2023"), , fig.hight= 4, fig.wdth = 4}
+``` {r, fig.cap=figRef("Stone", "Расположение камней, на которых проводился учет балянусов, на побережье о. Ряжкова (2024 г.). Position of stones where barnacles were counted on the shore of Ryazhkov island in 2024"), , fig.hight= 4, fig.wdth = 4}
 
-ggmap(Ryazh_map,  base_layer=ggplot(data=bal_23, aes(x=E, y=N))) + 
+ggmap(Ryazh_map,  base_layer=ggplot(data=bal_24, aes(x=E, y=N))) + 
   geom_point(shape=21, fill="yellow", size = 4) + 
   theme(axis.text = element_blank(), axis.title = element_blank(), axis.ticks = element_blank()) 
 
@@ -114,7 +132,7 @@ ggmap(Ryazh_map,  base_layer=ggplot(data=bal_23, aes(x=E, y=N))) +
 
 
 ```{r}
-bal_melt <- melt(bal_23, id.vars = c("Year",	"Site",	"N_stone",	"Exposition",	"Core",	"Square", "N", "E"), variable.name = "Stage", value.name = "Abundance")
+bal_melt <- melt(bal, id.vars = c("Year",	"Site",	"N_stone",	"Exposition",	"Core",	"Square", "N", "E"), variable.name = "Stage", value.name = "Abundance")
 
 bal_melt$Stage <- factor(bal_melt$Stage, labels = c("Живые сеголетки", "Мертвые сеголетки", "Живые взрослые", "Мертвые взрослые"))
 
@@ -122,23 +140,25 @@ bal_melt$Stage <- factor(bal_melt$Stage, labels = c("Живые сеголетк
 
 
 
-`r figRef("Abund23")` демонстрирует обилие разных стадий на разных точках в `r Year` г. Самое мощное пополнение в этом году, в отличие от прошлых лет, происходило не только на Западном берегу и в Южной губе, но также и в Северной губе. Меньше всего молоди осело, как и прежде,  на Восточном берегу. Как и в предыдущие годы, оседание молоди балянусов было более интенсивным с мористой стооны валунов. Обилие взрослых особей, в отличие от прошлых лет, заметно варьировало от участка к участку (особенно с бережной стороны камней). Если на Восточном побережье и в Южной губе обилие взрослых особей было относительно велико, то на Западном побережье взрослые были менее обильны, а в Северной губе с бережной стороны субстратов почти отсутствовали. 
+`r figRef("Abund24")` демонстрирует обилие разных стадий на разных точках в `r Year` г. Самое мощное пополнение в этом году происходило на Западном берегу, на втором месте были Северная и Южная губа. Меньше всего молоди осело, как и прежде,  на Восточном берегу.
+
+
+<!-- Анализ многолетних тенденций изменения численности молоди балянусов (`r figRef("Abund_dynam")`) показал, что обилие осевшей молоди демонстрирует  -->
+
+
+<!-- плотность поселения демонстрирует циклические колебания. Данные мониторинга гидрологических показателей, который проводится в Южной губе о. Ряжкова (см. отдельную главу Летописи), позволяют оценить связь солености с наблюдаемой динамикой пополнения поселений балянусов молодью. Однозначной связи между периодами всплеска обилия молоди и соленостью не выявляется. Однако видно, что всплески обилия молоди приходятся на годы с более высокой соленостью (а также в годы, которым предшествовала более высокая соленость).  -->
 
 
 
-Анализ многолетних тенденций изменения численности молоди балянусов (`r figRef("Abund_dynam")`) показал, что плотность поселения демонстрирует циклические колебания. Данные мониторинга гидрологических показателей, который проводится в Южной губе о. Ряжкова (см. отдельную главу Летописи), позволяют оценить связь солености с наблюдаемой динамикой пополнения поселений балянусов молодью. Однозначной связи между периодами всплеска обилия молоди и соленостью не выявляется. Однако видно, что всплески обилия молоди приходятся на годы с более высокой соленостью (а также в годы, которым предшествовала более высокая соленость). 
+```{r, fig.cap=figRef("Abund24", "Обилие сеголеток и взрослых балянусов (экз. на 4 кв.см.) в 2024 году. Abundance of juveniles and adult barnacles (ind per 4 sq. cm) in 2024."), fig.height=5}
 
 
+bal_melt2 <-  bal_melt %>% filter(Stage %in% c("Живые сеголетки", "Живые взрослые")) %>% filter(Year == 2024)
 
-```{r, fig.cap=figRef("Abund23", "Обилие сеголеток и взрослых балянусов (экз. на 4 кв.см.) в 2023 году. Abundance of juveniles and adult barnacles (ind per 4 sq. cm) in 2023."), fig.height=5}
-
-
-bal_melt2 <-  bal_melt %>% filter(Stage %in% c("Живые сеголетки", "Живые взрослые")) %>% filter(Year == 2023)
-  
-ggplot(bal_melt2, aes(x = Site, y =Abundance)) + 
+ggplot(bal_melt2, aes(x = Site, y =Abundance)) +
   geom_boxplot() +
-  facet_grid(Stage ~ Exposition, scales = "free_y")+ 
-  labs(x = "", y = "Плотность поселения (экз/4кв.см)") + 
+  facet_grid(Stage ~ Exposition, scales = "free_y")+
+  labs(x = "", y = "Плотность поселения (экз/4кв.см)") +
   theme(axis.text.x = element_text(angle = 90))
 
 
@@ -147,43 +167,45 @@ ggplot(bal_melt2, aes(x = Site, y =Abundance)) +
 
 
 
-\pagebreak
+<!-- \pagebreak -->
 
-```{r , fig.cap=figRef("Abund_dynam", "Многолетняя динамика обилия сеголеток (сплощная линия) на всем побережье о. Ряжков и динамика солености в Южной губе (пунктирная линия). Горизонтальная линия отражает многолетнее среднее значение обилия сеголеток. Long-term dynamics of the juveniles' abundance (solid line) at the coast of Ryazhkov Island and salinity dynamics in the Yuzhnaya inlet (dashed line). The horizontal line represents the multiyear average value of the juveniles' abundance.")}
+<!-- ```{r , fig.cap=figRef("Abund_dynam", "Многолетняя динамика обилия сеголеток (сплощная линия) на всем побережье о. Ряжков и динамика солености в Южной губе (пунктирная линия). Горизонтальная линия отражает многолетнее среднее значение обилия сеголеток. Long-term dynamics of the juveniles' abundance (solid line) at the coast of Ryazhkov Island and salinity dynamics in the Yuzhnaya inlet (dashed line). The horizontal line represents the multiyear average value of the juveniles' abundance.")} -->
 
-bal_melt <- melt(bal, id.vars = c("Year",	"Site",	"N_stone",	"Exposition",	"Core",	"Square", "N", "E"), variable.name = "Stage", value.name = "Abundance")
+<!-- bal_melt <- melt(bal, id.vars = c("Year",	"Site",	"N_stone",	"Exposition",	"Core",	"Square", "N", "E"), variable.name = "Stage", value.name = "Abundance") -->
 
-bal_melt$Stage <- factor(bal_melt$Stage, labels = c("Живые сеголетки", "Мертвые сеголетки", "Живые взрослые", "Мертвые взрослые"))
+<!-- bal_melt$Stage <- factor(bal_melt$Stage, labels = c("Живые сеголетки", "Мертвые сеголетки", "Живые взрослые", "Мертвые взрослые")) -->
 
-Mean_Abundance <- mean(log(bal_melt$Abundance + 1), na.rm = T)
+<!-- Mean_Abundance <- mean(log(bal_melt$Abundance + 1), na.rm = T) -->
 
-hydr_long <- hydr_long %>% filter(Year >= min(bal$Year))
+<!-- hydr_long <- hydr_long %>% filter(Year >= min(bal$Year)) -->
 
-bal_melt %>% 
-  ggplot(aes(x = Year, y = log(Abundance+1))) +
-  # geom_point(position = position_jitter(width = 0.1), size = 0.2) +
-  # facet_grid(~Site) +
-  geom_smooth(method = "gam", se = T, color = "red") +
-  geom_hline(yintercept = Mean_Abundance, linetype = 1) +
-  geom_smooth(data = hydr_long, aes(x = Year, y = S/20), method = "gam", linetype = 2, color = "blue") + 
-  scale_y_continuous(name = "Логарифм Обилия сеголеток", sec.axis = sec_axis(~. * 20, name="Соленость")) +
-  scale_x_continuous(breaks=seq(min(bal$Year), max(bal$Year), 2)) + 
-  labs(x = "Годы", y = "Log Плотности поселения", fill = "", color = "")
+<!-- hydr_long$Year <- as.numeric(hydr_long$Year) -->
+
+<!-- bal_melt %>%  -->
+<!--   ggplot(aes(x = Year, y = log(Abundance+1))) + -->
+<!--   # geom_point(position = position_jitter(width = 0.1), size = 0.2) + -->
+<!--   # facet_grid(~Site) + -->
+<!--   geom_smooth(method = "gam", se = T, color = "red") + -->
+<!--   geom_hline(yintercept = Mean_Abundance, linetype = 1) + -->
+<!--   geom_smooth(data = hydr_long, aes(x = Year, y = S/20), method = "gam", linetype = 2, color = "blue") +  -->
+<!--   scale_y_continuous(name = "Логарифм Обилия сеголеток", sec.axis = sec_axis(~. * 20, name="Соленость")) + -->
+<!--   scale_x_continuous(breaks=seq(min(bal$Year), max(bal$Year), 2)) +  -->
+<!--   labs(x = "Годы", y = "Log Плотности поселения", fill = "", color = "") -->
 
 
-# bal %>%   
-#   mutate(Total_N = Juveniles_Alive) %>% 
-#   group_by(Site, Year) %>% 
-#   summarise(N_total = mean(Total_N, na.rm = T)) %>% 
-#   ggplot(., aes(x = Year, y = (N_total+1))) + 
-#   facet_wrap(~Site) +
-#   geom_line() +
-#   geom_point(shape = 21, fill= "black") + 
-#   labs(x = "Годы", y = "Плотность поселения (экз/4кв.см)", fill = "", color = "") + 
-#   theme(legend.position = "bottom") +
-#    scale_x_continuous(breaks=seq(min(bal$Year), max(bal$Year), 2))
-  
-```
+<!-- # bal %>%    -->
+<!-- #   mutate(Total_N = Juveniles_Alive) %>%  -->
+<!-- #   group_by(Site, Year) %>%  -->
+<!-- #   summarise(N_total = mean(Total_N, na.rm = T)) %>%  -->
+<!-- #   ggplot(., aes(x = Year, y = (N_total+1))) +  -->
+<!-- #   facet_wrap(~Site) + -->
+<!-- #   geom_line() + -->
+<!-- #   geom_point(shape = 21, fill= "black") +  -->
+<!-- #   labs(x = "Годы", y = "Плотность поселения (экз/4кв.см)", fill = "", color = "") +  -->
+<!-- #   theme(legend.position = "bottom") + -->
+<!-- #    scale_x_continuous(breaks=seq(min(bal$Year), max(bal$Year), 2)) -->
+
+<!-- ``` -->
 
 
 \pagebreak
@@ -191,17 +213,18 @@ bal_melt %>%
 
 ```{r}
 ft <-
-bal_23 %>% 
+bal_24 %>% 
   group_by(Site, N_stone) %>% 
   summarise(Lat = mean(N), Long = mean(E)) %>% 
   flextable()
 
-ft <- set_caption(ft, "Таблица +.1. Координаты камней, на которых проводился учет балянусов в 2023 г. Coordinates of stones where barnacles were counted in 2023.")
+ft <- set_caption(ft, "Таблица +.1. Координаты камней, на которых проводился учет балянусов в 2024 г. Coordinates of stones where barnacles were counted in 2024.")
 
 
 ft  %>%  
   set_header_labels(values = c("Участок",  "Камень", "Широта", "Долгота")) %>% 
-  fontsize(size = 10, part = "all")
+  fontsize(size = 10, part = "all") %>% 
+  autofit()
 
 
 
@@ -215,8 +238,8 @@ ft  %>%
 colname <- c("Сайт", "Камень","Направление", "Рамка", "Сеголетки живые", "Сеголетки мертвые", "Взрослые живые", "Взрослые мертвые")
 
 ft <- 
-bal_23 %>%  
-  select(-Year, - N, -E, -Square ) %>% 
+bal_24 %>%  
+  dplyr::select(-Year, - N, -E, -Square ) %>% 
   flextable() 
 
 
@@ -225,7 +248,7 @@ ft <- colformat_double(ft, j = 1,  big.mark = "", digits = 0)
 
 ft <- set_header_labels(ft, values = colname)
 
-ft <- set_caption(ft, "Таблица +.2 Обилие сеголеток и взрослых балянусов  на побережье о. Ряжкова в 2023 г. (экз. на 4 кв.см.).  Abundance of barnacles juveniles adults on the shore of Ryazhkov island in 2023 (ind. per 4 sq. cm)")
+ft <- set_caption(ft, "Таблица +.2 Обилие сеголеток и взрослых балянусов  на побережье о. Ряжкова в 2024 г. (экз. на 4 кв.см.).  Abundance of barnacles juveniles adults on the shore of Ryazhkov island in 2024 (ind. per 4 sq. cm)")
 
 # kable(bal_22, digits = c(0,0,0,0, 6,6,0,0,0,0), missing = "нет данных", style = "multiline",  split.tables = Inf, split.cells = 10, col.names = colname)
 
@@ -236,10 +259,8 @@ std_border = fp_border(color="gray", width = 1)
 ft %>% 
   border_inner_h(border = std_border ) %>% 
   border_inner_v(border = std_border ) %>% 
-  fontsize(size = 10, part = "all") %>% 
-  fontsize(size = 9, part =  'header')
-
-
+  fontsize(size = 9, part = "all") %>% 
+  fontsize(size = 9, part =  'header')  
 # %>% 
 #   autofit(part = "all")
 

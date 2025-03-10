@@ -1,5 +1,5 @@
 ---
-title: "Cтруктуры смешанных поселений *Mytilus edulis* и *M.trossulus* в вершине Кандалакшского залива летом 2023 г."
+title: "Cтруктуры смешанных поселений *Mytilus edulis* и *M.trossulus* в вершине Кандалакшского залива"
 author: "В. М. Хайтов"
 output: 
       word_document:
@@ -9,11 +9,11 @@ output:
 
  
 abstract: |
-    **Хайтов В. М. Cтруктуры смешанных поселений *Mytilus edulis* и *M.trossulus* в вершине Кандалакшского залива летом 2023 г. ** // Толмачева Е. Л.  (ред.) Летопись природы Кадалакшского заповедника за 2023 год (ежегодный отчет). Кандалакша. Т.1 (Летопись природы Кандалакшского заповедника, кн. ++)
-    Рассматриваются данные по соотношению обилий двух видов мидий, формирующих смешанные поселения в стандартных точках наблюдений (четыре оcтрова, расположенных на разном расстоянии от кута залива). 
+    **Хайтов В. М. Cтруктуры смешанных поселений *Mytilus edulis* и *M.trossulus* в вершине Кандалакшского залива ** // Толмачева Е. Л.  (ред.) Летопись природы Кадалакшского заповедника за 2023 год (ежегодный отчет). Кандалакша. Т.1 (Летопись природы Кандалакшского заповедника, кн. ++)
+    Рассматриваются данные по соотношению обилий двух видов мидий, формирующих смешанные поселения в стандартных точках наблюдений (четыре оcтрова, расположенных на разном расстоянии от кута залива и пять мидиевых банок). 
     
-    **Khaitov V.M. Structure of *Mytilus edulis* and *M.trossulus* mixed settlements in the top of Kandalaksha Bay in the summer of 2023. ** // Tolmacheva E. L. (ed.)  The Chronicle of Nature by the Kandalaksha Reserve for 2021 (Annual report).  Kandalaksha. V.1. (The Chronicle of Nature by the Kandalaksha Reserve, Book N ++)
-    Data on abundance ratios of two mussel species forming mixed settlements at standard observation points (four islands located at different distances from the bay top) are considered.  
+    **Khaitov V.M. Structure of *Mytilus edulis* and *M.trossulus* mixed settlements in the top of Kandalaksha Bay** // Tolmacheva E. L. (ed.)  The Chronicle of Nature by the Kandalaksha Reserve for 2021 (Annual report).  Kandalaksha. V.1. (The Chronicle of Nature by the Kandalaksha Reserve, Book N ++)
+    Data on abundance ratios of two mussel species forming mixed settlements at standard observation points (four islands located at different distances from the bay top and at five mussel beds) are considered.  
            
 ---
 
@@ -37,7 +37,7 @@ library(ggmap)
 editor <- "Толмачева Е. Л."
 editor_eng <- "Tolmacheva E.L."
 
-Year <- 2023
+Year <- 2024
 
 # Функция, задающая нумерацию рисунков
 
