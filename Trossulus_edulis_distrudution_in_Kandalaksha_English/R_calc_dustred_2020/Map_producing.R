@@ -155,12 +155,29 @@ Plot_Kand_upper <-
   theme(panel.grid = element_blank(), panel.background = element_rect(fill = "white")) +
   theme(plot.title = element_text(hjust = 0.5))
 
+Plot_Kand_upper + geom_polygon(data = pol, aes(x = Lon, y = Lat, group = 1))
+
 Plot_Kand_upper_2 <- 
   ggplot(ggKand_upper2, aes(x=long, y=lat, group=group)) + 
   geom_polygon(fill = "gray70", colour = "black") + 
   theme(panel.grid = element_blank(), panel.background = element_rect(fill = "white")) +
   theme(plot.title = element_text(hjust = 0.5))
 
+myt_test_site_2 <- 
+  myt_test_site %>% 
+  group_by(Site) %>% 
+  summarise(Lat = mean(Lat), Lon = mean(Lon))
+  
+  
+Plot_Kand_upper_2_test <-   
+Plot_Kand_upper_2 + 
+  geom_point(data = myt_test_site_2, aes(x = Lon, y = Lat, group = 1), size = 4, shape = 21, fill="blue") +
+  theme(axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank()) 
+
+
+  ggsave(plot = Plot_Kand_upper_2_test, filename = "figures/Sites_Testing_data_set.svg")
+
+  ggsave(plot = Plot_Kand_upper, filename = "figures/Kandalaksha_Bay.svg")
 
 ########################## Maps with Ptros ##################################
 
