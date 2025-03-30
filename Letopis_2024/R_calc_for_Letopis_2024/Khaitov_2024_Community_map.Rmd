@@ -34,7 +34,7 @@ library(flextable)
 library(officer)
 library(lubridate)
 library(ggmap)
-
+library(maptools)
 
 editor <- "Толмачева Е. Л."
 editor_eng <- "Tolmacheva E.L."
@@ -80,4 +80,174 @@ theme_set(theme_bw())
 
 
 
+В период с 1964 по 1993 гг. проводилась работа по инвентаризации сообществ макробентоса в окрестностях о. Ряжкова (более 600 дражных и более 100 дночерпательных станций). Многочисленные бентосные количественные и качественные пробы позволили выделить несколько наиболее типичных сообществ, представленных в сублиторали вершины Кандалакшского залива. Для визуализации пространственного распределения этих сообществ была построена карта (`r figRef("Map")`). К сожалению, целый ряд сообществ бентоса, представленных в верхней сублиторали (сообщества, связанные с зарослями *Zostera marina*, нитчатых водорослей и сообщества, формируюющиеся на заиленных участках в мелководных губах) остаются не нанесенными на карту. 
+
+Приведенные ниже карты и описания сообществ сугубо предварительны и требуют дополнительных описаний. Для географической привязки сообществ ниже приводятся координаты узлов полигонов, оконтуривающих пространственные выделы, занятые соответствующими сообществами. Эти данные, также, требуют уточнения и могут рассматриваться лишь как приблизительные границы распространения сообществ. 
+
+
+```{r}
+
+# install.packages("maptools", repos = "https://packagemanager.posit.co/cran/2023-10-13")
+
+# read shape file into R
+murm_shape <- readShapeSpatial("Maps/Murmanskaya_obl/boundary-polygon-land-lvl4.shp", proj4string = CRS("+proj=longlat +datum=WGS84"))
+
+karel_shape <- readShapeSpatial("Maps/Karelia/boundary-polygon-land-lvl4.shp", proj4string = CRS("+proj=longlat +datum=WGS84"))
+
+
+# Объединение шейп-файлов
+library(raster)
+
+Kand_shape <- bind(murm_shape, karel_shape)
+
+
+
+# Карта для ggplot
+gg_murm_karel <- fortify(Kand_shape)
+
+
+
+
+Laminaria <- readShapeSpatial("Maps/Laminaria/Laminaria.shp", proj4string = 
+                                CRS("+proj=longlat +datum=WGS84"))
+gg_Laminaria <- fortify(Laminaria)
+
+
+Portlandia <- readShapeSpatial("Maps/Portlandia/Portlandia.shp", proj4string = 
+                                 CRS("+proj=longlat +datum=WGS84"))
+gg_Portlandia <- fortify(Portlandia)
+
+
+Rhodophyta <- readShapeSpatial("Maps/Rhodophyta/Rhodophyta.shp", proj4string = 
+                                 CRS("+proj=longlat +datum=WGS84"))
+gg_Rhodophyta <- fortify(Rhodophyta)
+
+
+Rhynchonella <- readShapeSpatial("Maps/Rhynchonella/Rhynchonella.shp", proj4string = 
+                                 CRS("+proj=longlat +datum=WGS84"))
+gg_Rhynchonella <- fortify(Rhynchonella)
+
+
+Hydralmania <- readShapeSpatial("Maps/Hydralmania/Hydralmania.shp", proj4string = 
+                                   CRS("+proj=longlat +datum=WGS84"))
+gg_Hydralmania <- fortify(Hydralmania)
+
+
+Mud <- readShapeSpatial("Maps/Mud/Mud.shp", proj4string = 
+                                   CRS("+proj=longlat +datum=WGS84"))
+gg_Mud <- fortify(Mud)
+
+
+Pista <- readShapeSpatial("Maps/Pista/Pista.shp", proj4string = 
+                          CRS("+proj=longlat +datum=WGS84"))
+gg_Pista <- fortify(Pista)
+
+
+Polydora <- readShapeSpatial("Maps/Polydora/Polydora.shp", proj4string = 
+                          CRS("+proj=longlat +datum=WGS84"))
+gg_Polydora <- fortify(Polydora)
+
+
+Portlandia_Macoma <- readShapeSpatial("Maps/Portlandia_Macoma/Portlandia_Macoma.shp", proj4string = 
+                          CRS("+proj=longlat +datum=WGS84"))
+gg_Portlandia_Macoma <- fortify(Portlandia_Macoma)
+
+
+Macoma <- readShapeSpatial("Maps/Macoma/Macoma.shp", proj4string = 
+                               CRS("+proj=longlat +datum=WGS84"))
+gg_Macoma <- fortify(Macoma)
+
+
+Islands <- readShapeSpatial("Maps/Islands/Islands.shp", proj4string = 
+                             CRS("+proj=longlat +datum=WGS84"))
+gg_Islands <- fortify(Islands)
+
+
+
+
+Mussel_beds <- readShapeSpatial("Maps/Mytilus/Mussel_beds_points.shp", proj4string = 
+                              CRS("+proj=longlat +datum=WGS84"))
+
+gg_Mussel_beds <- data.frame(
+  long = coordinates(Mussel_beds)[, 1],
+  lat = coordinates(Mussel_beds)[, 2])
+```
+
+
+
+```{r}
+
+Kand_x <- c(32.5, 32.65)
+Kand_y <- c(66.96, 67.06)
+
+
+Pl_map <-
+ggplot() + 
+  geom_polygon(data = gg_Laminaria, aes(x = long, y = lat, group = group), fill = "green") +
+  geom_polygon(data = gg_Portlandia, aes(x = long, y = lat, group = group), fill = "yellow") +
+  geom_polygon(data = gg_Rhodophyta, aes(x = long, y = lat, group = group), fill = "red") +
+  geom_polygon(data = gg_Rhynchonella, aes(x = long, y = lat, group = group), fill = "blue") +
+  geom_polygon(data = gg_Hydralmania, aes(x = long, y = lat, group = group), fill = "blue") +
+  geom_polygon(data = gg_Macoma, aes(x = long, y = lat, group = group), fill = "black") +
+  geom_polygon(data = gg_Pista, aes(x = long, y = lat, group = group), fill = "black") +
+    geom_polygon(data = gg_Portlandia_Macoma, aes(x = long, y = lat, group = group), fill = "black") +
+  geom_polygon(data = gg_Mud, aes(x = long, y = lat, group = group),
+                       fill = "black",
+                       alpha = 0.95) +
+  geom_polygon(data = Islands, aes(x = long, y = lat, group = group), fill = "gray") +
+  geom_polygon(data = gg_murm_karel, aes(x = long, y = lat, group = group), fill = "gray", color = "black") +
+  geom_polygon(data = gg_Polydora, aes(x = long, y = lat, group = group), fill = "black") +
+  coord_map(xlim = Kand_x, ylim = Kand_y) +
+  theme_bw() +
+  theme(panel.background = element_blank(), plot.background = element_blank())
+  
+
+legend_color <- data.frame(x = c(1, 2, 2, 1), y = c(1, 1, 2, 2))
+legend_color2 <- data.frame(x = c(2, 4, 4, 2), y = c(5, 5, 6, 6))
+
+text_size <- 2
+
+Pl_legend <-
+  ggplot() +
+  geom_polygon(data = legend_color, aes(x = x, y = y), fill = "green") +
+  geom_polygon(data = legend_color, aes(x = x, y = y+1), fill = "red") +
+  geom_polygon(data = legend_color, aes(x = x, y = y+2), fill = "yellow") +
+  geom_polygon(data = legend_color, aes(x = x, y = y+3), fill = "black") +
+  geom_polygon(data = legend_color, aes(x = x, y = y+4), fill = "blue") +
+  geom_polygon(data = legend_color2, aes(x =x, y = y), fill = "white")+
+  theme_nothing() +
+    annotate(x = 2.1, hjust = 0, y = 5.5, geom = "text", label = "Сообщество \nгравийно-галичных \nпромытых грунтов", size = text_size) +
+  annotate(x = 2.1, hjust = 0, y = 4.5, geom = "text", label = "Сообщество \nмелководных \nилов", size = text_size) +
+  annotate(x = 2.1, hjust = 0, y = 3.5, geom = "text", label = "Сообщество \nглубоководных \nилов", size = text_size) +
+  annotate(x = 2.1, hjust = 0, y = 2.5, geom = "text", label = "Заросли \nбагрянок", size = text_size) +
+  annotate(x = 2.1, hjust = 0, y = 1.5, geom = "text", label = "Заросли \nламинарии", size = text_size)
+
+
+```
+
+
+```{r, fig.cap=figRef("Map", "Карта распределения сублиторальных сообществ"),  out.width=600}
+plot_grid(Pl_map, Pl_legend, scale = c(1, .7), align = "v",  nrow = 1, ncol = 2)
+```
+
+
+## Сообщества, связанные с зарослями ламинарии
+
+Формирование этого типа сообществ определяется поселениями бурой водоросли Saccharina latissima (Linnaeus), которая крепится к твердым субстратам ризоидами, от которых берет начало черешок, дистальная часть которого формирует пластину, длина которой может достигать нескольких метров.  Заросли ламинарии приурочены к верхней части сублиторали (до глубины около 10 м). В окрестностях о. Ряжкова этот тип сообществ занимает обширные площади  (`r figRef("Laminaria")`). Заросли ламинарии окаймляют практически все острова и склоны берегов материка. Однако наиболее обширные заросли представлены в пространстве между островами Ряшков, Девичья Луда, Большой и Малый Ломтишные. Обычно в этих зарослях  формируется довольно сложный комплекс относительно независимых друг от друга сообществ: сообщества ризоидов ламинарии, сообщества обрастателей черешка и пластины водорослей и сообщества илистого грунта, который обычно скапливается в местах поселения этих водорослей.
+
+```{r}
+ggplot() + 
+  geom_polygon(data = gg_Laminaria, aes(x = long, y = lat, group = group), fill = "green") +   
+  geom_polygon(data = Islands, aes(x = long, y = lat, group = group), fill = "gray") +
+  geom_polygon(data = gg_murm_karel, aes(x = long, y = lat, group = group), fill = "gray", color = "black")  +
+  coord_map(xlim = Kand_x, ylim = Kand_y) +
+  theme_bw() +
+  theme(panel.background = element_blank(), plot.background = element_blank())
+  
+```
+
+
+```{r}
+
+```
 
