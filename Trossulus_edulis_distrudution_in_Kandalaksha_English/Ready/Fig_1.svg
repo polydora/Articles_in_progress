@@ -10,7 +10,7 @@
    inkscape:export-filename="Fig_1.png"
    inkscape:export-xdpi="600"
    inkscape:export-ydpi="600"
-   inkscape:version="1.3.2 (091e20e, 2023-11-25, custom)"
+   inkscape:version="1.4 (86a8ad7, 2024-10-11)"
    sodipodi:docname="Fig_1.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
@@ -27,9 +27,9 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
-     inkscape:zoom="0.49575348"
-     inkscape:cx="-269.28707"
-     inkscape:cy="263.23567"
+     inkscape:zoom="0.99150696"
+     inkscape:cx="205.24314"
+     inkscape:cy="300.04832"
      inkscape:window-width="1920"
      inkscape:window-height="1001"
      inkscape:window-x="-9"
@@ -11551,6 +11551,30 @@
          d="M 0,681.02 H 807.987 V 0 H 0 Z"
          id="path2815" />
     </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2676-1">
+      <path
+         d="M 0,681.02 H 807.987 V 0 H 0 Z"
+         transform="translate(-96.8281,-451.63921)"
+         id="path2676-7" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2678-1">
+      <path
+         d="M 0,681.02 H 807.987 V 0 H 0 Z"
+         transform="translate(-96.8281,-451.63921)"
+         id="path2678-1" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2482-2">
+      <path
+         d="M 0,681.02 H 807.987 V 0 H 0 Z"
+         transform="translate(-348.44821,-471.69921)"
+         id="path2482-3" />
+    </clipPath>
   </defs>
   <g
      inkscape:label="Слой 1"
@@ -19015,6 +19039,12 @@
          transform="matrix(0.35277776,0,0,-0.35277776,79.70784,63.183)"
          clip-path="url(#clipPath2482)" />
       <path
+         id="path2481-1"
+         d="m 0,0 c 3.523,0 6.38,-2.856 6.38,-6.38 0,-3.524 -2.857,-6.38 -6.38,-6.38 -3.523,0 -6.38,2.856 -6.38,6.38 C -6.38,-2.856 -3.523,0 0,0"
+         style="fill:#f9a31a;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1"
+         transform="matrix(0.35277776,0,0,-0.35277776,-13.916226,85.712547)"
+         clip-path="url(#clipPath2482-2)" />
+      <path
          id="path2483"
          d="m 0,0 c 3.502,0 6.34,-2.839 6.34,-6.34 0,-3.502 -2.838,-6.34 -6.34,-6.34 -3.501,0 -6.34,2.838 -6.34,6.34 C -6.34,-2.839 -3.501,0 0,0"
          style="fill:#f9a31a;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1"
@@ -19602,6 +19632,24 @@
          style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1"
          transform="matrix(0.35277776,0,0,-0.35277776,-9.058139,70.259723)"
          clip-path="url(#clipPath2678)" />
+      <g
+         id="g2">
+        <g
+           id="g3">
+          <path
+             id="path2675-7"
+             d="m 0,0 c 1.049,0 1.899,-0.851 1.899,-1.9 0,-1.049 -0.85,-1.9 -1.899,-1.9 -1.05,0 -1.9,0.851 -1.9,1.9 0,1.049 0.85,1.9 1.9,1.9"
+             style="fill:#f9a31a;fill-opacity:1;fill-rule:nonzero;stroke:none"
+             transform="matrix(0.35277776,0,0,-0.35277776,-13.886761,82.375534)"
+             clip-path="url(#clipPath2676-1)" />
+          <path
+             id="path2677-6"
+             d="m 0,0 c 1.049,0 1.899,-0.851 1.899,-1.9 0,-1.049 -0.85,-1.9 -1.899,-1.9 -1.05,0 -1.9,0.851 -1.9,1.9 0,1.049 0.85,1.9 1.9,1.9 z"
+             style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1"
+             transform="matrix(0.35277776,0,0,-0.35277776,-13.917009,82.342177)"
+             clip-path="url(#clipPath2678-1)" />
+        </g>
+      </g>
       <path
          id="path2679"
          d="m 0,0 c 0.934,0 1.689,-0.756 1.689,-1.69 0,-0.933 -0.755,-1.69 -1.689,-1.69 -0.934,0 -1.69,0.757 -1.69,1.69 C -1.69,-0.756 -0.934,0 0,0"
@@ -19751,18 +19799,7 @@
          transform="matrix(0.26458333,0,0,0.26458333,-43.21694,-10.660726)">
         <g
            clip-path="url(#clipPath2711)"
-           id="g2711">
-          <text
-             xml:space="preserve"
-             transform="matrix(1.3333333,0,0,1.3333333,674.32947,378.19333)"
-             clip-path="url(#clipPath2710)"
-             id="text2711"><tspan
-               style="font-variant:normal;font-weight:normal;font-stretch:normal;font-size:12px;font-family:Arial;writing-mode:lr-tb;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none"
-               x="0 8.0039997 14.676 17.34 20.004 26.676001 29.34 32.675999"
-               y="0"
-               sodipodi:role="line"
-               id="tspan2711">Salinity</tspan></text>
-        </g>
+           id="g2711" />
       </g>
       <g
          id="g2715"
@@ -20106,7 +20143,7 @@
          id="path2782"
          d="M 0,0 93.858,-0.086"
          style="fill:none;stroke:#000000;stroke-width:6.289;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-         transform="matrix(0.35277776,0,0,-0.35277776,-15.644148,98.290739)"
+         transform="matrix(0.35277776,0,0,-0.35277776,0.23085591,102.52409)"
          clip-path="url(#clipPath2783)" />
       <g
          id="g2786"
@@ -20114,18 +20151,7 @@
          transform="matrix(0.26458333,0,0,0.26458333,-43.21694,-10.660726)">
         <g
            clip-path="url(#clipPath2785)"
-           id="g2785">
-          <text
-             xml:space="preserve"
-             transform="matrix(1.3333333,0,0,1.3554038,143.21947,398.7988)"
-             clip-path="url(#clipPath2784)"
-             id="text2785"><tspan
-               style="font-variant:normal;font-weight:normal;font-stretch:normal;font-size:11.8046px;font-family:Arial;writing-mode:lr-tb;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none"
-               x="0 6.5633578 13.126716 16.408394 22.310694"
-               y="0"
-               sodipodi:role="line"
-               id="tspan2785">50 km</tspan></text>
-        </g>
+           id="g2785" />
       </g>
       <path
          id="path2787"
@@ -20275,5 +20301,60 @@
          transform="matrix(0.35277776,0,0,-0.35277776,-43.21694,229.588)"
          clip-path="url(#clipPath2815)" />
     </g>
+    <text
+       xml:space="preserve"
+       style="font-size:4px;line-height:1.25;font-family:Sans;-inkscape-font-specification:'Sans, Normal';text-align:center;text-anchor:middle;stroke-width:0.264583"
+       x="141.69719"
+       y="89.861633"
+       id="text1"><tspan
+         sodipodi:role="line"
+         id="tspan1"
+         style="stroke-width:0.264583"
+         x="141.69719"
+         y="89.861633">Salinity (psu)</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:4px;line-height:1.25;font-family:Sans;-inkscape-font-specification:'Sans, Normal';text-align:center;text-anchor:middle;stroke-width:0.264583"
+       x="16.063684"
+       y="99.440285"
+       id="text2"><tspan
+         sodipodi:role="line"
+         id="tspan2"
+         style="stroke-width:0.264583"
+         x="16.063684"
+         y="99.440285">50 km</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:4px;line-height:1.25;font-family:Sans;-inkscape-font-specification:'Sans, Normal';text-align:center;text-anchor:middle;stroke-width:0.264583"
+       x="-22.553331"
+       y="86.334938"
+       id="text3"><tspan
+         sodipodi:role="line"
+         id="tspan3"
+         style="stroke-width:0.264583"
+         x="-22.553331"
+         y="86.334938">Fetch</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:4px;line-height:1.25;font-family:Sans;-inkscape-font-specification:'Sans, Normal';text-align:center;text-anchor:middle;stroke-width:0.264583"
+       x="-4.905972"
+       y="84.685448"
+       id="text4"><tspan
+         sodipodi:role="line"
+         id="tspan4"
+         style="stroke-width:0.264583"
+         x="-4.905972"
+         y="84.685448">&lt; 1 km</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:4px;line-height:1.25;font-family:Sans;-inkscape-font-specification:'Sans, Normal';text-align:center;text-anchor:middle;stroke-width:0.264583"
+       x="-3.7973943"
+       y="89.400726"
+       id="text4-6"><tspan
+         sodipodi:role="line"
+         id="tspan4-1"
+         style="stroke-width:0.264583"
+         x="-3.7973943"
+         y="89.400726">&gt; 10 km</tspan></text>
   </g>
 </svg>

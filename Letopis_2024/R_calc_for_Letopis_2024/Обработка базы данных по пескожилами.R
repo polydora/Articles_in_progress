@@ -19,6 +19,17 @@ aren$Site <- factor(aren$Site)
 aren$Log_abund <- log(aren$Abundance + 1)
 str(aren)
 
+library(reshape2)
+library(writexl)
+
+aren %>%
+  arrange(Year) %>%
+  dcast(formula = Year + Site + L ~ H) %>%
+  write_xlsx(path = "Arenicola_monitoring.xlsx")
+
+
+
+
 
 Mod_A <- gam(Log_abund ~ s(Year, L), data = aren %>% filter(Site == "A"))
 
