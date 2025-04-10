@@ -1795,6 +1795,28 @@ ggsave(filename = "Fig_3.svg", plot = Pl_Model_3, width = 297,height = 210, unit
 ```{r ROC_analysis}
 library(pROC)
 
+
+#"NormalizedGini" is the other half of the metric. This function does most of the work, though
+SumModelGini <- function(solution, submission) {
+  df = data.frame(solution = solution, submission = submission)
+  df <- df[order(df$submission, decreasing = TRUE),]
+  df
+  df$random = (1:nrow(df))/nrow(df)
+  df
+  totalPos <- sum(df$solution)
+  df$cumPosFound <- cumsum(df$solution) # this will store the cumulative number of positive examples found (used for computing "Model Lorentz")
+  df$Lorentz <- df$cumPosFound / totalPos # this will store the cumulative proportion of positive examples found ("Model Lorentz")
+  df$Gini <- df$Lorentz - df$random # will store Lorentz minus random
+  print(df)
+  return(sum(df$Gini))
+}
+
+NormalizedGini <- function(solution, submission) {
+  SumModelGini(solution, submission) / SumModelGini(solution, solution)
+}
+
+
+
 # Mod 1 prediction as classifier 
 Mod_gam_prediction_train <- predict(Mod_gam, newdata = myt_site_substr, type = "response", exclude = "s(Site)")
 
@@ -1803,7 +1825,18 @@ roc_Mod_gam_train <- roc(response = myt_site_substr$Mt_dominated, predictor = Mo
 
 # ci.auc(roc_Mod_gam_train)
 
+# cor(Mod_gam_prediction_train, myt_site_substr$Ptros, method = "pearson")
 
+# library(ppsr)
+# 
+# df <- data.frame(predicted = Mod_gam_prediction_train, target = myt_site_substr$Ptros)
+# 
+# score(df = df, x = "predicted", y = "target", algorithm = 'glm') [['pps']]
+
+
+
+
+# NormalizedGini(Mod_gam_prediction_train, myt_site_substr$Ptros)
 
 Mod_gam_prediction_test <- predict(Mod_gam, newdata = myt_test_site, type = "response", exclude = "s(Site)")
 
@@ -1812,8 +1845,13 @@ roc_Mod_gam_test <- roc(response = myt_test_site$Mt_dominated, predictor = Mod_g
 
 # ci.auc(roc_Mod_gam_test)
 
+# cor(Mod_gam_prediction_test, myt_test_site$Ptros, method = "pearson")
 
+# NormalizedGini(Mod_gam_prediction_test, myt_test_site$Ptros)
 
+df <- data.frame(predicted = Mod_gam_prediction_test, target =  myt_test_site$Ptros)
+
+score(df = df, x = "predicted", y = "target", algorithm = 'glm', cv_folds = 1) [['pps']]
 
 # tuv2 <- 
 #   tuv %>%
@@ -1833,12 +1871,17 @@ tuv3 <-
   filter(Depth < 0.5)
 
 
+
+
 Mod_gam_prediction_tuv <- predict(Mod_gam, newdata = tuv, type = "response", exclude = "s(Site)")
 
 roc_Mod_gam_tuv <- roc(response = tuv$Mt_dominated, predictor = Mod_gam_prediction_tuv)
 
 # ci.auc(roc_Mod_gam_tuv)
 
+# cor(Mod_gam_prediction_tuv, tuv$Ptros, method = "pearson")
+
+# NormalizedGini(Mod_gam_prediction_tuv, tuv$Ptros)
 
 
 Mod_gam_prediction_tuv2 <- predict(Mod_gam, newdata = tuv2, type = "response", exclude = "s(Site)")
@@ -1847,6 +1890,13 @@ roc_Mod_gam_tuv2 <- roc(response = tuv2$Mt_dominated, predictor = Mod_gam_predic
 
 # ci.auc(roc_Mod_gam_tuv2)
 
+# cor(Mod_gam_prediction_tuv2, tuv2$Ptros, method = "pearson")
+
+# NormalizedGini(Mod_gam_prediction_tuv2, tuv2$Ptros)
+
+# df <- data.frame(predicted = Mod_gam_prediction_tuv2, target =  tuv2$Ptros)
+# 
+# score(df = df, x = "predicted", y = "target", algorithm = 'glm', cv_folds = 1) [['pps']]
 
 
 
@@ -1855,6 +1905,14 @@ Mod_gam_prediction_tuv3 <- predict(Mod_gam, newdata = tuv3, type = "response", e
 roc_Mod_gam_tuv3 <- roc(response = tuv3$Mt_dominated, predictor = Mod_gam_prediction_tuv3)
 
 # ci.auc(roc_Mod_gam_tuv3, method = "bootstrap")
+
+# cor(Mod_gam_prediction_tuv3, tuv3$Ptros, method = "pearson")
+
+# NormalizedGini(Mod_gam_prediction_tuv3, tuv3$Ptros)
+
+# df <- data.frame(predicted = Mod_gam_prediction_tuv3, target =  tuv3$Ptros)
+# 
+# score(df = df, x = "predicted", y = "target", algorithm = 'tree', cv_folds = 1) [['pps']]
 
 
 ```
