@@ -1,0 +1,683 @@
+---
+title: "Another_view_cont"
+output: html_document
+date: ""
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+
+
+```{r}
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+
+
+```
+
+
+## Климатические данные
+
+Добавил к числу BIO1-BIO15 еще параметры из Clim_upd_New.xlsx
+
+```{r}
+clim <- read_excel("Data/bioclim.xlsx")
+
+clim$Year <- as.numeric(clim$Year)
+
+clim <-
+  clim %>% 
+  filter(Year >= 2000)
+  
+library(vegan)
+
+pca_clim <- rda(clim[,-1], scale = T)
+
+```
+
+
+Распределение собственных чисел 
+
+```{r}
+screeplot(pca_clim, bstick = T)
+```
+
+
+Можно говорить про четыре главные компоненты
+
+```{r}
+PC_scores <- as.data.frame(scores(pca_clim, choices = 1:4)$species)
+
+
+```
+
+По первой PC максимальную связь имеет: 
+
+```{r}
+PC_scores %>% filter(abs(PC1) == max(abs(PC1)))
+```
+
+
+По второй PC максимальную связь имеет: 
+
+```{r}
+PC_scores %>% filter(abs(PC2) == max(abs(PC2)))
+```
+
+
+По третьей PC максимальную связь имеет: 
+
+```{r}
+PC_scores %>% filter(abs(PC3) == max(abs(PC3)))
+```
+
+По четвертой PC максимальную связь имеет: 
+
+```{r}
+PC_scores %>% filter(abs(PC4) == max(abs(PC4))) 
+```
+
+
+Теперь кандидаты на то, чтобы войти в число неколлинеарных предикторов, выглядят вот так
+
++ BIO1 = Annual Mean Temperature
++ CMIsummer 
++ BIO3 = Isothermality (BIO2/BIO7) (×100)
++ BIO15 = Precipitation Seasonality (Coefficient of Variation)
+
+Кстати, а что такое CMIsummer?
+
+На всякий случай смотрим на корреляции между этими параметрами
+
+```{r}
+clim %>% 
+  select(bio1, CMIsummer, bio3, bio15) %>% 
+  cor()
+```
+
+Супер сильных корреляцй нет
+
+
+
+```{r}
+
+clim_short <-
+  clim %>% 
+  select(Year, bio1, CMIsummer, bio3, bio15)
+
+```
+
+## Фенометрики 
+
+
+Да, теперь я понял. Действительно логично для этого анализа брать выборку по всем случайным точкам. 
+
+
+```{r}
+
+evi <-
+  read_excel("Data/Фенология по случайным сайтам/picea_phenological_data.xlsx", sheet = "picea.gsdt.evi") %>%
+  select(sample.id, year, evi.max) %>% 
+  rename(Year = year) %>% 
+  filter(Year > 1999 & Year < 2024) %>% 
+  rename(Plot = sample.id)
+
+evi2 <-
+  read_excel("Data/Фенология по случайным сайтам/picea_phenological_data.xlsx", sheet = "picea.gsdt.evi2") %>%
+  select(sample.id, year, evi2.max) %>% 
+  rename(Year = year) %>% 
+  filter(Year > 1999 & Year < 2024) %>% 
+  rename(Plot = sample.id)
+
+
+kndvi <-
+  read_excel("Data/Фенология по случайным сайтам/picea_phenological_data.xlsx", sheet = "picea.gsdt.kndvi") %>%
+  select(sample.id, year, kndvi.max) %>% 
+  rename(Year = year) %>% 
+  filter(Year > 1999 & Year < 2024) %>% 
+  rename(Plot = sample.id)
+
+ndvi <-
+  read_excel("Data/Фенология по случайным сайтам/picea_phenological_data.xlsx", sheet = "picea.gsdt.ndvi") %>%
+  select(sample.id, year, ndvi.max) %>% 
+  rename(Year = year) %>% 
+  filter(Year > 1999 & Year < 2024) %>% 
+  rename(Plot = sample.id)
+
+
+nirv <-
+  read_excel("Data/Фенология по случайным сайтам/picea_phenological_data.xlsx", sheet = "picea.gsdt.nirv") %>%
+  select(sample.id, year, nirv.max) %>% 
+  rename(Year = year) %>% 
+  filter(Year > 1999 & Year < 2024) %>% 
+  rename(Plot = sample.id)
+
+```
+
+
+
+
+
+```{r}
+set.seed(12345)
+
+resample_n <- 1000
+year_num <- round(length(unique(evi2$Year)) * 0.6)
+site_num <- round(length(unique(evi2$Plot)) * 0.6)
+
+years_full <- unique(clim$Year)
+
+sites_full <- unique(evi$Plot)
+
+######################
+
+cors_evi <- data.frame(Index = rep("evi", resample_n))
+
+
+for(i in 1:resample_n){
+  
+  years <- sample(years_full, size = year_num)
+  Site <- sample(sites_full, size = site_num)
+  
+  
+  x <- 
+    evi %>% 
+    filter(Plot %in% Site & Year %in% years) 
+  
+  y <-
+    clim_short %>% 
+    filter(Year %in% years) 
+
+  df <- merge(x, y, all.x = T) %>% filter(complete.cases(.))
+  
+  mod <- lm(evi.max ~ scale(bio1) + scale(CMIsummer) + scale(bio3) + scale(bio15) , data = df)
+  
+  cors_evi$bio1[i] <- coef(mod)[2]
+  cors_evi$CMIsummer[i] <- coef(mod)[3]
+  cors_evi$bio3[i] <- coef(mod)[4]
+  cors_evi$bio15[i] <- coef(mod)[5]
+  cors_evi$R2[i] <- summary(mod)$adj.r.squared
+}
+
+#########################################
+cors_evi2 <- data.frame(Index = rep("evi2", resample_n))
+
+
+for(i in 1:resample_n){
+  
+  years <- sample(years_full, size = year_num)
+  Site <- sample(sites_full, size = site_num)
+  
+  x <- 
+    evi2 %>% 
+    filter(Plot %in% Site & Year %in% years) 
+  
+  y <-
+    clim_short %>% 
+    filter(Year %in% years) 
+
+ df <- merge(x, y, all.x = T) %>% filter(complete.cases(.))
+  
+  mod <- lm(evi2.max ~ scale(bio1) + scale(CMIsummer) + scale(bio3) + scale(bio15) , data = df)
+  
+  cors_evi2$bio1[i] <- coef(mod)[2]
+  cors_evi2$CMIsummer[i] <- coef(mod)[3]
+  cors_evi2$bio3[i] <- coef(mod)[4]
+  cors_evi2$bio15[i] <- coef(mod)[5]
+  cors_evi2$R2[i] <- summary(mod)$adj.r.squared
+
+}
+
+############################
+cors_kndvi <- data.frame(Index = rep("kndvi", resample_n))
+
+
+for(i in 1:resample_n){
+  
+  years <- sample(years_full, size = year_num)
+  Site <- sample(sites_full, size = site_num)
+  
+  x <- 
+    kndvi %>% 
+    filter(Plot %in% Site & Year %in% years) 
+  
+  y <-
+    clim_short %>% 
+    filter(Year %in% years) 
+
+  df <- merge(x, y, all.x = T) %>% filter(complete.cases(.))
+  
+  mod <- lm(kndvi.max ~ scale(bio1) + scale(CMIsummer) + scale(bio3) + scale(bio15) , data = df)
+  
+  cors_kndvi$bio1[i] <- coef(mod)[2]
+  cors_kndvi$CMIsummer[i] <- coef(mod)[3]
+  cors_kndvi$bio3[i] <- coef(mod)[4]
+  cors_kndvi$bio15[i] <- coef(mod)[5]
+  cors_kndvi$R2[i] <- summary(mod)$adj.r.squared
+
+  
+}
+
+#######################
+cors_ndvi <- data.frame(Index = rep("ndvi", resample_n))
+
+
+for(i in 1:resample_n){
+  
+  years <- sample(years_full, size = year_num)
+  Site <- sample(sites_full, size = site_num)
+  
+  x <- 
+    ndvi %>% 
+    filter(Plot %in% Site & Year %in% years) 
+  
+  y <-
+    clim_short %>% 
+    filter(Year %in% years) 
+
+  df <- merge(x, y, all.x = T) %>% filter(complete.cases(.))
+  
+  mod <- lm(ndvi.max ~ scale(bio1) + scale(CMIsummer) + scale(bio3) + scale(bio15), data = df)
+  
+  cors_ndvi$bio1[i] <- coef(mod)[2]
+  cors_ndvi$CMIsummer[i] <- coef(mod)[3]
+  cors_ndvi$bio3[i] <- coef(mod)[4]
+  cors_ndvi$bio15[i] <- coef(mod)[5]
+  cors_ndvi$R2[i] <- summary(mod)$adj.r.squared
+
+}
+
+
+
+```
+
+
+
+
+```{r}
+cors <- rbind(cors_evi, cors_evi2, cors_kndvi, cors_ndvi)
+
+cors2 <- melt(cors, variable.name = "Clim", value.name = "R_spearman") 
+
+cors2 <- 
+  cors2 %>% 
+  filter(!is.na(R_spearman)) %>% 
+filter(Clim != "R2")
+
+```
+
+
+```{r}
+cors2 %>% 
+  group_by(Index, Clim) %>% 
+  summarise(Q_2.5 = quantile(R_spearman, probs = 0.025), Q_97.5 = quantile(R_spearman, probs = 0.975)) -> quants
+
+cors2 %>% 
+  ggplot(aes(x = R_spearman)) +
+  geom_histogram() +
+  facet_grid(Clim ~ Index) +
+  geom_segment(data = quants, aes(x = Q_2.5, xend = Q_97.5, y = 0, yend = 0), color = "yellow", linewidth = 2)+
+   geom_vline(xintercept = 0) +
+  labs(x = "Partial correlation")
+
+```
+
+
+Получается, что evi, evi2 и ndvi положительно связаны с bio1 (температура). Все индексы дружно отрицательно коррелируют с CMIsummer (все же что это?) и bio3 (Isothermality (BIO2/BIO7)), а с bio15 вообще ничего не коррелирует. 
+
+Индекс evi(и возможно evi2) отрицательно связан bio13 (Precipitation of Wettest Month). Наконец, ndvi отрицательно связан bio3 (Isothermality (BIO2/BIO7) (×100)). 
+
+Можно, также, оценить, на какой из индексов климат оказывает наиболее сильное влияние. Предлагаю рассматривать распределение значений adjusted_R2, полученных для моделей в ресамплинге. Картина получилась вот такая.
+
+```{r}
+cors %>% 
+  ggplot(aes(x = Index, y = R2)) +
+  geom_boxplot()+
+  labs(y ="Model agjusted R2")
+```
+
+Получается, в среднем что индекс `ndvi` сильнее всего связан с климатом (`r median(cors$R2[cors$Index == "ndvi"])*100`% дисперсии этого показателя определяется климатическими параметрами).  
+
+
+
+
+
+
+
+
+
+
+```{r}
+library(ggpmisc)
+Pl1 <-
+evi %>% 
+  merge(clim_short) %>% 
+  ggplot(aes(x = bio1, y = evi.max)) + 
+  geom_point() +
+  geom_smooth(method = "lm") 
+# +
+#   stat_poly_eq(mapping = use_label(c("R2", "P")), p.digits = 2)
+
+```
+
+
+
+```{r}
+Pl2 <-
+evi %>% 
+  merge(clim_short) %>% 
+  ggplot(aes(x = CMIsummer, y = evi.max)) + 
+  geom_point() +
+  geom_smooth(method = "lm") 
+# +
+#   stat_poly_eq(mapping = use_label(c("R2", "P")), p.digits = 2)
+
+```
+
+
+
+
+```{r}
+Pl3 <-
+evi %>% 
+  merge(clim_short) %>% 
+  ggplot(aes(x = bio3, y = evi.max)) + 
+  geom_point() +
+  geom_smooth(method = "lm")
+# +
+#   stat_poly_eq(mapping = use_label(c("R2", "P")), p.digits = 2)
+
+```
+
+
+
+```{r}
+Pl4 <-
+evi2 %>% 
+  merge(clim_short) %>% 
+  ggplot(aes(x = bio1, y = evi2.max)) + 
+  geom_point() +
+  geom_smooth(method = "lm")
+# +
+#   stat_poly_eq(mapping = use_label(c("R2", "P")), p.digits = 2)
+
+```
+
+
+
+
+```{r}
+Pl5 <-
+evi2 %>% 
+  merge(clim_short) %>% 
+  ggplot(aes(x = CMIsummer, y = evi2.max)) + 
+  geom_point() +
+  geom_smooth(method = "lm")
+# +
+#   stat_poly_eq(mapping = use_label(c("R2", "P")), p.digits = 2)
+
+```
+
+
+```{r}
+Pl6 <-
+evi2 %>% 
+  merge(clim_short) %>% 
+  ggplot(aes(x = bio3, y = evi2.max)) + 
+  geom_point() +
+  geom_smooth(method = "lm")
+# +
+#   stat_poly_eq(mapping = use_label(c("R2", "P")), p.digits = 2)
+
+```
+
+
+
+
+
+
+```{r}
+Pl7 <-
+ndvi %>% 
+  merge(clim_short) %>% 
+  ggplot(aes(x = bio1, y = ndvi.max)) + 
+  geom_point() +
+  geom_smooth(method = "lm")
+# +
+#   stat_poly_eq(mapping = use_label(c("R2", "P")), p.digits = 2)
+
+```
+
+
+```{r}
+Pl7 <-
+ndvi %>% 
+  merge(clim_short) %>% 
+  ggplot(aes(x = CMIsummer, y = ndvi.max)) + 
+  geom_point() +
+  geom_smooth(method = "lm")
+# +
+#   stat_poly_eq(mapping = use_label(c("R2", "P")), p.digits = 2)
+
+```
+
+
+```{r}
+Pl8 <-
+ndvi %>% 
+  merge(clim_short) %>% 
+  ggplot(aes(x = bio3, y = ndvi.max)) + 
+  geom_point() +
+  geom_smooth(method = "lm")
+# +
+#   stat_poly_eq(mapping = use_label(c("R2", "P")), p.digits = 2)
+
+```
+
+
+
+```{r}
+Pl9 <-
+ndvi %>% 
+  merge(clim_short) %>% 
+  ggplot(aes(x = bio1, y = ndvi.max)) + 
+  geom_point() +
+  geom_smooth(method = "lm")
+# +
+#   stat_poly_eq(mapping = use_label(c("R2", "P")), p.digits = 2)
+
+```
+
+
+```{r}
+Pl10 <-
+ndvi %>% 
+  merge(clim_short) %>% 
+  ggplot(aes(x = CMIsummer, y = ndvi.max)) + 
+  geom_point() +
+  geom_smooth(method = "lm")
+# +
+#   stat_poly_eq(mapping = use_label(c("R2", "P")), p.digits = 2)
+
+```
+
+
+```{r}
+Pl11 <-
+ndvi %>% 
+  merge(clim_short) %>% 
+  ggplot(aes(x = bio3, y = ndvi.max)) + 
+  geom_point() +
+  geom_smooth(method = "lm")
+# +
+#   stat_poly_eq(mapping = use_label(c("R2", "P")), p.digits = 2)
+
+```
+
+```{r}
+library(cowplot)
+
+plot_grid(Pl1, Pl2, Pl3, Pl4, Pl5, Pl6, Pl7,Pl8,Pl9,Pl10,Pl11,ncol = 4)
+
+```
+
+Приводить на такой модели R2 и p-value  можно, но они, ведь, будут "дутые". Для того и ресамплинг нужен, чтобы устранить проблемы с автокорреляциями и гигантскими выборками (много сайтов), которые будут завышать статистическую значимость модели. По сути эти графики не нужны, так как усредненный характер связи (положительный или отрицательный) виден из распределения значений коэффициентов в ресамплинге.
+
+
+## Зависмость дендрологических метрик от фенологических параметров
+
+По-моему, рассуждения можно строить следующим образом. 
+
+1. Наиболее информативным является индекс ndvi, он более всего связан с климатом. 
+2. Аналогично анализу связи фенологических метрик с климатом будм методом ресамплинга оценивать связь BWI у деревьев с ndvi по сайтам в непосредственной близости от плота, где бурили растения.
+3. Будем строить модель следующего вида для каждого акта ресамплинга
+
+  mod <- lm(log(BAI_Value) ~ scale(ndvi.max)*Species, data = df)
+
+4. Построим распределение угловых коэффициентов для каждого из видов деревьев.
+5. Посмотрим попадают ли нули между 0.025 и 0.975 квантилями.
+
+
+```{r}
+trees <- read_excel("Data/Фенология по сайтам реальных наблюдений/RWI_BAI.xlsx")
+
+trees <-
+  trees %>% 
+  rename(BAI_Value = Value)
+```
+
+
+```{r}
+ # на всякий случай грузим все фенологические метрики.
+
+evi_local <-
+  read.csv("Data/Фенология по сайтам реальных наблюдений/picea.gsdt.evi.csv") %>%
+  select(sample.id, year, evi.max) %>% 
+  rename(Year = year) %>% 
+  filter(Year > 1999 & Year < 2024) %>% 
+  mutate(Plot = gsub(pattern = "S_", replacement = "", x = sample.id)) %>% 
+  select(-sample.id) 
+
+evi2_local <-
+  read.csv("Data/Фенология по сайтам реальных наблюдений/picea.gsdt.evi2.csv") %>%
+  select(sample.id, year, evi2.max) %>% 
+  rename(Year = year) %>% 
+  filter(Year > 1999 & Year < 2024) %>% 
+  mutate(Plot = gsub(pattern = "S_", replacement = "", x = sample.id)) %>% 
+  select(-sample.id) 
+
+
+kndvi_local <-
+  read.csv("Data/Фенология по сайтам реальных наблюдений/picea.gsdt.kndvi.csv") %>%
+  select(sample.id, year, kndvi.max) %>% 
+  rename(Year = year) %>% 
+  filter(Year > 1999 & Year < 2024) %>% 
+  mutate(Plot = gsub(pattern = "S_", replacement = "", x = sample.id)) %>% 
+  select(-sample.id) 
+
+ndvi_local <-
+  read.csv("Data/Фенология по сайтам реальных наблюдений/picea.gsdt.ndvi.csv") %>%
+  select(sample.id, year, ndvi.max) %>% 
+  rename(Year = year) %>% 
+  filter(Year > 1999 & Year < 2024) %>% 
+  mutate(Plot = gsub(pattern = "S_", replacement = "", x = sample.id)) %>% 
+  select(-sample.id) 
+
+
+nirv_local <-
+  read.csv("Data/Фенология по сайтам реальных наблюдений/picea.gsdt.nirv.csv") %>%
+  select(sample.id, year, nirv.max) %>% 
+  rename(Year = year) %>% 
+  filter(Year > 1999 & Year < 2024) %>% 
+  mutate(Plot = gsub(pattern = "S_", replacement = "", x = sample.id)) %>% 
+  select(-sample.id) 
+
+```
+
+
+
+```{r}
+trees_ndvi <- merge(trees, ndvi_local)
+
+```
+
+
+```{r}
+set.seed(12345)
+
+resample_n <- 1000
+year_num <- round(length(unique(trees_ndvi$Year)) * 0.6)
+site_num <- round(length(unique(trees_ndvi$Plot)) * 0.6)
+
+years_full <- unique(trees_ndvi$Year)
+
+sites_full <- unique(trees_ndvi$Plot)
+
+
+```
+
+
+```{r}
+model_coef <- data.frame(Species = rep(NA, resample_n*3))
+
+i = 0
+
+
+
+while (i < resample_n*3) {
+  years <- sample(years_full, size = year_num)
+  sites <- sample(sites_full, size = site_num)
+  
+  
+  df <-  
+    trees_ndvi %>% 
+    filter(Year %in% years & Plot %in% sites) %>% 
+    filter(complete.cases(.))
+  
+  mod <- lm(log(BAI_Value) ~ scale(ndvi.max)*Species, data = df)
+
+  
+  i <- i+1
+  model_coef$Species[i] <- "Betula"
+  model_coef$Slope[i] <- coef(mod)[2]
+  
+  i <- i+1
+  model_coef$Species[i] <- "Larix"
+  model_coef$Slope[i] <- coef(mod)[2] + coef(mod)[5]
+
+  i <- i+1
+  model_coef$Species[i] <- "Picea"
+  model_coef$Slope[i] <- coef(mod)[2] + coef(mod)[6]
+  
+}
+  
+
+```
+
+
+```{r}
+model_coef %>% 
+  group_by(Species) %>% 
+  summarise(Q_2.5 = quantile(Slope, probs = 0.025), Q_97.5 = quantile(Slope, probs = 0.975)) -> quants
+
+```
+
+
+```{r}
+model_coef %>% 
+  ggplot(aes(x = Slope)) +
+  geom_histogram() +
+  facet_wrap(~Species) +
+  geom_segment(data = quants, aes(x = Q_2.5, xend = Q_97.5, y = 0, yend = 0), color = "yellow", linewidth = 2)+
+   geom_vline(xintercept = 0) +
+  labs(x = "Model slope", y = "Frequency")
+
+```
+
+
+Видно, что положительная связь BAI с ndvi наблюдается только у Picea. Возможно потому, что именно этот вид создает фон на фотоснимках из космоса.
