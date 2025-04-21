@@ -364,21 +364,21 @@ for(i in 1:resample_n){
 ```{r}
 cors <- rbind(cors_evi, cors_evi2, cors_kndvi, cors_ndvi)
 
-cors2 <- melt(cors, variable.name = "Clim", value.name = "R_spearman") 
+cors2 <- melt(cors, variable.name = "Clim", value.name = "Coef") 
 
 cors2 <- 
   cors2 %>% 
-  filter(!is.na(R_spearman))
+  filter(!is.na(Coef))
 ```
 
 
 ```{r}
 cors2 %>% 
   group_by(Index, Clim) %>% 
-  summarise(Q_2.5 = quantile(R_spearman, probs = 0.025), Q_97.5 = quantile(R_spearman, probs = 0.975)) -> quants
+  summarise(Q_2.5 = quantile(Coef, probs = 0.025), Q_97.5 = quantile(Coef, probs = 0.975)) -> quants
 
 cors2 %>% 
-  ggplot(aes(x = R_spearman)) +
+  ggplot(aes(x = Coef)) +
   geom_histogram() +
   facet_grid(Clim ~ Index) +
   geom_segment(data = quants, aes(x = Q_2.5, xend = Q_97.5, y = 0, yend = 0), color = "yellow", linewidth = 2)+
@@ -398,7 +398,7 @@ evi %>%
   merge(clim_short) %>% 
   ggplot(aes(x = bio1, y = evi.max)) + 
   geom_point() +
-  geom_smooth(method = "lm")
+  geom_smooth(method = "lm") 
 
 ```
 
