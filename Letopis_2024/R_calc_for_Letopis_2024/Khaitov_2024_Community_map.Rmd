@@ -80,7 +80,7 @@ theme_set(theme_bw())
 
 
 
-В период с 1964 по 1993 гг. проводилась работа по инвентаризации сообществ макробентоса в окрестностях о. Ряжкова (более 600 дражных и более 100 дночерпательных станций). Многочисленные бентосные количественные и качественные пробы позволили выделить несколько наиболее типичных сообществ, представленных в сублиторали вершины Кандалакшского залива. Для визуализации пространственного распределения этих сообществ была построена карта (`r figRef("Map")`). К сожалению, целый ряд сообществ бентоса, представленных в верхней сублиторали (сообщества, связанные с зарослями *Zostera marina*, нитчатых водорослей и сообщества, формируюющиеся на заиленных участках в мелководных губах) остаются не нанесенными на карту. 
+В период с 1964 по 1993 гг. проводилась работа по инвентаризации сообществ макробентоса в окрестностях о. Ряжкова (более 600 дражных и более 100 дночерпательных станций). Многочисленные бентосные количественные и качественные пробы позволили выделить несколько наиболее типичных сообществ, представленных в сублиторали вершины Кандалакшского залива. Для визуализации пространственного распределения этих сообществ была построена карта (`r figRef("Map")`). К сожалению, целый ряд сообществ бентоса, представленных в верхней сублиторали (сообщества, связанные с зарослями *Zostera marina*, нитчатых водорослей и сообщества, формируюющиеся на заиленных участках в мелководных губах) остаются не нанесенными на карту из-за недостаточной обследованности. 
 
 Приведенные ниже карты и описания сообществ сугубо предварительны и требуют дополнительных описаний. Для географической привязки сообществ ниже приводятся координаты узлов полигонов, оконтуривающих пространственные выделы, занятые соответствующими сообществами. Эти данные, также, требуют уточнения и могут рассматриваться лишь как приблизительные границы распространения сообществ. 
 
@@ -233,9 +233,10 @@ plot_grid(Pl_map, Pl_legend, scale = c(1, .7), align = "v",  nrow = 1, ncol = 2)
 
 ## Сообщества, связанные с зарослями ламинарии
 
-Формирование этого типа сообществ определяется поселениями бурой водоросли Saccharina latissima (Linnaeus), которая крепится к твердым субстратам ризоидами, от которых берет начало черешок, дистальная часть которого формирует пластину, длина которой может достигать нескольких метров.  Заросли ламинарии приурочены к верхней части сублиторали (до глубины около 10 м). В окрестностях о. Ряжкова этот тип сообществ занимает обширные площади  (`r figRef("Laminaria")`). Заросли ламинарии окаймляют практически все острова и склоны берегов материка. Однако наиболее обширные заросли представлены в пространстве между островами Ряшков, Девичья Луда, Большой и Малый Ломтишные. Обычно в этих зарослях  формируется довольно сложный комплекс относительно независимых друг от друга сообществ: сообщества ризоидов ламинарии, сообщества обрастателей черешка и пластины водорослей и сообщества илистого грунта, который обычно скапливается в местах поселения этих водорослей.
+Формирование этого типа сообществ определяется поселениями бурой водоросли *Saccharina latissima* (Linnaeus), которая крепится к твердым субстратам ризоидами, от которых берет начало черешок, дистальная часть которого формирует пластину, длина которой может достигать нескольких метров.  Заросли ламинарии приурочены к верхней части сублиторали (до глубины около 10 м). В окрестностях о. Ряжкова этот тип сообществ занимает обширные площади  (`r figRef("Laminaria")`). Заросли ламинарии окаймляют практически все острова и склоны берегов материка. Однако наиболее обширные заросли представлены в пространстве между островами Ряшков, Девичья Луда, Большой и Малый Ломтишные. Обычно в этих зарослях  формируется довольно сложный комплекс относительно независимых друг от друга сообществ: сообщества ризоидов ламинарии, сообщества обрастателей черешка и пластины водорослей и сообщества илистого грунта, который обычно скапливается в местах поселения этих водорослей.
 
 ```{r}
+Pl_Laminaria <-
 ggplot() + 
   geom_polygon(data = gg_Laminaria, aes(x = long, y = lat, group = group), fill = "green") +   
   geom_polygon(data = Islands, aes(x = long, y = lat, group = group), fill = "gray") +
@@ -247,7 +248,519 @@ ggplot() +
 ```
 
 
+```{r, fig.cap=figRef("Laminaria", "Карта распределения собщества, связнного с зарослями ламинарии. Map of community distribution associated with kelp beds")}
+Pl_Laminaria
+```
+
+
+
 ```{r}
+gg_Laminaria %>% 
+  dplyr::select(long, lat, order) ->
+  poligon_df
+
+poligon_df <-
+  poligon_df %>% 
+  mutate(ID = 1:nrow(.))
 
 ```
+
+
+
+```{r}
+matrix(c(rbind(poligon_df$ID, poligon_df$order, poligon_df$lat, poligon_df$long)), ncol = 12, byrow = T) %>% 
+  as.data.frame() %>% 
+  flextable() ->
+  ft
+
+ft <- 
+ft %>% 
+  set_header_labels(V1 = "№ точки",
+                    V2 = "Порядок",
+                    V3 = "N",
+                    V4 = "E",
+                    V5 = "№ точки",
+                    V6 = "Порядок",
+                    V7 = "N",
+                    V8 = "E",
+                    V9 = "№ точки",
+                    V10 = "Порядок",
+                    V11 = "N",
+                    V12 = "E"
+  )
+
+ft <-
+ft %>% 
+  colformat_double(big.mark = "", j = c(1,2, 5, 6, 9,10), digits = 0) %>% 
+  fontsize(size = 7, part = "all") %>% 
+  autofit()
+  
+```
+
+
+```{r}
+ft %>% 
+  set_caption(caption = as_paragraph(
+      as_chunk(
+        "Таблица +.1. Координаты опорных точек полигонов, описывающих сообщество, связанное с зарослями ламинарии. Coordinates of reference points of polygons describing the community associated with kelp beds",
+        props = fp_text_default(font.size = 10)
+      )
+    )
+  )  
+    
+   
+```
+
+
+
+## Сообщество зарослей багрянок
+
+Это одно из самых богатых видами донных сообществ Белого моря. Оно формируется в нижней части фитали на глубинах от 7 до 23 м. Фон в этом сообществе создают пластинчатые красные водоросли, в первую очередь, *Phyllophora* sp., *Odonthalia dentata* (Linnaeus) и *Phycodrys rubens* (Linnaeus). Заросли багрянок располагаются ниже зарослей ламинарии и формируют характерные пояса, окаймляющие сублиторальные склоны в местах с высокой гидродинамической напряженностью, прежде всего салмы `r figRef("Rhodophyta")`. 
+
+
+```{r}
+Pl_Rhodophyta <-
+ggplot() + 
+  geom_polygon(data = gg_Rhodophyta, aes(x = long, y = lat, group = group), fill = "red") +
+  geom_polygon(data = gg_murm_karel, aes(x = long, y = lat, group = group), fill = "gray", color = "black") +
+  coord_map(xlim = Kand_x, ylim = Kand_y) +
+  theme_bw() 
+
+
+
+  
+```
+
+
+```{r, fig.cap=figRef("Rhodophyta", "Карта распределения собществ, связнных зарослями багрянок. Map of the distribution of communities associated with Rhodophyta")}
+
+Pl_Rhodophyta
+
+```
+
+
+
+```{r}
+
+
+gg_Rhodophyta %>% 
+  dplyr::select(long, lat, order) ->
+  poligon_df
+
+poligon_df <-
+  poligon_df %>% 
+  mutate(ID = 1:nrow(.))
+
+```
+
+
+
+```{r}
+matrix(c(rbind(poligon_df$ID, poligon_df$order, poligon_df$lat, poligon_df$long)), ncol = 12, byrow = T) %>% 
+  as.data.frame() %>% 
+  flextable() ->
+  ft
+
+ft <- 
+ft %>% 
+  set_header_labels(V1 = "№ точки",
+                    V2 = "Порядок",
+                    V3 = "N",
+                    V4 = "E",
+                    V5 = "№ точки",
+                    V6 = "Порядок",
+                    V7 = "N",
+                    V8 = "E",
+                    V9 = "№ точки",
+                    V10 = "Порядок",
+                    V11 = "N",
+                    V12 = "E"
+  )
+
+ft <-
+ft %>% 
+  colformat_double(big.mark = "", j = c(1,2, 5, 6, 9,10), digits = 0) %>% 
+  fontsize(size = 7, part = "all") %>% 
+  autofit()
+  
+```
+
+
+```{r}
+ft %>% 
+  set_caption(caption = as_paragraph(
+      as_chunk(
+        "Таблица +.2. Координаты опорных точек полигонов, описывающих сообщества, связанные с зарослями багрянок. Coordinates of polygon reference points describing communities associated Rhodophyta assemblages",
+        props = fp_text_default(font.size = 10)
+      )
+    )
+  )  
+    
+   
+```
+
+
+
+
+## Сообщества мидиевых банок и друз
+
+Плотные скопления мидий, крепящихся как гравийно-галечному грунту, так и к друг другу, представлены на литорали и в верхней сублиторали вершины Кандалакшского залива в виде локальных пятен различной площади. Эти сообщества приурочены к местам с быстрым течением и пологим дном (мысы, корги, мелководные проливы). Поселения формируются двумя видами: *Mytilus edulis* Linnaeus и *M. trossulus* Gould. 
+
+Мидии, будучи сильными эдификаторами, создают своеобразную среду, которая населяется далеко не всеми обитателями литорали и верхней сублиторали. Среди скоплений мидий присутствуют либо виды, способные активно перемещаться (брюхоногие моллюски, немертины), либо малоподвижные виды, развитие которых не связано с планктонной стадией, уязвимой для фильтрационной активности мидий (в первую очередь олигохеты *Tubificoides benedeni*). Эти сообщества в следующих местах `r figRef("Mytilus")`:
+
++ Юго-восточный мыс о.Ряшкова;
++ Литораль материка, луд и корг в сверо-западной части Западной Ряжковой салмы;
++ Практически повсеместно на отмелях в районе островов Ломтишных.
+
+
+```{r}
+Pl_Mytilus <-
+ggplot() + 
+  geom_polygon(data = Islands, aes(x = long, y = lat, group = group), fill = "gray") +
+  geom_polygon(data = gg_murm_karel, aes(x = long, y = lat, group = group), fill = "gray", color = "black") +
+  geom_point(data = gg_Mussel_beds, aes(x = long, y = lat, group = 1), fill = "black", size = 3) +
+  coord_map(xlim = Kand_x, ylim = Kand_y) +
+  theme_bw() 
+
+  
+```
+
+
+```{r, fig.cap=figRef("Mytilus", "Карта распределения сообществ, связнных плотными поселениями мидий. Map of the distribution of communities associated with dense mussel settlements.")}
+Pl_Mytilus
+```
+
+
+
+```{r}
+gg_Mussel_beds %>% 
+  dplyr::select(long, lat) ->
+  poligon_df
+
+poligon_df <-
+  poligon_df %>% 
+  mutate(ID = 1:nrow(.))
+
+```
+
+
+
+```{r}
+matrix(c(rbind(poligon_df$ID, poligon_df$lat, poligon_df$long)), ncol = 9, byrow = T) %>% 
+  as.data.frame() %>% 
+  flextable() ->
+  ft
+
+ft <- 
+ft %>% 
+  set_header_labels(V1 = "№ точки",
+                    V2 = "N",
+                    V3 = "E",
+                    V4 = "№ точки",
+                    V5 = "N",
+                    V6 = "E",
+                    V7 = "№ точки",
+                    V8 = "N",
+                    V9 = "E"
+                    
+  )
+
+ft <-
+ft %>% 
+  # colformat_double(big.mark = "", j = c(1,2, 5, 6, 9,10), digits = 0) %>% 
+  fontsize(size = 7, part = "all") %>% 
+  autofit()
+  
+```
+
+
+```{r}
+ft %>% 
+  set_caption(caption = as_paragraph(
+      as_chunk(
+        "Таблица +.3. Координаты опорных точек полигонов, описывающих сообщество, связанное с плотными поселеинями мидий. Coordinates of reference points of polygons describing the community associated with mussel's settlements",
+        props = fp_text_default(font.size = 10)
+      )
+    )
+  )  
+    
+   
+```
+
+
+
+## Сообщество мелководных илов
+
+Эти сообщества формируются в сублиторали на глубинах до 20 м в участках со слабым течением. Как правило, участки, на которых представлено данное сообщество, приурочены к межостровьям в шхерах, в сублиторали мелководных губ и на участках, находящихся в «гидродинамической тени» (в ямах, между порогами, экранирующими течения). В этих сообществах численности доминируют роющиеся формы: полихеты (*Terebellides stroemi*, *Scoloplos armiger*, *Aricidea nolani*, *Micronephthys* sp.), бокоплавы (*Pontoporeia femorata*, *Atylus carinatus*) и кумовые раки (*Diastylis glabra*, *D. sulcata*, *D. scorpiodes*). В некоторых районах в таких сообществах значительную плотность поселения демонстрируют  полихеты-трубкостроители (сем.Maldanidae, Spionidae). По биомассе в таких сообществах доминируют двустворчатые моллюски из семейства Astartidae (*Tridonta borealis*, *T. elliptica*), *Serripes groenlandicus*, *Ciliatocardium ciliatum*,  *Macoma calcarea* или *Macoma balthica*. В районах, находящихся в контакте с зарослями ламинарии в этом сообществе возрастает роль полихет *Pista maculata*, которые строят длинные переплетающиеся трубки. 
+
+Этот комплекс отмечен в Южной и Северной губе о. Ряшкова, в пространстве между островами Луда Девичья, Куричек, Большой и Малый Ломтишные `r figRef("Shallow_muds")`. 
+
+```{r}
+Pl_Shallow_mud <-
+ggplot() + 
+  geom_polygon(data = Islands, aes(x = long, y = lat, group = group), fill = "gray") +
+  geom_polygon(data = gg_Macoma, aes(x = long, y = lat, group = group), fill = "black") +
+  geom_polygon(data = gg_Pista, aes(x = long, y = lat, group = group), fill = "black") +
+  geom_polygon(data = gg_Portlandia_Macoma, aes(x = long, y = lat, group = group), fill = "black") +
+  geom_polygon(data = gg_Polydora, aes(x = long, y = lat, group = group), fill = "black") +
+  geom_polygon(data = gg_Mud, aes(x = long, y = lat, group = group),
+               fill = "black") +
+  geom_polygon(data = gg_murm_karel, aes(x = long, y = lat, group = group), fill = "gray", color = "black")+
+  coord_map(xlim = Kand_x, ylim = Kand_y) +
+  theme_bw() 
+
+
+  
+```
+
+
+```{r, fig.cap=figRef("Shallow_muds", "Карта распределения собществ, связнных с мелководными сублиторальными илами. Map of distribution of assemblages associated with shallow sublittoral muds")}
+Pl_Shallow_mud
+```
+
+
+
+```{r}
+
+gg_ShallowMud <- 
+  rbind(gg_Macoma, gg_Pista, gg_Portlandia_Macoma, gg_Polydora, gg_Mud)
+
+gg_ShallowMud %>% 
+  dplyr::select(long, lat, order) ->
+  poligon_df
+
+poligon_df <-
+  poligon_df %>% 
+  mutate(ID = 1:nrow(.))
+
+```
+
+
+
+```{r}
+matrix(c(rbind(poligon_df$ID, poligon_df$order, poligon_df$lat, poligon_df$long)), ncol = 12, byrow = T) %>% 
+  as.data.frame() %>% 
+  flextable() ->
+  ft
+
+ft <- 
+ft %>% 
+  set_header_labels(V1 = "№ точки",
+                    V2 = "Порядок",
+                    V3 = "N",
+                    V4 = "E",
+                    V5 = "№ точки",
+                    V6 = "Порядок",
+                    V7 = "N",
+                    V8 = "E",
+                    V9 = "№ точки",
+                    V10 = "Порядок",
+                    V11 = "N",
+                    V12 = "E"
+  )
+
+ft <-
+ft %>% 
+  colformat_double(big.mark = "", j = c(1,2, 5, 6, 9,10), digits = 0) %>% 
+  fontsize(size = 7, part = "all") %>% 
+  autofit()
+  
+```
+
+
+```{r}
+ft %>% 
+  set_caption(caption = as_paragraph(
+      as_chunk(
+        "Таблица +.4. Координаты опорных точек полигонов, описывающих сообщества, связанные с мелководными сублиторальными илами. Coordinates of polygon reference points describing communities associated with shallow sublittoral muds",
+        props = fp_text_default(font.size = 10)
+      )
+    )
+  )  
+    
+   
+```
+
+
+
+
+
+## Сообщество глубоководных илов
+
+Эти сообщества формируются в глубоких ямах (более 20 м), в которых задерживается холодная зимняя водная масса. Виды комплекса, описанного выше, здесь также могут быть представлены, но их обилие заметно ниже. Наиболее заметные отличия касаются обилия двустворчатых моллюсков. В этом комплексе ведущую роль играют двустворки Portlandia arctica. 
+
+Эти сообщества представлены в северо-западной части Западной Ряжковой салмы `r figRef("Deep_muds")`. Небольшие пятна этого сообщества были отмечены и в некоторых других местах. 
+
+```{r}
+Pl_Deep_muds <-
+ggplot() + 
+  geom_polygon(data = gg_Portlandia, aes(x = long, y = lat, group = group), fill = "yellow") +
+  geom_polygon(data = gg_murm_karel, aes(x = long, y = lat, group = group), fill = "gray", color = "black") +
+  coord_map(xlim = Kand_x, ylim = Kand_y) +
+  theme_bw() 
+
+
+  
+```
+
+
+```{r, fig.cap=figRef("Deep_muds", "Карта распределения собществ, связнных с  глубоководными сублиторальными илами. Map of distribution of assemblages associated with deep-water sublittoral muds")}
+Pl_Deep_muds
+```
+
+
+
+```{r}
+
+
+gg_Portlandia %>% 
+  dplyr::select(long, lat, order) ->
+  poligon_df
+
+poligon_df <-
+  poligon_df %>% 
+  mutate(ID = 1:nrow(.))
+
+```
+
+
+
+```{r}
+matrix(c(rbind(poligon_df$ID, poligon_df$order, poligon_df$lat, poligon_df$long)), ncol = 12, byrow = T) %>% 
+  as.data.frame() %>% 
+  flextable() ->
+  ft
+
+ft <- 
+ft %>% 
+  set_header_labels(V1 = "№ точки",
+                    V2 = "Порядок",
+                    V3 = "N",
+                    V4 = "E",
+                    V5 = "№ точки",
+                    V6 = "Порядок",
+                    V7 = "N",
+                    V8 = "E",
+                    V9 = "№ точки",
+                    V10 = "Порядок",
+                    V11 = "N",
+                    V12 = "E"
+  )
+
+ft <-
+ft %>% 
+  colformat_double(big.mark = "", j = c(1,2, 5, 6, 9,10), digits = 0) %>% 
+  fontsize(size = 7, part = "all") %>% 
+  autofit()
+  
+```
+
+
+```{r}
+ft %>% 
+  set_caption(caption = as_paragraph(
+      as_chunk(
+        "Таблица +.5. Координаты опорных точек полигонов, описывающих сообщества, связанные с глубоководными сублиторальными илами. Coordinates of polygon reference points describing communities associated with deep-water sublittoral muds",
+        props = fp_text_default(font.size = 10)
+      )
+    )
+  )  
+    
+   
+```
+
+
+
+## Сообщество гравийно-галичных промытых грунтов
+
+Это сообщество формируется на глубине 15-25 м на участках, где наблюдаются быстрые приливно-отливные течения. Такие условия складываются в узких относительно глубоководных проливах, например, в Восточной и Западной Ряжковой салмах `r figRef("Hem")`. 
+
+
+Поскольку это сообщество формируется приблизительно в том же диапазоне глубин, что и сообщество мелководных илов, то в сообществах гравийно-галичных промытых грунтов могут быть найдены виды характерные и для заиленных участков (роющиеся и строящие трубки полихеты, зарывающиеся в грунт моллюски, бокоплавы и кумовые раки). Степень сходства зависит от уровня заиленности тех участках проливов, которые находятся в «гидродинамической тени» (см. выше). При ослаблении течений за счет порогов и ям могут формироваться сообщества очень близкие к сообществам мелководных илов. Однако в остальных участках, где быстрые течения вымывают ил, облик сообщества иной. Здесь на лишенном илистого покрова гравии и гальке богато представлено сообщество обрастателей. К числу видов, которые формируют облик этого сообщества относятся усоногие раки *Balanus balanus* и *B.crenatus*, плеченогие *Hemithiris psittacea*, крупные гидроидные полипы Tubularia и несколько видов асцидий (*Boltenia echinata*, *Stiela rustica*, несколько видов *Molgula*). На поверхности грунта в этом сообществе в большом количестве встречаются иглокожие: офиуры (*Ophiopholis aculeata*, *Ophiura robusta*) и морские звезды (*Asterias rubens*, *Crossaster papposus*, *Henricia* sp.).
+
+
+```{r}
+Pl_Hem <-
+  ggplot() + 
+  geom_polygon(data = gg_Rhynchonella, aes(x = long, y = lat, group = group), fill = "blue") +   
+  geom_polygon(data = gg_Hydralmania, aes(x = long, y = lat, group = group), fill = "blue") +
+  geom_polygon(data = gg_murm_karel, aes(x = long, y = lat, group = group), fill = "gray", color = "black") +
+   coord_map(xlim = Kand_x, ylim = Kand_y) +
+  theme_bw() 
+
+
+
+  
+```
+
+
+```{r, fig.cap=figRef("Hem", "Карта распределения собществ, связнных с промытыми гравийно-галичными грунтами. Map of the distribution of communities associated with washed gravel and pabble sediments.")}
+
+
+Pl_Hem
+```
+
+
+
+```{r}
+
+gg_Hem <- 
+  rbind(gg_Rhynchonella, gg_Hydralmania)
+
+gg_Hem %>% 
+  dplyr::select(long, lat, order) ->
+  poligon_df
+
+poligon_df <-
+  poligon_df %>% 
+  mutate(ID = 1:nrow(.))
+
+```
+
+
+
+```{r}
+matrix(c(rbind(poligon_df$ID, poligon_df$order, poligon_df$lat, poligon_df$long)), ncol = 12, byrow = T) %>% 
+  as.data.frame() %>% 
+  flextable() ->
+  ft
+
+ft <- 
+ft %>% 
+  set_header_labels(V1 = "№ точки",
+                    V2 = "Порядок",
+                    V3 = "N",
+                    V4 = "E",
+                    V5 = "№ точки",
+                    V6 = "Порядок",
+                    V7 = "N",
+                    V8 = "E",
+                    V9 = "№ точки",
+                    V10 = "Порядок",
+                    V11 = "N",
+                    V12 = "E"
+  )
+
+ft <-
+ft %>% 
+  colformat_double(big.mark = "", j = c(1,2, 5, 6, 9,10), digits = 0) %>% 
+  fontsize(size = 7, part = "all") %>% 
+  autofit()
+  
+```
+
+
+```{r}
+ft %>% 
+  set_caption(caption = as_paragraph(
+      as_chunk(
+        "Таблица +.6. Координаты опорных точек полигонов, описывающих сообщества, связанные с промыыыми гравийно-галечными грунтами. Coordinates of reference points of polygons describing communities associated with washed gravel and pebble sediments.",
+        props = fp_text_default(font.size = 10)
+      )
+    )
+  )  
+    
+   
+```
+
 

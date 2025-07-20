@@ -1114,6 +1114,29 @@ all_sites_long$Morphotype <- factor(all_sites_long$Morphotype)
 
 Mod_gam_Abundance <- gam(Abundance ~ s(Salinity, bs = "cs", by = Morphotype) + s(Log_Min_dist_river, bs = "cs", by = Morphotype) + s(Log_Fetch, bs = "cs", by = Morphotype) + s(Log_Min_dist_port, bs = "cs", by = Morphotype) + River_Size*Morphotype + Port_Status*Morphotype, method = "REML", family = "gaussian", data = all_sites_long )
 
+# AIC(Mod_gam_Abundance)
+# 
+# all_sites_long_2 <- 
+#   myt_full_reduced %>% 
+#   mutate(Log_D_T = log(N_T * SQM_factor +1), Log_D_E = log(N_E*SQM_factor+1) ) %>% 
+#   dplyr::select(Site, Position, Salinity, Log_Min_dist_river, Log_Fetch, Log_Min_dist_port, River_Size, Port_Status, Log_D_T, Log_D_E) %>% 
+#    rename(T_morphotype = Log_D_T, E_morphotype = Log_D_E) %>% 
+#   melt(id.vars = c("Site", "Position", "Salinity", "Log_Min_dist_river", "Log_Fetch", "Log_Min_dist_port", "River_Size", "Port_Status"), variable.name = "Morphotype", value.name = "Abundance")
+#   
+# all_sites_long_2$Morphotype <- factor(all_sites_long_2$Morphotype)
+
+
+# 
+# 
+# Mod_gam_Abundanc_2 <- gam(Abundance ~ s(Salinity, bs = "cs", by = Morphotype) + s(Log_Min_dist_river, bs = "cs", by = Morphotype) + s(Log_Fetch, bs = "cs", by = Morphotype) + s(Log_Min_dist_port, bs = "cs", by = Morphotype) + River_Size*Morphotype + Port_Status*Morphotype + s(Site, bs = "re") + s(Position, bs = "re"), method = "REML", family = "gaussian", data = all_sites_long_2)
+# 
+# AIC(Mod_gam_Abundanc_2)
+# 
+# Mod_gam_Abundanc_3 <- gamm(Abundance ~ s(Salinity, bs = "cs", by = Morphotype) + s(Log_Min_dist_river, bs = "cs", by = Morphotype) + s(Log_Fetch, bs = "cs", by = Morphotype) + s(Log_Min_dist_port, bs = "cs", by = Morphotype) + River_Size*Morphotype + Port_Status*Morphotype, random = list(Site = ~1, Position = ~1), method = "REML", family = "gaussian", data = all_sites_long_2)
+# 
+# 
+# AIC(Mod_gam_Abundanc_3$lme)
+
 
 Mod_dummy2 <- lm(Abundance ~ Salinity + Log_Min_dist_river + Log_Fetch + Log_Min_dist_port + Morphotype + River_Size + Port_Status,  data = all_sites_long )
 
@@ -1121,6 +1144,7 @@ library(car)
 
 VIF2 <- vif(Mod_dummy2) 
 
+# appraise(Mod_gam_Abundance)
 # library(DHARMa)
 # simulateResiduals(Mod_gam_Abundance, plot = T)
 

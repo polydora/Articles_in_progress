@@ -1,0 +1,381 @@
+---
+title: ''
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+
+```{r Пакеты}
+library(dplyr)
+library(ggplot2)
+library(readxl)
+library(flextable)
+library(lubridate)
+library(mgcv)
+library(gratia)
+library(cowplot)
+library(reshape2)
+
+theme_set(theme_bw())
+```
+
+
+```{r}
+gadus <- read_excel("Data/ТРЕСКА_LONG-TERM_CHANGES.xlsx")
+
+gadus <-
+gadus %>% 
+  mutate(Date2 = as.POSIXct(as.Date(Date2, format = "%d.%m.%Y")), 
+         DOY = yday(Date2))
+
+
+
+```
+
+
+# Популяционная структура
+
+## Динамика размерной структуры
+
+Строим модель, отражающую многолетнюю и сезонную динамику размера рыб. 
+
+Модель имеет следующую форму
+
+Sex ~ s(Year) + s(DOY)
+
+
+```{r}
+mod_size <- gam(L ~  s(Year) + s(DOY), data = gadus)
+```
+
+Вот ее резeльтирующие данные.
+
+```{r}
+summary(mod_size)
+```
+
+Есть статистически значимая многолетняя динамика размеров.
+
+```{r}
+Pl_mod_size <-
+  draw(mod_size, select = 1, residuals = F) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  ggtitle("Model prediction")
+  
+```
+
+
+```{r}
+Pl_size_initial <- 
+gadus %>% 
+  ggplot(aes(x = Year, y = L)) +
+  geom_boxplot(aes(group = Year)) +
+  geom_hline(yintercept = mean(gadus$L), linetype = 2) +
+  ggtitle("Row size")
+```
+
+
+```{r}
+plot_grid(Pl_mod_size, Pl_size_initial)
+```
+
+
+Были два периода, когда размер был выше многолетней средней. Может подходы баренцевоморской трески? Я помню годы, когда ловились большие особи нетипично красного цвета. Или может меняли размер ячеи на сетках?
+
+
+## Динамика полового состава 
+
+```{r}
+gadus %>%
+  filter(!is.na(Sex)) %>% 
+  mutate(Sex2 = ifelse(Sex == "female", 1, 0)) -> 
+  gadus_full
+
+Mod_Sex <- gam(Sex2 ~ s(Year) + s(DOY), data = gadus_full, family = "binomial")
+```
+
+Построил модель, отражающую одновременно многолетнюю и сезонную динамику полового состава (доля самок).  
+
+Вот формула модели:
+
+Sex ~ s(Year) + s(DOY)
+
+Вот ее результат
+
+```{r}
+summary(Mod_Sex)  
+
+```
+
+Сезонной динамики встречаемости нет, но есть значимая многолетня динамика.
+
+Вот визуализация.
+
+```{r}
+sex_proportion <- 
+  gadus_full %>% 
+  group_by(Year) %>% 
+  summarise(N = n(), Prop_f = mean(Sex == "female"), SE = sqrt(Prop_f*(1-Prop_f)/N))
+
+Pl_Mod_Sex <- 
+draw(Mod_Sex, select = 1) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  ggtitle("Model prediction")
+
+
+Pl_sex_init <-
+  sex_proportion %>% 
+  ggplot(aes(x = Year, y = Prop_f)) +
+  geom_line() +
+  geom_errorbar(aes(ymin = Prop_f - 1.96*SE, ymax = Prop_f + 1.96*SE)) +
+  geom_hline(yintercept = mean(gadus_full$Sex == "female"), linetype = 2) + 
+  ggtitle("Row female proportion")
+
+
+plot_grid(Pl_Mod_Sex, Pl_sex_init)
+```
+
+Видно, что был какой-то провал в частоте самок, за которым их доля выросла выше многолетней популяционной среденей, которая равна `r round(mean(gadus_full$Sex == "female"), 2)`.
+
+
+# Общее описание рациона
+
+```{r}
+
+gadus %>% 
+  select(-Date, -W, - Date2) %>% 
+  melt(id.vars = c("Id", "Year", "DOY",  "Sex", "L"), variable.name = "Species", value.name = "Weight") ->
+  gadus_long
+
+```
+
+
+## Динамика пустых желудков
+
+```{r}
+gadus_long %>% 
+  group_by(Id, L, Year, DOY) %>% 
+  summarise(Total_Weight = sum(Weight)) ->
+  total_weight 
+
+```
+
+
+```{r}
+
+total_weight %>% 
+  mutate(Empty = ifelse(Total_Weight == 0, 1, 0)) -> 
+  total_weight
+
+```
+
+```{r}
+Mod_Empty <- gam(Empty ~ s(Year) + s(DOY) + s(L), data = total_weight, family = "binomial")
+
+```
+
+Модель, котрую строим имеет следующий вид
+
+Empty ~ s(Year) + s(DOY) + s(L), data = total_weight, family = "binomial"
+
+Вот результаты подбора модели
+
+```{r}
+summary(Mod_Empty)
+```
+
+Статистически значимыми была как многолетняя динамика, так и сезонные изменения, но связи с размерами не выявлется.
+
+Вот визуализация модели
+
+```{r}
+Pl_Mod_Empty_1 <- 
+draw(Mod_Empty, select = 1) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  ggtitle("Model prediction for \nlong-term dynamics")
+
+Pl_Mod_Empty_2 <- 
+draw(Mod_Empty, select = 2) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  ggtitle("Model prediction for \nseasonal dynamics")
+
+plot_grid(Pl_Mod_Empty_1, Pl_Mod_Empty_2)
+```
+
+На этих рисунках, как и везде, горизонтальная пунктирная линия отражает среднее по популяции значение. Ниже нуля - меньше среднего и наоборот.  
+
+С сезонной динамикой все более или менее понятно. К концу лета голодных становится больше. Биология мне непонятна: все съели? Нерест? Уже нагуляли жир и больше не надо? Пищевые объекты мигрировали? И т.д.
+
+С многолетней динамикой сложнее. С динамикой размеров это, скорее всего, не связано, так как нет связи частоты пустых с размером, который был включен в модель. То есть было два нажористых периода, когда частота пустых была ниже среднего. 
+
+
+## Динамика веса пищевого комка в заполненных желудках
+
+Анализируем общий вес пищи в желудках
+
+
+```{r}
+total_weight %>% 
+  mutate(Empty = ifelse(Total_Weight == 0, 1, 0)) %>% 
+  filter(Empty == 0) -> 
+  total_weight_full
+
+```
+
+```{r}
+Mod_Total_Weight <- gam(Total_Weight ~ s(Year) + s(DOY) + s(L, k = 5), data = total_weight_full)
+
+```
+
+Модель, котрую строим имеет следующий вид
+
+Total_Weight ~ s(Year) + s(DOY) + s(L)
+
+Вот результаты подбора модели
+
+```{r}
+summary(Mod_Total_Weight)
+```
+
+Выявляется многолетняя динамика и, естественно, связь с размером. Сезонной динамики не выявляется.
+
+```{r}
+Pl_Mod_Weight_1 <- 
+draw(Mod_Total_Weight, select = 1) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  ggtitle("Model prediction for \nlong-term dynamics")
+
+Pl_Mod_Weight_2 <- 
+draw(Mod_Total_Weight, select = 3) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  ggtitle("Model prediction for \nsize")
+
+plot_grid(Pl_Mod_Weight_1, Pl_Mod_Weight_2)
+```
+
+В принципе, хорошо видно, что общее количество еды в желудках было максимальным, в те годы, когда была минимальная доля пустых. Так что, скорее всего, это про голодные и сытые годы. При этом видно, что после где-то 2015 года кормовая база стала сильно лучше. Ну а связь с размером очевидна.
+
+## Состав пищевого комка
+
+```{r}
+gadus_long %>% 
+  group_by(Year, Species) %>%
+  summarise(Mean_Weigt = round(mean(Weight), 2)) ->
+  mean_weghts
+  
+  
+```
+
+
+
+Вот таблица со средними весами видов в отдельные годы. Не уверен, что в статью такая нужна (может быть в ESM)
+
+```{r}
+mean_weghts %>% 
+  dcast(Year ~ Species)  %>% 
+  kable()
+```
+
+Вот средние веса пищевых объектов (в сумме за все годы по тем рыбам, у которых что-то было в желудке)
+
+```{r}
+gadus_long %>% 
+  group_by(Species) %>%
+  summarise(Mean_Weigt = round(mean(Weight), 1), SD = round(sd(Weight), 2)) %>% 
+  arrange(desc(Mean_Weigt)) -> 
+  mean_weights_species
+  
+  mean_weights_species %>% 
+  kable()
+  
+```
+
+
+## Динамика видового разнообразия пищевого спектра
+
+Для каждого года посчитан коэффициент видового разнообразия Шеннона.
+
+```{r}
+library(vegan)
+
+mean_weghts %>% 
+  dcast(Year ~ Species) ->
+  mean_weights_for_years
+
+mean_weights_for_years$H <- diversity(mean_weights_for_years[,-1])
+
+ggplot(mean_weights_for_years, aes(x = Year, y = H)) +
+  geom_line() +
+  geom_hline(yintercept = mean(mean_weights_for_years$H), linetype = 2)
+```
+
+Поскольку для коэффициента Шеннона я не могу придумать как правильно  посчитать доверительную область, то имеет смысл обсуждать лишь резкий провал в разнообразии после 2015 г. В этот год жрали какой-то ограниченный набор пищевых объектов. 
+
+
+## Динамика обилия видов
+
+Предлагаю далее работать с пятеркой самых обильных пищевых объектов.
+
+```{r}
+n_abund <- 5
+
+species_abund <- mean_weights_species$Species[1:n_abund]
+
+ID_fill <- total_weight_full$Id
+
+gadus_long %>% 
+  filter(Id %in% ID_fill & Species %in% species_abund) ->
+  abund_species
+
+
+```
+
+Для построения модели будем брать логарифмы весов. 
+
+Модель будет вот такая
+
+log(Weight+1) ~ s(Year, by = Species) + s(DOY, by = Species) + s(L, by = Species) + Species
+
+```{r}
+mod_abund_species <- gam(log(Weight+1) ~ s(Year, by = Species) + s(DOY, by = Species) + s(L, by = Species, k =5) + Species, data = abund_species)
+
+
+```
+
+Во результаты этой модели. 
+```{r}
+summary(mod_abund_species)
+```
+
+Почти у всех видов есть как сезонная, так и многолетняя динамика. Размеры рыб тоже имеют значение (за исключением A.marinus).
+
+Вот визуализации многолетней динамики
+
+```{r}
+draw(mod_abund_species, select = 1:n_abund)
+```
+
+Тут я пока ничего сказать не могу кроме того, что ест явные изменения структуры рациона. Наример, сперва наедались колюшками, потом A.marinus, а потом селедкам, а в конце перешли на нереисов. 
+
+Вот визуализации сезонной динамики
+
+```{r}
+draw(mod_abund_species, select = (n_abund+1):(n_abund*2) )
+```
+
+Здесь все более логично. Сперва едят колюшку и, я полагаю, ее яйца, пока она не свалила в море. Потом переходят на селедку и A.marinus. Нереиса, я думаю, жрут в период его хода, который как раз в начале лета. 
+
+Вот связь с размерами.
+```{r}
+draw(mod_abund_species, select = (n_abund*2+1):(n_abund*3) )
+
+```
+
+Нереисов и рыбью икру едят мелкие, селедку и колюшку больше едят более крупные. 
+
+
+

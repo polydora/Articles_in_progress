@@ -1,0 +1,453 @@
+---
+title: "Бентосные сообщества Западной Ряжковой салмы"
+author: "В. М. Хайтов"
+output: 
+   word_document:
+     reference_docx: Letopis_template.docx
+     fig_width: 8
+     fig_height: 5
+---
+
+```{r setup, include=FALSE}
+
+
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, dpi=300)
+
+library(reshape2)
+library(knitr)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(cowplot)
+library(flextable)
+library(officer)
+library(lubridate)
+library(ggmap)
+library(maptools)
+library(flextable)
+
+
+editor <- "Толмачева Е. Л."
+editor_eng <- "Tolmacheva E.L."
+
+Year <- 2024
+
+# Функция, задающая нумерацию рисунков
+
+figRef <- local({
+    tag <- numeric()
+    created <- logical()
+    used <- logical()
+    function(label, caption, prefix = options("figcap.prefix"), 
+        sep = options("figcap.sep"), prefix.highlight = options("figcap.prefix.highlight")) {
+        i <- which(names(tag) == label)
+        if (length(i) == 0) {
+            i <- length(tag) + 1
+            tag <<- c(tag, i)
+            names(tag)[length(tag)] <<- label
+            used <<- c(used, FALSE)
+            names(used)[length(used)] <<- label
+            created <<- c(created, FALSE)
+            names(created)[length(created)] <<- label
+        }
+        if (!missing(caption)) {
+            created[label] <<- TRUE
+            paste0(prefix.highlight, prefix, " ", i, sep, prefix.highlight, 
+                " ", caption)
+        } else {
+            used[label] <<- TRUE
+            paste(prefix, tag[label])
+        }
+    }
+})
+
+options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**")
+
+
+theme_set(theme_bw())
+
+
+```
+
+
+
+
+```{r}
+murm_shape <- readShapeSpatial("Maps/Murmanskaya_obl/boundary-polygon-land-lvl4.shp", proj4string = CRS("+proj=longlat +datum=WGS84"))
+
+karel_shape <- readShapeSpatial("Maps/Karelia/boundary-polygon-land-lvl4.shp", proj4string = CRS("+proj=longlat +datum=WGS84"))
+
+
+# Объединение шейп-файлов
+library(raster)
+
+Kand_shape <- bind(murm_shape, karel_shape)
+
+
+
+# Карта для ggplot
+gg_murm_karel <- fortify(Kand_shape)
+
+```
+
+
+
+
+```{r}
+
+Islands <- readShapeSpatial("Maps/Islands/Islands.shp", proj4string = 
+                             CRS("+proj=longlat +datum=WGS84"))
+gg_Islands <- fortify(Islands)
+
+
+```
+
+
+
+
+```{r}
+Kand_x <- c(32.5, 32.65)
+Kand_y <- c(66.96, 67.06)
+
+Pl_map <-
+ggplot() +
+  geom_polygon(data = Islands, aes(x = long, y = lat, group = group), fill = "gray") +
+  geom_polygon(data = gg_murm_karel, aes(x = long, y = lat, group = group), fill = "gray", color = "black") +
+  coord_map(xlim = Kand_x, ylim = Kand_y) +
+  theme_bw() +
+  theme(panel.background = element_blank(), plot.background = element_blank())
+  
+```
+
+
+```{r}
+sampling_points <- read_excel("Data/ZRS_Monitoring_Samples.xlsx")
+
+sampling_points <-
+  sampling_points %>% 
+  filter(Source != "ZIN")
+
+Pl_sampling_map <- 
+Pl_map +
+  geom_point(data = sampling_points, aes(x = long, y = lat), shape = 21, fill = "yellow")
+
+```
+
+
+В основу данных, приведенных ниже, легли мониторинговые обследования  донных сообществ Западной Ряжковой салмы, проводимые силами Лаборатории экологии морского бентоса (гидробиологии). Сборы проводили в период с 1995 по 2024 гг.
+
+
+## Методика взятия проб
+
+В каждый год брали по несколько проб (Табл. +.1) с помощью помощью шлюпочной драги. При выходе на начальную точку ориентирами служили створные знаки фарватера, расположенные на о. Ряжков (маломерное судно, с которого проводилось драгирование, входило в створ) и створные знаки, расположенные на материке и на луде Третьей Поперечной (судно позиционировалось на траверзе этих знаков). В начальной точке драгу опускали на дно и проводили ее на весельном ходу в сторону материка или в сторону луды Третья Поперечная. При драгировании с помощью эхолота контролировали, чтобы драга двигалась вверх по склону. Время протяжки драги варьировало от 5 до 10 минут. С помощью GPS-навигатора фиксировали координаты точки окончания драгировки. В конечной точке измеряли глубину. Глубина в точках взятия прб варьировала от `r min(sampling_points$Depth, na.rm = T)` до `r max(sampling_points$Depth, na.rm = T)` м (медиана: `r median(sampling_points$Depth, na.rm = T)`).Расположение точек сбора демонстрирует `r figRef("Map")`.
+
+Проба вовлекалась в дальнейшую работу, если грунт, принесенный драгой, занимал всю площадь стандартного пластикового ведра. Если материала было меньше, то такая проба не учитывалась.   
+
+
+
+
+```{r, fig.cap=figRef("Map", "Расположение точек взятия проб.Location of sampling points."),  out.width=600}
+
+Pl_sampling_map
+
+```
+
+
+```{r}
+zrs_stations <- read_excel("Data/west_sound_1995_2024_cleaned.xlsx", sheet = "Stations")
+
+zrs_stations %>% 
+  group_by(Year) %>% 
+  summarise(N = n()) %>% 
+  flextable() ->
+  ft
+
+
+ft %>% 
+  fontsize(size = 7, part = "all") %>% 
+  colformat_double(big.mark = "", j = 1, digits = 0) %>% 
+  set_header_labels(Year = "Год сбора", 
+                    N = "Количество дражных проб") %>% 
+  set_caption(caption = as_paragraph(
+      as_chunk(
+        "Таблица +.1 Количество дражных проб, собранных в разные годы. Number of dredge samples collected in different years.",
+        props = fp_text_default(font.size = 10)
+      )
+  )
+ ) %>% 
+  autofit()
+
+```
+
+
+## Первичная обработка проб
+
+Материал был промыт через сито с диаметром ячеи 1 мм (если проба не была заилена, то промывку не проводили). Далее из проб выбирали всех представителей макробентоса, которых определяли до минимально возможного таксономического уровня. Унитарные формы организмов подсчитывали, для модулярных (губки, гидроиды, мшанки) только отмечали присутствие. 
+
+
+## Динамика видового разнообразия и общего обилия организмов
+
+```{r}
+zrs <- read_excel("Data/west_sound_1995_2024_cleaned.xlsx", sheet = "west_sound_1995_2024_cleaned")
+
+zrs <- 
+  zrs %>% 
+  filter(!valid_name %in% c("Ascidia",  "Bryozoa", "Hydrozoa", "Pantopoda"))
+
+zrs_zoo <- 
+  zrs %>% 
+  filter(!phylum %in% c("Rhodophyta", "Chlorophyta", "Ochrophyta"))
+
+
+```
+
+
+
+```{r}
+library(vegan)
+
+
+
+all_zrs <- 
+zrs %>% 
+  dplyr::select(-c(1:4))
+
+all_zrs[is.na(all_zrs)] <- 0
+
+
+  
+H <- data.frame(H = diversity(t(all_zrs)), Total_N = rowSums(t(all_zrs))) 
+
+H$Sample <- rownames(H)
+
+H <- merge(zrs_stations, H)
+```
+
+
+
+```{r}
+Pl_H <-
+ggplot(H, aes(x = Year, y = H)) +
+  geom_point() +
+  geom_smooth(method = "gam") +
+  geom_hline(yintercept = mean(H$H), linetype = 2) +
+  theme_bw() +
+  labs(x = "Годы", y = "Видовое разнообразие (H)") +
+  annotate(geom = "text", y = -0.1, x = 2007, label = "*", size = 15, color = "red")
+
+
+Pl_abund <-
+  ggplot(H, aes(x = Year, y = Total_N)) +
+  geom_point() +
+ geom_smooth(method = "lm") +
+  geom_hline(yintercept = mean(H$Total_N), linetype = 2) +
+  theme_bw()+
+  labs(x = "Годы", y = "Количество особей в пробах") +
+  annotate(geom = "text", y = -100, x = 2007, label = "*", size = 15, color = "red")
+
+  
+
+```
+
+
+Мониторинг донного сообщества в районе прохождения фарватера по Западной Ряжковой салме (первичные данные приведены в Таблицах +.2 - +.`r 2+length(unique(zrs_stations$Year))`)позволил заметить следующее. Дноуглубительные работы 2007 г. привели к существенным изменениям в структуре сообщества. Видовое разнообразие, оцененное с помощью коэффициента Шеннона, значимо сократилось (`r figRef("Diversity")`, A). Поскольку мониторинг, проводимый Кандалакшским заповедником основан на полуколичественных дражных сборах, не дающих информации о плотностях поселения вида, то оценить изменение обилия организмов можно только косвенным путем. Так, если анализировать общее количество животных, попавших в пробы (`r figRef("Diversity")`, B), то видна тенденция к снижению этого показателя. В год, следующий за дноуглублением, в точке взятия проб несколько раз в драге обнаруживались лишь окатанная галька, вообще лишенная животных. Эти результаты позволяют считать, что дноуглубительные работы существенно изменили характер течений в Западной Ряжковой салме. Здесь уже не обнаруживается илистых полей, ранее присутствовавших в районе, где происходит отбор мониторинговых проб. Лишь в пробах, отобранных в 2020-е годы вновь начали появляться признаки заиления.  
+
+
+```{r, fig.cap=figRef("Diversity", "Многолетние изменения видового разнообразия (A) и общего количества особей, попавших в пробы (B). Пунктирная линия отражает многолеьнее среднее значение, звездочка маркирует год проведеиня дноуглубительных работ. Long-term changes in species diversity and total number of individuals sampled. The dotted line represents the multiyear average, the asterisk marks the year of bottom dredging."), out.width=600}
+
+plot_grid(Pl_H, Pl_abund, labels = "AUTO")
+
+```
+
+
+
+```{r}
+print_data <- function(i = 1, year = unique(zrs_stations$Year)[i]){
+  
+  df <-  zrs_zoo %>% 
+    dplyr::select(matches(as.character(year)))
+  
+  zrs_zoo %>% 
+    dplyr::select(valid_name, phylum, class) %>% 
+    cbind(df) %>% 
+    filter(rowSums(df) != 0) ->
+    df
+
+  library(flextable)
+  
+  ft <- flextable(df)
+
+  caption <- paste("Таблица +.", i+1, " Обилие видов в пробах, собранных в", year, "году.")
+  
+  ft %>%
+    set_header_labels(valid_name = "Вид", phylum = "Тип", class = "Класс") %>% 
+    set_caption(caption) %>% 
+    fontsize(size = 7, part = "all") %>% 
+    autofit()
+
+}
+
+
+```
+
+
+```{r}
+print_data(i = 1)  
+
+```
+
+\newpage
+
+```{r}
+print_data(i = 2)  
+
+```
+
+\newpage
+
+
+```{r}
+print_data(i = 3)  
+
+```
+
+\newpage
+
+```{r}
+print_data(i = 4)  
+
+```
+
+\newpage
+
+```{r}
+print_data(i = 5)  
+
+```
+
+\newpage
+
+```{r}
+print_data(i = 6)  
+
+```
+
+\newpage
+
+```{r}
+print_data(i = 7)  
+
+```
+
+\newpage
+
+```{r}
+print_data(i = 8)  
+
+```
+
+\newpage
+
+```{r}
+print_data(i = 9)  
+
+```
+
+\newpage
+
+```{r}
+print_data(i = 10)  
+
+```
+
+\newpage
+
+```{r}
+print_data(i = 11)  
+
+```
+
+\newpage
+
+```{r}
+print_data(i = 12)  
+
+```
+
+\newpage
+
+```{r}
+print_data(i = 13)  
+
+```
+
+\newpage
+
+```{r}
+print_data(i = 14)  
+
+```
+
+\newpage
+
+```{r}
+print_data(i = 15)  
+
+```
+
+\newpage
+
+```{r}
+print_data(i = 16)  
+
+```
+
+\newpage
+
+```{r}
+print_data(i = 17)  
+
+```
+
+\newpage
+
+```{r}
+print_data(i = 18)  
+
+```
+
+\newpage
+```{r}
+print_data(i = 19)  
+
+```
+
+\newpage
+```{r}
+print_data(i = 20)  
+
+```
+
+\newpage
+```{r}
+print_data(i = 21)  
+
+```
+
+\newpage
+```{r}
+print_data(i = 22)  
+
+```
+
+\newpage
+```{r}
+print_data(i = 23)  
+
+```
+
+\newpage
+```{r}
+print_data(i = 24)  
+
+```

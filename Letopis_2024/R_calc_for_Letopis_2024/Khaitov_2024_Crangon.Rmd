@@ -1,0 +1,366 @@
+---
+title: "Питание креветок *Crangon crangon* (Linnaeus, 1758) на песчаных литоральных пляжах о. Ряжкова "
+author: "В. М. Хайтов, В. В. Островский"
+output: 
+      word_document:
+                reference_docx: Letopis_template.docx
+                fig_width: 6
+                fig_height: 6
+
+ 
+abstract: |
+    **Хайтов В. М., Островский В. В.  Питание креветок *Crangon crangon* (Linnaeus, 1758) на песчаных литоральных пляжах о. Ряжкова ** // Толмачева Е. Л. (ред.) Летопись природы Кадалакшского заповедника за 2024 год (ежегодный отчет). Кандалакша. Т.1 (Летопись природы Кандалакшского заповедника, кн. ++)
+    
+    Была изучена связь между структурой бентосных сообществ и рационом креветок *C.crangon* в пределах двух практически изолированных друг от друга илисто-песчаных пляжей: Южной и Северной губах о.Ряжкова. 
+
+    
+    **Khaitov V.M., Ostrovsky V.V. Feeding of shrimp *Crangon crangon* (Linnaeus, 1758) on sandy littoral beaches of Ryazhkov Island** // Tolmacheva E. L. (ed.)  The Chronicle of Nature by the Kandalaksha Reserve for 2024 (Annual report).  Kandalaksha. V.1. (The Chronicle of Nature by the Kandalaksha Reserve, Book N ++)
+    
+    The relationship between the structure of benthic communities and the diet of shrimp *C.crangon* within two practically isolated from each other sand beaches: the Southern and Northern Inlets of Ryazhkov Island was studied. 
+      
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, dpi=300)
+
+library(reshape2)
+library(knitr)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(cowplot)
+library(flextable)
+library(officer)
+library(lubridate)
+library(ggmap)
+
+
+editor <- "Толмачева Е. Л."
+editor_eng <- "Tolmacheva E.L."
+
+Year <- 2024
+
+# Функция, задающая нумерацию рисунков
+
+figRef <- local({
+    tag <- numeric()
+    created <- logical()
+    used <- logical()
+    function(label, caption, prefix = options("figcap.prefix"), 
+        sep = options("figcap.sep"), prefix.highlight = options("figcap.prefix.highlight")) {
+        i <- which(names(tag) == label)
+        if (length(i) == 0) {
+            i <- length(tag) + 1
+            tag <<- c(tag, i)
+            names(tag)[length(tag)] <<- label
+            used <<- c(used, FALSE)
+            names(used)[length(used)] <<- label
+            created <<- c(created, FALSE)
+            names(created)[length(created)] <<- label
+        }
+        if (!missing(caption)) {
+            created[label] <<- TRUE
+            paste0(prefix.highlight, prefix, " ", i, sep, prefix.highlight, 
+                " ", caption)
+        } else {
+            used[label] <<- TRUE
+            paste(prefix, tag[label])
+        }
+    }
+})
+
+options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**")
+
+
+theme_set(theme_bw())
+```
+
+*Crangon crangon* (Linnaeus, 1758) - активные хищники, зарывающиеся в песок и питающиеся представителями инфауны. В задачи исследования входило описать характер питания *C. crangon* на двух илисто-песчаных пляжах, относительно изолированных, но расположенных на небольшом расстоянии дуг от друга: в Южной и Северной губах острова Ряжкого (Кандалакшский залив Белого моря, территория Кандалакшского Государственного Природного Заповедника). Помимо этого мы провели количественное описание бентоса в местах кормления креветок и попытались оценить существует ли корреляция между структурой бентосного сообщества и характеристиками рациона креветок. 
+
+
+## Полевые сборы 
+
+Материалы были собраны с 11.08.2023 по 12.08.2023 в Южной губе и с 15.08.2024 по 18.08.2024 в Северной губе острова Ряжкова (`r figRef("Map")`). Коорлинаты точек сбора материала приведены в Таблице +.1.
+
+```{r}
+point_coordinates <- 
+  read_excel("data/Crangon_2024_2025.xlsx", sheet = "Coordinates", na = "NA")
+```
+
+
+
+```{r}
+load("data/Ryazh_map.RData")
+
+lat_lim_s <- c( 67.003243 , 67.010861)
+
+lon_lim_s <- c(32.557511, 32.587381)
+
+point_coordinates %>% 
+  filter(Area == "Южная губа") ->
+  sampl_S
+
+point_coordinates %>% 
+  filter(Area == "Северная губа") ->
+  sampl_N
+
+Pl_Youzh <- 
+ggmap(Ryazh_map) + 
+  geom_point(data = sampl_S, aes(x = Lon, y = Lat), shape=21, fill="yellow", size = 2) + 
+  coord_map(xlim = lon_lim_s, ylim = lat_lim_s ) +
+  theme(axis.text = element_blank(), axis.title = element_blank(), axis.ticks = element_blank()) + ggtitle("Южная губа") 
+
+
+
+lat_lim_n <- c( 67.023134 , 67.028567)
+lon_lim_n <- c(32.528909, 32.546311)
+
+Pl_Sev <-
+ggmap(Ryazh_map) + 
+  geom_point(data = sampl_N, aes(x = Lon, y = Lat), shape=21, fill="yellow", size = 2) + 
+  coord_map(xlim = lon_lim_n, ylim = lat_lim_n ) +
+  theme(axis.text = element_blank(), axis.title = element_blank(), axis.ticks = element_blank()) + ggtitle("Северная губа") 
+
+
+```
+
+
+
+
+```{r, fig.cap=figRef("Map", "Расположение точек сбора материала в двух акваториях. Location of material collection points in the two areas.")}
+
+
+plot_grid(Pl_Sev, Pl_Youzh,  ncol = 2, scale = c(1, 1.2))
+
+```
+
+
+```{r}
+ft <- flextable(point_coordinates) 
+
+ft %>% 
+  fontsize(size = 8, part = "all") %>% 
+  # border_inner_h(border = std_border ) %>% 
+  set_header_labels(values = c("Акватория", "Точка сбора", "N", "E")) %>% 
+  # colformat_double(j = 1,  big.mark = "", digits = 0) %>% 
+  set_caption("Таблица +.1  Координаты точек отбора проб в Северной и Южной губах о. Ряжкова. Coordinates of sampling points in the Northern and Southern Inlets of Ryazhkov Island.") %>% 
+  autofit()
+
+```
+
+
+
+Материал собирался во время отлива, но, когда еще большая часть литорали была покрыта водой. Пробы брали сачком с мелкой сеткой, имевший диаметр кольца около 30 см. Сачок ставили к урезу воды и человек, собирающий пробы, очень быстро отходил в глубь воды на 2-4 метра от уреза воды и вел сачок по дну поднимая ил с песком. Далее содержимое сачка промывали и из промытой пробы извлекали всех креветок. 
+
+В каждой точке осуществлялось по три таких отлова в Южной губе и по пять в Северной. Все особи, пойманные в одной точке, сразу были помещены в емкость объемом 25 мл, без воды, что предотвращало переваривание пищи. Далее (не позднее одного часа) креветки были залиты 4% формалином.  Координаты точки отлова засекали с помощью GPS-навигатора. Всего были произведены сборы с 11 точек в Южной губе и 5 точек в Северной губе. Различие в количестве отловов определялось, во-первых, различием в плотности поселения креветок, а, во-вторых, размерами илисто-песчаных пляжей в этих акваториях.  
+
+В тех же точках, где производили отлов креветок, но спустя, как минимум, сутки, производили отбор количественных проб для описания сообщества бентоса. Пробы собирались при помощи рамки площадью 55 см^2^, которую вдавливали в грунт на глубину около 10 см. Собранные пробы складывали в отдельный пакет с этикеткой. На каждой точке было взять по три пробы. Таким образом, бентос Южной губы был охарактеризован по 33 пробам, а бентос Северной губы – по 15 пробам. Все пробы были промыты при помощи сита с диаметром ячеи 0.5 мм. И промытый грунт фиксировался в баночку объёмом 30 мл с 10% формалином. 
+
+Каждая креветка была взвешена на электронных весах с точностью до 1 мг. Длина карапакса креветок была измерена с помощью электронного штангенциркуля с точностью до 0.01 мм. 
+
+Вскрытие каждой особи проводилась при помощи лезвия бритвы. Креветка бралась в руку и разрезалась по медиальной линии на две половинки. Далее под бинокуляром проводился осмотр желудка. В случае нахождения пищевого комка, его извлекали при помощи пинцета и перекладывали на предметное стекло с каплей глицерина. Содержимое желудка просматривалось под микроскопом при увеличении от 10х10 до 10х40. Для каждой особи мы отмечали только присутствие того или иного компонента питания. 
+
+Пробы грунта просматривали в камере Богорова под бинокуляром. Всех представителей макро бентоса выбирали из грунта и фиксировали 25 мл емкости с 10% формалином. После разборки проб производили определение животных до минимально возможного таксономического уровня. Для каждого таксона было подсчитано количество особей. 
+
+## Хараткеристика рациона креветок
+
+```{r}
+feeding <- read_excel("data/Crangon_2024_2025.xlsx", sheet = "Feeding", na = "NA")
+
+feeding_long <-
+  feeding %>%
+  select(-c(Lon,	Lat,	Site)) %>%
+  melt(id.vars = c("Area", "ID", "W", "L")) 
+
+feeding_long %>% 
+  group_by(Area, variable) %>% 
+  summarise(Freq = round(mean(value)*100) ) %>% 
+  dcast(variable ~ Area) ->
+  ration
+
+```
+
+Из данных, приведенных в Таблице +.2 видно, что как в Северной губе, так и в Южной губе самыми частыми пищевыми объектами были: *Harpacticoidea*, *Oligochaeta*, *Ostracoda*, *Nematoda*, *Gammaroidea*.  Однако в Северной губе в число часто встречающихся форм попадают *Hydrobiidae*, *Spionidae*, которые в Южной губе встречались заметно реже.
+
+Только в Северной губе встретились *Capitella capitata*, *Scoloplos armiger* , *Mytilus*, *Macoma balthica*, *Terebellides stroemi* и частички водорослей. Только в Южной губе встретились *Harmothoe imbricata*, *Gastropoda*, *Littorina**. 
+
+Данные по содержимому кишечников отдельных особей приведены в таблице +.3
+
+
+
+
+```{r}
+ft <- flextable(ration)
+
+ft <- compose(ft, i = 1, j = 1, as_paragraph(as_chunk('Пустые кишечники')))
+ft <- compose(ft, i = 3, j = 1, as_paragraph(as_chunk('Растительные остатки')))
+
+
+
+ft %>% 
+  fontsize(size = 8, part = "all") %>% 
+  # border_inner_h(border = std_border ) %>% 
+  set_header_labels(values = c("Пищевой объект", "Северная губа", "Южная губа")) %>% 
+  # colformat_double(j = 1,  big.mark = "", digits = 0) %>% 
+  set_caption("Таблица +.2  Частота (%) различных пищевых объектов в рационе креветок в двух акваториях.  Frequency (%) of different food items in the diet of shrimp in two areas.") %>% 
+  autofit()
+
+```
+
+
+```{r}
+feeding_long %>% 
+  filter(value == 1) %>% 
+  select(Area, ID, variable) %>%
+  filter(variable != "Empty") %>% 
+  arrange(Area, ID) %>% 
+  flextable() ->
+  ft
+  
+ft %>% 
+ fontsize(size = 8, part = "all") %>% 
+  # border_inner_h(border = std_border ) %>% 
+  set_header_labels(values = c("Акваторя", "Индивидуальный номер особи", "Содержимое кишечника")) %>% 
+  # colformat_double(j = 4,  digits = 2) %>% 
+  set_caption("Таблица +.4  Содержимое кишечника отдельных особей (креветки с пустыми кишечникаи не включены). Gut contents of individuals (shrimp with empty guts not included).") %>% 
+  autofit()
+  
+
+```
+
+## Размерная структура поселений креветок в двух акваториях
+
+Размеры особей, собранных в 2023 г. в Южной губе и в 2024 г. в Северной губе приведены в Таблице +.3.  Размерно-весовая структура поселений креветок в разных акваториях была сходной (`r figRef("Size")`), однако в Южной губе молодь была более многочисленной.  
+
+
+```{r, fig.cap=figRef("Size", "Размерно-весовая структура поселений креветок в разных акваториях. Size-weight structure of shrimp settlements in different areas.") }
+feeding %>% 
+  ggplot(aes(x = L, y = W)) + 
+  geom_point() +
+  facet_wrap(~Area, ncol = 2) +
+  labs(x = "Длина карапакса", y = "Вес")
+
+```
+
+
+```{r}
+feeding %>% 
+  select(Area, ID, W, L) %>% 
+  flextable() ->
+  ft
+
+ft %>% 
+ fontsize(size = 8, part = "all") %>% 
+  # border_inner_h(border = std_border ) %>% 
+  set_header_labels(values = c("Акваторя", "Индивидуальный номер особи", "Вес, г.", "Длина карапакса, мм")) %>% 
+  colformat_double(j = 4,  digits = 2) %>% 
+  set_caption("Таблица +.3  Весовые и размерные характеристики отловленных особей.  Weight and size characteristics of collected individuals.") %>% 
+  autofit()
+```
+
+
+
+## Характеристика сообществ в местах кормления креветок
+
+Данные по обилию видов бентоса в пробах приведены в Таблице +.5. В обеих акваториях было представлено стандартное для литоральных илисто-песчаных пляжей сообщество с доминированием *Macoma balthica*, *Hydrobia ulvae* и полихет из семейства Spionidae.
+
+```{r}
+com <- read_excel("data/Crangon_2024_2025.xlsx", sheet = "Community discription", na = "NA")
+
+com_long <-
+  com %>%
+  select(-c(Site)) %>%
+  melt(id.vars = c("Area", "ID")) 
+
+
+```
+
+```{r}
+com_long %>% 
+  arrange(Area, ID) %>% 
+  filter(value !=0) %>% 
+  flextable() ->
+  ft
+
+ft %>% 
+ fontsize(size = 8, part = "all") %>% 
+  # border_inner_h(border = std_border ) %>% 
+  set_header_labels(values = c("Акваторя", "Индивидуальный номер пробы", "Вид", "Численность")) %>% 
+  set_caption("Таблица +.5  Обилие организмов (экз./(55 кв.см) ) макрозообентоса в пробах из точек сбора креветок.  Abundance of organisms (ind. per 55 sq.cm) of macrozoobenthos in samples from shrimp collection points.") %>% 
+  autofit()
+
+```
+
+
+## Связь структуры сообщества с характером рациона креветок
+
+Поскольку рацион креветок был описан в тех же точках, что и сообщество бентоса, можно оценить степень сходства этих двух массивов данных. Для обобщенной характеристики сообщества макробентоса в точке отлова креветок, был рассчитан индекс разнообразия Шеннона по формуле:
+
+
+
+$$
+H_{community} = - \Sigma (\frac{N_i}{N_{total}} \times \log(\frac{N_i}{N_{total}}))
+$$
+
+
+Где $N_i$ - средняя плотность поселения i-го  вида в данной точке, $N_{total}$ - сумма всех обилий видов, отмеченных в данной точке. 
+
+
+Для обобщенной характеристики рациона был рассчитан индекс, оценивающий разнообразие рациона в каждой отдельной точке сбора креветок. Этот индекс, аналогичный по своей сути индексу видового разнообразия Шеннона, был вычислен по следующей формуле:
+
+
+
+$$
+H_{diet} = - \Sigma (P_i \times \log(P_i))
+$$
+
+Где за $P_i$ принята частота встречаемости i-го пищевого объекта в данной точке.
+
+
+
+Между оценкой разнообразия рациона ($H_{diet}$) и видовым разнообразием сообщества в точке отлова креветок ($H_{community}$) наблюдается отчетливая отрицательная корреляция (`r figRef("Diversity")`). Отрицательная связь говорит о том, что при высоком разнообразии бентосного сообщества креветки питаются более однообразной пищей, вероятно, выбирая наиболее ценные виды жертв. Если же сообщество бедное, то хищник потребляет все доступные виды корма. 
+
+
+```{r}
+
+feeding %>%
+  select(-c(ID, W, L, Lon, Lat)) %>% 
+  group_by(Area, Site) %>% 
+  summarise_all(.funs = "mean") %>% 
+  select(-Empty) ->
+  crang
+
+
+library(vegan)
+
+crang %>% 
+  ungroup() %>% 
+  select(-c(Area,Site)) %>% 
+  diversity() ->
+  H_crang
+
+
+com %>% 
+  select(-ID) %>% 
+  group_by(Area, Site) %>% 
+  summarise_all(.funs = "mean") %>% 
+  ungroup() %>%
+  select(-c(Area, Site)) %>% 
+  diversity() ->
+  H_com
+
+diversity <- data.frame(H_com, H_crang)
+
+
+
+```
+
+
+```{r fig.cap=figRef("Diversity", "Зависимость разнообразия рациона креветок от разнообразия сообщества, в котором происходит кормление. Dependence of shrimp diet diversity on the diversity of the community in which feeding occurs.")}
+
+ggplot(diversity, aes(x = H_com, y = H_crang)) +
+  geom_point() +
+  labs(x = "Видовое разнообразие сообщества бентоса", y = "Разнообразие рациона")
+
+```
+

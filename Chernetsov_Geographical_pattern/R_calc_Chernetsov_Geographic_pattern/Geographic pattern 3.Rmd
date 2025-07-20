@@ -1,0 +1,340 @@
+---
+title: "Пространственные паттерны в отловах птиц 2"
+output: html_document
+date: ""
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+
+```{r}
+library(vegan)
+library(dplyr)
+library(broom)
+library(readxl)
+library(ggmap)
+library(maps)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+
+```
+
+
+
+```{r}
+
+# Загрузка данных о странах мира
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+# Фильтрация стран Евразии по континенту
+eurasia <- subset(world, continent %in% c("Europe", "Asia", "Africa"))
+
+# Построение карты Евразии
+Pl_map <- 
+ggplot(data = eurasia) +
+  geom_sf(fill = "lightgreen", color = "gray30") +
+  coord_sf(
+    xlim = c(10, 110),   # Долгота: от Португалии до Японии
+    ylim = c(0, 60)     # Широта: от Индонезии до России
+  ) 
+
+```
+
+
+```{r}
+points <- read_excel("Data/Table1.xls", sheet = "Coordinates")
+
+
+```
+
+## Подготовка данных 
+
+
+
+```{r}
+birds <-  read_excel("Data/Table1.xls", sheet = "Data")
+
+efort <- read_excel("Data/Table1.xls", sheet = "Sampling effort")
+
+birds2 <- birds/efort$n
+
+```
+
+Тут мне подумалось, что если моделировать вероятность встречи птиц, то в надо все-таки разделить количество отловленных птиц на количество лет отловов. Далее, как в предыдущем варианте, численность отловленных птиц (после деления на количестов лет) я предлагаю делить на общее количество отловленных птиц данного вида. Эта величина отражает вероятность отлова птицы на данной станции. 
+
+В целом, это не должно привести к кардинальным отличиям от предыдущей версии анализа. 
+
+
+```{r}
+kable(efort)
+```
+
+
+
+```{r}
+birds3 <- 
+  birds2 %>% 
+  decostand(method = "total", MARGIN = 2)
+```
+
+
+Так выглядит карта расположения точек отлова птиц.
+
+```{r}
+Pl_map +
+  geom_point(data = points, aes(x = Lon, y = Lat, size = efort$n)) +
+  labs(size = "catch efforts")
+```
+
+
+
+
+## Модель географической приуроченности видов
+
+Пока мне кажется, что наиболее адекватным методом анализа является канонический корреспондентный анализ (Canonical Correspondence Analysis, CCA, ter Braak, 1987). Выбор именно этого метода обусловлен тем, что в его основе лежит мера расстояния (Chi_sq Distance), которая характеризует степень отклонения от нулевой модели, под которой подразумевается независимость столбцов и строк матрицы данных. Проще говоря, что виды не ощущают различия в локациях станций. В качестве ковариат в анализе взяты географические координаты (Lon, Lat). 
+
+*NB! Поскольку активность отлова была спользована для выравнивания двнных по количеству лет отловов, то эту величину в качестве предиктора не включаем.*
+
+Логика анализа сводится к тому, что значимая ковариата должна сильнее всего отклонять строку или колонку от нулевой модели. Для проверки статической значимости модели, в целом, отдельных канонических осей, а также двух предикторов, использован пермутационный метод, описанный в Borcard et al., 2011. Было проведено 9999 актов пермутации. 
+
+
+```{r}
+points$n <- efort$n
+mod <- cca(birds3 ~ Lat + Lon , data = points)
+```
+
+
+```{r}
+sum <- summary(mod)
+
+```
+
+
+Полученные в анализе две канонические оси в сумме описывают `r round(sum$cont$importance[3,2]*100, 1)`% общей инерции (of total Inertia). 
+Сама модель была статистически значимой. 
+
+
+```{r}
+tidy(anova(mod, permutations = 9999)) %>% 
+  kable()
+```
+
+При этом статистически значимой были первая и вторая канонические оси (CCA1 и CCA2), которые описывают `r round(sum$cont$importance[3,2]*100, 1)`% общей инерции. Эти оси связаны как с долготой, так и с широтой (см. рисунок). 
+
+
+```{r}
+kable(tidy(anova(mod, by = "axis", permutations = 9999)))
+```
+
+
+При этом усилия по отлову, видимо, не столь важный предиктор, а широта и долгота статистически значимо влияют на вероятность отлова вида.
+
+```{r}
+kable(tidy(anova(mod, by = "margin", permutations = 9999)))
+```
+
+
+
+```{r fig.cap= "**Fig. ++**. Ординация видов в канонических осях, заданных географическими координатами расположения станций кольцевания"}
+plot(mod, display = c("cn", "species"))
+```
+
+
+Полученная ординация видов позволяет разделить их на четыре группы: 
+
++ 1 группа  - виды, располагающиеся в I квадранате ординации. Это преимущественно Северо-Восточные и Юго-Восточные. 
++ 2 группа  - виды, располагающиеся во II квадранате ординации. Это, скорее Северо-Западные.
++ 3 группа - виды, располагающиеся в III квадранате ординации. Это виды Северо-Западные и Юго-Западные.
++ 4 группа - виды, располагающиеся в IV квадранате ординации. Это, скорее, Юго-Восточные виды.
+
+Проще говоря, группы 1 и 4 - это, скорее, виды восточные, а 3 и 2 группы - это, скорее, западные. 
+
+
+```{r}
+
+species_data <- read_excel("Data/Table1.xls", sheet = "Species")
+
+```
+
+
+```{r}
+CCA_species <- as.data.frame(scores(mod)$species)
+
+
+group1 <-
+CCA_species %>% 
+  filter(CCA1 > 0 & CCA2 >0 ) %>% 
+  row.names()
+
+group2 <-
+CCA_species %>% 
+  filter(CCA1 < 0 & CCA2 >0 ) %>% 
+  row.names()
+
+
+group3 <-
+CCA_species %>% 
+  filter(CCA1 < 0 & CCA2 <0 ) %>% 
+  row.names()
+
+
+
+group4 <-
+CCA_species %>% 
+  filter(CCA1 > 0 & CCA2 <0 ) %>% 
+  row.names()
+
+
+```
+
+
+
+
+```{r}
+map_draw <- function(species = "Phyl_trol", Distination = c("India") ){
+  
+  distination_countries <- subset(world, name %in% Distination)
+
+  df <- 
+    birds3 %>% select(species)
+  
+  tr_name <- 
+    species_data %>% 
+    filter(Species_code == species) %>% 
+    pull(Species)
+  
+  points_non_zero <- 
+    points %>% 
+    filter(df[,1] != 0)
+  
+  df_non_zero <- 
+    df %>% 
+    filter(df[,1] != 0)
+  
+  Pl_map +
+    geom_point(data = points_non_zero, aes(x = Lon, y = Lat, size = df_non_zero[, 1])) +
+    guides(size = "none") +
+    ggtitle(tr_name) +
+    geom_sf(data = distination_countries, fill = "gray", color = "gray30") +
+    coord_sf(
+    xlim = c(10, 110),   # Долгота: от Португалии до Японии
+    ylim = c(0, 60))
+    
+  } 
+
+```
+
+
+## Карты отловов группы 1 (Восточная группа)
+
+Здесь и далее приводятся только ненулевые точки отловов. Размер точки пропорционален вероятности отлова. Серым залиты те страны, в которых происходит зимовка. Важно! Я выбирал страны абсолютно формально. Например, Юго-Восточной Азией считал все, что считает таковой Википедия.  
+
+
+
+```{r}
+african_countries <- subset(world, continent %in% c("Africa"))$name
+
+SE_Asia <- c("Myanmar", "Laos", "Thailand", "Vietnam", "Cambodia", "Singapore", "Malaysia", "Philippines", "Brunei", "Indonesia", "Timor-Leste")
+Middle_East <- c("Egypt", "Sudan", "Libya", "Tunisia", "Algeria", "Morocco")
+
+North_Africa <- c("Algeria", "Egypt", "Libya", "Morocco", "Sudan", "Tunisia")
+```
+
+
+```{r}
+map_draw(species = group1[1], Distination = african_countries)
+
+```
+
+
+
+
+```{r}
+map_draw(species = group1[2], Distination = "India")
+```
+
+
+```{r}
+map_draw(species = group1[3], Distination = "India")
+```
+
+
+## Карты отловов группы 4 (Восточная группа)
+
+
+
+```{r}
+map_draw(species = group4[1], Distination = "India")
+```
+
+
+```{r}
+map_draw(species = group4[2], Distination = c("Egypt", "Sudan", "Libya", "Tunisia", "Algeria", "Morocco", "Bahrain", "Iraq", "Iran", "Israel", "Jordan", "Yemen", "Qatar", "Kuwait", "Lebanon", "United Arab Emirates", "Oman", "Palestine", "Saudi Arabia", "Syria"))
+```
+
+
+```{r}
+map_draw(species = group4[3], Distination = SE_Asia)
+```
+
+```{r}
+map_draw(species = group4[4], Distination = "India")
+```
+
+
+
+
+## Карты отловов группы 2 (Западная група)
+
+
+```{r}
+map_draw(species = group2[1], Distination = african_countries)
+```
+
+
+```{r}
+map_draw(species = group2[2], Distination = african_countries)
+```
+
+
+```{r}
+map_draw(species = group2[3], Distination = african_countries)
+```
+
+
+
+
+
+
+## Карты отловов группы 3 (Западная група)
+
+
+```{r}
+
+map_draw(species = group3[1], Distination = african_countries)
+```
+
+
+```{r}
+
+map_draw(species = group3[2], Distination = african_countries)
+```
+
+
+
+```{r}
+
+map_draw(species = group3[3], Distination = "India")
+```
+
+
+
+```{r}
+
+map_draw(species = group3[4], Distination = african_countries)
+```
