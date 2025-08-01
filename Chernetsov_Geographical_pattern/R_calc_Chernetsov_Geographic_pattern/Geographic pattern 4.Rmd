@@ -50,7 +50,7 @@ ggplot(data = eurasia) +
 
 
 ```{r}
-points <- read_excel("Data/Table2.xls", sheet = "Coordinates")
+points <- read_excel("Data/Table1.xls", sheet = "Coordinates")
 
 
 ```
@@ -60,9 +60,9 @@ points <- read_excel("Data/Table2.xls", sheet = "Coordinates")
 
 
 ```{r}
-birds <-  read_excel("Data/Table2.xls", sheet = "Data")
+birds <-  read_excel("Data/Table1.xls", sheet = "Data")
 
-efort <- read_excel("Data/Table2.xls", sheet = "Sampling effort")
+efort <- read_excel("Data/Table1.xls", sheet = "Sampling effort")
 
 birds2 <- birds/efort$n
 
@@ -110,7 +110,7 @@ Pl_map +
 + **Fice** - "мухоловки"
 
 ```{r}
-species <- read_excel("Data/Table2.xls", sheet = "Species")
+species <- read_excel("Data/Table1.xls", sheet = "Species")
 
 birds %>% 
   mutate(Site = points$Site) %>% 
@@ -120,13 +120,15 @@ birds %>%
   group_by(Site, Group) %>% 
   summarise(N_Group = sum(value)) %>% 
   dcast(formula = Site ~ Group) %>% 
-  merge(points, .,  by = "Site") ->
+  merge(points, .,  by = "Site") %>% 
+  merge(efort, .,  by = "Site") %>% 
+  select(-Years) ->
   points_group_proportion
 
 
 birds3 %>% 
   merge(points_group_proportion) %>% 
-  select(-c( "Site", "Lat",  "Lon",  "Acro", "Fice", "Phyl")) ->
+  select(-c( "Site", "Lat",  "Lon",  "Acro", "Fice", "Phyl", "n")) ->
   birds3
 ```
 
@@ -136,7 +138,7 @@ birds3 %>%
 
 
 ```{r}
-df <- melt(points_group_proportion, id.vars = c("Site", "Lon", "Lat"))
+df <- melt(points_group_proportion, id.vars = c("Site", "Lon", "Lat", "n"))
   
 Pl_map +
  geom_scatterpie(data = df, 
@@ -155,9 +157,12 @@ Pl_map +
 
 points_group_proportion <-
   points_group_proportion %>% 
-  mutate(Prop_Acro = Acro / (Acro + Fice + Phyl),
-         Prop_Fice = Fice / (Acro + Fice + Phyl),
-         Prop_Phyl = Phyl / (Acro + Fice + Phyl)
+  mutate(Acro_per_Day = Acro / n,
+         Fice_per_Day = Fice / n,
+         Phyl_per_Day = Phyl / n,
+         Prop_Acro = Acro_per_Day / (Acro_per_Day + Fice_per_Day + Phyl_per_Day),
+         Prop_Fice = Fice_per_Day / (Acro_per_Day + Fice_per_Day + Phyl_per_Day),
+         Prop_Phyl = Phyl_per_Day / (Acro_per_Day + Fice_per_Day + Phyl_per_Day)
          )
 
 
@@ -172,18 +177,30 @@ points_group_proportion %>%
 ```{r}
 
 
-mod <- cca(birds3 ~ Prop_Acro + Prop_Fice + Prop_Phyl + Lat + Lon , data = points_group_proportion)
+mod <- cca(birds3 ~ Acro_per_Day + Fice_per_Day + Phyl_per_Day + Lat + Lon , data = points_group_proportion)
 
-vif.cca(mod)
-anova(mod, by = "term")
+# vif.cca(mod)
+anova(mod, permutations = 9999)
+anova(mod, by = "margin", permutations = 9999)
 
 plot(mod)
+
+anova(mod, by = "margin", permutations = 9999)
+
+anova(mod, by = "term", permutations = 9999)
+
+anova(mod, by = "axis", permutations = 9999)
+
+
+
+
+
 ```
 
 
 ```{r}
 sum <- summary(mod)
-
+scores(mod)
 ```
 
 
