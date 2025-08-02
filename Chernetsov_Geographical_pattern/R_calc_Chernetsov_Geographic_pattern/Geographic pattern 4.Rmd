@@ -46,6 +46,14 @@ ggplot(data = eurasia) +
     ylim = c(0, 60)     # Широта: от Индонезии до России
   ) 
 
+Pl_map_local <- 
+ggplot(data = eurasia) +
+  geom_sf(fill = "lightgreen", color = "gray30") +
+  coord_sf(
+    xlim = c(40, 90),   # Долгота: от Португалии до Японии
+    ylim = c(35, 60)     # Широта: от Индонезии до России
+  ) 
+
 ```
 
 
@@ -68,7 +76,7 @@ birds2 <- birds/efort$n
 
 ```
 
-В качестве матрицы зависимых переменных будем использовать количество пойманных птиц деленное на количество дней отлово. То есть количество птиц данного вида, приходящееся на один день отлова.
+В качестве матрицы зависимых переменных будем использовать количество пойманных птиц деленное на количество дней отловов. То есть количество птиц данного вида, приходящееся на один день отлова.
 
 ```{r}
 kable(efort)
@@ -89,7 +97,7 @@ birds3$Site <- points$Site
 Так выглядит карта расположения точек отлова птиц.Размер точки пропорционален количеству дней отлова.
 
 ```{r}
-Pl_map +
+Pl_map_local +
   geom_point(data = points, aes(x = Lon, y = Lat, size = efort$n)) +
   labs(size = "catch efforts")
 ```
@@ -99,15 +107,18 @@ Pl_map +
 
 ## Модель географической приуроченности видов
 
-Пока мне кажется, что наиболее адекватным методом анализа является канонический корреспондентный анализ (Canonical Correspondence Analysis, CCA, ter Braak, 1987). Выбор именно этого метода обусловлен тем, что в его основе лежит мера расстояния (Chi_sq Distance), которая характеризует степень отклонения от нулевой модели, под которой подразумевается независимость столбцов и строк матрицы данных. Проще говоря, что виды не ощущают различия в локациях станций. В качестве ковариат в анализе взяты географические координаты (Lon, Lat). 
+Пока мне кажется, что наиболее адекватным методом анализа является канонический корреспондентный анализ (Canonical Correspondence Analysis, CCA, ter Braak, 1987). Выбор именно этого метода обусловлен тем, что в его основе лежит мера расстояния (Chi_sq Distance), которая характеризует степень отклонения от нулевой модели, под которой подразумевается независимость столбцов и строк матрицы данных. Проще говоря, что виды не ощущают различия в локациях станций. 
 
 *NB! Поскольку активность отлова была использована для выравнивания данных по количеству дней отловов, то эту величину в качестве предиктора не включаем.*
 
-Однако! В матрицу предикторов надо включить соотношение трех групп птиц в каждой точке. Группы далее обозначаются так
+Главными предикторами, в соответствии с задачей, будем рассматривать географические координаты (Lon, Lat). Однако, как справедливо было отмечено, соотношение численностей видов птиц может контролироваться еще и тем, в какой стации были установлены сети. Для обхода этой проблемы предлагается в качестве ковариат использовать также общее обилие трех групп птиц, различающихся по своей "экологии".Группы далее обозначаются так
 
 + **Phyl** - "пеночки"
 + **Acro** - "камышевки"
 + **Fice** - "мухоловки"
+
+*NB! Страшно интересно чем характеризуются эти группы. Про различия в экологии гнездования здесь, как я понимаю, говорить нельзя, птицы на пролете. Различаются ли у них диеты? Или способы охоты? Ну и т.п.* 
+
 
 ```{r}
 species <- read_excel("Data/Table1.xls", sheet = "Species")
@@ -129,29 +140,29 @@ birds %>%
 birds3 %>% 
   merge(points_group_proportion) %>% 
   select(-c( "Site", "Lat",  "Lon",  "Acro", "Fice", "Phyl", "n")) ->
-  birds3
+  birds4
 ```
 
 
 
-
+Вот так выглядит карта распределения трех групп.
 
 
 ```{r}
 df <- melt(points_group_proportion, id.vars = c("Site", "Lon", "Lat", "n"))
   
-Pl_map +
+Pl_map_local +
  geom_scatterpie(data = df, 
                  aes(x=Lon, y=Lat), cols = "variable", long_format = TRUE,  pie_scale = 1.5) +
-  scale_fill_manual(values = c("blue", "yellow", "red"))
+  scale_fill_manual(values = c("blue", "yellow", "red")) 
 
 ```
 
 
-Ник, тут надо посмотреть взглядом орнитолога. Я здесь вижу какой-то пространственный паттерн: Acro, синенькие, больше ловятся в центральной части.
+Ник, тут надо посмотреть взглядом орнитолога. Я здесь вижу какой-то пространственный паттерн: *Acro*, синенькие, больше ловятся в центральной части. Вроде как выделяется "пояс камышевок". Далее это всплывет в CCA (см. ниже), как главный паттерн варьирования в канонических осях, а посему его надо как-то осмыслять. С точки зрения "общего эколога" это что-то про экологические ниши. Вряд ли на всех станциях в "синей зоне" случайно поставили сети в какой-то одной стации.  Есть ли какие-то данные про геоботанику этого пояса? Может это заросли чего-то, что любят "камышевки"? Короче это очень смахивает на разделение ниш, о котором стоит подумать.  Есть идеи? 
 
 
-Для контроля вывожу таблицу с оцентой обилия птиц каждой группы на сайтах. Это суммарное количество птиц каждой группы.
+Для контроля вывожу таблицу с оценкой обилия птиц каждой группы на сайтах. Это суммарное количество птиц каждой группы.
 
 ```{r}
 
@@ -172,40 +183,32 @@ points_group_proportion %>%
 ```
 
 
+А это в пересчете на один день отлова (именно эту величину я далее буду использовать в качестве ковариаты).
 
+```{r}
+points_group_proportion %>% 
+  select(Site, Lat, Lon,  Acro_per_Day, Fice_per_Day, Phyl_per_Day) %>% 
+  kable(digits = c(NA, 5, 5, 1,1,1))
+
+```
+
+
+Теперь про зависимую переменную. Моделировать, на мой взгляд, надо вероятность встречи *вида* среди отловленных птиц. Соответственно, это будет доля каждого вида в общей численности пойманных на данной станции птиц.   
 
 ```{r}
 
-
-mod <- cca(birds3 ~ Acro_per_Day + Fice_per_Day + Phyl_per_Day + Lat + Lon , data = points_group_proportion)
-
-# vif.cca(mod)
-anova(mod, permutations = 9999)
-anova(mod, by = "margin", permutations = 9999)
-
-plot(mod)
-
-anova(mod, by = "margin", permutations = 9999)
-
-anova(mod, by = "term", permutations = 9999)
-
-anova(mod, by = "axis", permutations = 9999)
-
-
-
-
+mod <- cca(birds4 ~ Acro_per_Day + Fice_per_Day + Phyl_per_Day + Lat + Lon , data = points_group_proportion)
 
 ```
 
 
 ```{r}
 sum <- summary(mod)
-scores(mod)
 ```
 
 
-Полученные в анализе две канонические оси в сумме описывают `r round(sum$cont$importance[3,2]*100, 1)`% общей инерции (of total Inertia). 
-Сама модель была статистически значимой. 
+Полученные в анализе канонические оси в сумме описывают `r round(sum$cont$importance[3,5]*100, 1)`% общей инерции (of total Inertia). 
+Сама модель была статистически значимой (здесь и далее для оценки величины p-value использована пермутационная процедура при 9999 пермутациях). 
 
 
 ```{r}
@@ -213,35 +216,52 @@ tidy(anova(mod, permutations = 9999)) %>%
   kable()
 ```
 
-При этом статистически значимой были первая и вторая канонические оси (CCA1 и CCA2), которые описывают `r round(sum$cont$importance[3,2]*100, 1)`% общей инерции. Эти оси связаны как с долготой, так и с широтой (см. рисунок). 
+При этом статистически значимыми были все пять канонических осей. 
 
 
 ```{r}
 kable(tidy(anova(mod, by = "axis", permutations = 9999)))
 ```
 
-
-При этом усилия по отлову, видимо, не столь важный предиктор, а широта и долгота статистически значимо влияют на вероятность отлова вида.
+Влияние каждого из предикторов, включенных в модель, также была значима. Ниже приводится ANOVA для Marginal effects of terms, то есть это аналог для SS Type2 (оценка значимости предиктора при сравнении полной модели с моделью без его участия).
 
 ```{r}
 kable(tidy(anova(mod, by = "margin", permutations = 9999)))
 ```
 
+Однако Для поставленных целей лучше использовать другой тип ANOVA (Terms added sequentially (first to last)). См. таблицу ниже. Это налог SS Type1 для обычной ANOVA. Мы смотрим на то, как влияют предикторы интереса (Lat и Lon) после того как учтено влияние "технических" ковариат (обилия трех групп видов).  Здесь все опять супер! Географический паттерн есть даже после "удаления" влияния ковариат, связанных с чем-то, что отражают численности трех групп видов.   
 
 
-```{r fig.cap= "**Fig. ++**. Ординация видов в канонических осях, заданных географическими координатами расположения станций кольцевания"}
-plot(mod, display = c("cn", "species"))
+```{r}
+kable(tidy(anova(mod, by = "terms", permutations = 9999)))
 ```
 
 
-Полученная ординация видов позволяет разделить их на четыре группы: 
+Вот визуализация модели.
 
-+ 1 группа  - виды, располагающиеся в I квадранате ординации. Это преимущественно Северо-Восточные и Юго-Восточные. 
-+ 2 группа  - виды, располагающиеся во II квадранате ординации. Это, скорее Северо-Западные.
-+ 3 группа - виды, располагающиеся в III квадранате ординации. Это виды Северо-Западные и Юго-Западные.
-+ 4 группа - виды, располагающиеся в IV квадранате ординации. Это, скорее, Юго-Восточные виды.
+```{r fig.cap= "**Fig. ++**. Ординация видов в канонических осях, заданных географическими координатами расположения станций кольцевания"}
+plot(mod, display = c("cn", "species"), choices = 1:2)
+```
 
-Проще говоря, группы 1 и 4 - это, скорее, виды восточные, а 3 и 2 группы - это, скорее, западные. 
+Для трактовки канонических осей привожу таблицу с нагрузками для предикторов.
+
+```{r}
+kable(scores(mod, choices = 1:5)$biplot)
+```
+
+
+
+Видно, что самая "мощная" каноническая ось, CCA1 (она описывает `r round(sum$cont$importance[2,1]*100, 1)`% общей инерции), связана прежде всего с обилием камышевок. С этой осью положительно связаны 4 из 6 видов камышевок (см. таблицу с нагрузками по CCA для видов). Исключение составляют  Acro_dume и Acro_scho (это какие-то неправильные камышевки).
+
+```{r}
+kable(scores(mod, choices = 1:5)$species)
+```
+
+
+Таким образом, первую каноническую ось оставляем для дальнейшего размышления. Она про какое-то разделение ниш между камышевками и всеми остальными. Далее сосредоточимся на второй канонической оси (CCA2). Эта ось описывает  `r round(sum$cont$importance[2,2]*100, 1)`% общей инерции. И она явно про географию, так как долгота (Lon) и широта (Lat) с ней коррелируют. Учитывая разнонаправленною связь широты (отрицательно связана с CCA2) и долготы (положительно связана с CCA2) эту ось я бы трактовал как некий градиент с Северо-Запада на Юго-Восток.  
+
+
+Те виды, которые имеют положительные нагрузки по CCA2 более обильны в юго-восточных локациях, те виды, которые имеют отрицательную нагрузку - в северо-западных локациях.  
 
 
 ```{r}
@@ -257,27 +277,13 @@ CCA_species <- as.data.frame(scores(mod)$species)
 
 group1 <-
 CCA_species %>% 
-  filter(CCA1 > 0 & CCA2 >0 ) %>% 
+  filter(CCA2 >0 ) %>% 
   row.names()
 
 group2 <-
 CCA_species %>% 
-  filter(CCA1 < 0 & CCA2 >0 ) %>% 
+  filter(CCA2 < 0 ) %>% 
   row.names()
-
-
-group3 <-
-CCA_species %>% 
-  filter(CCA1 < 0 & CCA2 <0 ) %>% 
-  row.names()
-
-
-
-group4 <-
-CCA_species %>% 
-  filter(CCA1 > 0 & CCA2 <0 ) %>% 
-  row.names()
-
 
 ```
 
@@ -290,7 +296,7 @@ map_draw <- function(species = "Phyl_trol", Distination = c("India") ){
   distination_countries <- subset(world, name %in% Distination)
 
   df <- 
-    birds3 %>% select(species)
+    birds4 %>% select(species)
   
   tr_name <- 
     species_data %>% 
@@ -298,12 +304,14 @@ map_draw <- function(species = "Phyl_trol", Distination = c("India") ){
     pull(Species)
   
   points_non_zero <- 
-    points %>% 
+    points_group_proportion %>% 
     filter(df[,1] != 0)
   
   df_non_zero <- 
     df %>% 
     filter(df[,1] != 0)
+  
+  
   
   Pl_map +
     geom_point(data = points_non_zero, aes(x = Lon, y = Lat, size = df_non_zero[, 1])) +
@@ -313,13 +321,54 @@ map_draw <- function(species = "Phyl_trol", Distination = c("India") ){
     coord_sf(
     xlim = c(10, 110),   # Долгота: от Португалии до Японии
     ylim = c(0, 60))
-    
-  } 
+  
+ } 
 
 ```
 
 
-## Карты отловов группы 1 (Восточная группа)
+
+
+```{r}
+data_draw <- function(species = "Phyl_trol", Distination = c("India") ){
+  
+  distination_countries <- subset(world, name %in% Distination)
+
+  df <- 
+    birds4 %>% select(species)
+  
+  tr_name <- 
+    species_data %>% 
+    filter(Species_code == species) %>% 
+    pull(Species)
+  
+  points_non_zero <- 
+    points_group_proportion %>% 
+    filter(df[,1] != 0)
+  
+  df_non_zero <- 
+    df %>% 
+    filter(df[,1] != 0)
+  
+  df_print <-
+    cbind(points_non_zero$Site, df_non_zero)
+  
+  kable(df_print, col.names = c("Site", "Proportion") )
+ } 
+
+```
+
+
+Чтобы не путать с "экологическими" группами видов буду использовать термин "географическая группа"
+
+
+Вот состав этих географических групп.
+Географическая группа 1: `r paste(group1)`.
+
+Географическая группа 2: `r paste(group2)`.
+
+
+## Карты отловов географическоой группы 1 (положительные значения CCA2)
 
 Здесь и далее приводятся только ненулевые точки отловов. Размер точки пропорционален вероятности отлова. Серым залиты те страны, в которых происходит зимовка. Важно! Я выбирал страны абсолютно формально. Например, Юго-Восточной Азией считал все, что считает таковой Википедия.  
 
@@ -336,7 +385,59 @@ North_Africa <- c("Algeria", "Egypt", "Libya", "Morocco", "Sudan", "Tunisia")
 
 
 ```{r}
-map_draw(species = group1[1], Distination = african_countries)
+map_draw(species = group1[1], Distination = "India")
+data_draw(species = group1[1], Distination = "India")
+
+```
+
+
+```{r}
+map_draw(species = group1[2], Distination = SE_Asia)
+data_draw(species = group1[2], Distination = SE_Asia)
+
+```
+
+
+```{r}
+map_draw(species = group1[3], Distination = african_countries)
+data_draw(species = group1[3], Distination = african_countries)
+
+
+```
+
+
+
+```{r}
+map_draw(species = group1[4], Distination = "India")
+data_draw(species = group1[4], Distination = "India")
+
+
+```
+
+
+```{r}
+map_draw(species = group1[5], Distination = "India")
+data_draw(species = group1[5], Distination = "India")
+
+```
+
+
+```{r}
+map_draw(species = group1[6], Distination = "India")
+data_draw(species = group1[6], Distination = "India")
+
+```
+
+
+
+
+## Карты отловов географической группы 2 (отрицательные значения CCA2)
+
+
+
+```{r}
+map_draw(species = group2[1], Distination = North_Africa )
+data_draw(species = group2[1], Distination = North_Africa )
 
 ```
 
@@ -344,86 +445,97 @@ map_draw(species = group1[1], Distination = african_countries)
 
 
 ```{r}
-map_draw(species = group1[2], Distination = "India")
+map_draw(species = group2[2], Distination = african_countries )
+data_draw(species = group2[2], Distination = african_countries )
+
 ```
 
 
 ```{r}
-map_draw(species = group1[3], Distination = "India")
-```
+map_draw(species = group2[3], Distination = african_countries )
+data_draw(species = group2[3], Distination = african_countries )
 
-
-## Карты отловов группы 4 (Восточная группа)
-
-
-
-```{r}
-map_draw(species = group4[1], Distination = "India")
-```
-
-
-```{r}
-map_draw(species = group4[2], Distination = c("Egypt", "Sudan", "Libya", "Tunisia", "Algeria", "Morocco", "Bahrain", "Iraq", "Iran", "Israel", "Jordan", "Yemen", "Qatar", "Kuwait", "Lebanon", "United Arab Emirates", "Oman", "Palestine", "Saudi Arabia", "Syria"))
-```
-
-
-```{r}
-map_draw(species = group4[3], Distination = SE_Asia)
-```
-
-```{r}
-map_draw(species = group4[4], Distination = "India")
-```
-
-
-
-
-## Карты отловов группы 2 (Западная група)
-
-
-```{r}
-map_draw(species = group2[1], Distination = african_countries)
-```
-
-
-```{r}
-map_draw(species = group2[2], Distination = african_countries)
-```
-
-
-```{r}
-map_draw(species = group2[3], Distination = african_countries)
-```
-
-
-
-
-
-
-## Карты отловов группы 3 (Западная група)
-
-
-```{r}
-
-map_draw(species = group3[1], Distination = african_countries)
-```
-
-
-```{r}
-
-map_draw(species = group3[2], Distination = african_countries)
 ```
 
 
 
 ```{r}
+map_draw(species = group2[4], Distination = african_countries )
+data_draw(species = group2[4], Distination = african_countries )
 
-map_draw(species = group3[3], Distination = "India")
 ```
 
 
 
 ```{r}
+map_draw(species = group2[5], Distination = african_countries )
+data_draw(species = group2[5], Distination = african_countries )
 
-map_draw(species = group3[4], Distination = african_countries)
 ```
+
+
+```{r}
+map_draw(species = group2[6], Distination = "India")
+data_draw(species = group2[6], Distination = "India")
+
+```
+
+
+
+```{r}
+map_draw(species = group2[7], Distination = african_countries)
+data_draw(species = group2[7], Distination = african_countries)
+
+```
+
+
+```{r}
+map_draw(species = group2[8], Distination = african_countries)
+data_draw(species = group2[8], Distination = african_countries)
+
+```
+
+
+
+
+## Итого
+
+Из 6 видов первой географической группы (Положительно связаны с CCA2) 5 летит в Индию и Ю-В Азию.
+
+Из 8 видов второй географической группы (Отрицательно связаны с CCA2) 7 летит в Африку. 
+
+
+По-моему, неплохая дифференцирующая сила для модели.
+
+Ну и для обобщения, вот карта с распределением значений нагрузок по CCA2. Здесь размер точки пропорционален значению CCA2, а заливка обозначает CCA2 больше нуля  (зеленые, по идее на сайте доминируют птицы из географической группы 1) или CCA2 меньше нуля (розовые, доминируют виды из географической группы 2). 
+
+
+```{r}
+df <- 
+  points_group_proportion %>% 
+  mutate(CCA1 = scores(mod)$sites[,1], CCA2 = scores(mod)$sites[,2])
+
+df <-
+  df %>% 
+  mutate(Geographic_Group = ifelse(CCA2 > 0, "Geo_Group1", "Geo_Group2"))
+
+Pl_map +
+  geom_point(data = df, aes(x = Lon, y = Lat, size = CCA2, fill = Geographic_Group), shape = 21) +
+  scale_fill_manual(values = c("green", "pink"))
+
+```
+
+Хм... Есть идеи по поводу такой Африканско-Азиатской чересполосицы? Создается впечатление, что есть два Африканских и два Азиатских коридора. Или что-то еще. 
+
+
+
+
+И для дальнейшего размышления вот визуализация "пояса камышевок" (значения CCA1). Чем крупнее и синее точка тем она более "камышовская".
+
+```{r}
+Pl_map +
+  geom_point(data = df, aes(x = Lon, y = Lat, size = CCA1, fill = CCA1), shape = 21) +
+  scale_fill_gradient(low = "yellow", high = "blue")
+```
+
+

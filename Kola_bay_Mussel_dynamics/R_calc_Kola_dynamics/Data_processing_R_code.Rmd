@@ -4,7 +4,9 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
 ```
 
 
@@ -34,6 +36,8 @@ library(mgcViz)
 
 
 ## Data reading
+
+
 
 ```{r}
 
@@ -407,23 +411,34 @@ Figure4B <-
 Figure4 <- 
   ggarrange(Figure4A, Figure4B, nrow = 2, ncol=1)
 
-Figure4
+ggsave(filename = "Figure4.png", plot = Figure4, units = "cm",  height = 40, width = 20, dpi = 300, limitsize = FALSE)
+
 ```
+
+![](Figure4.png)
+
 
 ## Demografic anlysis
 
 ### Data reading and preparation
 
 ```{r}
-Ya <- 
+Ya <-
   read_excel("data/Ya_lit_initial_data_ITOG.xlsx")
 
 ```
 
+Year - Year of samples 
+Sample - Sample ID
+Length  - Mussel length
+Age - Mussel age
+Part_studied - 
+Frame_area -
+
 
 ```{r}
 # Age-abundance matrix construction
-Ya_count <- 
+Ya_count <-
   dcast(Year + Sample + Part_studied + Frame_area  ~ Age, data = Ya)
 
 # Recalculation of abundance per sample to abundance per sq. m
@@ -437,36 +452,36 @@ Ya_count <-
   summarise_at(vars(- c(Part_studied,  Frame_area)),.funs = sum)
 
 # Matrix transformation to long format
-Ya_N <- 
-  melt(Ya_count, id.vars = c("Year", "Sample"), variable.name = "Age", value.name = "N") 
+Ya_N <-
+  melt(Ya_count, id.vars = c("Year", "Sample"), variable.name = "Age", value.name = "N")
 
 # Calculation of generation year
-Ya_N <- 
-  Ya_N %>% 
+Ya_N <-
+  Ya_N %>%
   mutate(Generation = Year - as.numeric(Age))
 
-# Mean abundance of generations  
-Ya_gen <- 
-  Ya_N %>% 
-  group_by(Year, Generation, Age) %>% 
+# Mean abundance of generations
+Ya_gen <-
+  Ya_N %>%
+  group_by(Year, Generation, Age) %>%
   summarise(mean_N = mean(N, na.rm = TRUE))
 
 
-Ya_gen %>% 
+Ya_gen %>%
   filter(mean_N > 0) %>%
-  filter(Generation >= 1999) %>% 
-  mutate(Age = as.numeric(Age)) -> 
+  filter(Generation >= 1999) %>%
+  mutate(Age = as.numeric(Age)) ->
   df
 
 
 
-  df %>%  
-  group_by(Generation) %>% 
+  df %>%
+  group_by(Generation) %>%
   summarise(N = n()) ->
-  df_sample_size 
+  df_sample_size
 
 
-  
+
 # Years in which generations where presented in the population
 df %>%
   group_by(Generation) %>%
@@ -475,15 +490,15 @@ df %>%
 
 
 
-# Fitting regression of log-transformed generation abundance on age 
+# Fitting regression of log-transformed generation abundance on age
 
-df %>% 
-  merge(., df_sample_size) %>% 
-  group_by(Generation) %>% 
-  filter(Age > 1) %>% # Mussels with age 1+ where not used in analysis 
+df %>%
+  merge(., df_sample_size) %>%
+  group_by(Generation) %>%
+  filter(Age > 1) %>% # Mussels with age 1+ where not used in analysis
   filter(N > 3) %>% # Only generation with more 3 ind per year were used
-  filter(Generation %in% c(1999:2014)) %>% 
-  group_modify( ~ tidy(lm(log(mean_N) ~ Age, data = .))) -> 
+  filter(Generation %in% c(1999:2014)) %>%
+  group_modify( ~ tidy(lm(log(mean_N) ~ Age, data = .))) ->
   df_lm_filtered #Data-frame with linear models parameters
 
 
@@ -495,14 +510,19 @@ df_lm_filtered %>%
   mutate(Anundance_0 = exp(estimate)) ->
   N0
 
-# Extracting regression slopes  as measure of generation's mortality 
+# Extracting regression slopes  as measure of generation's mortality
 df_lm_filtered %>%
-  filter(term == "Age") %>% 
-  dplyr::  select(Generation, estimate) -> 
+  filter(term == "Age") %>%
+  dplyr::  select(Generation, estimate) ->
   mortality
 
 ```
 
+As a result of thhis code we recived dataframes as follow
+
+N0 - data frame with assessment of recruits abundance 
+
+++++++
 
 ### Data on climatic parameters
 
@@ -510,65 +530,52 @@ df_lm_filtered %>%
 # ОСТАВИТЬ ТОЛЬКО ТО, ЧТО БУДЕТ В АНАЛИЗЕ
 
 clim <- read_excel("data/climate_Murman.xlsx", sheet = "data_transposed", na = "NA")
+
 # тут ряд данных в итоге не используем, можно файл покоцать
- 
-clim_long <- 
-  melt(clim, id.vars = c("Param",	"Param_Type",	"Month"), variable.name = "Year") %>% 
-  filter(complete.cases(.)) %>% 
+
+clim_long <-
+  melt(clim, id.vars = c("Param",	"Param_Type",	"Month"), variable.name = "Year") %>%
+  filter(complete.cases(.)) %>%
   mutate(Year = as.numeric(as.character(Year)))
 
 # убираем солёность, тк она лажа
 # НАДО ЕЕ СРАЗУ УБРАТЬ!!! ЕСТЬ ЛИ В ТЕКСТЕ, ПОЧЕМУ СОЛЕНОСТЬ НЕ ИСПОЛЬЗУЕМ?
-clim_long <- 
-  clim_long %>% 
+clim_long <-
+  clim_long %>%
   filter(Param_Type != "Sal_mean")
 
-# Seasons 
-clim_long <- 
-  clim_long %>% 
+# Seasons
+clim_long <-
+  clim_long %>%
   mutate(Season = case_when(Month %in% 7:8 ~ "Summer",
                             Month %in% 9:10 ~ "Autumn",
                             Month %in% c(-11,-12, 1:4) ~ "Winter",
-                            Month %in% 5:6 ~ "Spring")) %>% 
+                            Month %in% 5:6 ~ "Spring")) %>%
   filter(complete.cases(.))
 
-
-
-
-# СТОП! Эта фильтрация должна идти уже после BIOENV анализа!!!
-clim_long <- 
-  clim_long %>% 
-  filter(Param_Type %in% c("Tw_mean", "Ta_mean", "Wind_mean", "Waves_mean"))
-# НАДО пояснить что за отрицательные месяцы всплывают
 
 ```
 
 
 
 
+### RDA and BioEnv
 
 Многомерные анализы
 
 ```{r}
 
 # вытаскиваю таблицу с численностями генераций для многомерных анализов
-gen_N <- 
+gen_N <-
   dcast(data = df, formula = Generation ~ Age, value.var = "mean_N")
 
 gen_N[is.na(gen_N)] <- 0
 
-# нолики я потом в экселе предсказывала, но правильнее это тут сделать, и потом ещё добавить N0 и z
-
-# СТОП! Здесь несовпадение числа гененраций. Мы выкникли всех, кто после 2014?
-# gen_N$N0 <- N0$estimate
-# gen_N$z <- mortality$estimate
 
 ```
 
 
 ```{r}
-# от включения N и B в анализ в итоге отказались, надо их убирать!
-
 generation_limits$Winter_Tw_begin <- NA
 generation_limits$Spring_Tw_begin <- NA
 generation_limits$Summer_Tw_begin <- NA
@@ -600,224 +607,168 @@ generation_limits$Spring_Ta_lifespan <- NA
 generation_limits$Summer_Ta_lifespan <- NA
 generation_limits$Autumn_Ta_lifespan <- NA
 
-# 
-# generation_limits$N_lifespan <- NA
-# generation_limits$B_lifespan <- NA
-# 
-# generation_limits$N_Gen_lifespan <- NA
-# generation_limits$B_Gen_lifespan <- NA
-# 
-# generation_limits$B_begin <- NA
-# generation_limits$N_begin <- NA
-
 
 
 # Constructing data-frame with climatic parameters in years of particular generations' life
 
 for(i in 1:nrow(generation_limits)){
-  
+
   years <- generation_limits$Generation[i]
-  
-  generation_limits$Winter_Tw_begin[i] <- 
-    clim_long %>% 
-    filter(Param_Type == "Tw_mean" & Year %in% years & Season == "Winter") %>% 
-    pull(value) %>% 
+
+  generation_limits$Winter_Tw_begin[i] <-
+    clim_long %>%
+    filter(Param_Type == "Tw_mean" & Year %in% years & Season == "Winter") %>%
+    pull(value) %>%
     mean
 
-  generation_limits$Spring_Tw_begin[i] <- 
-    clim_long %>% 
-    filter(Param_Type == "Tw_mean" & Year %in% years & Season == "Spring") %>% 
-    pull(value) %>% 
+  generation_limits$Spring_Tw_begin[i] <-
+    clim_long %>%
+    filter(Param_Type == "Tw_mean" & Year %in% years & Season == "Spring") %>%
+    pull(value) %>%
     mean
-  
-  generation_limits$Summer_Tw_begin[i] <- 
-    clim_long %>% 
-    filter(Param_Type == "Tw_mean" & Year %in% years & Season == "Summer") %>% 
-    pull(value) %>% 
+
+  generation_limits$Summer_Tw_begin[i] <-
+    clim_long %>%
+    filter(Param_Type == "Tw_mean" & Year %in% years & Season == "Summer") %>%
+    pull(value) %>%
     mean
-  
-  generation_limits$Autumn_Tw_begin[i] <- 
-    clim_long %>% 
-    filter(Param_Type == "Tw_mean" & Year %in% years & Season == "Autumn") %>% 
-    pull(value) %>% 
+
+  generation_limits$Autumn_Tw_begin[i] <-
+    clim_long %>%
+    filter(Param_Type == "Tw_mean" & Year %in% years & Season == "Autumn") %>%
+    pull(value) %>%
     mean
-  
+
   ###############################
-  generation_limits$Winter_Ta_begin[i] <- 
-    clim_long %>% 
-    filter(Param_Type == "Ta_mean" & Year %in% years & Season == "Winter") %>% 
-    pull(value) %>% 
+  generation_limits$Winter_Ta_begin[i] <-
+    clim_long %>%
+    filter(Param_Type == "Ta_mean" & Year %in% years & Season == "Winter") %>%
+    pull(value) %>%
     mean
-  
-  
-  generation_limits$Spring_Ta_begin[i] <- 
-    clim_long %>% 
-    filter(Param_Type == "Ta_mean" & Year %in% years & Season == "Spring") %>% 
-    pull(value) %>% 
+
+
+  generation_limits$Spring_Ta_begin[i] <-
+    clim_long %>%
+    filter(Param_Type == "Ta_mean" & Year %in% years & Season == "Spring") %>%
+    pull(value) %>%
     mean
-  
-  generation_limits$Summer_Ta_begin[i] <- 
-    clim_long %>% 
-    filter(Param_Type == "Ta_mean" & Year %in% years & Season == "Summer") %>% 
-    pull(value) %>% 
+
+  generation_limits$Summer_Ta_begin[i] <-
+    clim_long %>%
+    filter(Param_Type == "Ta_mean" & Year %in% years & Season == "Summer") %>%
+    pull(value) %>%
     mean
-  
-  generation_limits$Autumn_Ta_begin[i] <- 
-    clim_long %>% 
-    filter(Param_Type == "Ta_mean" & Year %in% years & Season == "Autumn") %>% 
-    pull(value) %>% 
+
+  generation_limits$Autumn_Ta_begin[i] <-
+    clim_long %>%
+    filter(Param_Type == "Ta_mean" & Year %in% years & Season == "Autumn") %>%
+    pull(value) %>%
     mean
-  
+
   ############################
-  generation_limits$Winter_Wind_begin[i] <- 
-    clim_long %>% 
-    filter(Param_Type == "Wind_mean" & Year %in% years & Season == "Winter") %>% 
-    pull(value) %>% 
+  generation_limits$Winter_Wind_begin[i] <-
+    clim_long %>%
+    filter(Param_Type == "Wind_mean" & Year %in% years & Season == "Winter") %>%
+    pull(value) %>%
     mean
-  
-  
-  generation_limits$Spring_Wind_begin[i] <- 
-    clim_long %>% 
-    filter(Param_Type == "Wind_mean" & Year %in% years & Season == "Spring") %>% 
-    pull(value) %>% 
+
+
+  generation_limits$Spring_Wind_begin[i] <-
+    clim_long %>%
+    filter(Param_Type == "Wind_mean" & Year %in% years & Season == "Spring") %>%
+    pull(value) %>%
     mean
-  
-  generation_limits$Summer_Wind_begin[i] <- 
-    clim_long %>% 
-    filter(Param_Type == "Wind_mean" & Year %in% years & Season == "Summer") %>% 
-    pull(value) %>% 
+
+  generation_limits$Summer_Wind_begin[i] <-
+    clim_long %>%
+    filter(Param_Type == "Wind_mean" & Year %in% years & Season == "Summer") %>%
+    pull(value) %>%
     mean
-  
-  generation_limits$Autumn_Wind_begin[i] <- 
-    clim_long %>% 
-    filter(Param_Type == "Wind_mean" & Year %in% years & Season == "Autumn") %>% 
-    pull(value) %>% 
+
+  generation_limits$Autumn_Wind_begin[i] <-
+    clim_long %>%
+    filter(Param_Type == "Wind_mean" & Year %in% years & Season == "Autumn") %>%
+    pull(value) %>%
     mean
-  
-  ###############################  
-  
-  
-  generation_limits$Winter_Waves_begin[i] <- 
-    clim_long %>% 
-    filter(Param_Type == "Waves_mean" & Year %in% years & Season == "Winter") %>% 
-    pull(value) %>% 
+
+  ###############################
+
+
+  generation_limits$Winter_Waves_begin[i] <-
+    clim_long %>%
+    filter(Param_Type == "Waves_mean" & Year %in% years & Season == "Winter") %>%
+    pull(value) %>%
     mean
-  
-  
-  generation_limits$Spring_Waves_begin[i] <- 
-    clim_long %>% 
-    filter(Param_Type == "Waves_mean" & Year %in% years & Season == "Spring") %>% 
-    pull(value) %>% 
+
+
+  generation_limits$Spring_Waves_begin[i] <-
+    clim_long %>%
+    filter(Param_Type == "Waves_mean" & Year %in% years & Season == "Spring") %>%
+    pull(value) %>%
     mean
-  
-  generation_limits$Summer_Waves_begin[i] <- 
-    clim_long %>% 
-    filter(Param_Type == "Waves_mean" & Year %in% years & Season == "Summer") %>% 
-    pull(value) %>% 
+
+  generation_limits$Summer_Waves_begin[i] <-
+    clim_long %>%
+    filter(Param_Type == "Waves_mean" & Year %in% years & Season == "Summer") %>%
+    pull(value) %>%
     mean
-  
-  generation_limits$Autumn_Waves_begin[i] <- 
-    clim_long %>% 
-    filter(Param_Type == "Waves_mean" & Year %in% years & Season == "Autumn") %>% 
-    pull(value) %>% 
+
+  generation_limits$Autumn_Waves_begin[i] <-
+    clim_long %>%
+    filter(Param_Type == "Waves_mean" & Year %in% years & Season == "Autumn") %>%
+    pull(value) %>%
     mean
-  
-  
-  # generation_limits$B_begin[i] <- 
-  #   Ya_B_mean %>% 
-  #   filter(Year %in% years) %>% 
-  #   pull(B) %>% 
-  #   mean
-  # 
-  # generation_limits$N_begin[i] <- 
-  #   Ya_N_mean %>% 
-  #   filter(Year %in% years) %>% 
-  #   pull(mean_N) %>% 
-  #   mean
-  
-  
-  ###############################  
-  # years <- generation_limits$Generation[i]:generation_limits$max_Year[i] 
-  # 
-  # generation_limits$B_lifespan[i] <-
-  #   Ya_B_mean %>%
-  #   filter(Year %in% years) %>%
-  #   pull(B) %>%
-  #   mean()
-  # 
-  # 
-  # generation_limits$N_lifespan[i] <- 
-  #   Ya_N_mean %>% 
-  #   filter(Year %in% years) %>% 
-  #   pull(mean_N) %>% 
-  #   mean(na.rm = T)
-  
-  
+
+
+  generation_limits$Winter_Tw_lifespan[i] <-
+    clim_long %>%
+    filter(Param_Type == "Tw_mean", Year %in% years &  Season == "Winter") %>%
+    pull(value) %>%
+    mean(na.rm = T)
+
+  generation_limits$Spring_Tw_lifespan[i] <-
+    clim_long %>%
+    filter(Param_Type == "Tw_mean", Year %in% years & Season == "Spring") %>%
+    pull(value) %>%
+    mean(na.rm = T)
+
+  generation_limits$Summer_Tw_lifespan[i] <-
+    clim_long %>%
+    filter(Param_Type == "Tw_mean", Year %in% years & Season == "Summer") %>%
+    pull(value) %>%
+    mean(na.rm = T)
+
+  generation_limits$Autumn_Tw_lifespan[i] <-
+    clim_long %>%
+    filter(Param_Type == "Tw_mean", Year %in% years & Season == "Autumn") %>%
+    pull(value) %>%
+    mean(na.rm = T)
   #######################################
-  generation_limits$Winter_Tw_lifespan[i] <- 
-    clim_long %>% 
-    filter(Param_Type == "Tw_mean", Year %in% years &  Season == "Winter") %>% 
-    pull(value) %>% 
+
+  generation_limits$Winter_Ta_lifespan[i] <-
+    clim_long %>%
+    filter(Param_Type == "Ta_mean", Year %in% years &  Season == "Winter") %>%
+    pull(value) %>%
     mean(na.rm = T)
-  
-  generation_limits$Spring_Tw_lifespan[i] <- 
-    clim_long %>% 
-    filter(Param_Type == "Tw_mean", Year %in% years & Season == "Spring") %>% 
-    pull(value) %>% 
+
+  generation_limits$Spring_Ta_lifespan[i] <-
+    clim_long %>%
+    filter(Param_Type == "Ta_mean", Year %in% years & Season == "Spring") %>%
+    pull(value) %>%
     mean(na.rm = T)
-  
-  generation_limits$Summer_Tw_lifespan[i] <- 
-    clim_long %>% 
-    filter(Param_Type == "Tw_mean", Year %in% years & Season == "Summer") %>% 
-    pull(value) %>% 
+
+  generation_limits$Summer_Ta_lifespan[i] <-
+    clim_long %>%
+    filter(Param_Type == "Ta_mean", Year %in% years & Season == "Summer") %>%
+    pull(value) %>%
     mean(na.rm = T)
-  
-  generation_limits$Autumn_Tw_lifespan[i] <- 
-    clim_long %>% 
-    filter(Param_Type == "Tw_mean", Year %in% years & Season == "Autumn") %>% 
-    pull(value) %>% 
-    mean(na.rm = T)  
-  #######################################
-  
-  generation_limits$Winter_Ta_lifespan[i] <- 
-    clim_long %>% 
-    filter(Param_Type == "Ta_mean", Year %in% years &  Season == "Winter") %>% 
-    pull(value) %>% 
+
+  generation_limits$Autumn_Ta_lifespan[i] <-
+    clim_long %>%
+    filter(Param_Type == "Ta_mean", Year %in% years & Season == "Autumn") %>%
+    pull(value) %>%
     mean(na.rm = T)
-  
-  generation_limits$Spring_Ta_lifespan[i] <- 
-    clim_long %>% 
-    filter(Param_Type == "Ta_mean", Year %in% years & Season == "Spring") %>% 
-    pull(value) %>% 
-    mean(na.rm = T)
-  
-  generation_limits$Summer_Ta_lifespan[i] <- 
-    clim_long %>% 
-    filter(Param_Type == "Ta_mean", Year %in% years & Season == "Summer") %>% 
-    pull(value) %>% 
-    mean(na.rm = T)
-  
-  generation_limits$Autumn_Ta_lifespan[i] <- 
-    clim_long %>% 
-    filter(Param_Type == "Ta_mean", Year %in% years & Season == "Autumn") %>% 
-    pull(value) %>% 
-    mean(na.rm = T)  
-  #######################################
-  # 
-  # 
-  # generation_limits$B_Gen_lifespan[i] <-
-  #   Ya_gen_W %>%
-  #   filter(Generation %in% generation_limits$Generation[i]) %>%
-  #   pull(mean_W) %>%
-  #   mean()
-  # 
-  # 
-  # generation_limits$N_Gen_lifespan[i] <-
-  #   Ya_gen %>%
-  #   filter(Generation %in% generation_limits$Generation[i]) %>%
-  #   pull(mean_N) %>%
-  #   mean()
-  
+
 }
 
 
@@ -831,34 +782,87 @@ dem_multivar <- read_excel("data/dem_multivar.xlsx", sheet = "Age_0_predicted",n
 
 dem_multivar <- as.data.frame(dem_multivar)
 
-row.names(dem_multivar) <- dem_multivar$Generation  
+row.names(dem_multivar) <- dem_multivar$Generation
 
-dem_multivar %>% 
-  filter(complete.cases(.)) %>% 
-  dplyr::select(2:12) %>% 
+dem_multivar %>%
+  filter(complete.cases(.)) %>%
+  dplyr::select(2:12) %>%
   as.data.frame() ->
   No_demogr2 # Data-frame with demografic paramters
-  
-dem_multivar %>% 
-  filter(complete.cases(.)) %>% 
-  dplyr::select(-c(1:12)) %>% 
+
+dem_multivar %>%
+  filter(complete.cases(.)) %>%
+  dplyr::select(-c(1:12)) %>%
   as.data.frame() ->
   predictors # Data-frame with environmental paramters
-    
-  
-  
+
+
+
 ```
 
 
-### BIOENV 
+### BIOENV
 
-```{r, eval=FALSE}
+Код закомментирован, чтобы при knitr не завислао навсегда
 
-BIOENV <- bioenv(comm = No_demogr2, env = predictors, method = "spearman", index = "euclidean", metric = "euclidean", parallel = 2)
+<!-- Дать предупреждение, что если запуститьэтот кусок кода, то будет долго нитриться. -->
 
-# получается так Spring_Tw_begin, Spring_Ta_begin, Spring_Wind_begin, Summer_Ta_begin,  Summer_Tw_lifespan
-# with correlation  0.2592541
+<!-- ```{r, eval=FALSE} -->
 
-BIOENV
+<!-- BIOENV <- bioenv(comm = No_demogr2, env = predictors, method = "spearman", index = "euclidean", metric = "euclidean", parallel = 2) -->
+
+<!-- # получается так Spring_Tw_begin, Spring_Ta_begin, Spring_Wind_begin, Summer_Ta_begin,  Summer_Tw_lifespan -->
+<!-- # with correlation  0.2592541 -->
+
+<!-- BIOENV -->
+<!-- ``` -->
+
+
+### RDA
+
+```{r}
+clim_long <-
+  clim_long %>%
+  filter(Param_Type %in% c("Tw_mean", "Ta_mean", "Wind_mean", "Waves_mean"))
+
+```
+
+
+```{r}
+dem_multivar <- read_excel("data/dem_multivar.xlsx", sheet = "Age_0_predicted",na = "NA")
+
+```
+
+
+
+
+
+```{r}
+
+dem_multivar <- as.data.frame(dem_multivar)
+row.names(dem_multivar) <- dem_multivar$Generation  
+
+dem_multivar %>% 
+  filter(complete.cases(.)) -> dff
+
+
+No_demogr2 <- 
+  dff %>% 
+  dplyr::select(2:12) %>% 
+  as.data.frame()
+
+
+rda(No_demogr2 ~ Spring_Wind_begin + Summer_Tw_lifespan + Spring_Tw_begin + Summer_Ta_begin + Spring_Ta_begin, data = dff) -> ord3rda
+
+anova(ord3rda, permutations = 9999)
+anova(ord3rda, by = "axis", permutations = 9999)
+anova(ord3rda, by = "margin", permutations = 9999)
+
+```
+
+
+
+```{r}
+plot(ord3rda, scaling = "symmetric")
 ```
 
