@@ -68,3 +68,18 @@ Pl_map +
   ) +
   ggtitle("Зеленая пеночка")
 
+
+
+range_data_3 <- st_read("Data/Bird_Range_Polygons/Phylloscopus trochilus.kml")
+
+range_data_3$Name = c("Breeding", "Wintering")
+
+
+Pl_map +
+  geom_sf(data = range_data_3, aes(fill = Name), alpha = 0.9) + 
+  coord_sf(
+    xlim = c(10, 110),   # Долгота: от Португалии до Японии
+    ylim = c(0, 60)     # Широта: от Индонезии до России
+  ) +
+  ggtitle("Пеночка весничка")
+
