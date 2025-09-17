@@ -11,7 +11,7 @@ library(DHARMa)
 
 
 # Данные по индивидуальным характристикам мидий
-myt_ind <- read_excel("Data/individual data_Magadan2023_inter2.xlsx", sheet = "clean_R", na = "NA")
+myt_ind <- read_excel("Data/Mussel_growth_Magadan_2021_2023.xlsx", na = "NA")
 
 myt_ind$Sample <- paste(myt_ind$Site_code, myt_ind$Sample, sep = "_")
 
@@ -52,7 +52,7 @@ myt_ind %>%
   filter(!is.na(Sex)) %>% 
   ggplot(aes(BTN_Type, Prop_Increment, fill = BTN_Type)) +
   geom_boxplot() +
-  facet_wrap(~Sex)
+  facet_grid(Sex ~ Year)
 
 
 
@@ -67,14 +67,16 @@ myt_ind_clean$Fi_Increment <- 2*asin(sqrt(myt_ind_clean$Prop_Increment)) * 180/p
 
 points <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", sheet = "Points  characteristic 2021-23", na = "NA")
 
-
-
-points_2023 <- 
-  points %>% 
-  filter(Year == 2023) %>% 
+points %<>%
   rename(Site_code = Site)
 
-myt_ind_clean <- merge(myt_ind_clean, points_2023)
+
+# points_2023 <- 
+#   points %>% 
+#   filter(Year == 2023) %>% 
+#   rename(Site_code = Site)
+
+myt_ind_clean <- merge(myt_ind_clean, points)
 
 
 table(myt_ind_clean$BTN_Type, myt_ind_clean$Gonad_quality)
@@ -97,7 +99,7 @@ table(myt_ind_clean$BTN_Type, myt_ind_clean$Gonad_quality)
 
 
 
-Mod_prop_incr <- gam(Fi_Increment ~ s(Rate_of_aneuploid_cells) + s(Last_ring, by = DN) + s(fetch, k = 5) + s(Sample, bs = "re"), family = "gaussian", data = myt_ind_clean, method = "REML")
+Mod_prop_incr <- gam(Fi_Increment ~ s(Rate_of_aneuploid_cells) + s(Last_ring, by = DN) + BTN_Type + s(fetch) + s(Sample, bs = "re"), family = "gaussian", data = myt_ind_clean, method = "REML")
 
 appraise(Mod_prop_incr)
 
@@ -151,9 +153,10 @@ table(myt_ind$Sex, myt_ind$BTN_Type )
 
 myt_ind_clean$Sex <- factor(myt_ind_clean$Sex)
 
+myt_ind_clean$fYear <- factor(myt_ind_clean$Year)
 
 
-Mod_prop_incr_btn <- gam(Fi_Increment ~ BTN_Type   + s(Last_ring, bs = "cr", by = BTN_Type)  + s(Sample, bs = "re"), family = "gaussian", data = myt_ind_clean, method = "REML")
+Mod_prop_incr_btn <- gam(Fi_Increment ~ BTN_Type + s(Last_ring, bs = "cr", by = BTN_Type)  + s(Sample, bs = "re"), family = "gaussian", data = myt_ind_clean, method = "REML")
 
 gam.check(Mod_prop_incr_btn)
 
@@ -183,111 +186,43 @@ ggplot(My_data, aes(x = BTN_Type, y = Fit)) +
   geom_errorbar(aes(ymin = Fit - 2*SE, ymax = Fit + 2*SE), width = 0.2)
 
 
-
-###################################
-library(glmmTMB)
-library(lme4)
-
-# Mod_tmb_prop_incr_btn <- lmer(Fi_Increment ~ BTN_Type  + Last_ring    + (1|Site_code/Sample), data = myt_ind_clean)
-
-Mod_tmb_prop_incr_btn <- gam(Fi_Increment ~ BTN_Type + s(Last_ring, by = BTN_Type, bs = "cr") + s(Sample, bs = "re"), data = myt_ind_clean)
-
-
-Mod_tmb_prop_incr_btn <- gam(Fi_Increment ~ BTN_Type + s(Last_ring, by = BTN_Type, bs = "cr") + s(Sample, bs = "re"), data = myt_ind_clean)
-
-
-# Mod_tmb_prop_incr_btn_diagn <- fortify.merMod(Mod_tmb_prop_incr_btn)
-
-
-Mod_tmb_prop_incr_btn_diagn <- data.frame(.fitted = fitted(Mod_tmb_prop_incr_btn), .scresid = residuals(Mod_tmb_prop_incr_btn, type = "pearson"), Site_code = myt_ind_clean$Site_code, ID =  myt_ind_clean$ID)
-
-
-Mod_tmb_prop_incr_btn_diagn <- merge(Mod_tmb_prop_incr_btn_diagn, myt_ind_clean)
-
-nrow(Mod_tmb_prop_incr_btn_diagn)
-
-
-
-ggplot(Mod_tmb_prop_incr_btn_diagn, aes(x = .fitted, y = .scresid)) +
-  geom_point() +
-  geom_smooth(method = "gam")
-
-
-
-
-ggplot(Mod_tmb_prop_incr_btn_diagn, aes(x = Site_code, y = .scresid)) +
-  geom_boxplot()
-
-ggplot(Mod_tmb_prop_incr_btn_diagn, aes(x = BTN_Type, y = .scresid)) +
-  geom_boxplot()
-
-ggplot(Mod_tmb_prop_incr_btn_diagn, aes(x = Sex, y = .scresid)) +
-  geom_boxplot()
-
-ggplot(Mod_tmb_prop_incr_btn_diagn, aes(x = fetch, y = .scresid)) + 
-  geom_point() +
-  geom_smooth(method = "loess")
-
-ggplot(Mod_tmb_prop_incr_btn_diagn, aes(x = Dist_Port, y = .scresid)) + 
-  geom_point() +
-  geom_smooth()
-
-ggplot(Mod_tmb_prop_incr_btn_diagn, aes(x = L, y = .scresid)) + 
-  geom_point() +
-  geom_smooth(method = "gam")
-
-ggplot(Mod_tmb_prop_incr_btn_diagn, aes(x = Last_ring, y = .scresid)) + 
-  geom_point() +
-  geom_smooth(method = "gam")
-
-ggplot(Mod_tmb_prop_incr_btn_diagn, aes(x = OGP_sample, y = .scresid)) + 
-  geom_point() +
-  geom_smooth(method = "gam")
-
-ggplot(Mod_tmb_prop_incr_btn_diagn, aes(x = OGP_site, y = .scresid)) + 
-  geom_point() +
-  geom_smooth(method = "gam")
-
-
-ggplot(Mod_tmb_prop_incr_btn_diagn, aes(x = Rate_of_aneuploid_cells , y = .scresid)) + 
-  geom_point() +
-  geom_smooth(method = "gam")
-
-
-draw(Mod_tmb_prop_incr_btn, parametric = T)
-
-summary(Mod_tmb_prop_incr_btn)
-
 library(itsadug)
 
-wald_gam(Mod_tmb_prop_incr_btn)
-
-
-
-library(DHARMa)
-
-res <- simulateResiduals(Mod_tmb_prop_incr_btn, plot = T)
-
-testResiduals(Mod_tmb_prop_incr_btn)
-
-qplot(x = fitted(Mod_tmb_prop_incr_btn), y = residuals(Mod_tmb_prop_incr_btn, type = "pearson")) + 
-  geom_smooth(method = "gam") +
-  geom_hline(yintercept = 0)
-
-
-
-summary(Mod_tmb_prop_incr_btn)
-
-
+wald_gam(Mod_prop_incr_btn)
 
 
 
 
 library(multcomp)
   
-compare <- glht(Mod_tmb_prop_incr_btn, linfct = mcp(BTN_Type  = "Tukey"))
+compare <- glht(Mod_prop_incr_btn, linfct = mcp(BTN_Type  = "Tukey"))
 
 summary(compare)
 
+######################################
 
+# Анализ зависимости вероятности встретить мидию с неразвитыми гонадами от доли ануеплоидных клеток
+
+myt_ind_clean %>%
+  mutate(Gonad_Out = ifelse(Gonad_quality == "No", 1, 0)) %>% 
+  filter(BTN_Type != "healthy") ->
+  myt_ind_clean_not_healthy
+
+Mod_gonad <- gam(Gonad_Out ~ s(Rate_of_aneuploid_cells, by = BTN_Type) + BTN_Type , family = "binomial",  method = "REML", data = myt_ind_clean_not_healthy)
+
+appraise(Mod_gonad)
+
+summary(Mod_gonad)
+
+Pl_gonad_BTN1 <- 
+  draw(Mod_gonad,  scales = "fixed", select = 1) +
+  geom_hline(yintercept = 0, linetype = 2)
+
+Pl_gonad_BTN2 <- 
+  draw(Mod_gonad,  scales = "fixed", select = 2) +
+  geom_hline(yintercept = 0, linetype = 2)
+
+library(cowplot)
+
+plot_grid(Pl_gonad_BTN1, Pl_gonad_BTN2)
 
