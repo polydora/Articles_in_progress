@@ -776,8 +776,8 @@ myt_ind_clean %>%
   theme_void() +
   facet_grid(Year ~ BTN_Type) + # Разделяем на подграфики по годам и типам BTN
   scale_fill_manual(values = c("green", "red")) +
-  labs(fill = "") +
-  theme_bw()
+  labs(fill = "") 
+  
 
 ```
 
