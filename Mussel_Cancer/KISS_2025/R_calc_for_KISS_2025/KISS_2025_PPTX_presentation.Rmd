@@ -3,7 +3,9 @@ date: ""
 title: |
     Экологические аспекты распространения трансмиссивной неоплазии двустворчатых моллюсков (BTN) в поселениях мидий Тауйской губы Охотского моря
 author: "В.М.Хайтов, Ю.Т.Маченко, И.В.Кожин, М.А.Майорова, С.С.Малавенда, П.П.Стрелков"
-output: powerpoint_presentation
+output: 
+   powerpoint_presentation:
+     reference_doc: Template.pptx 
 ---
 
 ```{r setup, include=FALSE}
@@ -64,7 +66,7 @@ theme_set(default_theme)
 :::{.column width="70%"}
 
 
-- По феноменологии - диссеминированная неоплазия (DN)
+- По феноменологии - диссеминированная неоплазия гемолимфы  (DN)
 - Злокачественные клетки являются инфекционным агентом и передаются между особями через воду
 - У каждого рака свой уникальный генотип, родственный индивидуальному генотипу особи, у которой этот рак возник впервые
 - Впервые описанный у *Mya arenaria* в 2015,  $BTN$ выявлен еще у восьми систематически далеких видов (*Mytilus*, *Cerastoderma*, *Macoma* и др.)
@@ -140,9 +142,9 @@ include_graphics("./figure/Cytometric_draw.png")
 
 ## Две эволюционные линии $BTN$ у *Mytilus trossulus*
 
-- BTN у *M.trossulus* возникал неоднократно 
-- Известно две линии: $MtrBTN1$ и $MtrBTN2$  
-- Диагностика линий происходит по молекулярным маркерам (mtCOI)
+- $BTN$ у *M.trossulus* возникал неоднократно
+- Известно две линии: $MtrBTN1$ и $MtrBTN2$
+- Диагностика линий происходит по молекулярным маркерам (*mtCOI*)
 - $BTN2$ широко распространен и найден у нескольких видов мидий в Атлантике и в Пацифике в обоих полушариях
 - $BTN1$ отмечен только у *M.trossulus* в субарктике
 
@@ -157,7 +159,7 @@ include_graphics("./figure/Cytometric_draw.png")
 ## Возможные ожидания
 
 - Повышенная частота $BTN$, как онкологического заболевания, должна коррелировать с уровнем стресса, понижающего иммунитет мидий.
-- Линии $BTN1$ и $BTN2$ будучи по происхождению клетками  одного «родительского» вида (*M.trossulus*), близкого эволюционного возраста должны иметь сходные связи с факторами среды.
+- Линии $BTN1$ и $BTN2$ будучи по происхождению клетками  одного «родительского» вида (*M.trossulus*) и близкого эволюционного возраста должны иметь сходные связи с факторами среды.
 - Подобно другим паразитам, клетки $BTN$ должны манипулировать хозяином, увеличивая приток ресурсов.
 
 
@@ -169,7 +171,7 @@ include_graphics("./figure/Cytometric_draw.png")
 
 :::{.column width=70%}
 
-- Единственное место где с «уловимой» частотой представлены обе линии $BTN$
+- Единственное известное место, где с «уловимой» частотой представлены обе линии $BTN$
 - Представлен только один вид мидий *Mytilus trossulus*
 - Мидий много, они формируют поселения в контрастных местообитаниях 
 
@@ -236,7 +238,7 @@ Pl_map_large +
 :::{.column width=70%}
 
 - Обследовано 11 точек в 2021 г. и 15 в 2023 г (всего 20 локаций). 
-- На каждой точке собирали крупных мидий для отбора проб гемолимфы и оценки ростовых процессов и репродуктивного статуса (обработано 3000 моллюсков)
+- На каждой точке собирали *крупных* мидий для отбора проб гемолимфы и оценки ростовых процессов и репродуктивного статуса (обработано 3000 моллюсков)
 - Брали выборки для описания размерной структуры и плотности поселения мидий
 
 :::
@@ -353,7 +355,7 @@ Pl_map +
   geom_point(data = prop_BTN, aes(x = Lon, y = Lat, size = Prop_BTN, group = 1), shape = 21, fill = "yellow") + 
   theme_map()+
   guides(size = "none") +
-  scale_size_continuous(range = c(1, 5)) + 
+  scale_size_continuous(range = c(0, 5)) + 
   facet_wrap(~ Lineage, ncol = 1)
 
 ```
@@ -701,7 +703,10 @@ ft %>%
 draw(Mod_btn1_btn2_no_re, select = 1) +
   ggtitle("", subtitle = "") + 
   labs(x = "Растояние от порта (км)")  +
-  theme_bw()
+  geom_hline(yintercept = 0, linetype = 2) +
+  theme_bw()+
+  theme(axis.title.x = element_text(size = 15))
+
 ```
 
 
@@ -713,7 +718,9 @@ draw(Mod_btn1_btn2_no_re, select = 3) +
   ggtitle("", subtitle = "") + 
   labs(x = "Fetch (км)")  +
   geom_hline(yintercept = 0, linetype = 2) +
-  theme_bw()
+  theme_bw()+
+  theme(axis.title.x = element_text(size = 15))
+
 ```
 
 
@@ -725,7 +732,9 @@ draw(Mod_btn1_btn2_no_re, select = 5) +
   ggtitle("", subtitle = "") + 
   labs(x = "PC1")  +
   geom_hline(yintercept = 0, linetype = 2) +
-  theme_bw()
+  theme_bw()+
+  theme(axis.title.x = element_text(size = 15))
+
 ```
 
 ## Экологические ниши BTN
@@ -858,7 +867,8 @@ myt_ind_clean %>%
   theme_void() +
   facet_grid(Year ~ BTN_Type) + # Разделяем на подграфики по годам и типам BTN
   scale_fill_manual(values = c("green", "red")) +
-  labs(fill = "") 
+  labs(fill = "") +
+  theme(strip.text = element_text(size = 18))
   
 
 ```
@@ -920,7 +930,8 @@ draw(Mod_gonad, select = 1, scales = "fixed") +
   labs(x = "Доля (%) анеуплоидных клеток") +
   ylim(-5, 4)+
   annotate(geom = "text", x = 25, y = 0.5, label = "Среднее значение")  +
-  theme_bw()
+  theme_bw() +
+  theme(axis.title.x = element_text(size = 15))
 
   
   
@@ -939,7 +950,9 @@ draw(Mod_gonad,  scales = "fixed", select = 2) +
   labs(x = "Доля (%) анеуплоидных клеток") +
   ylim(-5, 4) +
   annotate(geom = "text", x = 25, y = 0.5, label = "Среднее значение")  +
-  theme_bw()
+  theme_bw()+
+  theme(axis.title.x = element_text(size = 15))
+
 
 ```
 
@@ -976,7 +989,9 @@ Pl_Last_ring <-
   labs(fill = "", color = "Статус", x = "Расстояние до последнего кольца") +
   ggtitle(NULL, subtitle = NULL)  +
   theme_bw() +
-  guides(fill = "none", color = "none")
+  guides(fill = "none", color = "none")+
+  theme(axis.title.x = element_text(size = 15))
+
 ```
 
 
@@ -1015,15 +1030,17 @@ library(ggsignif)
 
 Pl_Status <-
   ggplot(My_data, aes(x = BTN_Type, y = P_incr)) +
-  geom_col(fill = "gray") +
-  geom_errorbar(aes(ymin = lwr, ymax = upr), width = 0.2) +
+geom_violin(data = myt_ind_clean, aes(x = BTN_Type, y = Prop_Increment), alpha = 0.3, fill = "gray")+
+  geom_col(fill = "blue", alpha = 0.5, color = "blue") +
+  geom_errorbar(aes(ymin = lwr, ymax = upr), width = 0.2, color = "blue") +
   labs(x = "", y = "Partial effect") +
   geom_signif(comparisons = list(
       c("BTN1", "BTN2"),
       c("BTN2", "Здоровые")),
-      annotations = c("W = 6.5, p = 0.011", "W = 7.5, p = 0.006")
+      annotations = c("W = 6.5, p = 0.011 **", "W = 7.5, p = 0.006 ***")
       )  +
-  theme_bw()
+  theme_bw()+
+  theme(axis.text.x = element_text(size = 15))
   
   
 ```
@@ -1058,9 +1075,8 @@ Pl_Status
 ## Разные стратегии у BTN1 и BTN2
 
 - Эффективность использования ресурсов хозяина (*среда I прядка*) и зависимость от варьирования внешних факторов (*среда II порядка*) - две возможные "экологических оси", определяющие адаптации разных линий $BTN$.
-
 - В отличие от $BTN1$, $BTN2$ стимулирует соматический рост хозяина за счет эффективного подавления его репродукции. Это может быть уподоблено паразитарной кастрации. $BTN2$ более эффективно использует ресурсы среды I порядка.
-- В отличие от $BTN2$, $BTN1$ сильно зависит от факторов среды II порядка. Возможно это является следствием менее эффективного использования ресурсов среды I порядка.   
+- В отличие от $BTN2$, $BTN1$ сильно зависит от факторов среды II порядка. Возможно это является следствием менее эффективного использования ресурсов среды I порядка. 
 - С разной стратегией двух линий $BTN$ могут  быть связаны особенности их географического распространения: более узкое (субарктика) у $BTN1$ и более широкое (практически всесветное) у $BTN2$ 
 
 
