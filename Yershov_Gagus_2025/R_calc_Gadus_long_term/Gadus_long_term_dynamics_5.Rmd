@@ -94,6 +94,15 @@ gadus_long %>%
 ```
 
 
+<!-- ```{r} -->
+<!-- ggplot(gadus_long, aes(x = Year, y = DOY, group = Year)) + -->
+<!--   geom_boxplot() -->
+<!-- ``` -->
+
+
+
+
+
 ```{r}
 
 total_weight %>% 
