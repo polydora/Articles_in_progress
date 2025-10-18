@@ -29,6 +29,7 @@ Pl_map <-
   theme_minimal()
 
 
+
 Pl_map_local <- 
   ggplot(data = eurasia) +
   geom_sf(fill = "gray90", color = "gray30") +
@@ -42,7 +43,8 @@ Pl_map_local <-
 
 range_data_1 <- st_read("Data/Bird_Range_Polygons/Phylloscopus collybita.kml")
 
-range_data_1$Name = c("A", "B", "C", "D")
+
+range_data_1$Name = c("Wintering", "Breeding")
 
 
 Pl_map +
@@ -55,9 +57,10 @@ Pl_map +
 
 
 
-range_data_2 <- st_read("Data/Bird_Range_Polygons/Phyl_troch.kml")
+range_data_2 <- st_read("Data/Bird_Range_Polygons/Phylloscopus trochiloides.kml")
 
-range_data_2$Name = c("A", "B", "C")
+
+range_data_2$Name = c("Wintering", "Breeding")
 
 
 Pl_map +
@@ -67,4 +70,21 @@ Pl_map +
     ylim = c(0, 60)     # Широта: от Индонезии до России
   ) +
   ggtitle("Зеленая пеночка")
+
+
+
+
+
+range_data_3 <- st_read("Data/Bird_Range_Polygons/Ficedula hypoleuca.kml")
+
+range_data_3$Name = c("Breeding", "Wintering")
+
+
+Pl_map +
+  geom_sf(data = range_data_3, aes(fill = Name), alpha = 0.9) + 
+  coord_sf(
+    xlim = c(10, 110),   # Долгота: от Португалии до Японии
+    ylim = c(0, 60)     # Широта: от Индонезии до России
+  ) +
+  ggtitle("Мухоловка пеструшка")
 
