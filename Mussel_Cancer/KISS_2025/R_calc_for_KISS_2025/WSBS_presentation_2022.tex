@@ -1,0 +1,193 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[
+  ignorenonframetext,
+]{beamer}
+\newif\ifbibliography
+\usepackage{pgfpages}
+\setbeamertemplate{caption}[numbered]
+\setbeamertemplate{caption label separator}{: }
+\setbeamercolor{caption name}{fg=normal text.fg}
+\beamertemplatenavigationsymbolsempty
+% remove section numbering
+\setbeamertemplate{part page}{
+  \centering
+  \begin{beamercolorbox}[sep=16pt,center]{part title}
+    \usebeamerfont{part title}\insertpart\par
+  \end{beamercolorbox}
+}
+\setbeamertemplate{section page}{
+  \centering
+  \begin{beamercolorbox}[sep=12pt,center]{section title}
+    \usebeamerfont{section title}\insertsection\par
+  \end{beamercolorbox}
+}
+\setbeamertemplate{subsection page}{
+  \centering
+  \begin{beamercolorbox}[sep=8pt,center]{subsection title}
+    \usebeamerfont{subsection title}\insertsubsection\par
+  \end{beamercolorbox}
+}
+% Prevent slide breaks in the middle of a paragraph
+\widowpenalties 1 10000
+\raggedbottom
+\AtBeginPart{
+  \frame{\partpage}
+}
+\AtBeginSection{
+  \ifbibliography
+  \else
+    \frame{\sectionpage}
+  \fi
+}
+\AtBeginSubsection{
+  \frame{\subsectionpage}
+}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\usetheme[]{Singapore}
+\usecolortheme[]{beaver}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+%%% Работа с русским языком
+\usepackage[russian,english]{babel}   %% загружает пакет многоязыковой вёрстки
+\usepackage{fontspec}      %% подготавливает загрузку шрифтов Open Type, True Type и др.
+\defaultfontfeatures{Ligatures={TeX},Renderer=Basic,Scale=0.75}  %% свойства шрифтов по умолчанию
+\setmainfont[Ligatures={TeX,Historic}]{Times New Roman} %% задаёт основной шрифт документа
+\setsansfont[Ligatures={TeX,Historic}]{Verdana} %% задаёт шрифт без засечек
+\setmonofont[Scale=0.7]{DejaVu Sans Mono}
+
+\linespread{0.75}
+
+\definecolor{links}{HTML}{2A1B81}
+\hypersetup{colorlinks=true,linkcolor=,urlcolor=links,pdfview=FitH,pdfpagelayout=SinglePage, unicode=true,breaklinks=true}
+
+% links format
+\usepackage{hyperref}
+
+% decrease text margins
+\setbeamersize{text margin left = 8pt, text margin right = 16pt}
+
+\newcommand{\columnsbegin}{\begin{columns}}
+\newcommand{\columnsend}{\end{columns}}
+\newcommand{\blockbegin}{\begin{block}}
+\newcommand{\blockend}{\end{block}}
+
+\usepackage{graphics}
+
+% allows to add alignment keys to \includegraphics
+\usepackage[export]{adjustbox}
+
+% % subfigures
+% \usepackage{subcaption}
+% \usepackage{wrapfig}
+
+%\addto{\captionsrussian}{\renewcommand*{\figurename}{рис.}}
+
+% Tables
+% Define new column types to adjust sizes in tabular environment
+% For example, \begin{tabular}{ L{2.3cm} C{2cm} C{1.5cm} C{2.5cm} C{4cm}}
+\usepackage{array}
+\renewcommand{\arraystretch}{2}
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+
+%\logo{\includegraphics[height=0.3cm]{assets/Linmod_logo.png}}
+
+
+% redefine beamer footline
+\setbeamertemplate
+{footline}{\quad\hfill\insertframenumber/\inserttotalframenumber\strut\quad}
+
+%\pgfdeclareimage[height=0.2787cm, width=2.5cm]{logo}{figure/logos.jpg}
+
+%\logo{\pgfuseimage{logo}}
+
+\titlegraphic{\includegraphics[width=5cm,height=2.5cm]{figure/logos.jpg}}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={Экологические аспекты распространения трансмиссивной неоплазии двустворчатых моллюсков (BTN) в поселениях мидий Тауйской губы Охотского моря},
+  pdfauthor={Вадим Хайтов, Юлия Маченко, Иван Кожин, Мария Майорова, Сергей Маловенда, Петр Стрелков},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Экологические аспекты распространения трансмиссивной неоплазии
+двустворчатых моллюсков (BTN) в поселениях мидий Тауйской губы Охотского
+моря}
+\author{Вадим Хайтов, Юлия Маченко, Иван Кожин, Мария Майорова, Сергей
+Маловенда, Петр Стрелков}
+\date{}
+
+\begin{document}
+\frame{\titlepage}
+
+\section{Bivalvia Transmissible Neoplasia (BTN) --- Заразный рак у
+двустворчатых
+моллюсков}\label{bivalvia-transmissible-neoplasia-btn-ux437ux430ux440ux430ux437ux43dux44bux439-ux440ux430ux43a-ux443-ux434ux432ux443ux441ux442ux432ux43eux440ux447ux430ux442ux44bux445-ux43cux43eux43bux43bux44eux441ux43aux43eux432}
+
+\begin{frame}[fragile]{Bivalvia Transmissible Neoplasia (BTN) ---
+Заразный рак у двустворчатых моллюсков}
+\columnsbegin
+  \column{0.5\textwidth}
+
+\begin{itemize}
+\item
+  Раковые клетки гемолимфы являются инфекционным агентом.
+
+\begin{verbatim}
++ Клон злокачественных клеток передается от одной особи к другой через морскую воду.
+
++ Впервые описано у *Mya arenaria* (+++)
+
++ Заболевание выявлено у многих систематическ долеких видов (*Mytilus*, *Cerastoderma* и др.)
+\end{verbatim}
+
+  \column{0.48\textwidth}
+
+  \begin{figure}
+      \centering
+          \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./figure/Place_holder.png}
+
+  \end{figure}
+\end{itemize}
+
+\columnsend
+\end{frame}
+
+\section{Спасибо за
+внимание!}\label{ux441ux43fux430ux441ux438ux431ux43e-ux437ux430-ux432ux43dux438ux43cux430ux43dux438ux435}
+
+\end{document}

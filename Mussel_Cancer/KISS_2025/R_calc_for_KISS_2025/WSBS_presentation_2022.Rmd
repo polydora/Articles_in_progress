@@ -1,0 +1,85 @@
+---
+title: |
+    Экологические аспекты распространения трансмиссивной неоплазии двустворчатых моллюсков (BTN) в поселениях мидий Тауйской губы Охотского моря
+author: "Вадим Хайтов, Юлия Маченко, Иван Кожин, Мария Майорова, Сергей Маловенда, Петр Стрелков"
+date: ' '
+output:
+  beamer_presentation:
+    colortheme: "beaver"
+    highlight: tango
+    includes:
+      in_header: ./includes/header.tex
+    latex_engine: xelatex
+    slide_level: 2
+    theme: "Singapore"
+    toc: no
+
+---
+
+
+```{r setup, include = FALSE, purl = FALSE}
+# output options
+options(width = 70, scipen = 6, digits = 3)
+library(knitr)
+# chunk default options
+# opts_chunk$set(fig.align='center', tidy = FALSE, fig.width = 7, fig.height = 3, warning = FALSE)
+opts_chunk$set(fig.show='hold', size='footnotesize', comment="#", warning=FALSE, message=FALSE, dev='cairo_pdf', cache = TRUE, echo = FALSE)
+library("extrafont")
+```
+
+
+
+
+```{r}
+
+library(sp)
+library(ggmap)
+library(mapproj)
+library(maps)
+
+library(ggmap)
+library(readxl)
+library(ggrepel)
+library(dplyr)
+library(reshape2)
+library(cowplot)
+library(magrittr)
+library(patchwork)
+library(vegan)
+library(mgcv)
+library(gratia)
+library(broom.mixed) 
+
+
+default_theme <- theme_bw() + theme(axis.text = element_text(size = 15), axis.title = element_text(size = 20) )
+
+theme_set(default_theme)
+
+```
+
+# Bivalvia Transmissible Neoplasia (BTN) — Заразный рак у двустворчатых моллюсков
+
+
+\columnsbegin
+  \column{0.5\textwidth} 
+      + Раковые клетки гемолимфы являются инфекционным агентом.
+      
+      + Клон злокачественных клеток передается от одной особи к другой через морскую воду.
+
+      + Впервые описано у *Mya arenaria* (+++)
+      
+      + Заболевание выявлено у многих систематическ долеких видов (*Mytilus*, *Cerastoderma* и др.)
+
+  \column{0.48\textwidth}
+
+  \begin{figure}
+      \centering
+          \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./figure/Place_holder.png}
+
+  \end{figure}
+
+\columnsend
+
+
+# Спасибо за внимание! 
+
