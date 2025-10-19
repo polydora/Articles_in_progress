@@ -41,7 +41,7 @@ Pl_map_local <-
 
 
 
-range_data_1 <- st_read("Data/Bird_Range_Polygons/Phylloscopus collybita.kml")
+range_data_1 <- st_read("Data/Bird_Range_Polygons/Ficedula albicilla.kml")
 
 
 range_data_1$Name = c("Wintering", "Breeding")
