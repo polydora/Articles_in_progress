@@ -35,16 +35,17 @@ library(scatterpie)
 world <- ne_countries(scale = "medium", returnclass = "sf")
 
 # Фильтрация стран Евразии по континенту
-eurasia <- subset(world, continent %in% c("Europe", "Asia", "Africa"))
+# eurasia <- subset(world, continent %in% c("Europe", "Asia", "Africa"))
 
 # Построение карты Евразии
 Pl_map <- 
-ggplot(data = eurasia) +
-  geom_sf(fill = "lightgreen", color = "gray30") +
-  coord_sf(
-    xlim = c(10, 110),   # Долгота: от Португалии до Японии
-    ylim = c(0, 60)     # Широта: от Индонезии до России
-  ) 
+ggplot(data = world) +
+  geom_sf(fill = "lightgreen", color = "gray30") 
+# +
+#   coord_sf(
+#     xlim = c(10, 110),   # Долгота: от Португалии до Японии
+#     ylim = c(0, 60)     # Широта: от Индонезии до России
+#   ) 
 
 Pl_map_local <- 
 ggplot(data = eurasia) +

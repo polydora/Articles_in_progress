@@ -1,0 +1,209 @@
+---
+title: "Географическое распространение BTN/DN"
+author: ""
+date: ""
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+
+opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+
+```{r}
+library(vegan)
+library(dplyr)
+library(broom)
+library(readxl)
+library(ggmap)
+library(maps)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(reshape2)
+library(scatterpie)
+library(cowplot)
+
+
+```
+
+
+```{r}
+theme_set(theme_bw())
+```
+
+
+```{r}
+
+# Загрузка данных о странах мира
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+# Фильтрация стран Евразии по континенту
+# eurasia <- subset(world, continent %in% c("Europe", "Asia", "Africa"))
+
+Pl_map <- 
+ggplot(data = world) +
+  geom_sf(fill = "gray50", color = "gray50") +
+  theme_map()  
+
+
+
+
+btn_geography <- read_excel("Data/MtBTN geography 2025.xlsx", sheet = "Data_for_analyzis")
+
+btn_Magadan <- read_excel("Data/summary table_Magadan_itog.xlsx", sheet = "data")
+
+btn_Kola <- read_excel("Data/Кольский рак было-стало.xlsx")
+
+
+dn_world <- read_excel("Data/World_DN_prevalence.xlsx", na = "NA")
+
+
+
+
+
+# Унификация записей в разных датасетах
+
+btn_geography_uni <- 
+  btn_geography %>% 
+  select(Sample_ID, Year, Lat, Lon, DN) %>% 
+  rename(Site_code = Sample_ID) %>% 
+  mutate(BTN_presence = ifelse(DN == 0, "no", "yes")) %>% 
+  select(-DN) %>% 
+  mutate(Dataset = "Our geography") %>% 
+  arrange(BTN_presence)
+
+
+btn_Magadan_uni <-
+btn_Magadan %>% 
+  select(Site_code, Year, Lat, Lon, DN_FC) %>% 
+  rename(DN = DN_FC) %>% 
+  mutate(BTN_presence = ifelse(DN == 0, "no", "yes")) %>% 
+  select(-DN) %>% 
+  mutate(Dataset = "Magadan") %>% 
+  arrange(BTN_presence)
+
+
+btn_Kola_uni <-
+  btn_Kola %>% 
+  select(Site, Year, Latitude, Longitude, BTN) %>% 
+  rename(Site_code = Site, Lat = Latitude, Lon = Longitude) %>% 
+  mutate(BTN_presence = ifelse(BTN == "no", "no", "yes")) %>% 
+  select(-BTN) %>% 
+  mutate(Dataset = "Kola") %>% 
+  arrange(BTN_presence)
+
+
+btn_world_uni <-
+  dn_world %>% 
+  select(Site, Year, Lat, Lon,N_DN) %>% 
+  rename(Site_code = Site, DN = N_DN) %>% 
+  mutate(BTN_presence = ifelse(DN == 0, "no", "yes")) %>% 
+  select(-DN) %>% 
+  mutate(Dataset = "World") %>% 
+  arrange(desc(BTN_presence))
+
+
+
+```
+
+
+## Присуствие DN/BTN по данным анализа литературы
+
+```{r}
+Pl_map + 
+  geom_point(data = btn_world_uni %>% filter(complete.cases(.)), aes(x = Lon, y = Lat, fill = BTN_presence), size = 2, position = position_jitter(width = 0.1, height = 0.01), shape = 21, alpha = 0.8) +
+  scale_fill_manual(values = c("yellow", "red")) +
+  guides(fill = "none") 
+```
+
+
+
+## Присуствие BTN по нашим данным
+
+```{r}
+Pl_map + 
+  geom_point(data = btn_geography_uni, aes(x = Lon, y = Lat, fill = BTN_presence), size = 2, position = position_jitter(width = 0.1, height = 0.01), shape = 21, alpha = 0.8) +
+  geom_point(data = btn_Kola_uni, aes(x = Lon, y = Lat, fill = BTN_presence), size = 2, position = position_jitter(width = 0.1, height = 0.01), shape = 21, alpha =  0.8) +
+  geom_point(data = btn_Magadan_uni, aes(x = Lon, y = Lat, fill = BTN_presence), size = 2, position = position_jitter(width = 0.1, height = 0.01), shape = 21, alpha =  0.8) +
+  scale_fill_manual(values = c("yellow", "red")) +
+  guides(fill = "none") 
+```
+
+
+## Отдельно Приморье
+
+```{r}
+ggplot(data = world) +
+  geom_sf(fill = "gray50", color = "gray50") +
+  theme_map()  +
+  coord_sf(
+    xlim = c(130, 170),   
+    ylim = c(40, 65)  
+  ) +
+   geom_point(data = btn_geography_uni, aes(x = Lon, y = Lat, fill = BTN_presence), size = 3, shape = 21, alpha = 0.8)+
+  scale_fill_manual(values = c("yellow", "red")) +
+  guides(fill = "none") 
+```
+
+
+
+## Кольский залив
+
+```{r}
+
+
+Murmansk_region <- st_read("Data/Maps/Murmanskaya_obl/boundary-polygon-land-lvl4.shp", quiet =  TRUE)
+
+Pl_kola <- 
+ggplot() +
+  geom_sf(data = Murmansk_region, fill = "gray50") +
+  coord_sf(
+    xlim = c(32.96, 33.62),  
+    ylim = c(68.9, 69.3)) +
+  theme_bw()+
+  theme(axis.text = element_blank(), axis.ticks = element_blank(), panel.grid = element_blank())
+  
+
+kola_cancer <- read_excel("Data/Кольский рак было-стало.xlsx")
+
+kola_cancer <-
+  kola_cancer %>% 
+  arrange((BTN))
+
+Pl_kola + 
+  geom_point(data = kola_cancer, aes( x = Longitude, y = Latitude, fill = BTN), shape = 21, size = 4, position = position_jitter(width = 0.02, height = 0.001)) +
+  facet_wrap(~Period, ncol = 2) +
+  scale_fill_manual(values = c("yellow", "red")) +
+  labs(x = "", y = "")
+
+```
+
+
+
+## BTN в Тауйской губе
+
+
+```{r}
+load("Data/gg_Magadan_large.RData")
+
+Magadan <- data.frame(long = 150 + 48/60, lat = 59 + 34/60)
+
+Pl_Magadan <- 
+ggplot(gg_Magadan_large, aes(x = long, y = lat, group = group)) + 
+  geom_polygon(fill = "gray50") + 
+  coord_map(xlim = c(150., 151.52), ylim = c(59.4, 59.8) ) +
+  theme(plot.margin = unit(c(0, 0, 0, 0), "cm")) +
+  theme_map() 
+
+Pl_Magadan +
+  geom_point(data = btn_Magadan_uni, aes(x = Lon, y = Lat, fill = BTN_presence, group = 1), size = 3, position = position_jitter(width = 0.009, height = 0.003), shape = 21, alpha =  0.8) +
+  scale_fill_manual(values = c("yellow", "red")) +
+  guides(fill = "none") 
+  
+
+```
+
+

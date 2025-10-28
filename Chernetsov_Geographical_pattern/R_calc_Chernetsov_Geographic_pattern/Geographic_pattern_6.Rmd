@@ -1,0 +1,671 @@
+---
+title: "Пространственные паттерны в отловах птиц"
+output: html_document
+date: ""
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+
+```{r}
+library(vegan)
+library(dplyr)
+library(broom)
+library(readxl)
+library(ggmap)
+library(maps)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(reshape2)
+library(scatterpie)
+
+
+```
+
+
+
+```{r}
+
+# Загрузка данных о странах мира
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+# Фильтрация стран Евразии по континенту
+eurasia <- subset(world, continent %in% c("Europe", "Asia", "Africa"))
+
+# Построение карты Евразии
+Pl_map <- 
+ggplot(data = world) +
+  geom_sf(fill = "lightgreen", color = "gray30") 
+# +
+#   coord_sf(
+#     xlim = c(10, 110),   # Долгота: от Португалии до Японии
+#     ylim = c(0, 60)     # Широта: от Индонезии до России
+#   ) 
+
+Pl_map_local <- 
+ggplot(data = eurasia) +
+  geom_sf(fill = "lightgreen", color = "gray30") +
+  coord_sf(
+    xlim = c(40, 90),   # Долгота: от Португалии до Японии
+    ylim = c(35, 60)     # Широта: от Индонезии до России
+  ) 
+
+```
+
+
+```{r}
+points <- read_excel("Data/Table1.xls", sheet = "Coordinates")
+
+
+```
+
+## Расположение точек отлова 
+
+
+
+```{r}
+birds <-  read_excel("Data/Table1.xls", sheet = "Data")
+
+efort <- read_excel("Data/Table1.xls", sheet = "Sampling effort")
+
+birds2 <- birds/efort$n
+
+```
+
+<!-- В качестве матрицы зависимых переменных будем использовать количество пойманных птиц деленное на количество дней отловов. То есть количество птиц данного вида, приходящееся на один день отлова. -->
+
+<!-- ```{r} -->
+<!-- kable(efort) -->
+<!-- ``` -->
+
+
+
+```{r}
+birds3 <- 
+  birds2 %>% 
+  decostand(method = "total", MARGIN = 2)
+
+birds3$Site <- points$Site
+
+```
+
+
+Так выглядит карта расположения точек отлова птиц.Размер точки пропорционален количеству дней отлова.
+
+```{r}
+Pl_map_local +
+  geom_point(data = points, aes(x = Lon, y = Lat, size = efort$n)) +
+  labs(size = "catch efforts")
+```
+
+
+
+
+<!-- ## Модель географической приуроченности видов -->
+
+<!-- Главными предикторами, в соответствии с задачей, будем рассматривать географические координаты (Lon, Lat). Однако, как справедливо было отмечено, соотношение численностей видов птиц может контролироваться еще и тем, в какой стации были установлены сети. Для обхода этой проблемы предлагается в качестве ковариат использовать также общее обилие трех групп птиц, различающихся по своей "экологии".Группы далее обозначаются так -->
+
++ **Phyl** - "пеночки"
++ **Acro** - "камышевки"
++ **Fice** - "мухоловки"
+
+
+```{r}
+species <- read_excel("Data/Table1.xls", sheet = "Species")
+
+birds %>% 
+  mutate(Site = points$Site) %>% 
+  melt(variable.name = "Species_code") %>% 
+  merge(., species) %>% 
+  select(Species_code, Site, value, Group) %>% 
+  group_by(Site, Group) %>% 
+  summarise(N_Group = sum(value)) %>% 
+  dcast(formula = Site ~ Group) %>% 
+  merge(points, .,  by = "Site") %>% 
+  merge(efort, .,  by = "Site") %>% 
+  select(-Years) ->
+  points_group_proportion
+
+
+birds3 %>% 
+  merge(points_group_proportion) %>% 
+  select(-c( "Site", "Lat",  "Lon",  "Acro", "Fice", "Phyl", "n")) ->
+  birds4
+```
+
+
+
+<!-- Для контроля вывожу таблицу с оценкой обилия птиц каждой группы на сайтах. Это суммарное количество птиц каждой группы. -->
+
+```{r}
+
+points_group_proportion <-
+  points_group_proportion %>%
+  mutate(Acro_per_Day = Acro / n,
+         Fice_per_Day = Fice / n,
+         Phyl_per_Day = Phyl / n,
+         Prop_Acro = Acro_per_Day / (Acro_per_Day + Fice_per_Day + Phyl_per_Day),
+         Prop_Fice = Fice_per_Day / (Acro_per_Day + Fice_per_Day + Phyl_per_Day),
+         Prop_Phyl = Phyl_per_Day / (Acro_per_Day + Fice_per_Day + Phyl_per_Day)
+         )
+
+
+# points_group_proportion %>%
+  # select(Site, Lat, Lon,  Acro, Fice, Phyl) %>%
+  # kable()
+```
+
+
+<!-- А это в пересчете на один день отлова (именно эту величину я далее буду использовать в качестве ковариаты). -->
+
+<!-- ```{r} -->
+<!-- points_group_proportion %>%  -->
+<!--   select(Site, Lat, Lon,  Acro_per_Day, Fice_per_Day, Phyl_per_Day) %>%  -->
+<!--   kable(digits = c(NA, 5, 5, 1,1,1)) -->
+
+<!-- ``` -->
+
+
+<!-- Теперь про зависимую переменную. Моделировать, на мой взгляд, надо вероятность встречи *вида* среди отловленных птиц. Соответственно, это будет доля каждого вида в общей численности пойманных на данной станции птиц.    -->
+
+```{r}
+
+mod <- cca(birds4 ~ Acro_per_Day + Fice_per_Day + Phyl_per_Day + Lat + Lon , data = points_group_proportion)
+
+# summary(mod)
+
+```
+
+
+
+```{r}
+
+species_data <- read_excel("Data/Table1.xls", sheet = "Species")
+
+```
+
+
+```{r}
+CCA_species <- as.data.frame(scores(mod)$species)
+
+
+group1 <-
+CCA_species %>% 
+  filter(CCA2 >0 ) %>% 
+  row.names()
+
+geogr_group1 <- data.frame(Name = group1, Rus_name = species$Species[species$Species_code %in% group1], Sci_Name = species$Sci_Name[species$Species_code %in% group1])
+
+
+group2 <-
+CCA_species %>% 
+  filter(CCA2 < 0 ) %>% 
+  row.names()
+
+
+geogr_group2 <- data.frame(Name = group2, Rus_name = species$Species[species$Species_code %in% group2], Sci_Name = species$Sci_Name[species$Species_code %in% group2])
+
+
+```
+
+
+
+```{r}
+centroids <- 
+  read_excel("Data/Table1.xls", sheet = "Range_centroids")
+```
+
+
+
+
+```{r}
+map_draw <- function(Sci_name = "Phylloscopus trochiloides"){
+  
+    df <- 
+    birds4 %>% select(species$Species_code[species$Sci_Name == Sci_name])
+  
+  tr_name <- 
+    species_data %>% 
+    filter(Sci_Name == Sci_name) %>% 
+    pull(Species)
+  
+  points_non_zero <- 
+    points_group_proportion %>% 
+    filter(df[,1] != 0)
+  
+  df_non_zero <- 
+    df %>% 
+    filter(df[,1] != 0)
+  
+  range_data <- st_read(paste("Data/Bird_Range_Polygons/", Sci_name, ".kml", sep = ""), quiet =  TRUE)
+  
+  # if(Sci_name == "Ficedula parva") range_data$Name = c("Nesting", "Wintering", "Wintering") 
+  
+  # else 
+  
+  if(species$Reversed[species$Sci_Name == Sci_name] == 0) range_data$Name = c("Wintering", "Nesting") else range_data$Name = c("Nesting", "Wintering")
+  # 
+  
+centr <-   
+centroids %>% 
+  filter(Name == Sci_name)
+  
+  
+  Pl_map +
+    ggtitle(paste(Sci_name, " (", species$Species[species$Sci_Name == Sci_name],")", sep ="")) +
+    geom_sf(data = range_data, aes(fill = Name), alpha = 0.7) +
+    geom_point(data = points_non_zero, aes(x = Lon, y = Lat, size = df_non_zero[, 1])) +
+    guides(size = "none") +
+    coord_sf(
+    xlim = c(-10, 120),   # Долгота: от Португалии до Японии
+    ylim = c(-10, 70)) +
+    geom_point(data = centr, aes(x = Lon, y = Lat, shape = Range_type), size = 3, fill = "yellow") +
+    scale_shape_manual(values = c(21, 22))
+  
+ } 
+
+
+
+
+
+```
+
+
+```{r}
+map_draw_without_catching_points <- function(Sci_name = "Phylloscopus tristis"){
+  
+  species <- read_excel("Data/Species_polygon_revision.xlsx")
+  
+  range_data <- st_read(paste("Data/Bird_Range_Polygons/", Sci_name, ".kml", sep = ""), quiet = TRUE)
+  
+  if(species$Correct_area_Type[species$Sci_Name == Sci_name] == 0) range_data$Name = c("Nesting", "Wintering") else range_data$Name = c("Wintering", "Nesting")
+  # 
+  
+centr <-   
+centroids %>% 
+  filter(Name == Sci_name)
+  
+  
+  Pl_map +
+    ggtitle(paste(Sci_name, " (", species$Species[species$Sci_Name == Sci_name],")", sep ="")) +
+    geom_sf(data = range_data, aes(fill = Name), alpha = 0.7) +
+    coord_sf(
+    xlim = c(-10, 120),   # Долгота: от Португалии до Японии
+    ylim = c(-10, 70)) +
+    geom_point(data = centr, aes(x = Lon, y = Lat, shape = Range_type), size = 3, fill = "yellow") +
+    scale_shape_manual(values = c(21, 22))
+}
+```
+
+
+<!-- ```{r} -->
+<!-- data_draw <- function(species = "Phyl_trol", Distination = c("India") ){ -->
+
+<!--   distination_countries <- subset(world, name %in% Distination) -->
+
+<!--   df <-  -->
+<!--     birds4 %>% select(species) -->
+
+<!--   tr_name <-  -->
+<!--     species_data %>%  -->
+<!--     filter(Species_code == species) %>%  -->
+<!--     pull(Species) -->
+
+<!--   points_non_zero <-  -->
+<!--     points_group_proportion %>%  -->
+<!--     filter(df[,1] != 0) -->
+
+<!--   df_non_zero <-  -->
+<!--     df %>%  -->
+<!--     filter(df[,1] != 0) -->
+
+<!--   df_print <- -->
+<!--     cbind(points_non_zero$Site, df_non_zero) -->
+
+<!--   kable(df_print, col.names = c("Site", "Proportion") ) -->
+<!--  }  -->
+
+<!-- ``` -->
+
+
+Чтобы не путать с "экологическими" группами видов буду использовать термин "географическая группа"
+
+
+Вот состав этих географических групп.
+
+Географическая группа 1: `r paste(group1)`.
+
+Географическая группа 2: `r paste(group2)`.
+
+
+## Карты отловов географическоой группы 1 (положительные значения CCA2)
+
+Здесь и далее приводятся только ненулевые точки отловов. Размер точки пропорционален вероятности отлова. Желтые точки демонстрируют центроиды соответcnвующих полигонов.
+
+
+```{r}
+map_draw(geogr_group1$Sci_Name[1])
+
+```
+
+
+
+```{r}
+map_draw(geogr_group1$Sci_Name[2])
+```
+
+
+
+```{r}
+map_draw(geogr_group1$Sci_Name[3])
+```
+
+
+```{r}
+map_draw(geogr_group1$Sci_Name[4])
+```
+
+
+
+```{r}
+map_draw(geogr_group1$Sci_Name[5])
+```
+
+
+```{r}
+map_draw(geogr_group1$Sci_Name[6])
+```
+
+
+## Карты отловов географической группы 2 (отрицательные значения CCA2)
+
+
+
+```{r}
+map_draw(geogr_group2$Sci_Name[1])
+```
+
+Здесь, как я понял, есть проблема с тем, что Теньковку (*Phylloscopus collybita*) могут путать с *Phylloscopus tristis* (как это по-русски?). Соответственно, привожу ареалы для второго вида.
+
+
+```{r}
+map_draw_without_catching_points("Phylloscopus tristis")
+
+```
+
+Здесь и далее (ситуация с двумя видами *Facedula*) я впадаю в ступор. Считать ли *Phylloscopus collybita* и *Phylloscopus tristis* одним видом? Если да, то я должен объединить их ареалы и, соответственно, будут иными центроиды. Или, что тоже, по-моему, правильно, мы считаем, что значения CCA2, которые описывают паттерн отлова видов отражают положение на ординации сразу двух видов. Дальше, пока, буду двигаться по второму пути.  
+
+
+```{r}
+map_draw(geogr_group2$Sci_Name[2])
+```
+
+
+
+```{r}
+map_draw(geogr_group2$Sci_Name[3])
+```
+
+
+```{r}
+map_draw(geogr_group2$Sci_Name[4])
+```
+
+
+
+
+```{r}
+map_draw(geogr_group2$Sci_Name[5])
+```
+
+
+
+
+```{r}
+map_draw(geogr_group2$Sci_Name[6])
+```
+
+
+Аналогичная теньковкам ситуация. Вот карта для *Ficedula albicilla*
+
+
+```{r}
+map_draw_without_catching_points("Ficedula albicilla")
+```
+
+Здесь, возможно, чуть проще, чем в предыдущем случае, так как места зимовки у двух видов очень близки.
+
+
+```{r}
+map_draw(geogr_group2$Sci_Name[7])
+```
+
+
+
+```{r}
+map_draw(geogr_group2$Sci_Name[8])
+```
+
+
+
+## Итого
+
+
+
+
+Теперь внимательно смотрим на связь между ординацией видов по CCA2 и центроидами их мест зимовок
+
+```{r}
+
+# Подготовка даных по CCA2 и центроидам
+
+CCA_species$Species_code <- rownames(CCA_species)
+
+merge(CCA_species, species) %>% 
+  select(Species_code, Sci_Name, CCA2) ->
+  CCA2_species
+
+centroids %>% 
+  select(Sci_Name, Range_type, Lon, Lat) ->
+  centroids
+
+CCA2_species_centroids <-
+merge(CCA2_species, centroids, all.y = T) 
+
+
+CCA2_species_centroids <- 
+  CCA2_species_centroids %>% 
+  mutate(Species_code = ifelse(Sci_Name == "Ficedula albicilla", "Fice_albi", Species_code),
+         CCA2 = ifelse(Sci_Name == "Ficedula albicilla", -1.0531838, CCA2)) 
+
+CCA2_species_centroids$Species_code[c(31, 32)] <- "Phyl_tris"
+CCA2_species_centroids$CCA2[c(31, 32)] <- -0.3188532
+
+
+
+```
+
+
+```{r}
+library(ggrepel)
+# 
+# Pl_dots <-
+# CCA2_species_centroids %>% 
+#   filter(Range_type == "Wintering") %>% 
+#   ggplot(aes(x = CCA2, y = Lon)) +
+#   geom_point() 
+
+
+Pl_dots_names <-
+CCA2_species_centroids %>% 
+  filter(Range_type == "Wintering") %>% 
+  ggplot(aes(x = Lon, y = Lat)) +
+  geom_point(aes(color = CCA2), size = 3) +
+  geom_text_repel(aes(label = Species_code)) +
+  scale_color_gradient(high = "red", low = "yellow")
+
+
+Pl_dots_names
+```
+
+Видно, что вырисовываются два облака. Левое это африканские зимовщики, правое - Индо-Азиатские зимовщики. Те виды, что зимуют в Африке, в основном, имеют отрицательные нагрузки по ССА2 Большинство видов, что зимуют в Индии и Азии имеют положительные нагрузки по ССА2.
+
+Эту картинку лучше смотреть вот так
+
+
+
+```{r}
+library(MASS)
+
+CCA2_species_centroids$Range_type <- factor(CCA2_species_centroids$Range_type)
+# 
+# Mod_cca2 <- gam(CCA2 ~ s(Lon, by = Range_type) + s(Lat, by = Range_type) + Range_type, data =  CCA2_species_centroids )
+
+Mod_cca2 <- rlm(CCA2 ~ Lon , data =  CCA2_species_centroids %>% filter(Range_type == "Wintering"), maxit = 100)
+
+# library(car)
+# vif(Mod_cca2)
+
+# summary(Mod_cca2)
+```
+
+
+
+
+```{r}
+# Фильтруем данные
+wintering_data <- CCA2_species_centroids %>% 
+  filter(Range_type == "Wintering")
+
+# Строим робастную модель
+robust_model <- rlm(CCA2 ~ Lon, data = wintering_data, maxit = 100)
+
+# Создаем данные для предсказания
+pred_data <- data.frame(
+  Lon = seq(min(wintering_data$Lon), 
+            max(wintering_data$Lon), 
+            length.out = 100)
+)
+
+# Предсказания с интервалами
+predictions <- predict(robust_model, newdata = pred_data, 
+                       interval = "prediction", level = 0.90)
+
+# Объединяем с данными для графика
+pred_data <- cbind(pred_data, predictions)
+
+# Строим график
+ggplot(wintering_data, aes(x = Lon, y = CCA2)) +
+  geom_point(aes(color = CCA2), size = 3) +
+  geom_text_repel(aes(label = Species_code)) +
+  scale_color_gradient(high = "red", low = "yellow") +
+  geom_ribbon(data = pred_data, 
+              aes(y = fit, ymin = lwr, ymax = upr), 
+              alpha = 0.2, fill = "blue") +
+  geom_line(data = pred_data, aes(y = fit), color = "blue", size = 1) +
+  geom_smooth(method = "rlm", method.args = list(maxit = 100)) +
+  labs(x = "Longitude Wintering range centroid")
+
+
+```
+
+Здесь вписана робустная регрессия (т.е. линия, проходящая наилучшим образом через наиболее выраженное облако точек, типа основную тенденцию). Здесь я привел помимо 95% доверительного интервала для самой линии регрессии, еще и 90% интервал предсказания. Почему 90%? Чтобы хоть что-то было видно, чисто валюнтаристски. Короче говоря, в этот интервал должно попадать 90% предсказанных моделью значений, те, которые не попадают, - это аутлаеры, которые не вписываются в общую тенденцию. 
+
+Смысл всего этого заключается в том, что "нулевая модель" для рассуждений, как мне кажется, заключается в том, что куда ты летишь (на запад в Африку или на восток в Азию) определяет то, где тебя больше ловят (ССА2). Но! аутлаеры - это в некотором смысле "уроды", которые летят вопреки. Может это именно то, что мы ищем? Эти аутлаеры что-то значат?
+
+Глядя своими неспециализированными глазами, вижу, следующее.
+
++  Fice_prav (+Fice_albi) много ловится на западе, хотя ей лететь на восток. 
++  Acro_scir ловится часто на востоке, но лететь ей на запад, в Африку.
++  Phyl_inor, почему-то ловится на сильно западнее своего гнездового ареала, хотя лететь ей на восток. Может она Гималаи огибает?
++  Phyl_trol, наоборот ведет себя очень логично. Ловится ровно в пределах ареала гнездования. Но сам ареал у нее какой-то шизанутый. Что за хвост там такой на востоке?
+
+
+
+
+
+
+
+<!-- Из 6 видов первой географической группы (Положительно связаны с CCA2) 5 летит в Индию и Ю-В Азию. -->
+
+<!-- Из 8 видов второй географической группы (Отрицательно связаны с CCA2) 7 летит в Африку.  -->
+
+
+<!-- По-моему, неплохая дифференцирующая сила для модели. -->
+
+<!-- Ну и для обобщения, вот карта с распределением значений нагрузок по CCA2. Здесь размер точки пропорционален значению CCA2, а заливка обозначает CCA2 больше нуля  (зеленые, по идее на сайте доминируют птицы из географической группы 1) или CCA2 меньше нуля (розовые, доминируют виды из географической группы 2).  -->
+
+
+<!-- ```{r} -->
+<!-- df <-  -->
+<!--   points_group_proportion %>%  -->
+<!--   mutate(CCA1 = scores(mod)$sites[,1], CCA2 = scores(mod)$sites[,2]) -->
+
+<!-- df <- -->
+<!--   df %>%  -->
+<!--   mutate(Geographic_Group = ifelse(CCA2 > 0, "Geo_Group1", "Geo_Group2")) -->
+
+<!-- Pl_map + -->
+<!--   geom_point(data = df, aes(x = Lon, y = Lat, size = CCA2, fill = Geographic_Group), shape = 21) + -->
+<!--   scale_fill_manual(values = c("green", "pink")) -->
+
+<!-- ``` -->
+
+
+
+<!-- ```{r} -->
+<!-- CCA_species$Sci_Name <- species$Sci_Name[species$Species_code %in% row.names(CCA_species)] -->
+
+<!-- centroids %>%  -->
+<!--   select(Sci_Name, Range_type, Lat, Lon) %>%  -->
+<!--   melt() %>%  -->
+<!--   dcast(formula = Sci_Name ~ Range_type + variable ) %>%  -->
+<!--   merge(CCA_species, by = "Sci_Name") -> -->
+<!--   ordination_df -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+
+<!-- mod_CCA2 <- lm(CCA2 ~  Wintering_Lat + Wintering_Lon, data = ordination_df) -->
+
+<!-- library(car) -->
+
+<!-- vif(mod_CCA2) -->
+
+
+<!-- summary(mod_CCA2) -->
+<!-- ``` -->
+
+
+
+
+
+<!-- ```{r} -->
+<!-- ordination_df %>%  -->
+<!--   ggplot(aes(x = CCA2, y = Nesting_Lat)) + -->
+<!--   geom_point() -->
+
+
+<!-- ordination_df %>%  -->
+<!--   ggplot(aes(x = CCA2, y = Wintering_Lon)) + -->
+<!--   geom_point() -->
+
+<!-- ordination_df %>%  -->
+<!--   ggplot(aes(x = CCA2, y = Wintering_Lat)) + -->
+<!--   geom_point() -->
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- hist(residuals(mod_CCA2)) -->
+
+<!-- ordination_df[7,] -->
+
+<!-- ``` -->
+
