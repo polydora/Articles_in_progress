@@ -1,0 +1,755 @@
+---
+title: ''
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+Sys.setlocale("LC_TIME", "en_US.UTF-8")
+```
+
+
+```{r Пакеты}
+library(dplyr)
+library(ggplot2)
+library(readxl)
+library(flextable)
+library(lubridate)
+library(mgcv)
+library(gratia)
+library(cowplot)
+library(reshape2)
+
+theme_set(theme_bw())
+```
+
+
+```{r}
+gadus <- read_excel("Data/ТРЕСКА_LONG-TERM_CHANGES.xlsx")
+
+gadus <-
+gadus %>% 
+  mutate(Date2 = as.POSIXct(as.Date(Date2, format = "%d.%m.%Y")), 
+         DOY = yday(Date2), Month = month(Date2, label = TRUE), DOM = day(Date2))
+
+
+
+```
+
+
+## Размерная структура
+
+```{r}
+gadus %>% 
+  ggplot(aes(x = factor(Year), y = L)) +
+  geom_boxplot() +
+  geom_hline(yintercept = mean(gadus$L), linetype = 2) +
+   scale_y_continuous(breaks = seq(0, max(gadus$L), by = 5)) +
+  labs(x = "Year", y = "Length, cm")
+  
+
+```
+
+- Прислать абсолютные значения средних длин трески за разные годы (нужен размах колебаний). Какова среднемноголетняя величина размеров трески, приведенная на рисунке?  
+
+```{r}
+gadus %>% 
+  group_by(Year) %>% 
+  summarise(Mean_L = mean(L), SD = sd(L), Min = min(L), Max = max(L)) %>% 
+  kable()
+```
+
+По всему материалу
+
+```{r}
+gadus %>% 
+  summarise(Mean_L = mean(L), SD = sd(L), Min = min(L), Max =max(L)) %>% 
+  kable()
+
+```
+
+- На оси ординат (Length, cm) нанести более дробные значения длины (по 5 см), чтобы было понятно среднемноголетнее значение и размах колебаний по годам. 
+
+**Сделал**
+
+- Разобраться с сезонной динамикой размерного состава выборок
+
+Иного способа, кроме построения модели, где зависимой переменной будет длина, а предикторами год и DOY, не вижу. Проблема будет в том, что модель, конечно покажет значимую связь с годом.
+
+```{r}
+Model_L <-  gam(L ~ s(Year) + s(DOY), data = gadus)
+```
+
+Вот результаты подбора этой модели.
+
+```{r}
+summary(Model_L)
+```
+
+Видно, что значимой связи с сезоном нет, но если этот вопрос поднимать, то придется объяснять что-то про динамику размера.
+
+
+## Динамика полового состава
+
+```{r}
+gadus %>% 
+  group_by(Year) %>% 
+  summarise(Prop_f = mean(Sex == "female", na.rm = T), SE = sqrt( (Prop_f *(1 - Prop_f))/n())) %>% 
+  ggplot(aes(x = Year, y = Prop_f)) +
+  geom_path() +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = Prop_f - SE, ymax = Prop_f + SE), width = 0.2) + 
+  geom_hline(yintercept = mean(gadus$Sex == "female", na.rm = T), linetype = 2) +
+  labs(x = "Year", y = "Frequency of females")
+
+```
+
+
+
+# Общее описание рациона
+
+```{r}
+
+gadus %>% 
+  select(-Date, -W, - Date2) %>% 
+  melt(id.vars = c("Id", "Year", "DOY","Month", "DOM",  "Sex", "L"), variable.name = "Species", value.name = "Weight") ->
+  gadus_long
+
+gadus_long <-
+  gadus_long %>% 
+  mutate(Decade = case_when(DOM %in% 1:10 ~ 1,
+                            DOM %in% 11:20~ 2, 
+                            DOM %in% 21:31 ~ 3))
+```
+
+
+
+
+## Таблица с характеристиками питания
+
+
+Средний вес в пищевом комке
+
+```{r}
+gadus_long  %>% 
+  group_by(Species, Year) %>% 
+  summarise(Mean_Weight = round(mean(Weight),2) ) %>% 
+  dcast(formula = Species ~ Year) %>% 
+  kable()
+```
+
+
+
+
+
+
+Встречаемость (%)
+
+```{r}
+gadus_long  %>% 
+  group_by(Species, Year) %>% 
+  summarise(Freq = round(sum(Weight !=0)/n(), 3) *100 ) %>% 
+  dcast(formula = Species ~ Year) %>% 
+  kable()
+```
+
+
+
+
+
+Вместо двух таблиц (средний вес объекта в пищевом комке и встречаемость, % в отдельные годы) нужно сделать одну таблицу (средние величины за все годы 2007-2025) по форме, приведнной ниже. 
+
+
+```{r}
+sci_name <- read_excel("Data/ТРЕСКА_LONG-TERM_CHANGES.xlsx", sheet = "Species")
+
+sci_name$Group <- factor(sci_name$Group, levels = c( "Polychaeta", "Crustacea", "Ophiuroidea", "Holothuroidea", "Pisces"))
+
+gadus_long %>% 
+  group_by(Species) %>% 
+  summarise(Freq = round(sum(Weight !=0)/n(), 4) *100,  Mean_Weight = round(mean(Weight),3)) %>% 
+  mutate(Prop =  round(Mean_Weight/sum(Mean_Weight)*100, 2)) %>% 
+  merge(., sci_name) %>% 
+  select(Group, Sci_name, Freq, Mean_Weight, Prop ) %>% 
+  arrange(Group) %>% 
+  select(-Group) %>% 
+  mutate(Freq = ifelse(round(Prop, 1) <= 0.1, "+", Freq), Mean_Weight = ifelse(round(Prop, 1) <= 0.1, "+", Mean_Weight)) %>% 
+  kable()
+  
+
+  
+
+
+```
+
+
+
+
+## Динамика пустых желудков
+
+```{r}
+gadus_long %>% 
+  group_by(Id, L, Year, DOY) %>% 
+  summarise(Total_Weight = sum(Weight)) ->
+  total_weight 
+
+```
+
+
+<!-- ```{r} -->
+<!-- ggplot(gadus_long, aes(x = Year, y = DOY, group = Year)) + -->
+<!--   geom_boxplot() -->
+<!-- ``` -->
+
+
+
+
+
+```{r}
+
+total_weight %>% 
+  mutate(Empty = ifelse(Total_Weight == 0, 1, 0)) -> 
+  total_weight
+
+total_weight <-
+total_weight %>% 
+  filter(Year != 2016)
+
+```
+
+```{r}
+Mod_Empty <- gam(Empty ~ s(Year) + s(DOY) + s(L), data = total_weight, family = "binomial")
+
+```
+
+At! убрал 2016 год!
+
+Модель, котрую строим имеет следующий вид
+
+Empty ~ s(Year) + s(DOY) + s(L), data = total_weight, family = "binomial"
+
+Вот результаты подбора модели
+
+```{r}
+summary(Mod_Empty)
+```
+
+Статистически значимыми была как многолетняя динамика, так и сезонные изменения, но связи с размерами не выявлется.
+
+Вот визуализация модели
+
+
+```{r}
+Pl_Mod_Empty_1 <- 
+draw(Mod_Empty, select = 1) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  ggtitle("Model prediction for \nlong-term dynamics")
+
+Pl_Mod_Empty_2 <- 
+draw(Mod_Empty, select = 2) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  ggtitle("Model prediction for \nseasonal dynamics") +
+  annotate(geom = "segment",y = -1.6, yend = -1.6, x = 172, xend = 182, linewidth = 1, color = "gray80") +
+  annotate(geom = "text", x = 177, y =-1.45, label = "June")+
+  annotate(geom = "segment",y = -1.6, yend = -1.6, x = 183, xend = 213, linewidth = 1, color = "gray60") +
+  annotate(geom = "text", x = 198, y =-1.45, label = "July") +
+  annotate(geom = "segment",y = -1.6, yend = -1.6, x = 214, xend = 231, linewidth = 1, color = "gray40") +
+  annotate(geom = "text", x = 222, y =-1.45, label = "August")
+
+
+
+
+plot_grid(Pl_Mod_Empty_1, Pl_Mod_Empty_2)
+```
+
+На этих рисунках, как и везде, горизонтальная пунктирная линия отражает среднее по популяции значение. Ниже нуля - меньше среднего и наоборот.  
+
+
++++++++++++++++++++++
+
+Нужны средние по доле особей с пустыми желудками по отдельным годам для конкретики. Из рисунков, приведенных выше,  этих данных не видно.
+
+
+```{r}
+total_weight %>% 
+  group_by(Year) %>% 
+  summarise(Prop_empty = round(mean(Empty)*100, 2) ) %>% 
+  kable()
+
+```
+
+
+
+
+
+## Динамика веса пищевого комка в заполненных желудках
+
+Анализируем общий вес пищи в желудках
+
+
+```{r}
+total_weight %>% 
+  mutate(Empty = ifelse(Total_Weight == 0, 1, 0)) %>% 
+  filter(Empty == 0) -> 
+  total_weight_full
+
+```
+
+```{r}
+Mod_Total_Weight <- gam(Total_Weight ~ s(Year) + s(DOY) + s(L, k = 5), data = total_weight_full)
+
+```
+
+Модель, котрую строим имеет следующий вид
+
+Total_Weight ~ s(Year) + s(DOY) + s(L)
+
+Вот результаты подбора модели
+
+```{r}
+summary(Mod_Total_Weight)
+```
+
+
+At! Данные за 2016 убрал.
+
+
+```{r}
+Pl_Mod_Weight_1 <- 
+draw(Mod_Total_Weight, select = 1) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  ggtitle("Model prediction for \nlong-term dynamics")
+
+Pl_Mod_Weight_2 <- 
+draw(Mod_Total_Weight, select = 3) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  ggtitle("Model prediction for \nsize")
+
+plot_grid(Pl_Mod_Weight_1, Pl_Mod_Weight_2)
+```
+
+
+## Состав пищевого комка
+
+```{r}
+gadus_long <-
+merge(gadus_long, total_weight_full)
+
+
+gadus_long %>%  
+  select(-Empty) %>% 
+  mutate(Prop = Weight/Total_Weight) -> 
+  gadus_long
+
+gadus_long %>% 
+  mutate(Presence = ifelse(Prop == 0, 0, 1)) ->
+  gadus_long
+
+gadus_long <- 
+  gadus_long %>% 
+  filter(Year != 2016)
+
+```
+
+
+## Динамика встречаемости пищевых объектов
+
+Ранжируем виды по их встречаемости (за все годы исследования)
+
+```{r}
+gadus_long %>% 
+  group_by(Species) %>% 
+  summarise(Freq = mean(Presence), Mean_Prop = mean(Prop)) %>% 
+  arrange(desc(Freq)) ->
+  gadus_total_means
+
+```
+
+
+```{r}
+Freq_threshould <- 0.05
+```
+
+
+За порог отсечения принимаем встречаемость более `r Freq_threshould*100`%. Тогда в число наиболее частых пищевых объектов попадают следующие виды корма:
+
+```{r}
+gadus_total_means %>% 
+  filter(Freq >= Freq_threshould) %>% 
+  pull(Species) ->
+  selected_Species
+```
+
+```{r}
+paste(selected_Species, sep = ", ")
+```
+
+Для этих видов будем строить модель многолетней и сезонной динамики встречаемости.
+
+
+<!-- ```{r} -->
+<!-- gadus_long %>%  -->
+<!--   group_by(Year, Species) %>%  -->
+<!--   summarise(Freq = mean(Presence), Mean_Prop = mean(Prop), N= n()) -> -->
+<!--   gadus_year_means -->
+<!-- ``` -->
+
+```{r}
+abund_species <- 
+  gadus_long %>% 
+  filter(Species %in% selected_Species)
+```
+
+Модель имеет следующий вид
+
+Presence ~ s(Year, by = Species) + s(DOY, by = Species) + s(L, by = Species, k =5) + Species
+
+То есть мы сразу очениваем и многолетнюю динамику, и сезонную динамику и связь с размерами.
+
+```{r}
+
+mod_freq <- gam(Presence ~ s(Year, by = Species, k =5) + s(DOY, by = Species, k =5) + s(L, by = Species, k =5) + Species, data = abund_species, family = "binomial")
+
+```
+
+<!-- ```{r} -->
+<!-- library(DHARMa) -->
+
+<!-- simulateResiduals(mod_freq, plot = T) -->
+
+<!-- ``` -->
+
+
+Вот результаты этой модели 
+
+```{r}
+summary(mod_freq)
+```
+
+Не выявлена многолетняя динамика только у O.aculeata (!!! Отличается от предыдущего результата, когда 2016 использовал).
+
+Связь с размерами есть у всех (!!! Отличается от предыдущего результата).
+
+**Встречаемость видов в зависимости от размеров трески**
+
+```{r}
+draw(mod_freq, select = 11:15, scales = "fixed")
+```
+
+
+**Сезонная динамика встречаемости видов**
+
+```{r}
+
+Pl1 <-
+draw(mod_freq, select = 6, scales = "fixed") +
+  geom_hline(yintercept = 0, linetype = 2) +
+  annotate(geom = "segment",y = -5.5, yend = -5.5, x = 172, xend = 182, linewidth = 1, color = "gray80") +
+  annotate(geom = "text", x = 177, y =-5, label = "June")+
+  annotate(geom = "segment",y = -5.5, yend = -5.5, x = 183, xend = 213, linewidth = 1, color = "gray60") +
+  annotate(geom = "text", x = 198, y =-5, label = "July") +
+  annotate(geom = "segment",y = -5.5, yend = -5.5, x = 214, xend = 231, linewidth = 1, color = "gray40") +
+  annotate(geom = "text", x = 222, y =-5, label = "August") +
+  ggtitle("G.aculeatus", subtitle = NULL)
+
+Pl2 <-
+draw(mod_freq, select = 7, scales = "fixed") +
+  geom_hline(yintercept = 0, linetype = 2) +
+  annotate(geom = "segment",y = -5.5, yend = -5.5, x = 172, xend = 182, linewidth = 1, color = "gray80") +
+  annotate(geom = "text", x = 177, y =-5, label = "June")+
+  annotate(geom = "segment",y = -5.5, yend = -5.5, x = 183, xend = 213, linewidth = 1, color = "gray60") +
+  annotate(geom = "text", x = 198, y =-5, label = "July") +
+  annotate(geom = "segment",y = -5.5, yend = -5.5, x = 214, xend = 231, linewidth = 1, color = "gray40") +
+  annotate(geom = "text", x = 222, y =-5, label = "August")+
+  ggtitle("C.pallasii marisalbi", subtitle = NULL)
+
+
+Pl3 <-
+draw(mod_freq, select = 8, scales = "fixed") +
+  geom_hline(yintercept = 0, linetype = 2) +
+  annotate(geom = "segment",y = -5.5, yend = -5.5, x = 172, xend = 182, linewidth = 1, color = "gray80") +
+  annotate(geom = "text", x = 177, y =-5, label = "June")+
+  annotate(geom = "segment",y = -5.5, yend = -5.5, x = 183, xend = 213, linewidth = 1, color = "gray60") +
+  annotate(geom = "text", x = 198, y =-5, label = "July") +
+  annotate(geom = "segment",y = -5.5, yend = -5.5, x = 214, xend = 231, linewidth = 1, color = "gray40") +
+  annotate(geom = "text", x = 222, y =-5, label = "August")+
+  ggtitle("Fish eggs", subtitle = NULL)
+
+
+Pl4 <-
+draw(mod_freq, select = 9, scales = "fixed") +
+  geom_hline(yintercept = 0, linetype = 2) +
+  annotate(geom = "segment",y = -5.5, yend = -5.5, x = 172, xend = 182, linewidth = 1, color = "gray80") +
+  annotate(geom = "text", x = 177, y =-5, label = "June")+
+  annotate(geom = "segment",y = -5.5, yend = -5.5, x = 183, xend = 213, linewidth = 1, color = "gray60") +
+  annotate(geom = "text", x = 198, y =-5, label = "July") +
+  annotate(geom = "segment",y = -5.5, yend = -5.5, x = 214, xend = 231, linewidth = 1, color = "gray40") +
+  annotate(geom = "text", x = 222, y =-5, label = "August")+
+  ggtitle("O.aculeata", subtitle = NULL)
+ 
+
+
+Pl5 <-
+draw(mod_freq, select = 10, scales = "fixed") +
+  geom_hline(yintercept = 0, linetype = 2) +
+  annotate(geom = "segment",y = -5.5, yend = -5.5, x = 172, xend = 182, linewidth = 1, color = "gray80") +
+  annotate(geom = "text", x = 177, y =-5, label = "June")+
+  annotate(geom = "segment",y = -5.5, yend = -5.5, x = 183, xend = 213, linewidth = 1, color = "gray60") +
+  annotate(geom = "text", x = 198, y =-5, label = "July") +
+  annotate(geom = "segment",y = -5.5, yend = -5.5, x = 214, xend = 231, linewidth = 1, color = "gray40") +
+  annotate(geom = "text", x = 222, y =-5, label = "August")+
+  ggtitle("Nereis sp.", subtitle = NULL)
+  
+
+```
+
+
+```{r, fig.width=12}
+plot_grid(Pl1, Pl2, Pl3, Pl4, Pl5, ncol = 3)
+```
+
+
+Первую половину лета треска ест колюшку и икру, вторую половину лета - селедку и, возможно, офиур. С нереисами сложнее. Первый пик - это явно период хода нереиса в первой половине лета. Второй пик - может это другой вид нереиса? Надо поискать данные по периодам хода у pelgica и virens.
+
+
+
+**Многолетняя динамика встречаемости видов**
+
+```{r}
+draw(mod_freq, select = 1:5, scales = "fixed") 
+```
+
+
+## Динамика доли пищевых объектов
+
+```{r}
+gadus_long <-
+  gadus_long %>% 
+  mutate(Species2 = case_when(Species %in% selected_Species ~ Species,
+                              !Species %in% selected_Species ~ "Other"))
+
+```
+
+
+```{r}
+
+gadus_long$Species2 <- factor(gadus_long$Species2, levels = c("G.aculeatus", "Fish_eggs", "C.pallasii_marisalbi", "Nereis_sp.", "O.aculeata", "Other"))
+ 
+gadus_long %>% 
+  group_by(Month, Decade, Species2) %>% 
+  summarise(Prop_mean = mean(Prop)) %>% 
+  mutate(Month_Decade = factor(paste(Month, Decade, sep = "_"))) %>% 
+  ggplot(aes(x = (Month_Decade), y = Prop_mean, fill = Species2)) +
+  geom_col()+
+  labs(x = "Decade of Month", y = "Mean proporton in total weight")
+```
+
+
+# Новый кусок
+
+## Другой способ вычисления доли
+
+За 100% берется вся сумма весов жертв за декаду. Далее на графике отражаем долю суммы каждого вида в общей сумме за декаду.
+
+
+```{r}
+gadus_long %>% 
+  group_by(Month, Decade, Species2) %>% 
+  summarise(Sum_weight = sum(Weight)) -> 
+  species_weight_decade 
+
+
+gadus_long %>% 
+  group_by(Month, Decade) %>% 
+  summarise(Total_weight = sum(Weight)) -> 
+  total_weight_decade 
+
+prop_weight_decade <-
+merge(species_weight_decade, total_weight_decade) %>% 
+  mutate(Month_Decade = factor(paste(Month, Decade, sep = "_")))%>% 
+  mutate(Prop_decade = Sum_weight / Total_weight)
+
+
+prop_weight_decade$Month_Decade <- factor(prop_weight_decade$Month_Decade, levels =  c("Jun_3", "Jul_1", "Jul_2", "Jul_3", "Aug_1", "Aug_2"))
+
+
+prop_weight_decade %>% 
+ ggplot(aes(x = (Month_Decade), y = Prop_decade, fill = Species2)) +
+  geom_col()+
+  labs(x = "Decade of Month", y = "Proporton in total weight", fill = "Species")
+
+```
+
+
+
+```{r}
+decade_DOY <- 
+  gadus_long %>% 
+  group_by(Month, Decade) %>%
+  summarise(Mean_Decade_DOY = mean(DOY))
+             
+prop_weight_decade <- 
+  merge(prop_weight_decade, decade_DOY)
+             
+```
+
+
+```{r}
+Pl_prop_weight_1 <-
+  prop_weight_decade %>% 
+  filter(Species2 == "G.aculeatus") %>% 
+  ggplot(aes(x = Mean_Decade_DOY)) + 
+  geom_line(aes(y = Prop_decade)) +
+  geom_rug(data = gadus_long, aes(x = DOY)) +
+  labs(y = "Proportion", x = "DOY") +
+  annotate(geom = "segment",y = -0.01, yend = -0.01, x = 172, xend = 182, linewidth = 1, color = "gray80") +
+  annotate(geom = "text", x = 177, y =0.01, label = "June")+
+  annotate(geom = "segment",y = -0.01, yend = -0.01, x = 183, xend = 213, linewidth = 1, color = "gray60") +
+  annotate(geom = "text", x = 198, y = 0.01, label = "July") +
+  annotate(geom = "segment",y = -0.01, yend = -0.01, x = 214, xend = 231, linewidth = 1, color = "gray40") +
+  annotate(geom = "text", x = 222, y =0.01, label = "August") +
+  ggtitle("G.aculeatus")
+
+Pl_prop_weight_2 <-
+  prop_weight_decade %>% 
+  filter(Species2 == "Fish_eggs") %>% 
+  ggplot(aes(x = Mean_Decade_DOY)) + 
+  geom_line(aes(y = Prop_decade)) +
+  geom_rug(data = gadus_long, aes(x = DOY)) +
+  labs(y = "Proportion", x = "DOY") +
+  annotate(geom = "segment",y = -0.01, yend = -0.01, x = 172, xend = 182, linewidth = 1, color = "gray80") +
+  annotate(geom = "text", x = 177, y =0.01, label = "June")+
+  annotate(geom = "segment",y = -0.01, yend = -0.01, x = 183, xend = 213, linewidth = 1, color = "gray60") +
+  annotate(geom = "text", x = 198, y = 0.01, label = "July") +
+  annotate(geom = "segment",y = -0.01, yend = -0.01, x = 214, xend = 231, linewidth = 1, color = "gray40") +
+  annotate(geom = "text", x = 222, y =0.01, label = "August") +
+  ggtitle("Fish eggs")
+
+
+Pl_prop_weight_3 <-
+  prop_weight_decade %>% 
+  filter(Species2 == "C.pallasii_marisalbi") %>% 
+  ggplot(aes(x = Mean_Decade_DOY)) + 
+  geom_line(aes(y = Prop_decade)) +
+  geom_rug(data = gadus_long, aes(x = DOY)) +
+  labs(y = "Proportion", x = "DOY") +
+  annotate(geom = "segment",y = -0.01, yend = -0.01, x = 172, xend = 182, linewidth = 1, color = "gray80") +
+  annotate(geom = "text", x = 177, y =0.01, label = "June")+
+  annotate(geom = "segment",y = -0.01, yend = -0.01, x = 183, xend = 213, linewidth = 1, color = "gray60") +
+  annotate(geom = "text", x = 198, y = 0.01, label = "July") +
+  annotate(geom = "segment",y = -0.01, yend = -0.01, x = 214, xend = 231, linewidth = 1, color = "gray40") +
+  annotate(geom = "text", x = 222, y =0.01, label = "August")+
+  ggtitle("C.pallasii marisalbi")
+
+
+
+
+Pl_prop_weight_4 <-
+  prop_weight_decade %>% 
+  filter(Species2 == "O.aculeata") %>% 
+  ggplot(aes(x = Mean_Decade_DOY)) + 
+  geom_line(aes(y = Prop_decade)) +
+  geom_rug(data = gadus_long, aes(x = DOY)) +
+  labs(y = "Proportion", x = "DOY") +
+  annotate(geom = "segment",y = -0.001, yend = -0.001, x = 172, xend = 182, linewidth = 1, color = "gray80") +
+  annotate(geom = "text", x = 177, y =0.001, label = "June")+
+  annotate(geom = "segment",y = -0.001, yend = -0.001, x = 183, xend = 213, linewidth = 1, color = "gray60") +
+  annotate(geom = "text", x = 198, y = 0.001, label = "July") +
+  annotate(geom = "segment",y = -0.001, yend = -0.001, x = 214, xend = 231, linewidth = 1, color = "gray40") +
+  annotate(geom = "text", x = 222, y =0.001, label = "August") +
+  ggtitle("O. aculeata")
+
+Pl_prop_weight_5 <-
+  prop_weight_decade %>% 
+  filter(Species2 == "Nereis_sp.") %>% 
+  ggplot(aes(x = Mean_Decade_DOY)) + 
+  geom_line(aes(y = Prop_decade)) +
+  geom_rug(data = gadus_long, aes(x = DOY)) +
+  labs(y = "Proportion", x = "DOY") +
+  annotate(geom = "segment",y = -0.01, yend = -0.01, x = 172, xend = 182, linewidth = 1, color = "gray80") +
+  annotate(geom = "text", x = 177, y =0.01, label = "June")+
+  annotate(geom = "segment",y = -0.01, yend = -0.01, x = 183, xend = 213, linewidth = 1, color = "gray60") +
+  annotate(geom = "text", x = 198, y = 0.01, label = "July") +
+  annotate(geom = "segment",y = -0.01, yend = -0.01, x = 214, xend = 231, linewidth = 1, color = "gray40") +
+  annotate(geom = "text", x = 222, y =0.01, label = "August") +
+  ggtitle("Nereis sp.")
+ 
+
+Pl_prop_weight_6 <-
+  prop_weight_decade %>% 
+  filter(Species2 == "Other") %>% 
+  ggplot(aes(x = Mean_Decade_DOY)) + 
+  geom_line(aes(y = Prop_decade)) +
+  geom_rug(data = gadus_long, aes(x = DOY)) +
+  labs(y = "Proportion", x = "DOY") +
+  annotate(geom = "segment",y = -0.01, yend = -0.01, x = 172, xend = 182, linewidth = 1, color = "gray80") +
+  annotate(geom = "text", x = 177, y =0.01, label = "June")+
+  annotate(geom = "segment",y = -0.01, yend = -0.01, x = 183, xend = 213, linewidth = 1, color = "gray60") +
+  annotate(geom = "text", x = 198, y = 0.01, label = "July") +
+  annotate(geom = "segment",y = -0.01, yend = -0.01, x = 214, xend = 231, linewidth = 1, color = "gray40") +
+  annotate(geom = "text", x = 222, y =0.01, label = "August") +
+  ggtitle("Other")
+
+
+
+```
+
+
+Это другой способ визуализации предыдущего графика. Этот вариант мне кажется лучше. В принципе, можно пустить его в параллель с визуализацией сезонной динамики встречаемости видов (общий ход сезонной динамики встречаемости и доли в пищевом комке похожи)
+
+```{r}
+
+plot_grid(Pl_prop_weight_1, Pl_prop_weight_2, Pl_prop_weight_3, Pl_prop_weight_4, Pl_prop_weight_5, Pl_prop_weight_6, ncol = 2)
+
+```
+
+
+
+## Многолетняя динамика доли 
+
+```{r}
+gadus_long %>% 
+  group_by(Year, Species2) %>% 
+  summarise(Sum_weight = sum(Weight)) -> 
+  species_weight_year 
+
+
+gadus_long %>% 
+  group_by(Year) %>% 
+  summarise(Total_weight = sum(Weight)) -> 
+  total_weight_year 
+
+prop_weight_year <-
+merge(species_weight_year, total_weight_year) %>% 
+  mutate(Prop_year = Sum_weight / Total_weight)
+
+```
+
+
+
+```{r}
+prop_weight_year %>% 
+ ggplot(aes(x = Year, y = Prop_year, fill = Species2)) +
+  geom_col()+
+  labs(x = "Year", y = "Proporton in total weight", fill = "Species")
+
+```
+
+
+Другой вариант визуализации этого же графика. Здесь точки - исходные доли, синие линии - сглаженная тенденция.
+
+```{r}
+
+prop_weight_year %>% 
+ ggplot(aes(x = Year, y = Prop_year)) +
+  geom_point()+
+  geom_line()+
+  facet_wrap(~Species2) +
+  labs(x = "Year", y = "Proportion") +
+  geom_smooth(se = F, method = "loess")
+
+
+```
+
+

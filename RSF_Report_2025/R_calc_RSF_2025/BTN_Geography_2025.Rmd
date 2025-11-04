@@ -98,10 +98,11 @@ btn_Kola_uni <-
 
 btn_world_uni <-
   dn_world %>% 
-  select(Site, Year, Lat, Lon,N_DN) %>% 
+  select(Site, Year, Lat, Lon,N_DN, N_BTN) %>% 
+  mutate(N_DN = ifelse(!is.na(N_DN), N_DN, N_BTN)) %>% 
   rename(Site_code = Site, DN = N_DN) %>% 
   mutate(BTN_presence = ifelse(DN == 0, "no", "yes")) %>% 
-  select(-DN) %>% 
+  select(-DN, -N_BTN) %>% 
   mutate(Dataset = "World") %>% 
   arrange(desc(BTN_presence))
 
@@ -206,4 +207,129 @@ Pl_Magadan +
 
 ```
 
+
+
+
+
+## Информация по предикторам для точек 
+
+```{r}
+all_points <- rbind(btn_geography_uni, btn_Magadan_uni, btn_Kola_uni, btn_world_uni)
+
+all_points <- 
+  all_points %>% 
+  filter(complete.cases(.))
+
+
+
+sum(all_points$BTN_presence == "yes")/nrow(all_points)
+
+
+uniq_point_btn <- 
+all_points %>% 
+  group_by(Lon, Lat, Dataset) %>% 
+  summarise(N_btn_presence = sum(BTN_presence == "yes") )
+
+n_uniq_site <- nrow(uniq_point_btn) 
+  
+  
+# sum(uniq_point_btn$N_btn_presence != 0)/nrow(uniq_point_btn)
+
+
+```
+
+```{r}
+library(raster)
+
+salinity = raster("D:/Data_LMBE/BIO_Oracle_predictors/Present.Surface.Salinity.Mean.asc", method = 'bilinear')
+
+temp = raster("D:/Data_LMBE/BIO_Oracle_predictors/Present.Surface.Temperature.Mean.asc")
+silicate = raster("D:/Data_LMBE/BIO_Oracle_predictors/Present.Surface.Silicate.Mean.asc")
+prim_prod = raster("D:/Data_LMBE/BIO_Oracle_predictors/Present.Surface.Primary.productivity.Mean.asc")
+phytoplancton = raster("D:/Data_LMBE/BIO_Oracle_predictors/Present.Surface.Phytoplankton.Mean.asc")
+phosphate = raster("D:/Data_LMBE/BIO_Oracle_predictors/Present.Surface.Phosphate.Mean.asc")
+ph = raster("D:/Data_LMBE/BIO_Oracle_predictors/Present.Surface.pH.BOv2_2.asc")
+nitrate = raster("D:/Data_LMBE/BIO_Oracle_predictors/Present.Surface.Nitrate.Mean.asc")
+dissolved_o2 = raster("D:/Data_LMBE/BIO_Oracle_predictors/Present.Surface.Dissolved.oxygen.Mean.asc")
+current_velocity = raster("D:/Data_LMBE/BIO_Oracle_predictors/Present.Surface.Current.Velocity.Mean.asc.BOv2_1.asc")
+chlorophyll = raster("D:/Data_LMBE/BIO_Oracle_predictors/Present.Surface.Chlorophyll.Mean.asc")
+
+```
+
+
+
+
+```{r}
+
+# Берем только северное полушарие
+
+uniq_point_btn_North <- 
+  uniq_point_btn %>% 
+  filter(Lat > 0)
+
+my.sites <- as.matrix(uniq_point_btn_North[, 1:2])
+
+```
+
+
+```{r}
+
+# At! В географических данных стандартный порядок: первый столбец = x (долгота), второй столбец = y (широта)
+sal <- extract(salinity, my.sites, method = 'bilinear')
+
+current <- extract(current_velocity, my.sites, method = 'bilinear')
+
+temper <- extract(temp, my.sites, method = 'bilinear')
+
+chl <- extract(chlorophyll, my.sites, method = 'bilinear')
+
+phosph <- extract(phosphate, my.sites, method = 'bilinear')
+
+phytoplan <- extract(phytoplancton, my.sites, method = 'bilinear')
+
+```
+
+
+```{r}
+predictors <- data.frame(Lon = my.sites[, 1], Lat = my.sites[, 2])
+  
+predictors <- cbind(predictors, sal, current, temper, chl, phosph, phytoplan)
+
+# predictors %>% 
+  # filter(!is.na(sal)) 
+  
+```
+
+
+```{r}
+all_points_predictors <- merge(all_points, predictors)
+
+all_points_predictors <-
+all_points_predictors %>%
+  mutate(Out = ifelse(BTN_presence == "yes", 1, 0))
+  
+```
+
+```{r}
+
+foo_mod <- glm(Out ~ current + sal + temper + chl, family = "binomial",  data = all_points_predictors)
+
+library(car)
+vif(foo_mod)
+
+library(mgcv)
+Mod <- gam(Out ~ s(current, bs = "tp", k = 5) + s(sal, bs = "tp", k = 5) + s(temper, bs = "tp", k = 5) + s(chl, bs = "tp", k = 5), family = "binomial", method = "REML", data = all_points_predictors)
+
+summary(Mod)
+
+library(gratia)
+draw(Mod)
+```
+
+
+
+
+```{r}
+library(sdm)
+```
 
