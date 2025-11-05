@@ -75,6 +75,10 @@ plot(species,add=T)
 
 my_extent <- extent(100, 180, 30, 80)  # например: долгота 10-20°, широта 35-45°
 
+my_extent2 <- extent(100, 180, 30, 80)  # например: долгота 10-20°, широта 35-45°
+
+
+
 # Вырезаем область
 preds_cropped <- crop(preds, my_extent)
 
@@ -97,25 +101,25 @@ plot(coastline)
 
 # Преобразуем в ту же проекцию, что и растр
 coastline <- st_transform(coastline, crs = crs(preds_cropped))
-
-# Создаем буфер вокруг береговой линии
-buffer_distance <- 10  # расстояние в градусах (настройте под ваш масштаб)
-coastline_buffer <- st_buffer(coastline, dist = buffer_distance)
-
-# Конвертируем в Spatial объект для работы с raster
-coastline_buffer_sp <- as(coastline_buffer, "Spatial")
-
-# plot(coastline_buffer_sp)
-
-# Создаем маску береговой линии
-coast_mask <- rasterize(coastline_buffer_sp, preds_cropped[[1]], field = 1)
-
-# Выделяем пиксели вблизи береговой линии
-preds_coastal <- mask(preds_cropped, coast_mask)
-
-# Визуализация
-plot(preds_coastal[[1]], main = "Пиксели вдоль береговой линии")
-plot(coastline$geometry, add = TRUE, col = "red")
+# 
+# # Создаем буфер вокруг береговой линии
+# buffer_distance <- 10  # расстояние в градусах (настройте под ваш масштаб)
+# coastline_buffer <- st_buffer(coastline, dist = buffer_distance)
+# 
+# # Конвертируем в Spatial объект для работы с raster
+# coastline_buffer_sp <- as(coastline_buffer, "Spatial")
+# 
+# # plot(coastline_buffer_sp)
+# 
+# # Создаем маску береговой линии
+# coast_mask <- rasterize(coastline_buffer_sp, preds_cropped[[1]], field = 1)
+# 
+# # Выделяем пиксели вблизи береговой линии
+# preds_coastal <- mask(preds_cropped, coast_mask)
+# 
+# # Визуализация
+# plot(preds_coastal[[1]], main = "Пиксели вдоль береговой линии")
+# plot(coastline$geometry, add = TRUE, col = "red")
 
 
 
@@ -125,12 +129,23 @@ library(raster)
 library(rnaturalearth)
 library(gdistance)
 
-my_extent <- extent(100, 180, 40, 80)
-preds_cropped <- crop(preds, my_extent)
+# my_extent <- extent(100, 180, 40, 80)
+
+my_extent2 <- extent(-20, 45, 30, 80)  # например: долгота 10-20°, широта 35-45°
+
+
+preds_cropped <- crop(preds, my_extent2)
 
 # Получаем данные суши
 land <- ne_countries(scale = "medium", returnclass = "sf")
 land <- st_transform(land, crs(preds_cropped))
+
+ggplot() +
+  geom_sf(data = coastline) +
+  coord_sf(
+    xlim = c(-180, 180),   
+    ylim = c(-180, 180)     
+  ) 
 
 # Создаем бинарный растр (1 = земля, 0 = море)
 land_binary <- rasterize(land, preds_cropped[[1]], field = 1, background = NA)
@@ -169,10 +184,10 @@ raster_df <- as.data.frame(preds_cropped[[2]], xy = TRUE)
 
 # Создаем карту в ggplot
 ggplot() +
-  geom_raster(data = raster_df, aes(x = x, y = y, fill = Current)) +
+  geom_raster(data = raster_df, aes(x = x, y = y)) +
   geom_sf(data = coastline) +
   coord_sf(
-    xlim = c(100, 180),   
+    xlim = c(-20, 45),   
     ylim = c(30, 80)     
   ) + 
    scale_fill_viridis(na.value = "transparent") 
@@ -220,14 +235,101 @@ colnames(raster_df)[3] <- "Current"  # переименовываем столб
 
 
 
+#### Строим SDM ###############
 
-# d <- sdmData(formula=Occurrence~., train=species, predictors=preds)
+library(sdm)
+library(raster)
+library(rgdal)
 
-d <- sdmData(train=species, predictors=preds)
+
+all_points_predictors %>% 
+  dplyr::select(Lon, Lat, Out) %>%
+  filter(complete.cases(.)) ->
+  BTN_occur
+
+
+coordinates(BTN_occur) <- ~ Lon + Lat
+proj4string(BTN_occur) <- CRS("+init=epsg:4326")  # WGS84
+
+
+species <- BTN_occur
+
+
+lst <- list.files(path="D:/Data_LMBE/BIO_Oracle_predictors/",pattern='asc$',full.names = T) # list the name of files in the specified
+
+
+preds <- stack(lst)
+
+names(preds) <- c(
+  "Chlorophyll",
+  "Current",
+  "Dissolved_O2",
+  "Nitrate",
+  "pH",
+  "Phosphate",
+  "Phytoplankton",
+  "Primary_Prod",
+  "Salinity",
+  "Silicate",
+  "Temperature"
+)
+
+
+
+
+
+# Выявление коллинеарных предикторов
+
+
+# Выгрузка значений предикторов для сайтов, где анализировали присуствие BTN
+
+predictors <- extract(preds, my.sites, method = 'bilinear')
+
+predictors <- as.data.frame(predictors)
+
+uniq_point_btn_North_2 <- cbind(uniq_point_btn_North, predictors)
+
+library(car)
+
+mod_foo <- lm(N_btn_presence ~ Chlorophyll + Current + Dissolved_O2 + Nitrate + pH + Phosphate + Phytoplankton + Primary_Prod + Salinity + Silicate + Temperature, data = uniq_point_btn_North_2)
+  
+vif(mod_foo)
+
+mod_foo2 <- update(mod_foo, . ~ . -Phytoplankton) 
+
+vif(mod_foo2)
+
+mod_foo3 <- update(mod_foo2, . ~ . -Primary_Prod) 
+
+vif(mod_foo3)
+
+mod_foo4 <- update(mod_foo3, . ~ . -Dissolved_O2) 
+
+vif(mod_foo4)
+
+mod_foo5 <- update(mod_foo4, . ~ . -pH) 
+
+vif(mod_foo5)
+
+mod_foo6 <- update(mod_foo5, . ~ . -Silicate ) 
+
+vif(mod_foo6)
+
+################# SDM Construction ####################
+
+# Извлеаем данные для sdmSetting()
+
+dat <- sdmData(formula = Out ~ Chlorophyll + Current + Nitrate + Phosphate + Salinity + Temperature, train=species, predictors=preds)
+
+# d <- sdmData(train=species, predictors=preds)
 
 # installAll()
 
-m1 <- sdm(Out ~., data=d, methods=c('glm','bioclim','brt', 'rf'))
+# m1 <- sdm(Out ~., data=dat, methods=c('gam'))
+
+# m1 <- sdm(Out ~., data=dat, methods=c('gam', 'maxent',  'brt', 'rf'), replication = 'cv', n = 5)
+
+m1 <- sdm(Out ~., data=dat, methods=c('gam', 'maxent',  'brt', 'rf'))
 # 
 # m1 <- sdm(Out ~., data=d, methods=c('rf'))
 
@@ -237,6 +339,21 @@ m1
 getModelInfo(m1)
 
 roc(m1)
+
+
+
+# Важность переменных
+
+# Var_importance <- getVarImp(m1,id="ensemble",setting=list(method='weighted',stat='cor'))
+
+# Var_importance <- getVarImp(m1,id="ensemble")
+
+Var_importance <- getVarImp(m1)
+
+str(Var_importance)
+
+plot(Var_importance)
+
 
 # m2 <- sdm(Out ~., data=d,methods=c('rf','brt','bioclim','glm'),replicatin='sub',test.percent=30,n=2)
 #           
@@ -251,32 +368,123 @@ roc(m1)
 
 # roc(m2,smooth=TRUE)
 
+preds_far_east <- brick("preds_coastal_far_east_50_km.tif")
 
-p1 <- predict(m1,newdata=preds,filename='p2.img') # many commonly used raster format is supported (throplot(p1)
+names(preds_far_east) <- c(
+  "Chlorophyll",
+  "Current",
+  "Dissolved_O2",
+  "Nitrate",
+  "pH",
+  "Phosphate",
+  "Phytoplankton",
+  "Primary_Prod",
+  "Salinity",
+  "Silicate",
+  "Temperature"
+)
+  
 
-plot(p1)
+predictions_m1 <- predict(m1,newdata=preds_far_east, filename='predictions_m1.img', overwrite=TRUE) # many commonly used raster format is supported (throplot(p1)
+
+predict_m1 <- brick("predictions_m1.img")
+
+plot(predict_m1)
 
 
-getModelObject(m1)  # получаем оригинальный объект модели
-summary(getModelObject(m1))
 
-# Или через sdm
-getVarImp(m1)  # важность переменных
+# Загрузка береговой линии
+library(raster)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(sf)
+
+# my_extent <- extent(100, 180, 40, 80)
+# preds_cropped <- crop(preds, my_extent)
+
+# Загружаем данные береговой линии
+coastline <- ne_coastline(scale = "medium", returnclass = "sf")
+plot(coastline)
+
+# Преобразуем в ту же проекцию, что и растр
+coastline <- st_transform(coastline, crs = crs(preds_far_east))
 
 
-vi <- getVarImp(m1)
-vi
-plot(vi)
+# Получаем данные суши
+land <- ne_countries(scale = "medium", returnclass = "sf")
+land <- st_transform(land, crs(preds_far_east))
 
 
-r3 <- curve(m1, smooth = TRUE, main = "Response Curves")
+raster_df <- as.data.frame(predict_m1, xy = TRUE)
 
-vi@varImportance$AUCtest  # через AUC
-vi@varImportance$corTest  # через корреляцию
+head(raster_df)
 
-r2 <- curve(m1, id = 1:3)  # первые 3 предиктора
-plot(r2)
 
-anova(m1)
-pd <- partial(m1)
-plot(pd)
+raster_df <- 
+  raster_df %>% 
+  filter(complete.cases(.))
+
+
+raster_df %>%
+  rowwise() %>%
+  mutate(
+    Mean_prediction = mean(c_across(starts_with("id_1__sp_Out__m_gam__re_cros")))
+  ) %>%
+  ungroup() ->
+  df_predictions
+
+df_predictions<-
+df_predictions %>% 
+  dplyr::select(x, y, Mean_prediction) 
+
+
+
+
+names(df_predictions) <- c("Lon", "Lat", "Mean_prediction")
+
+
+df_predictions %>% 
+  filter(Mean_prediction >= quantile(df_predictions$Mean_prediction, p = 0.95)) ->
+  df_predictions_hot_spot
+
+
+
+
+# Создаем карту в ggplot
+Pl_predictions <- 
+ggplot() +
+  geom_tile(data = df_predictions, aes(x = Lon, y = Lat, fill = Mean_prediction)) +
+  geom_sf(data = land, fill = "green") +
+  coord_sf(
+    xlim = c(120, 180),   
+    ylim = c(40, 74)     
+  ) +
+  scale_fill_gradient(low = "white", high = "red")+
+  labs(fill = "Probability")
+
+
+Pl_hotspot <- 
+  ggplot() +
+  geom_sf(data = land, fill = "green") +
+  coord_sf(
+    xlim = c(120, 180),   
+    ylim = c(40, 74)     
+  ) +
+  theme_map() +
+  geom_point(data = df_predictions_hot_spot, aes(x = Lon, y = Lat), color = "red", size = 2) +
+  ggtitle("Hotspots")
+
+
+library(cowplot)
+
+
+plot_grid(Pl_predictions, Pl_hotspot, rel_widths = c(1, 0.4))
+
+
+####### Вывод связей с предикторами на основе GAM
+gam_M1 <- getModelObject(m1, id =1)  # получаем оригинальный объект модели
+
+gratia::draw(gam_M1)
+
+summary(getModelObject(m1, id = 1))
+
