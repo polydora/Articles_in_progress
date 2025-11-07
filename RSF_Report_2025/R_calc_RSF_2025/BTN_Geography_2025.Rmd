@@ -241,18 +241,27 @@ n_uniq_site <- nrow(uniq_point_btn)
 ```{r}
 library(raster)
 
-salinity = raster("D:/Data_LMBE/BIO_Oracle_predictors/Present.Surface.Salinity.Mean.asc", method = 'bilinear')
+lst <- list.files(path="D:/Data_LMBE/BIO_Oracle_predictors/",pattern='asc$',full.names = T) # list the name of files in the specified
 
-temp = raster("D:/Data_LMBE/BIO_Oracle_predictors/Present.Surface.Temperature.Mean.asc")
-silicate = raster("D:/Data_LMBE/BIO_Oracle_predictors/Present.Surface.Silicate.Mean.asc")
-prim_prod = raster("D:/Data_LMBE/BIO_Oracle_predictors/Present.Surface.Primary.productivity.Mean.asc")
-phytoplancton = raster("D:/Data_LMBE/BIO_Oracle_predictors/Present.Surface.Phytoplankton.Mean.asc")
-phosphate = raster("D:/Data_LMBE/BIO_Oracle_predictors/Present.Surface.Phosphate.Mean.asc")
-ph = raster("D:/Data_LMBE/BIO_Oracle_predictors/Present.Surface.pH.BOv2_2.asc")
-nitrate = raster("D:/Data_LMBE/BIO_Oracle_predictors/Present.Surface.Nitrate.Mean.asc")
-dissolved_o2 = raster("D:/Data_LMBE/BIO_Oracle_predictors/Present.Surface.Dissolved.oxygen.Mean.asc")
-current_velocity = raster("D:/Data_LMBE/BIO_Oracle_predictors/Present.Surface.Current.Velocity.Mean.asc.BOv2_1.asc")
-chlorophyll = raster("D:/Data_LMBE/BIO_Oracle_predictors/Present.Surface.Chlorophyll.Mean.asc")
+
+
+
+predictors <- stack(lst)
+
+names(predictors) <- c(
+  "Chlorophyll",
+  "Current",
+  "Dissolved_O2",
+  "Nitrate",
+  "pH",
+  "Phosphate",
+  "Phytoplankton",
+  "Primary_Prod",
+  "Salinity",
+  "Silicate",
+  "Temperature"
+)
+
 
 ```
 
@@ -274,27 +283,14 @@ my.sites <- as.matrix(uniq_point_btn_North[, 1:2])
 
 ```{r}
 
-# At! В географических данных стандартный порядок: первый столбец = x (долгота), второй столбец = y (широта)
-sal <- extract(salinity, my.sites, method = 'bilinear')
-
-current <- extract(current_velocity, my.sites, method = 'bilinear')
-
-temper <- extract(temp, my.sites, method = 'bilinear')
-
-chl <- extract(chlorophyll, my.sites, method = 'bilinear')
-
-phosph <- extract(phosphate, my.sites, method = 'bilinear')
-
-phytoplan <- extract(phytoplancton, my.sites, method = 'bilinear')
+df_predictors <- as.data.frame(extract(predictors, my.sites, method = 'bilinear'))
 
 ```
 
 
 ```{r}
-predictors <- data.frame(Lon = my.sites[, 1], Lat = my.sites[, 2])
+predictors <- data.frame(Lon = my.sites[, 1], Lat = my.sites[, 2], df_predictors)
   
-predictors <- cbind(predictors, sal, current, temper, chl, phosph, phytoplan)
-
 # predictors %>% 
   # filter(!is.na(sal)) 
   
@@ -312,18 +308,50 @@ all_points_predictors %>%
 
 ```{r}
 
-foo_mod <- glm(Out ~ current + sal + temper + chl, family = "binomial",  data = all_points_predictors)
+mod_foo <- glm(Out ~ Chlorophyll + Current + Dissolved_O2 + Nitrate + pH + Phosphate + Phytoplankton + Primary_Prod + Salinity + Silicate + Temperature, family = "binomial",  data = all_points_predictors)
 
 library(car)
-vif(foo_mod)
+vif(mod_foo)
+
+
+mod_foo2 <- update(mod_foo, . ~ . -Phytoplankton) 
+
+vif(mod_foo2)
+
+
+mod_foo3 <- update(mod_foo2, . ~ . -Primary_Prod) 
+
+vif(mod_foo3)
+
+mod_foo4 <- update(mod_foo3, . ~ . -Dissolved_O2) 
+
+vif(mod_foo4)
+
+mod_foo5 <- update(mod_foo4, . ~ . -Silicate) 
+
+vif(mod_foo5)
+
+mod_foo6 <- update(mod_foo5, . ~ . -pH ) 
+
+vif(mod_foo6)
+
+
 
 library(mgcv)
-Mod <- gam(Out ~ s(current, bs = "tp", k = 5) + s(sal, bs = "tp", k = 5) + s(temper, bs = "tp", k = 5) + s(chl, bs = "tp", k = 5), family = "binomial", method = "REML", data = all_points_predictors)
+Mod <- gam(Out ~ s(Chlorophyll, bs = "tp", k = 5) + 
+             s(Current, bs = "tp", k = 5) + 
+             s(Nitrate, bs = "tp", k = 5) + 
+             s(Phosphate, bs = "tp", k = 5) + 
+             s(Salinity , bs = "tp", k = 5) + 
+             s(Temperature, bs = "tp", k = 5) , 
+           family = "binomial", 
+           method = "REML", 
+           data = all_points_predictors)
 
 summary(Mod)
 
 library(gratia)
-draw(Mod)
+gratia::draw(Mod)
 ```
 
 
