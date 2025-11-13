@@ -368,6 +368,9 @@ plot(Var_importance)
 
 # roc(m2,smooth=TRUE)
 
+
+############## Предсказание модели для Дальнего Востока
+
 preds_far_east <- brick("preds_coastal_far_east_50_km.tif")
 
 names(preds_far_east) <- c(
@@ -385,9 +388,9 @@ names(preds_far_east) <- c(
 )
   
 
-predictions_m1 <- predict(m1,newdata=preds_far_east, filename='predictions_m1.img', overwrite=TRUE) # many commonly used raster format is supported (throplot(p1)
+predictions_m1 <- predict(m1,newdata=preds_far_east, filename='predictions_m1_Far_East.img', overwrite=TRUE) # many commonly used raster format is supported (throplot(p1)
 
-predict_m1 <- brick("predictions_m1.img")
+predict_m1 <- brick("predictions_m1_Far_East.img")
 
 plot(predict_m1)
 
@@ -487,4 +490,244 @@ gam_M1 <- getModelObject(m1, id =1)  # получаем оригинальный
 gratia::draw(gam_M1)
 
 summary(getModelObject(m1, id = 1))
+
+
+
+
+############# Предсказание модели m1 для Европы ################
+
+preds_Europe <- brick("preds_coastal_Europ_50_km.tif")
+
+names(preds_Europe) <- c(
+  "Chlorophyll",
+  "Current",
+  "Dissolved_O2",
+  "Nitrate",
+  "pH",
+  "Phosphate",
+  "Phytoplankton",
+  "Primary_Prod",
+  "Salinity",
+  "Silicate",
+  "Temperature"
+)
+
+
+predictions_m1_Europ <- predict(m1,newdata=preds_Europe, filename='predictions_m1_Europ.img', overwrite=TRUE) # many commonly used raster format is supported (throplot(p1)
+
+predict_m1 <- brick("predictions_m1_Europ.img")
+
+plot(predict_m1)
+
+
+
+# Загрузка береговой линии
+library(raster)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(sf)
+
+# my_extent <- extent(100, 180, 40, 80)
+# preds_cropped <- crop(preds, my_extent)
+
+# Загружаем данные береговой линии
+coastline <- ne_coastline(scale = "medium", returnclass = "sf")
+plot(coastline)
+
+# Преобразуем в ту же проекцию, что и растр
+coastline <- st_transform(coastline, crs = crs(preds_Europe))
+
+
+# Получаем данные суши
+land <- ne_countries(scale = "medium", returnclass = "sf")
+land <- st_transform(land, crs(preds_Europe))
+
+
+raster_df <- as.data.frame(predict_m1, xy = TRUE)
+
+head(raster_df)
+
+
+raster_df <- 
+  raster_df %>% 
+  filter(complete.cases(.))
+
+
+raster_df %>%
+  rowwise() %>%
+  mutate(
+    Mean_prediction = mean(c_across(starts_with("id_1__sp_Out__m_gam__re_cros")))
+  ) %>%
+  ungroup() ->
+  df_predictions
+
+df_predictions<-
+  df_predictions %>% 
+  dplyr::select(x, y, Mean_prediction) 
+
+
+
+
+names(df_predictions) <- c("Lon", "Lat", "Mean_prediction")
+
+
+df_predictions %>% 
+  filter(Mean_prediction >= quantile(df_predictions$Mean_prediction, p = 0.95)) ->
+  df_predictions_hot_spot
+
+
+
+
+# Создаем карту в ggplot
+Pl_predictions <- 
+  ggplot() +
+  geom_tile(data = df_predictions, aes(x = Lon, y = Lat, fill = Mean_prediction)) +
+  geom_sf(data = land, fill = "green") +
+  coord_sf(
+    xlim = c(-, 180),   
+    ylim = c(40, 74)     
+  ) +
+  scale_fill_gradient(low = "white", high = "red")+
+  labs(fill = "Probability")
+
+
+Pl_hotspot <- 
+  ggplot() +
+  geom_sf(data = land, fill = "green") +
+  coord_sf(
+    xlim = c(120, 180),   
+    ylim = c(40, 74)     
+  ) +
+  theme_map() +
+  geom_point(data = df_predictions_hot_spot, aes(x = Lon, y = Lat), color = "red", size = 2) +
+  ggtitle("Hotspots")
+
+
+library(cowplot)
+
+
+plot_grid(Pl_predictions, Pl_hotspot, rel_widths = c(1, 0.4))
+
+
+preds_far_east <- brick("preds_coastal_far_east_50_km.tif")
+
+names(preds_far_east) <- c(
+  "Chlorophyll",
+  "Current",
+  "Dissolved_O2",
+  "Nitrate",
+  "pH",
+  "Phosphate",
+  "Phytoplankton",
+  "Primary_Prod",
+  "Salinity",
+  "Silicate",
+  "Temperature"
+)
+
+
+predictions_m1 <- predict(m1,newdata=preds_far_east, filename='predictions_m1.img', overwrite=TRUE) # many commonly used raster format is supported (throplot(p1)
+
+predict_m1 <- brick("predictions_m1.img")
+
+plot(predict_m1)
+
+
+
+# Загрузка береговой линии
+library(raster)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(sf)
+
+# my_extent <- extent(100, 180, 40, 80)
+# preds_cropped <- crop(preds, my_extent)
+
+# Загружаем данные береговой линии
+coastline <- ne_coastline(scale = "medium", returnclass = "sf")
+plot(coastline)
+
+# Преобразуем в ту же проекцию, что и растр
+coastline <- st_transform(coastline, crs = crs(preds_far_east))
+
+
+# Получаем данные суши
+land <- ne_countries(scale = "medium", returnclass = "sf")
+land <- st_transform(land, crs(preds_far_east))
+
+
+raster_df <- as.data.frame(predict_m1, xy = TRUE)
+
+head(raster_df)
+
+
+raster_df <- 
+  raster_df %>% 
+  filter(complete.cases(.))
+
+
+raster_df %>%
+  rowwise() %>%
+  mutate(
+    Mean_prediction = mean(c_across(starts_with("id_1__sp_Out__m_gam__re_cros")))
+  ) %>%
+  ungroup() ->
+  df_predictions
+
+df_predictions<-
+  df_predictions %>% 
+  dplyr::select(x, y, Mean_prediction) 
+
+
+
+
+names(df_predictions) <- c("Lon", "Lat", "Mean_prediction")
+
+
+df_predictions %>% 
+  filter(Mean_prediction >= quantile(df_predictions$Mean_prediction, p = 0.95)) ->
+  df_predictions_hot_spot
+
+
+library(ggnewscale)
+
+all_points_predictors <- 
+  all_points_predictors %>% 
+  arrange((BTN_presence))
+
+# Создаем карту в ggplot
+Pl_predictions <- 
+  ggplot() +
+  geom_tile(data = df_predictions, aes(x = Lon, y = Lat, fill = Mean_prediction)) +
+  geom_sf(data = land, fill = "gray") +
+  coord_sf(
+    xlim = c(-20, 45),   
+    ylim = c(30, 80)     
+  ) +
+  scale_fill_gradient(low = "white", high = "red")+
+  labs(fill = "Probability") 
+
+Pl_predictions +
+  new_scale_fill() +
+  geom_point(data = all_points_predictors, aes(x = Lon, y = Lat, fill = BTN_presence), size = 1, shape = 21) +
+  scale_fill_manual(values = c("yellow", "blue"))
+
+
+Pl_hotspot <- 
+  ggplot() +
+  geom_sf(data = land, fill = "green") +
+  coord_sf(
+    xlim = c(-20, 45),   
+    ylim = c(30, 80)    
+  ) +
+  theme_map() +
+  geom_point(data = df_predictions_hot_spot, aes(x = Lon, y = Lat), color = "red", size = 2) +
+  ggtitle("Hotspots")
+
+
+library(cowplot)
+
+
+plot_grid(Pl_predictions, Pl_hotspot, rel_widths = c(1, 0.4))
+
 
