@@ -24,11 +24,18 @@ plot_range <- function(x = 1){
     ggtitle(files[x])
 }
 
+files <- list.files("Data/Bird_Range_Polygons/")
 
-plot_range(9)
+
+
+plot_range(15)
+
 #
 
 # write.table(files, "clipboard", sep = "\t", row.names = F)
+
+
+
 
 
 
@@ -68,3 +75,98 @@ for(Sci_Name in species$Sci_Name){
 }
 
 write.table(x = species_range_sentroids, "clipboard", sep = "\t", row.names = F, dec = "," )
+
+
+# Особые центроиды
+
+
+library(sf)
+
+P_collybita_range_data <- st_read("Data/Bird_Range_Polygons/Phylloscopus collybita.kml")
+
+P_tristis_range_data <- st_read("Data/Bird_Range_Polygons/Phylloscopus tristis.kml")
+
+plot(P_collybita_range_data[2,1])
+plot(P_tristis_range_data[1,1])
+
+# Nesting
+combined_polygon <- st_union(P_collybita_range_data[2,1], P_tristis_range_data[1,1])
+
+combined_polygon %>% 
+  group_by(Name) %>% 
+  st_make_valid() %>%
+  # Упрощение геометрии (уменьшение детализации)
+  st_simplify(preserveTopology = TRUE, dTolerance = 0.01) %>%
+  st_centroid() %>% 
+  st_coordinates() %>% 
+  as.data.frame() -> range_mean
+
+
+
+plot(combined_polygon)
+
+
+# Wintering
+combined_polygon2 <- st_union(P_collybita_range_data[1,1], P_tristis_range_data[2,1])
+
+plot(combined_polygon2)
+
+combined_polygon2 %>% 
+  group_by(Name) %>% 
+  st_make_valid() %>%
+  # Упрощение геометрии (уменьшение детализации)
+  st_simplify(preserveTopology = TRUE, dTolerance = 0.01) %>%
+  st_centroid() %>% 
+  st_coordinates() %>% 
+  as.data.frame() -> range_mean
+
+
+############################
+
+F_parva_range_data <- st_read("Data/Bird_Range_Polygons/Ficedula parva.kml")
+
+F_albicilla_range_data <- st_read("Data/Bird_Range_Polygons/Ficedula albicilla.kml")
+
+
+F_parva_valid <- st_make_valid(F_parva_range_data[1,1])
+F_albicilla_valid <- st_make_valid(F_albicilla_range_data[1,1])
+
+plot(F_parva_range_data[1,1])
+
+plot(F_albicilla_range_data[1,1])
+
+
+# Nesting
+combined_polygon <- st_union(F_parva_valid, F_albicilla_valid)
+
+plot(combined_polygon)
+
+combined_polygon %>% 
+  group_by(Name) %>% 
+  st_make_valid() %>%
+  # Упрощение геометрии (уменьшение детализации)
+  st_simplify(preserveTopology = TRUE, dTolerance = 0.01) %>%
+  st_centroid() %>% 
+  st_coordinates() %>% 
+  as.data.frame() -> range_mean
+
+
+
+# Nesting
+
+F_parva_valid <- st_make_valid(F_parva_range_data[2,1])
+F_albicilla_valid <- st_make_valid(F_albicilla_range_data[2,1])
+
+combined_polygon <- st_union(F_parva_valid, F_albicilla_valid)
+
+plot(combined_polygon)
+
+combined_polygon %>% 
+  group_by(Name) %>% 
+  st_make_valid() %>%
+  # Упрощение геометрии (уменьшение детализации)
+  st_simplify(preserveTopology = TRUE, dTolerance = 0.01) %>%
+  st_centroid() %>% 
+  st_coordinates() %>% 
+  as.data.frame() -> range_mean
+
