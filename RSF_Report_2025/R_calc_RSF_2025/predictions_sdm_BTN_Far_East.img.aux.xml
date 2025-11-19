@@ -1,21 +1,21 @@
 <PAMDataset>
   <PAMRasterBand band="1">
-    <Description>id_1__sp_BTN1__m_rf</Description>
+    <Description>ensemble_BTN1_weighted</Description>
     <Metadata>
       <MDI key="LAYER_TYPE">athematic</MDI>
-      <MDI key="STATISTICS_MAXIMUM">0.91535717248917</MDI>
+      <MDI key="STATISTICS_MAXIMUM">0.71178686618805</MDI>
       <MDI key="STATISTICS_MEAN">-9999</MDI>
-      <MDI key="STATISTICS_MINIMUM">-1.3032630244445e-16</MDI>
+      <MDI key="STATISTICS_MINIMUM">0.0066961324773729</MDI>
       <MDI key="STATISTICS_STDDEV">-9999</MDI>
     </Metadata>
   </PAMRasterBand>
   <PAMRasterBand band="2">
-    <Description>id_2__sp_BTN2__m_rf</Description>
+    <Description>ensemble_BTN2_weighted</Description>
     <Metadata>
       <MDI key="LAYER_TYPE">athematic</MDI>
-      <MDI key="STATISTICS_MAXIMUM">0.91499918699265</MDI>
+      <MDI key="STATISTICS_MAXIMUM">0.72391927242279</MDI>
       <MDI key="STATISTICS_MEAN">-9999</MDI>
-      <MDI key="STATISTICS_MINIMUM">-9.0469299460296e-17</MDI>
+      <MDI key="STATISTICS_MINIMUM">0.061952594667673</MDI>
       <MDI key="STATISTICS_STDDEV">-9999</MDI>
     </Metadata>
   </PAMRasterBand>

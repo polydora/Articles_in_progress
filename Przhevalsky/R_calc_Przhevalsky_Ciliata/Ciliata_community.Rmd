@@ -1,0 +1,135 @@
+---
+title: "Инфузории в фекалиях лошадей"
+author: "В. М. Хайтов"
+date: "2025-11-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+
+```{r}
+library(readxl)
+library(vegan)
+library(dplyr)
+library(ggplot2)
+
+```
+
+
+## Данные для анализа
+
+После внимательного рассмотрения данных мне теперь кажется, что лучше работать с данными количественного учета. 
+Однако тут всплыли несколько важных обстоятельств. 
+
+1. Оля почему-то поставила 0.01 во всех тех случаях, когда были нули в количественных оценках. НО! эти же нули (в тех же местах) были и в качественном анализе. То есть если вид был в качественном анализе, то он был и в количественном. Исключение составляет один единственный вид *P.minuta*. Ему я оставил 0.01. Во всех остальных случаях если вида не было в качественном анализе, то ставил 0. Проверьте, пожалуйста датасет.
+
+2. В количественном анализе не разделяли виды *Bundleia*, а в качественном их различали. Поскольку количественные оценки имеют большую разрешающую способность, то предлагаю отказаться от деления на виды и в этом анализе их всех считать *Bundleia* sp.
+
+
+Вот таблица первичных данных, которую я использую в дальнейшем анализе (Она также и в приложении в виде экселевского файла)
+
+```{r}
+dat <- read_excel("Data/Infusoria_abundance.xlsx")
+
+kable(dat)
+```
+
+
+## Сравнение групп лошадей по составу сообщества инфузорий
+
+Ординация сообществ на основе матрицы коэффициентов Брей-Куртиса
+
+```{r}
+ord <- 
+  dat %>% 
+  select(-Name,-Sex, -Origin, -Type) %>% 
+  metaMDS(., trace = FALSE )
+
+
+MDS_sites <- as.data.frame(scores(ord)$sites)
+
+MDS_species <- as.data.frame(scores(ord)$species)
+
+MDS_species <-
+MDS_species %>% 
+  mutate(Species = row.names(.))
+
+```
+
+```{r}
+
+Pl_site <- 
+MDS_sites %>% 
+  mutate(Sex = dat$Sex, Origin = dat$Origin, Type = dat$Type) %>% 
+  ggplot(aes(x = NMDS1, y = NMDS2)) +
+  geom_point(aes(fill = Type, shape = Origin), size = 4) +
+  scale_shape_manual(values = c(21, 22, 23)) +
+  scale_fill_manual(values = c("red", "blue")) +
+  guides(fill = "none") +
+  theme_bw()
+
+Pl_site
+```
+
+На ординации хорошо видно, что сообщество инфузорий из загонов отличается от сообществ свободных лошадей.
+
+Для трактовки связей видов с типом местообитания приводим ординацию в тех же осях видов 
+
+```{r}
+library(ggrepel)
+
+Pl_site +
+  geom_point(data = MDS_species) +
+  geom_text_repel(data = MDS_species, aes(label = Species))
+```
+
+
+Следующие виды инфузорий более обильны сообществах у лошадей из загонов: S.confusum, C.edentatum, B.microcorys, C.minimum, B.angusta.
+
+Для проверки статистической значимости влияния факторов на структуру сообщества применяем PERMANOVA (10000 пермутаций).
+
+```{r}
+
+permanova_dat <- adonis2(formula = dat[,-c(1:4)] ~ Sex + Type + Origin, data = dat, permutations = 10000, by = "margin")
+
+library(broom)
+
+kable(tidy(permanova_dat))
+```
+
+Видно, что тип содержания лошадей оказывает значимое влияние. Для трактовки различий проведем анализ SIMPER.
+
+```{r}
+simp <- simper(comm = dat[,-c(1:4)],group = dat$Sex, permutations = 10000)
+summary(simp)
+```
+
+
+Значимое отличие в обилие выявляется у двух видов *B.microcorys* и *C.minimum*. Оба более обильны у лошадей, пасущихся в загоне.
+
+
+Кроме того, важно, что и фактор Origin играет роль. 
+
+```{r}
+simp2 <- simper(comm = dat[,-c(1:4)],group = dat$Origin, permutations = 10000)
+summary(simp2)
+```
+
+
+
+Значимое влияние этого фактора объясняется отличиями между Fr и Hu (не знаю, что это означает).
+
+Отличия выявлены в обилии *F.ovalis* (больше в Fr, чем в Hu) и  *C.edentatum* (больше в Hu, чем в Fr).
+
+
+Также выявлены отличия между Or и Fr. C.minimum более обилен в Or, чем в Fr. 
+
+
+Дайте комментарии, пожалуйста! Эти различия как-то можно трактовать? Есл инет, то и думать наж этим пока не будем. 
+
+
+

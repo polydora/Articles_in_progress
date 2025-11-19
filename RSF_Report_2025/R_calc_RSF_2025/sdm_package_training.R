@@ -129,7 +129,7 @@ library(raster)
 library(rnaturalearth)
 library(gdistance)
 
-# my_extent <- extent(100, 180, 40, 80)
+my_extent <- extent(100, 180, 40, 80)
 
 my_extent2 <- extent(-20, 45, 30, 80)  # например: долгота 10-20°, широта 35-45°
 
