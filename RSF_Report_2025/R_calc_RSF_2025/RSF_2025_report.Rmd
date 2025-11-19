@@ -1,0 +1,896 @@
+---
+
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(fig.show='hold',  warning=FALSE, message=FALSE, cache = FALSE, echo = FALSE)
+
+opts_chunk$set(echo = FALSE, fig.cap = TRUE)
+
+library(officedown)
+
+```
+
+
+```{r}
+
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+
+
+library(sp)
+library(ggmap)
+library(mapproj)
+library(maps)
+
+library(ggmap)
+library(readxl)
+library(ggrepel)
+library(dplyr)
+library(reshape2)
+library(cowplot)
+library(magrittr)
+library(patchwork)
+library(vegan)
+library(mgcv)
+library(gratia)
+library(broom.mixed) 
+
+library(rvg)
+
+library(flextable)
+
+
+default_theme <- 
+  theme_bw() + 
+  theme(axis.text = element_text(size = 15), axis.title = element_text(size = 20) )
+
+theme_set(default_theme)
+```
+
+
+
+```{r}
+points <- 
+  read_excel("Data/Magadan_2021_2023_ecology.xlsx", sheet = "Points  characteristic 2021-23", na = "NA")
+
+points_local <- 
+  points %>% 
+  filter(lat > 59.3)
+```
+
+
+
+
+```{r, fig.cap="Точки сбора материала"}
+
+load("Data/gg_Magadan_large.RData")
+
+Magadan <- data.frame(long = 150 + 48/60, lat = 59 + 34/60)
+
+Pl_map <- 
+ggplot(gg_Magadan_large, aes(x = long, y = lat, group = group)) + 
+  geom_polygon(fill = "gray30") + 
+  coord_map(xlim = c(150., 151.52), ylim = c(59.4, 59.8) ) +
+  theme(plot.margin = unit(c(0, 0, 0, 0), "cm")) +
+  theme_map() 
+
+
+Pl_map +
+  geom_point(data = points_local, aes(x = lon, y = lat, group = 1), shape = 21, fill = "yellow", size = 3) +
+  scale_fill_manual(values =  c("gray50", "yellow")) +
+  theme_minimal() +
+  guides(fill = "none", size = "none") +
+  labs(x = "Долгота", y = "Широта") +
+  geom_point(data = Magadan, aes(x = long + 0.01), shape = 22, group = 1, fill = "red", size = 6)+
+  geom_text(data =  Magadan, aes(x = long, y = lat+0.02, label = "Магадан", group = 1), color = "white")+
+  theme_map()
+  
+
+
+```
+
+
+
+```{r}
+cancer <- read_excel("Data/Cancer_Magadan_2021-2023.xlsx", na = "NA", sheet = "Magadan_cancer_prevalence")
+
+cancer2 <-
+  cancer %>%
+  group_by(Year, Site, Sample_ID) %>%
+  summarise(N_processed = sum(N_Processed), N_cancer = sum(BTN)) %>% 
+  filter(Year == 2023)
+
+```
+
+
+```{r}
+# Данные по разновидности BTN
+myt <- read_excel("Data/summary table_Magadan_itog.xlsx", sheet = "data")
+
+myt <-
+myt %>% 
+  select(-Site) %>% 
+  mutate(Site = Site_code)
+
+
+myt %<>%
+  mutate(BTN2 = BTN2.1 + BTN2.2)
+
+myt_23 <- 
+  myt %>% 
+  filter(Year == 2023)
+
+
+
+myt_23 %<>%
+  select(-c(Site, Lat, Lon,  Date, BTN2.1, BTN2.2,  DN_FC  )) %>% 
+  mutate(Site = Site_code)
+
+cancer <- 
+  myt %>% 
+  mutate(Prop_BTN1 = BTN1/N, Prop_BTN2 = (BTN2.1 + BTN2.2)/N, Prop_BTN2.1 = (BTN2.1)/N,  Prop_BTN2.2 = (BTN2.2)/N ) 
+
+
+cancer2 <-
+  cancer %>% 
+  filter(Year == 2023) %>% 
+  select(-Site) %>% 
+  rename(Site = Site_code)
+
+
+
+
+cancer <- 
+  merge(points, cancer)
+
+
+cancer %>% 
+  group_by(Site) %>% 
+  summarise(Lat = mean(Lat), Lon = mean(Lon), N_total = sum(N), BTN1 = sum(BTN1), BTN2 = sum(BTN2)) %>% 
+  mutate(BTN1 = BTN1/N_total*100, BTN2 = BTN2/N_total*100) %>% 
+  select(Site, Lat, Lon, BTN1, BTN2)  %>% 
+  melt(., id.vars = c("Site", "Lat", "Lon"), value.name = "Prop_BTN", variable.name = "Lineage" ) ->
+  prop_BTN
+  
+```
+
+
+
+
+
+
+```{r}
+Pl_map_BTN <- 
+Pl_map + 
+  geom_point(data = prop_BTN, aes(x = Lon, y = Lat, size = Prop_BTN, group = 1), shape = 21, fill = "yellow") + 
+  theme_map()+
+  guides(size = "none") +
+  scale_size_continuous(range = c(0, 5)) + 
+  facet_wrap(~ Lineage, ncol = 1)
+
+```
+
+
+```{r}
+Pl_hist <- 
+  ggplot(prop_BTN, aes(x = Prop_BTN)) +
+  geom_histogram(binwidth = 1.9) +
+  labs(x = "Доля зараженных (%)", y = "Количество участков") +
+  theme_bw() +
+  facet_wrap(~ Lineage)
+
+```
+
+
+
+```{r, fig.cap = "Частота зараженных мидий невелика: единицы процентов в поселении" }
+Pl_hist
+```
+
+
+```{r, fig.cap = "Частота BTN варьирует вдоль побережья", dpi = 300, fig.width= 8}
+Pl_map_BTN
+```
+
+
+
+```{r, fig.cap="Соленость варьирует в очень узких пределах"}
+points %>% 
+  ggplot(aes(Salinity)) + 
+  geom_histogram(binwidth = 5) +
+  labs(x = "Соленость", y = "Количество участков")  +
+  theme_bw()
+```
+
+
+```{r}
+# Данные по разновидности BTN
+myt <- read_excel("Data/summary table_Magadan_itog.xlsx", sheet = "data")
+
+myt <-
+myt %>% 
+  select(-Site) %>% 
+  mutate(Site = Site_code)
+
+
+myt %<>%
+  mutate(BTN2 = BTN2.1 + BTN2.2)
+
+myt_23 <- 
+  myt %>% 
+  filter(Year == 2023)
+
+Prob_BTN1_total <- sum(myt$BTN1)/sum(myt$N)
+Prob_BTN2_total <- sum(myt$BTN2)/sum(myt$N)
+
+
+myt_23 %<>%
+  select(-c(Site, Lat, Lon,  Date, BTN2.1, BTN2.2,  DN_FC  )) %>% 
+  mutate(Site = Site_code)
+
+
+```
+
+
+
+
+```{r}
+
+size <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", na = "NA", sheet = "Размерная струкутра 2023 2021")
+
+size <- size[complete.cases(size), ]
+
+library(reshape2)
+
+scam <- dcast(Year + Site ~ Size_class, data = size)
+
+area <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", na = "NA", sheet = "Площадь проб на размер")
+
+sample_area <- 
+  area %>% group_by(Year, Site) %>% summarise(Total_area = sum(Area))
+
+scam <- 
+  scam %>% group_by(Year, Site)
+
+
+scam [ ,3:ncol(scam)] <- 
+  round((scam[ ,3:ncol(scam)] / sample_area$Total_area) *10000, 0)
+
+
+
+
+# scam_23 <- scam %>% filter(Year == 2023)
+
+
+pca_scam <- rda(decostand(scam[ , -c(1,2)], method = "hellinger" ))
+
+# plot(pca_scam, display = "sp")
+
+sum_pca_scam <- summary(pca_scam)
+
+pca_scam_size_scores <- as.data.frame(scores(pca_scam)$species)
+
+
+pca_scam_scores <- as.data.frame(scores(pca_scam)$sites)
+
+pca_scam_scores$N_Juv <- scam$L3    
+
+pca_scam_scores$N_Large = scam$L8 + scam$L13 + scam$L18 + scam$L18 + scam$L23 + scam$L28 + scam$L33 + scam$L38 + scam$L43 
+
+pca_scam_scores$N_Total <- scam$L3 + scam$L8 + scam$L13 + scam$L18 + scam$L23 + scam$L28 + scam$L33 + scam$L38 + scam$L43 + scam$L48 + scam$L53 + scam$L58
+
+pca_scores_scam <- data.frame(Year = scam$Year, Site = scam$Site, pca_scam_scores)
+```
+
+```{r}
+cover_23 <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", sheet = "Покрытия миидий 2023")
+
+mean_cover_23 <-
+  cover_23 %>%
+  group_by(Site) %>%
+  summarise(Cover = mean(`Number of squares`/30))
+
+
+# Анализ без объедиения проб сайтов
+
+cancer <- 
+  myt %>% 
+  mutate(Prop_BTN1 = BTN1/N, Prop_BTN2 = (BTN2.1 + BTN2.2)/N, Prop_BTN2.1 = (BTN2.1)/N,  Prop_BTN2.2 = (BTN2.2)/N ) 
+
+
+cancer2 <-
+  cancer %>% 
+  filter(Year == 2023) %>% 
+  select(-Site) %>% 
+  rename(Site = Site_code)
+
+
+
+
+cancer_2023 <- 
+  merge(points, cancer2) %>% 
+  filter(Year == 2023)
+
+pca_scores_scam_23 <- 
+  pca_scores_scam %>% 
+  filter(Year == 2023)
+
+cancer_2023 <- 
+merge(cancer_2023, pca_scores_scam_23)
+
+cancer_2023 <- 
+  merge(cancer_2023, mean_cover_23)
+
+
+
+cancer_2023 <- 
+  cancer_2023 %>% 
+  mutate(BTN2 = BTN2.1 + BTN2.2,
+         BTN2.1 = BTN2.1,
+         BTN2.2 = BTN2.2)
+```
+
+
+
+
+
+```{r}
+size_23 <- 
+size %>% filter(Year == 2023)  
+
+Sites <- 
+pca_scores_scam_23 %>% arrange(PC1) %>% pull(Site) 
+
+size_23$Site <- factor(size_23$Site, levels = Sites)
+
+Pl_size_stricture <-
+size_23 %>% 
+  ggplot(., aes(x = L)) +
+  geom_histogram(binwidth = 5) +
+  facet_wrap(~Site, scales = "free_y", dir = "v") +
+  theme_bw() +
+  theme(strip.text = element_blank()) +
+  labs(x = "Размерные классы (мм)", y = "Частота")
+  
+```
+
+```{r, fig.width=7, fig.cap="Размерная структура - значительно различается между участками"}
+Pl_size_stricture  
+```
+
+
+```{r, fig.cap="Cвязь доли молоди со значениями PC1." }
+ggplot(pca_scores_scam, aes(PC1, N_Juv/(N_Juv + N_Large))) + 
+  geom_text(aes(label = Site)) +
+  labs(x = "Значения PC1", y = "Доля молоди") +
+  geom_smooth(method = "lm") +
+  theme_bw()
+
+```
+
+#####################################################
+```{r}
+# Извлекаем данные по OGP
+
+growth <- read_excel("Data/Mussel_growth_Magadan_2021_2023.xlsx", 
+                    col_types = "guess")
+
+str(growth)
+
+
+growth$OGP_sample <- as.numeric(growth$OGP_sample)
+
+growth %>% 
+  filter(Year == 2023) %>% 
+  group_by(Site_code, Sample) %>%
+  summarise(OGP_sample = mean(OGP_sample))
+
+
+
+```
+
+
+
+
+
+```{r}
+# Модель для Prop_BTN1, Prop_BTN2.1 и Prop_BTN2.2 в одной модели #################
+
+cancer_2023_long <- 
+cancer_2023 %>% 
+  select(Site, Salinity, Dist_Port, fetch, Sample, PC1, PC2, N_Large, N_Juv, N_Total, Cover, N, BTN1, BTN2) %>%
+  mutate(Sample = 1:nrow(.)) %>% 
+  melt(., id.vars = c("Site", "Salinity", "Dist_Port", "fetch",  "Sample", "PC1", "PC2", "N_Large", "N_Juv", "N_Total",  "Cover", "N"), variable.name = "Lineage", value.name = "N_cancer") %>% 
+  mutate(N_helthy = N - N_cancer)
+
+
+# Проверка на колинеарность предикторов
+# df <-
+# cancer_2023_long %>%
+#   filter(Lineage == "BTN1")
+# 
+# mod_foo <- lm(BTN1 ~ Dist_Port + fetch + PC1 + Cover, data = cancer_2023)
+# 
+# library(car)
+# vif(mod_foo)
+
+cancer_2023_long$Site <- factor(cancer_2023_long$Site)
+
+# Mod_btn1_btn2 <- gam(cbind(N_cancer, N_helthy) ~ s((Dist_Port), by = Lineage, k = 5, bs = "tp") + s((fetch), by = Lineage, k = 5, bs = "tp")  + s((PC1), by = Lineage, k = 5, bs = "tp") +  Lineage + s(Site, bs = "re"),  family = "binomial", method = "REML", data = cancer_2023_long )
+
+# summary(Mod_btn1_btn2)
+
+
+Mod_btn1_btn2_no_re <- gam(cbind(N_cancer, N_helthy) ~ s((Dist_Port), by = Lineage, k = 10, bs = "tp") + s((fetch), by = Lineage, k = 10, bs = "tp")  + s((PC1), by = Lineage, k = 10, bs = "tp")  +  Lineage,  family = "binomial", method = "REML", data = cancer_2023_long )
+
+# AIC(Mod_btn1_btn2, Mod_btn1_btn2_no_re)
+
+# summary(Mod_btn1_btn2_no_re)
+
+mod_sum <- tidy(Mod_btn1_btn2_no_re)
+
+# draw(Mod_btn1_btn2_no_re)
+```
+
+
+
+
+$$
+GAM : Prevalence = s(Dist_{Port}|Lineage) + s(Fetch|Lineage) + s(PC1|Lineage) + Lineage
+$$
+
+- Логистическая обобщенная аддитивная модель (GAM)
+- Зависимая переменная ($Prevalence$): Биномиальное распределение
+- Cглаживающие функции подобраны для $MtrBTN1$ и $MtrBTN2$ отдельно
+
+
+## Регрессионная модель: *предикторы значимо влияют на заболеваемость $MtrBTN1$ и не влияют на заболеваемость $MtrBTN2$*
+
+
+```{r}
+ft <- flextable(mod_sum)
+
+ft <-
+  ft %>% 
+  colformat_double(j = 2:4, digits = 1) %>% 
+  colformat_double(j = 5, digits = 3) %>% 
+  bg(i = c(1, 3, 5), bg = "yellow", part = "body") %>% 
+  set_header_labels(statistic = "Chi.sq Statistic",
+                    term = "Член модели") %>% 
+  set_caption(caption = "Параметры GAM")
+```
+
+
+```{r}
+ft %>% 
+  # Увеличиваем размер таблицы для заполнения слайда
+  fontsize(size = 14, part = "all") %>%
+  height_all(height = 0.4) %>%
+  width(width = 2.5) %>%
+  autofit()
+
+```
+
+## **Предсказание модели**
+
+
+
+```{r}
+sm <- smooth_estimates(Mod_btn1_btn2_no_re) |>
+  add_confint()
+
+```
+
+
+
+```{r, fig.cap="Частота $MtrBTN1$ убывает по мере приблежения к источникам антропогенного загрязнения", fig.width=8}
+
+sm %>% 
+  filter(.smooth == "s(Dist_Port):LineageBTN1") %>% 
+  ggplot() +
+   geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = Dist_Port),
+    alpha = 0.2) +
+    geom_line(aes(x = Dist_Port, y = .estimate), lwd = 1.2, color = "blue") +
+  geom_rug(data = cancer_2023_long, aes(x =Dist_Port) ) +
+  labs(x = "Растояние от порта (км)", y = "Partial effect")  +
+  geom_hline(yintercept = 0, linetype = 2) +
+  theme_bw()+
+  theme(axis.title.x = element_text(size = 15))
+
+```
+
+
+
+## **Предсказание модели**  
+
+```{r, fig.cap="Частота $MtrBTN1$ увеличивается на участках открытых для прибоя", fig.width=8}
+
+sm %>% 
+  filter(.smooth == "s(fetch):LineageBTN1") %>% 
+  ggplot() +
+   geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = fetch),
+    alpha = 0.2) +
+    geom_line(aes(x = fetch, y = .estimate), lwd = 1.2, color = "blue") +
+  geom_rug(data = cancer_2023_long, aes(x =fetch) ) +
+  labs(x = "Прибойность, Fetch (км)", y = "Partial effect")  +
+  geom_hline(yintercept = 0, linetype = 2) +
+  theme_bw()+
+  theme(axis.title.x = element_text(size = 15)) +
+  annotate(geom = "text", x = 5, y = -2.5, label = "Закрытое побережье", size = 5) +
+  annotate(geom = "text", x = 25, y = -2.5, label = "Открытое побережье", size = 5)  
+  
+
+
+```
+
+
+
+## **Предсказание модели**   
+
+```{r, fig.cap="Частота BTN1 увеличивается на участках с высокой долей молоди", fig.width=8}
+sm %>% 
+  filter(.smooth == "s(PC1):LineageBTN1") %>% 
+  ggplot() +
+   geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = PC1),
+    alpha = 0.2) +
+    geom_line(aes(x = PC1, y = .estimate), lwd = 1.2, color = "blue") +
+  geom_rug(data = cancer_2023_long, aes(x =PC1) ) +
+  labs(x = "PC1", y = "Partial effect")  +
+  geom_hline(yintercept = 0, linetype = 2) +
+  theme_bw()+
+  theme(axis.title.x = element_text(size = 15)) +
+  annotate(geom = "text", x = -0.45, y = -2, label = "Много молоди", size = 5) +
+  annotate(geom = "text", x = 0.08, y = -2, label = "Много старых", size = 5)  +
+  annotate(geom = "segment", y = -2, yend = -2, x = -0.36, xend = -0.01, arrow = arrow(ends = "both", type = "closed", angle = 10), color = "red")
+  
+
+
+```
+
+## Экологические ниши BTN
+
+1. $MtrBTN1$ чаще встречается в поселениях мидий в наиболее благоприятных для хозяина условиях: вдали от источников антропогенного загрязнения, в местах с повышенной прибойностью, где идет активное пополнение мидий.
+2. Значимой связи $MtrBTN2$ с изученными предикторами не выявлено, но эта линия встречается с той же частотой, что и $MtrBTN1$.
+3. $MtrBTN2$, вероятно, более эврибионтная линия, имеет более широкую экологическую нишу, чем $MtrBTN1$. 
+
+<!-- 2. *Альтернативное объяснение*: $MtrBTN1$ может быть обнаружен только в тех условиях, где хозяин имеет максимальные шансы выжить. -->
+
+
+# Влияние BTN на хозяина
+
+## Показатели жизненных функций мидий 
+
+
+:::::::::::::: {.columns}
+
+:::{.column width=70%}
+
+На материале 2021 и 2023 гг у мидий  оценивали 
+
+- Репродуктивный статус (микроскопирование мазков гонад)
+- Длина раковины и ее прирост в последний сезон роста 
+   
+
+:::
+
+
+:::{.column width=30%}
+
+![](figure/Mussel measure.png)
+
+:::
+
+::::::::::::::
+
+
+```{r}
+# Данные по индивидуальным характристикам мидий
+myt_ind <- read_excel("Data/Mussel_growth_Magadan_2021_2023.xlsx", na = "NA")
+
+myt_ind$Sample <- paste(myt_ind$Site_code, myt_ind$Sample, sep = "_")
+
+
+# Удаляем идий, которые были испольованы для анализа роста, но не анализировались с для определения BTN
+
+myt_ind %<>%
+  filter(!is.na(DN))
+
+
+myt_ind$DN <- factor(myt_ind$DN)
+myt_ind$Site_code <- factor(myt_ind$Site_code)
+myt_ind$Sample <- factor(myt_ind$Sample)
+myt_ind$Rate_of_aneuploid_cells <- as.numeric(myt_ind$Rate_of_aneuploid_cells)
+
+myt_ind %<>%
+  mutate(Prop_Increment = Increment/L) %>% 
+  mutate(BTN_Type = case_when(BTN_genotype == "BTN1" ~ "BTN1",
+                              BTN_genotype %in% c("BTN2.1", "BTN2.2") ~ "BTN2",
+                              BTN_genotype == "healthy" ~ "healthy"))
+
+myt_ind$BTN_Type <- factor(myt_ind$BTN_Type)
+
+
+myt_ind %<>%
+  mutate(Gonad_quality = case_when(Sex == "male" ~ "Developed",
+                                   Sex == "female" ~ "Developed",
+                                   Sex == "no gametes" ~ "No"))
+
+
+myt_ind <-
+  myt_ind %>% 
+  filter(!is.na(BTN_Type))
+
+
+
+# myt_ind %>%  
+#   filter(!is.na(Sex)) %>% 
+#   ggplot(aes(BTN_Type, Prop_Increment, fill = BTN_Type)) +
+#   geom_boxplot() +
+#   facet_grid(Sex ~ Year)
+
+
+
+
+myt_ind_clean <- 
+  myt_ind %>%  
+  filter(!is.na(BTN_Type)) %>% 
+  filter(Sex != "hermaphrodite") %>% 
+  filter(!is.na(Sex)) 
+
+myt_ind_clean$Fi_Increment <- 2*asin(sqrt(myt_ind_clean$Prop_Increment)) * 180/pi
+
+points <- read_excel("Data/Magadan_2021_2023_ecology.xlsx", sheet = "Points  characteristic 2021-23", na = "NA")
+
+points %<>%
+  rename(Site_code = Site)
+
+
+# points_2023 <- 
+#   points %>% 
+#   filter(Year == 2023) %>% 
+#   rename(Site_code = Site)
+
+myt_ind_clean <- merge(myt_ind_clean, points)
+
+
+myt_ind_clean$BTN_Type <- factor(myt_ind_clean$BTN_Type, labels = c("BTN1", "BTN2", "Здоровые"))
+
+myt_ind_clean$Gonad_quality <- factor(myt_ind_clean$Gonad_quality, labels = c("Есть гаметы", "Нет гамет"))
+
+```
+
+
+## BTN и репродуктивный статус хозяина
+
+```{r, fig.cap="У мидий, зараженных $BTN$, часто нарушено развитие гонад",  fig.width=10}
+
+# At! размер картинки на слайдах этого типа регулируется fig.width=
+
+myt_ind_clean %>%
+  group_by(Year, BTN_Type, Gonad_quality) %>%  # Группируем по годам и типам BTN
+  summarise(Frequency = n(), .groups = 'drop') %>%  # Считаем количество наблюдений
+  group_by(Year, BTN_Type) %>%  # Группируем для вычисления долей
+  mutate(Frequency = Frequency / sum(Frequency)) %>%  # Преобразуем в доли
+  ggplot(aes(x = "", y = Frequency, fill = Gonad_quality)) +
+  geom_bar(stat = "identity", width = 1, color = "black") +
+  coord_polar("y", start = 0) +
+  theme_void() +
+  facet_grid(Year ~ BTN_Type) + # Разделяем на подграфики по годам и типам BTN
+  scale_fill_manual(values = c("green", "red")) +
+  labs(fill = "") +
+  theme(strip.text = element_text(size = 18))
+  
+
+```
+
+
+## Зависимость частоты нарушения развития гонад от степени развития заболевания
+
+```{r}
+
+myt_ind_clean %>%
+  mutate(Gonad_Out = ifelse(Gonad_quality == "Нет гамет", 1, 0)) %>% 
+  filter(BTN_Type != "Здоровые") ->
+  myt_ind_clean_not_healthy
+
+myt_ind_clean_not_healthy <-
+  myt_ind_clean_not_healthy %>% 
+  mutate(Lineage = BTN_Type, Aneuploid_Proportion = Rate_of_aneuploid_cells)
+
+
+Mod_gonad <- gam(Gonad_Out ~ s(Aneuploid_Proportion, by = Lineage) + Lineage , family = "binomial",  method = "REML", data = myt_ind_clean_not_healthy)
+
+mod_sum2 <- tidy(Mod_gonad)
+```
+
+
+```{r}
+ft <- flextable(mod_sum2)
+
+ft <-
+  ft %>% 
+  colformat_double(j = 2:4, digits = 1) %>% 
+  colformat_double(j = 5, digits = 3) %>% 
+  bg(i = c(1), bg = "yellow", part = "body") %>% 
+  set_header_labels(statistic = "Chi.sq Statistic",
+                    term = "Член модели") %>% 
+  set_caption(caption = "Параметры GAM")
+
+ft %>% 
+  # Увеличиваем размер таблицы для заполнения слайда
+  fontsize(size = 14, part = "all") %>%
+  height_all(height = 0.4) %>%
+  width(width = 2.5) %>%
+  autofit()
+```
+
+## **Пердсказание модели**
+
+
+
+
+:::::::::::::: {.columns}
+
+:::{.column width=70%}
+
+```{r, fig.cap= "При заражении $MtrBTN1$ видимые нарушения наступают на поздних стадиях заболевания"}
+draw(Mod_gonad, select = 1, scales = "fixed") +
+  geom_hline(yintercept = 0, linetype = 2) +
+  ggtitle("BTN1", subtitle = "") +
+  labs(x = "Доля (%) анеуплоидных клеток") +
+  ylim(-5, 4)+
+  annotate(geom = "text", x = 25, y = 0.5, label = "Среднее значение")  +
+  theme_bw() +
+  theme(axis.title.x = element_text(size = 15))
+
+  
+  
+```
+
+
+:::
+
+
+:::{.column width=30%}
+
+```{r, fig.cap= "При заражении $MtrBTN2$ нарушения наступают раньше, начиная с ранних стадий заболевания"}
+draw(Mod_gonad,  scales = "fixed", select = 2) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  ggtitle("BTN2", subtitle = "") +
+  labs(x = "Доля (%) анеуплоидных клеток") +
+  ylim(-5, 4) +
+  annotate(geom = "text", x = 25, y = 0.5, label = "Среднее значение")  +
+  theme_bw()+
+  theme(axis.title.x = element_text(size = 15))
+
+
+```
+
+
+:::
+
+::::::::::::::
+
+## Влияние BTN на рост моллюсков
+
+Модель:    
+- Зависимая перменная: Отношение прироста последнего года к длине раковины (после $\varphi$-преобразования Фишера)    
+- Предикторы: Размер последнего кольца, статус ($MtrBTN1$, $MtrBTN2$, Здоровые)
+
+
+
+$$
+GAM: \varphi = s(L_{LastRing}|Status) + Status  
+$$
+
+
+## Влияние BTN на рост моллюсков
+
+```{r}
+Mod_prop_incr_btn <- gam(Fi_Increment ~ BTN_Type + s(Last_ring, bs = "cr", by = BTN_Type)  + s(Sample, bs = "re"), family = "gaussian", data = myt_ind_clean, method = "REML")
+
+```
+
+```{r}
+Pl_Last_ring <- 
+  draw(Mod_prop_incr_btn, grouped_by = T, select = c(1, 2, 3)) + 
+  xlim(20, 55) +
+  ylim(-30, 30) +
+  labs(fill = "", color = "Статус", x = "Расстояние до последнего кольца") +
+  ggtitle(NULL, subtitle = NULL)  +
+  theme_bw() +
+  guides(fill = "none", color = "none")+
+  theme(axis.title.x = element_text(size = 15))
+
+```
+
+
+```{r}
+
+My_data <- data.frame(BTN_Type = levels(myt_ind_clean$BTN_Type), Last_ring = mean(myt_ind_clean$Last_ring))
+
+
+
+Predicted <- predict(Mod_prop_incr_btn, newdata = My_data, exclude = "s(Sample)", newdata.guaranteed=TRUE, se.fit = TRUE)
+
+My_data$Fit <- Predicted$fit
+My_data$SE <- Predicted$se.fit
+
+Fi_back <- function(x) (sin((x*pi)/360))^2
+
+My_data$P_incr <- Fi_back(My_data$Fit)
+My_data$upr <- Fi_back(My_data$Fit + 1.96*My_data$SE)
+My_data$lwr <- Fi_back(My_data$Fit - 1.96*My_data$SE)
+
+
+library(itsadug)
+
+# wald_gam(Mod_prop_incr_btn)
+
+
+
+library(ggeffects)
+
+My_data <-
+as.data.frame(ggpredict(Mod_prop_incr_btn, terms = "BTN_Type", typical = "weighted.mean")) %>% 
+  select(x, predicted, conf.low, conf.high) %>% 
+  mutate(P_incr = Fi_back(predicted), upr = Fi_back(conf.high), lwr = Fi_back(conf.low), BTN_Type = x )
+
+library(ggsignif)
+
+Pl_Status <-
+  ggplot(My_data, aes(x = BTN_Type, y = P_incr)) +
+geom_violin(data = myt_ind_clean, aes(x = BTN_Type, y = Prop_Increment), alpha = 0.3, fill = "gray")+
+  geom_col(fill = "blue", alpha = 0.5, color = "blue") +
+  geom_errorbar(aes(ymin = lwr, ymax = upr), width = 0.2, color = "blue") +
+  labs(x = "", y = "Partial effect") +
+  geom_signif(comparisons = list(
+      c("BTN1", "BTN2"),
+      c("BTN2", "Здоровые")),
+      annotations = c("W = 6.5, p = 0.011", "W = 7.5, p = 0.006")
+      )  +
+  theme_bw()+
+  theme(axis.text.x = element_text(size = 15))
+  
+  
+```
+
+
+
+
+
+
+:::::::::::::: {.columns}
+
+:::{.column width=70%}
+
+```{r, fig.cap="По мере увеличения размеров прирост последнего года закономерно снижается"}
+Pl_Last_ring
+```
+
+:::
+
+
+:::{.column width=30%}
+
+```{r, fig.cap="Прирост последнего года у зараженных BTN2 оказывается выше, чем у зараженных $MtrBTN1$ и у здоровых особей, которые между собой не отличаются"}
+Pl_Status
+```
+
+
+:::
+
+::::::::::::::
+
+## Разные стратегии у BTN1 и BTN2
+
+- Паразиты живут в мире с двумя экологическими осями: ресурсы хозяина (*среда I прядка*) и  внешние факторы (*среда II порядка*). Положение экологической ниши в этих осях определяет успех паразита.
+- В отличие от $MtrBTN1$, $MtrBTN2$ стимулирует соматический рост хозяина за счет эффективного подавления его репродукции. Это может быть уподоблено паразитарной кастрации. $MtrBTN2$ более эффективно использует ресурсы среды I порядка.
+- В отличие от $MtrBTN2$, $MtrBTN1$ сильно зависит от факторов среды II порядка. Возможно это является следствием менее эффективного использования ресурсов среды I порядка.
+- С разной стратегией двух линий $BTN$ могут  быть связаны особенности их географического распространения: более узкое (субарктика) у $MtrBTN1$ и более широкое (практически всесветное) у $MtrBTN2$
+
+
+# Спасибо за внимание!
