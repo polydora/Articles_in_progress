@@ -3,9 +3,9 @@
     <Description>ensemble_BTN1_weighted</Description>
     <Metadata>
       <MDI key="LAYER_TYPE">athematic</MDI>
-      <MDI key="STATISTICS_MAXIMUM">0.71178686618805</MDI>
+      <MDI key="STATISTICS_MAXIMUM">0.77586406469345</MDI>
       <MDI key="STATISTICS_MEAN">-9999</MDI>
-      <MDI key="STATISTICS_MINIMUM">0.0066961324773729</MDI>
+      <MDI key="STATISTICS_MINIMUM">0.038617298007011</MDI>
       <MDI key="STATISTICS_STDDEV">-9999</MDI>
     </Metadata>
   </PAMRasterBand>
@@ -13,9 +13,9 @@
     <Description>ensemble_BTN2_weighted</Description>
     <Metadata>
       <MDI key="LAYER_TYPE">athematic</MDI>
-      <MDI key="STATISTICS_MAXIMUM">0.72391927242279</MDI>
+      <MDI key="STATISTICS_MAXIMUM">0.80265134572983</MDI>
       <MDI key="STATISTICS_MEAN">-9999</MDI>
-      <MDI key="STATISTICS_MINIMUM">0.061952594667673</MDI>
+      <MDI key="STATISTICS_MINIMUM">0.065863952040672</MDI>
       <MDI key="STATISTICS_STDDEV">-9999</MDI>
     </Metadata>
   </PAMRasterBand>
