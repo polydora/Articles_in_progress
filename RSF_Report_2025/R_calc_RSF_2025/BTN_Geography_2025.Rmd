@@ -71,7 +71,7 @@ btn_geography_uni <-
   select(Sample_ID, Year, Lat, Lon, DN) %>% 
   rename(Site_code = Sample_ID) %>% 
   mutate(BTN_presence = ifelse(DN == 0, "no", "yes")) %>% 
-  select(-DN) %>% 
+  dplyr::select(-DN) %>% 
   mutate(Dataset = "Our geography") %>% 
   arrange(BTN_presence)
 
@@ -104,7 +104,7 @@ btn_world_uni <-
   mutate(BTN_presence = ifelse(DN == 0, "no", "yes")) %>% 
   select(-DN, -N_BTN) %>% 
   mutate(Dataset = "World") %>% 
-  arrange(desc(BTN_presence))
+  arrange((BTN_presence))
 
 
 
@@ -113,7 +113,7 @@ btn_world_uni <-
 
 ## Присуствие DN/BTN по данным анализа литературы
 
-```{r}
+```{r, fig.width=10}
 Pl_map + 
   geom_point(data = btn_world_uni %>% filter(complete.cases(.)), aes(x = Lon, y = Lat, fill = BTN_presence), size = 2, position = position_jitter(width = 0.1, height = 0.01), shape = 21, alpha = 0.8) +
   scale_fill_manual(values = c("yellow", "red")) +
@@ -124,7 +124,7 @@ Pl_map +
 
 ## Присуствие BTN по нашим данным
 
-```{r}
+```{r, fig.width=10}
 Pl_map + 
   geom_point(data = btn_geography_uni, aes(x = Lon, y = Lat, fill = BTN_presence), size = 2, position = position_jitter(width = 0.1, height = 0.01), shape = 21, alpha = 0.8) +
   geom_point(data = btn_Kola_uni, aes(x = Lon, y = Lat, fill = BTN_presence), size = 2, position = position_jitter(width = 0.1, height = 0.01), shape = 21, alpha =  0.8) +
@@ -136,7 +136,7 @@ Pl_map +
 
 ## Отдельно Приморье
 
-```{r}
+```{r, fig.width=10}
 ggplot(data = world) +
   geom_sf(fill = "gray50", color = "gray50") +
   theme_map()  +
@@ -153,7 +153,7 @@ ggplot(data = world) +
 
 ## Кольский залив
 
-```{r}
+```{r, fig.width=10}
 
 
 Murmansk_region <- st_read("Data/Maps/Murmanskaya_obl/boundary-polygon-land-lvl4.shp", quiet =  TRUE)
@@ -187,7 +187,7 @@ Pl_kola +
 ## BTN в Тауйской губе
 
 
-```{r}
+```{r, fig.width=10}
 load("Data/gg_Magadan_large.RData")
 
 Magadan <- data.frame(long = 150 + 48/60, lat = 59 + 34/60)
@@ -211,153 +211,153 @@ Pl_Magadan +
 
 
 
-## Информация по предикторам для точек 
+<!-- ## Информация по предикторам для точек  -->
 
-```{r}
-all_points <- rbind(btn_geography_uni, btn_Magadan_uni, btn_Kola_uni, btn_world_uni)
+<!-- ```{r} -->
+<!-- all_points <- rbind(btn_geography_uni, btn_Magadan_uni, btn_Kola_uni, btn_world_uni) -->
 
-all_points <- 
-  all_points %>% 
-  filter(complete.cases(.))
-
-
-
-sum(all_points$BTN_presence == "yes")/nrow(all_points)
-
-
-uniq_point_btn <- 
-all_points %>% 
-  group_by(Lon, Lat, Dataset) %>% 
-  summarise(N_btn_presence = sum(BTN_presence == "yes") )
-
-n_uniq_site <- nrow(uniq_point_btn) 
-  
-  
-# sum(uniq_point_btn$N_btn_presence != 0)/nrow(uniq_point_btn)
-
-
-```
-
-```{r}
-library(raster)
-
-lst <- list.files(path="D:/Data_LMBE/BIO_Oracle_predictors/",pattern='asc$',full.names = T) # list the name of files in the specified
+<!-- all_points <-  -->
+<!--   all_points %>%  -->
+<!--   filter(complete.cases(.)) -->
 
 
 
-
-predictors <- stack(lst)
-
-names(predictors) <- c(
-  "Chlorophyll",
-  "Current",
-  "Dissolved_O2",
-  "Nitrate",
-  "pH",
-  "Phosphate",
-  "Phytoplankton",
-  "Primary_Prod",
-  "Salinity",
-  "Silicate",
-  "Temperature"
-)
+<!-- sum(all_points$BTN_presence == "yes")/nrow(all_points) -->
 
 
-```
+<!-- uniq_point_btn <-  -->
+<!-- all_points %>%  -->
+<!--   group_by(Lon, Lat, Dataset) %>%  -->
+<!--   summarise(N_btn_presence = sum(BTN_presence == "yes") ) -->
+
+<!-- n_uniq_site <- nrow(uniq_point_btn)  -->
+
+
+<!-- # sum(uniq_point_btn$N_btn_presence != 0)/nrow(uniq_point_btn) -->
+
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- library(raster) -->
+
+<!-- lst <- list.files(path="D:/Data_LMBE/BIO_Oracle_predictors/",pattern='asc$',full.names = T) # list the name of files in the specified -->
 
 
 
 
-```{r}
+<!-- predictors <- stack(lst) -->
 
-# Берем только северное полушарие
-
-uniq_point_btn_North <- 
-  uniq_point_btn %>% 
-  filter(Lat > 0)
-
-my.sites <- as.matrix(uniq_point_btn_North[, 1:2])
-
-```
-
-
-```{r}
-
-df_predictors <- as.data.frame(extract(predictors, my.sites, method = 'bilinear'))
-
-```
+<!-- names(predictors) <- c( -->
+<!--   "Chlorophyll", -->
+<!--   "Current", -->
+<!--   "Dissolved_O2", -->
+<!--   "Nitrate", -->
+<!--   "pH", -->
+<!--   "Phosphate", -->
+<!--   "Phytoplankton", -->
+<!--   "Primary_Prod", -->
+<!--   "Salinity", -->
+<!--   "Silicate", -->
+<!--   "Temperature" -->
+<!-- ) -->
 
 
-```{r}
-predictors <- data.frame(Lon = my.sites[, 1], Lat = my.sites[, 2], df_predictors)
-  
-# predictors %>% 
-  # filter(!is.na(sal)) 
-  
-```
-
-
-```{r}
-all_points_predictors <- merge(all_points, predictors)
-
-all_points_predictors <-
-all_points_predictors %>%
-  mutate(Out = ifelse(BTN_presence == "yes", 1, 0))
-  
-```
-
-```{r}
-
-mod_foo <- glm(Out ~ Chlorophyll + Current + Dissolved_O2 + Nitrate + pH + Phosphate + Phytoplankton + Primary_Prod + Salinity + Silicate + Temperature, family = "binomial",  data = all_points_predictors)
-
-library(car)
-vif(mod_foo)
-
-
-mod_foo2 <- update(mod_foo, . ~ . -Phytoplankton) 
-
-vif(mod_foo2)
-
-
-mod_foo3 <- update(mod_foo2, . ~ . -Primary_Prod) 
-
-vif(mod_foo3)
-
-mod_foo4 <- update(mod_foo3, . ~ . -Dissolved_O2) 
-
-vif(mod_foo4)
-
-mod_foo5 <- update(mod_foo4, . ~ . -Silicate) 
-
-vif(mod_foo5)
-
-mod_foo6 <- update(mod_foo5, . ~ . -pH ) 
-
-vif(mod_foo6)
-
-
-
-library(mgcv)
-Mod <- gam(Out ~ s(Chlorophyll, bs = "tp", k = 5) + 
-             s(Current, bs = "tp", k = 5) + 
-             s(Nitrate, bs = "tp", k = 5) + 
-             s(Phosphate, bs = "tp", k = 5) + 
-             s(Salinity , bs = "tp", k = 5) + 
-             s(Temperature, bs = "tp", k = 5) , 
-           family = "binomial", 
-           method = "REML", 
-           data = all_points_predictors)
-
-summary(Mod)
-
-library(gratia)
-gratia::draw(Mod)
-```
+<!-- ``` -->
 
 
 
 
-```{r}
-library(sdm)
-```
+<!-- ```{r} -->
+
+<!-- # Берем только северное полушарие -->
+
+<!-- uniq_point_btn_North <-  -->
+<!--   uniq_point_btn %>%  -->
+<!--   filter(Lat > 0) -->
+
+<!-- my.sites <- as.matrix(uniq_point_btn_North[, 1:2]) -->
+
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+
+<!-- df_predictors <- as.data.frame(extract(predictors, my.sites, method = 'bilinear')) -->
+
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- predictors <- data.frame(Lon = my.sites[, 1], Lat = my.sites[, 2], df_predictors) -->
+
+<!-- # predictors %>%  -->
+<!--   # filter(!is.na(sal))  -->
+
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- all_points_predictors <- merge(all_points, predictors) -->
+
+<!-- all_points_predictors <- -->
+<!-- all_points_predictors %>% -->
+<!--   mutate(Out = ifelse(BTN_presence == "yes", 1, 0)) -->
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+
+<!-- mod_foo <- glm(Out ~ Chlorophyll + Current + Dissolved_O2 + Nitrate + pH + Phosphate + Phytoplankton + Primary_Prod + Salinity + Silicate + Temperature, family = "binomial",  data = all_points_predictors) -->
+
+<!-- library(car) -->
+<!-- vif(mod_foo) -->
+
+
+<!-- mod_foo2 <- update(mod_foo, . ~ . -Phytoplankton)  -->
+
+<!-- vif(mod_foo2) -->
+
+
+<!-- mod_foo3 <- update(mod_foo2, . ~ . -Primary_Prod)  -->
+
+<!-- vif(mod_foo3) -->
+
+<!-- mod_foo4 <- update(mod_foo3, . ~ . -Dissolved_O2)  -->
+
+<!-- vif(mod_foo4) -->
+
+<!-- mod_foo5 <- update(mod_foo4, . ~ . -Silicate)  -->
+
+<!-- vif(mod_foo5) -->
+
+<!-- mod_foo6 <- update(mod_foo5, . ~ . -pH )  -->
+
+<!-- vif(mod_foo6) -->
+
+
+
+<!-- library(mgcv) -->
+<!-- Mod <- gam(Out ~ s(Chlorophyll, bs = "tp", k = 5) +  -->
+<!--              s(Current, bs = "tp", k = 5) +  -->
+<!--              s(Nitrate, bs = "tp", k = 5) +  -->
+<!--              s(Phosphate, bs = "tp", k = 5) +  -->
+<!--              s(Salinity , bs = "tp", k = 5) +  -->
+<!--              s(Temperature, bs = "tp", k = 5) ,  -->
+<!--            family = "binomial",  -->
+<!--            method = "REML",  -->
+<!--            data = all_points_predictors) -->
+
+<!-- summary(Mod) -->
+
+<!-- library(gratia) -->
+<!-- gratia::draw(Mod) -->
+<!-- ``` -->
+
+
+
+
+<!-- ```{r} -->
+<!-- library(sdm) -->
+<!-- ``` -->
 

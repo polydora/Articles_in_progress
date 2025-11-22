@@ -645,7 +645,8 @@ sm %>%
 
 ```{r}
 
-Pl_BTN1_PC2 <-
+
+Pl_BTN2_PC1 <-
 sm %>% 
   filter(.smooth == "s(PC1):LineageBTN2") %>% 
   ggplot() +
