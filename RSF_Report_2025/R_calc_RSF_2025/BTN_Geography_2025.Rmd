@@ -24,7 +24,6 @@ library(rnaturalearth)
 library(rnaturalearthdata)
 library(reshape2)
 library(scatterpie)
-library(cowplot)
 
 
 ```

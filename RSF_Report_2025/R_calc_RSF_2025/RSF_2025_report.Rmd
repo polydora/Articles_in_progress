@@ -9,9 +9,6 @@ output: html_document
 library(knitr)
 opts_chunk$set(fig.show='hold',  warning=FALSE, message=FALSE, cache = FALSE, echo = FALSE)
 
-opts_chunk$set(echo = FALSE, fig.cap = TRUE)
-
-library(officedown)
 
 ```
 
@@ -367,7 +364,7 @@ size_23 %>%
 <br>
 
 
-```{r, fig.width=7, fig.cap="Размерная структура - значительно различается между участками"}
+```{r, fig.width=7, fig.cap="Размерная структура - значительно различается между участками", eval=FALSE}
 Pl_size_stricture  
 ```
 
@@ -473,7 +470,7 @@ mod_sum <- tidy(Mod_btn1_btn2_no_re)
 
 
 $$
-GAM : Prevalence = s(Dist_{Port}|Lineage) + s(Fetch|Lineage) + s(PC1|Lineage) +s(OGP|Lineage) + Lineage
+GAM : Prevalence = b_0 + s(Dist_{Port}|Lineage) + s(Fetch|Lineage) + s(PC1|Lineage) +s(OGP|Lineage) + Lineage + \varepsilon
 $$
 
 <br>
@@ -512,8 +509,26 @@ ft %>%
 sm <- smooth_estimates(Mod_btn1_btn2_no_re) |>
   add_confint()
 
+
+logit_back <- function(x) exp(x)/(1 + exp(x)) # обратная логит-трансформация
+
+
+
+sm <-
+  sm %>%
+  mutate(.estimate_pi = logit_back(.estimate + coef(Mod_btn1_btn2_no_re)["(Intercept)"]), 
+         .lower_ci_pi = logit_back(.lower_ci + coef(Mod_btn1_btn2_no_re)["(Intercept)"]), 
+         .upper_ci_pi = logit_back(.upper_ci +coef(Mod_btn1_btn2_no_re)["(Intercept)"]))
+  
+
+
 ```
 
+```{r}
+cancer_2023_long <-
+  cancer_2023_long %>% 
+  mutate(Prevalence = N_cancer/N)
+```
 
 
 ```{r}
@@ -524,12 +539,13 @@ sm %>%
   ggplot() +
    geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = Dist_Port),
     alpha = 0.2) +
-    geom_line(aes(x = Dist_Port, y = .estimate), lwd = 1.2, color = "blue") +
+    geom_line(aes(x = Dist_Port, y = .estimate), lwd = 1.2, color = "red") +
   geom_rug(data = cancer_2023_long, aes(x =Dist_Port) ) +
   labs(x = "Растояние от порта (км)", y = "Partial effect")  +
   geom_hline(yintercept = 0, linetype = 2) +
   theme_bw()+
-  theme(axis.title.x = element_text(size = 15))
+  theme(axis.title.x = element_text(size = 15)) +
+  ylim(-3,4.5)
 
 ```
 
@@ -543,14 +559,15 @@ sm %>%
   ggplot() +
    geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = fetch),
     alpha = 0.2) +
-    geom_line(aes(x = fetch, y = .estimate), lwd = 1.2, color = "blue") +
+    geom_line(aes(x = fetch, y = .estimate), lwd = 1.2, color = "red") +
   geom_rug(data = cancer_2023_long, aes(x =fetch) ) +
   labs(x = "Прибойность, Fetch (км)", y = "Partial effect")  +
   geom_hline(yintercept = 0, linetype = 2) +
   theme_bw()+
   theme(axis.title.x = element_text(size = 15)) +
   annotate(geom = "text", x = 5, y = -2.5, label = "Закрытое побережье", size = 5) +
-  annotate(geom = "text", x = 25, y = -2.5, label = "Открытое побережье", size = 5)  
+  annotate(geom = "text", x = 25, y = -2.5, label = "Открытое побережье", size = 5) +
+  ylim(-3, 5.5)
   
 
 
@@ -566,15 +583,16 @@ sm %>%
   ggplot() +
    geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = PC1),
     alpha = 0.2) +
-    geom_line(aes(x = PC1, y = .estimate), lwd = 1.2, color = "blue") +
+    geom_line(aes(x = PC1, y = .estimate), lwd = 1.2, color = "red") +
   geom_rug(data = cancer_2023_long, aes(x =PC1) ) +
   labs(x = "PC1", y = "Partial effect")  +
   geom_hline(yintercept = 0, linetype = 2) +
   theme_bw()+
   theme(axis.title.x = element_text(size = 15)) +
-  annotate(geom = "text", x = -0.45, y = -2, label = "Много молоди", size = 5) +
-  annotate(geom = "text", x = 0.08, y = -2, label = "Много старых", size = 5)  +
-  annotate(geom = "segment", y = -2, yend = -2, x = -0.36, xend = -0.01, arrow = arrow(ends = "both", type = "closed", angle = 10), color = "red")
+  annotate(geom = "text", x = -0.45, y = -3.8, label = "Много молоди", size = 5) +
+  annotate(geom = "text", x = 0.08, y = -3.8, label = "Много старых", size = 5)  +
+  annotate(geom = "segment", y = -4, yend = -4, x = -0.36, xend = -0.01, arrow = arrow(ends = "both", type = "closed", angle = 10), color = "black") +
+ ylim(-5.1, 4.5)
   
 
 
@@ -590,7 +608,7 @@ sm %>%
   ggplot() +
    geom_ribbon(aes(ymin = .lower_ci, ymax = .upper_ci, x = OGP),
     alpha = 0.2) +
-    geom_line(aes(x = OGP, y = .estimate), lwd = 1.2, color = "blue") +
+    geom_line(aes(x = OGP, y = .estimate), lwd = 1.2, color = "red") +
   geom_rug(data = cancer_2023_long, aes(x =OGP) ) +
   labs(x = "OGP", y = "Partial effect")  +
   geom_hline(yintercept = 0, linetype = 2) +
@@ -614,7 +632,8 @@ sm %>%
   labs(x = "Растояние от порта (км)", y = "Partial effect")  +
   geom_hline(yintercept = 0, linetype = 2) +
   theme_bw()+
-  theme(axis.title.x = element_text(size = 15))
+  theme(axis.title.x = element_text(size = 15)) +
+  ylim(-3,4.5)
 
 ```
 
@@ -635,7 +654,8 @@ sm %>%
   theme_bw()+
   theme(axis.title.x = element_text(size = 15)) +
   annotate(geom = "text", x = 5, y = -2.5, label = "Закрытое побережье", size = 5) +
-  annotate(geom = "text", x = 25, y = -2.5, label = "Открытое побережье", size = 5)  
+  annotate(geom = "text", x = 25, y = -2.5, label = "Открытое побережье", size = 5)  +
+  ylim(-3, 5.5)
   
 
 
@@ -658,10 +678,10 @@ sm %>%
   geom_hline(yintercept = 0, linetype = 2) +
   theme_bw()+
   theme(axis.title.x = element_text(size = 15)) +
-  annotate(geom = "text", x = -0.45, y = -2, label = "Много молоди", size = 5) +
-  annotate(geom = "text", x = 0.08, y = -2, label = "Много старых", size = 5)  +
-  annotate(geom = "segment", y = -2, yend = -2, x = -0.36, xend = -0.01, arrow = arrow(ends = "both", type = "closed", angle = 10), color = "red")
-  
+  annotate(geom = "text", x = -0.45, y = -3.8, label = "Много молоди", size = 5) +
+  annotate(geom = "text", x = 0.08, y = -3.8, label = "Много старых", size = 5)  +
+  annotate(geom = "segment", y = -4, yend = -4, x = -0.36, xend = -0.01, arrow = arrow(ends = "both", type = "closed", angle = 10), color = "black")+
+  ylim(-5.1, 4.5)  
 
 
 ```
@@ -681,16 +701,19 @@ sm %>%
   labs(x = "OGP", y = "Partial effect")  +
   geom_hline(yintercept = 0, linetype = 2) +
   theme_bw()+
-  theme(axis.title.x = element_text(size = 15))
+  theme(axis.title.x = element_text(size = 15))+
+  ylim(-4, 4)
 
 ```
 
 
-```{r, fig.width=10}
-plot_grid(Pl_BTN1_Port, Pl_BTN1_Fetch, Pl_BTN1_PC1, Pl_BTN1_OGP, ncol = 2)
+```{r, fig.width=15, fig.height=9}
+
+plot_grid(Pl_BTN1_Port, Pl_BTN2_Port, Pl_BTN1_Fetch, Pl_BTN2_Fetch, Pl_BTN1_PC1, Pl_BTN2_PC1,  Pl_BTN1_OGP, Pl_BTN2_OGP, ncol = 2)
+
 ```
 
-
+Зависимость от изученных внешних факторов у BTN2 выражена слабо. У BTN1 связи более сильные. Это можно трактовать, как более выраженную стенобионтность линии BTN1. BTN2 - более эврибионтная линия.  
 
 
 # Влияние BTN на хозяина
@@ -774,7 +797,7 @@ myt_ind_clean$Gonad_quality <- factor(myt_ind_clean$Gonad_quality, labels = c("�
 
 
 
-```{r, fig.cap="У мидий, зараженных $BTN$, часто нарушено развитие гонад",  fig.width=10}
+```{r, fig.cap="У мидий, зараженных $BTN$, часто нарушено развитие гонад",  fig.width=10, eval=FALSE}
 
 # At! размер картинки на слайдах этого типа регулируется fig.width=
 
@@ -837,8 +860,34 @@ ft %>%
 ```
 
 
-```{r, fig.cap= "При заражении $MtrBTN1$ видимые нарушения наступают на поздних стадиях заболевания"}
-draw(Mod_gonad, select = 1, scales = "fixed") +
+```{r}
+logit_back <- function(x) exp(x)/(1 + exp(x)) # обратная логит-трансформация
+
+
+sm <- smooth_estimates(Mod_gonad)  %>% 
+  add_confint()
+
+
+
+sm <-
+  sm %>%
+  mutate(.estimate_pi = logit_back(.estimate + coef(Mod_gonad)["(Intercept)"]), 
+         .lower_ci_pi = logit_back(.lower_ci + coef(Mod_gonad)["(Intercept)"]), 
+         .upper_ci_pi = logit_back(.upper_ci +coef(Mod_gonad)["(Intercept)"]))
+  
+```
+
+
+
+```{r}
+Pl_gonad_BTN1 <-
+sm %>% 
+  filter(.smooth == "s(Aneuploid_Proportion):LineageBTN1") %>% 
+  ggplot(aes(x = Aneuploid_Proportion, y = .estimate)) +
+  geom_ribbon(aes(ymax = .upper_ci,
+                  ymin = .lower_ci),
+              alpha = 0.4) +
+  geom_line(color = "red", linewidth = 1)+
   geom_hline(yintercept = 0, linetype = 2) +
   ggtitle("BTN1", subtitle = "") +
   labs(x = "Доля (%) анеуплоидных клеток") +
@@ -852,18 +901,34 @@ draw(Mod_gonad, select = 1, scales = "fixed") +
 ```
 
 
-```{r, fig.cap= "При заражении $MtrBTN2$ нарушения наступают раньше, начиная с ранних стадий заболевания"}
-draw(Mod_gonad,  scales = "fixed", select = 2) +
+```{r}
+
+Pl_gonad_BTN2 <-
+sm %>% 
+  filter(.smooth == "s(Aneuploid_Proportion):LineageBTN2") %>% 
+  ggplot(aes(x = Aneuploid_Proportion, y = .estimate)) +
+  geom_ribbon(aes(ymax = .upper_ci,
+                  ymin = .lower_ci),
+              alpha = 0.4) +
+  geom_line(color = "blue", linewidth = 1)+
   geom_hline(yintercept = 0, linetype = 2) +
   ggtitle("BTN2", subtitle = "") +
   labs(x = "Доля (%) анеуплоидных клеток") +
-  ylim(-5, 4) +
+  ylim(-5, 4)+
   annotate(geom = "text", x = 25, y = 0.5, label = "Среднее значение")  +
-  theme_bw()+
+  theme_bw() +
   theme(axis.title.x = element_text(size = 15))
 
-
 ```
+
+
+```{r, fig.width=15, fig.height=9}
+plot_grid(Pl_gonad_BTN1, Pl_gonad_BTN2)
+```
+
+При заражении MtrBTN1 видимые нарушения наступают на более поздних стадиях заболевания, при заражении MtrBTN2 видимые нарушения наступают раньше, уже начиная с ранних стадий заболевания
+
+
 
 
 ## Влияние BTN на рост моллюсков
@@ -873,7 +938,10 @@ $$
 GAM: \varphi = s(L_{LastRing}|Status) + Status  
 $$
 
-  
+Здесь $\varphi$ - относительный прирост последнего года (отношение размера последнего кольца к общей длине раковины, после $\varphi$-преобразования Фишера); $(L_{LastRing}$ - расстояние от вершины раковины до последнего кольца остановки роста, ковариата оценивающая размер моллюска;  $Status$ - фактор с тремя градациями: Здоровые, Зараженные BTN1, Зараженные BTN2. Модель основана на нормальном распределении. 
+
+
+$s(L_{LastRing}|Status)$
 
 
 ```{r}
@@ -890,7 +958,8 @@ ft <- flextable(mod_sum3)
 
 ft <-
   ft %>% 
-  colformat_double(j = 2:5, digits = 2) %>% 
+  colformat_double(j = 2:4, digits = 2) %>% 
+  colformat_double(j = 5, digits = 4) %>% 
   set_header_labels(statistic = "F",
                     term = "Член модели") %>% 
   set_caption(caption = "")
@@ -954,9 +1023,9 @@ library(ggsignif)
 
 Pl_Status <-
   ggplot(My_data, aes(x = BTN_Type, y = P_incr)) +
-geom_violin(data = myt_ind_clean, aes(x = BTN_Type, y = Prop_Increment), alpha = 0.3, fill = "gray")+
-  geom_col(fill = "blue", alpha = 0.5, color = "blue") +
-  geom_errorbar(aes(ymin = lwr, ymax = upr), width = 0.2, color = "blue") +
+  geom_col(aes(fill = BTN_Type), color = "black") +
+  scale_fill_manual(values = c("red", "blue", "green")) +
+  geom_errorbar(aes(ymin = lwr, ymax = upr), width = 0.2, color = "black") +
   labs(x = "", y = "Partial effect") +
   geom_signif(comparisons = list(
       c("BTN1", "BTN2"),
@@ -964,11 +1033,23 @@ geom_violin(data = myt_ind_clean, aes(x = BTN_Type, y = Prop_Increment), alpha =
       annotations = c("W = 6.5, p = 0.011", "W = 7.5, p = 0.006")
       )  +
   theme_bw()+
-  theme(axis.text.x = element_text(size = 15))
+  theme(axis.text.x = element_text(size = 15)) +
+  guides(fill = "none")
   
   
 ```
 
+
+```{r}
+
+Pl_Staus_initial <-
+  ggplot(data = myt_ind_clean, aes(x = BTN_Type, y = Prop_Increment)) +
+  geom_violin(aes(fill = BTN_Type))  +
+  scale_fill_manual(values = c("red", "blue", "green")) +
+  labs(x = "", y = "Относительный прирост \nпоследнего года") +
+   guides(fill = "none")
+
+```
 
 
 
@@ -979,16 +1060,22 @@ Pl_Last_ring
 ```
 
 
-```{r, fig.cap="Прирост последнего года у зараженных BTN2 оказывается выше, чем у зараженных $MtrBTN1$ и у здоровых особей, которые между собой не отличаются"}
-Pl_Status
+```{r, fig.width=15, fig.height=9}
+plot_grid(Pl_Status, Pl_Staus_initial, labels = c("А", "Б"))
 ```
 
+Рис. ++. Относительный прирост последнего года у моллюсков, зараженных разными линиями BTN, и у здоровых особей. A. Предсказание модели с учетом ковариаты $L_{LastRing}$. Усы отражают 95% доверительный интервал. Над усами приведены значения критерия Вальда. Б. Диаграмма, отражающая распределение ядерной плотности для исходных значений относительных приростов последнего года.   
 
+Прирост последнего года у зараженных BTN2 оказывается выше, чем у зараженных $MtrBTN1$ и у здоровых особей, которые между собой не отличаются.
 
-<!-- ## Разные стратегии у BTN1 и BTN2 -->
+<br>
+<br>
+<br>
 
-<!-- - Паразиты живут в мире с двумя экологическими осями: ресурсы хозяина (*среда I прядка*) и  внешние факторы (*среда II порядка*). Положение экологической ниши в этих осях определяет успех паразита. -->
-<!-- - В отличие от $MtrBTN1$, $MtrBTN2$ стимулирует соматический рост хозяина за счет эффективного подавления его репродукции. Это может быть уподоблено паразитарной кастрации. $MtrBTN2$ более эффективно использует ресурсы среды I порядка. -->
-<!-- - В отличие от $MtrBTN2$, $MtrBTN1$ сильно зависит от факторов среды II порядка. Возможно это является следствием менее эффективного использования ресурсов среды I порядка. -->
-<!-- - С разной стратегией двух линий $BTN$ могут  быть связаны особенности их географического распространения: более узкое (субарктика) у $MtrBTN1$ и более широкое (практически всесветное) у $MtrBTN2$ -->
+**Разные стратегии у BTN1 и BTN2** (это основные обобщающие положения, которые можно использовать для текста)
+
+- Паразиты живут в мире с двумя экологическими осями: ресурсы хозяина (*среда I прядка*) и  внешние факторы (*среда II порядка*). Положение экологической ниши в этих осях определяет успех паразита.
+- В отличие от $MtrBTN1$, $MtrBTN2$ стимулирует соматический рост хозяина за счет эффективного подавления его репродукции. Это может быть уподоблено паразитарной кастрации. $MtrBTN2$ более эффективно использует ресурсы среды I порядка.
+- В отличие от $MtrBTN2$, $MtrBTN1$ сильно зависит от факторов среды II порядка. Возможно это является следствием менее эффективного использования ресурсов среды I порядка.
+- С разной стратегией двух линий $BTN$ могут  быть связаны особенности их географического распространения: более узкое (субарктика) у $MtrBTN1$ и более широкое (практически всесветное) у $MtrBTN2$
 

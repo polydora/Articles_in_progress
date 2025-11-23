@@ -1,0 +1,145 @@
+---
+title: ""
+output: html_document
+date: ""
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+```{r}
+library(readxl)
+library(ggplot2)
+library(lubridate)
+library(dplyr)
+library(mgcv)
+library(gratia)
+library(DHARMa)
+library(broom)
+library(cowplot)
+library(flextable)
+
+```
+
+
+
+```{r}
+
+chalm <- read_excel("Data/сезонная чалмпушка на рак 201125.xlsx", sheet = "Tidy", na = "NA")
+
+chalm <- 
+chalm %>% 
+  mutate(DOY_2 = yday(data), N_healthy = N_total - N_cancer, fYear = factor(year)) 
+
+chalm <- 
+  chalm %>% 
+  filter(year !=2020)
+ 
+```
+
+
+```{r}
+Mod_chalm_1 <- gam(cbind(N_cancer, N_total) ~ s(DOY_2, k=6, bs = "cc") + s(year, bs = "tp", k = 5), data = chalm, family = "binomial")
+
+```
+
+```{r}
+
+logit_back <- function(x) exp(x)/(1 + exp(x)) # обратная логит-трансформация
+
+
+sm <- smooth_estimates(Mod_chalm_1)  %>% 
+  add_confint()
+
+
+
+sm <-
+  sm %>%
+  mutate(.estimate_pi = logit_back(.estimate + coef(Mod_chalm_1)["(Intercept)"]), 
+         .lower_ci_pi = logit_back(.lower_ci + coef(Mod_chalm_1)["(Intercept)"]), 
+         .upper_ci_pi = logit_back(.upper_ci +coef(Mod_chalm_1)["(Intercept)"]))
+  
+```
+
+Всю историю про сезонные наблюдения на железной херне в Чалмпушке опускаю.
+
+Пишу только про модель.
+
+## Динамика частоты инвазии BTN в поселении мидий на литорали губы Чалмпушка
+
+Для описания многолетней и сезонной динамики уровня зараженности мидий была построена логистическая аддитивная модель, следующего вида.
+
+$$
+Prevalence = b_0 + s(Year) + s(DOY) + \varepsilon
+$$
+Где $b_0$ - свободный член модели, $s()$ - непараметрическая сглаживающая функция, $DOY$ - номер календарного дня в году, $\varepsilon$ - остатки.
+
+Все члены модели статистически значимо отличались от нуля (табл. ++), что свидетельствует о наличии как межгдового тренда в частоте, так и выраженных сезонных изменений. За период наблюдений с 2021 по 2025 год было выявлено увеличение частоты заболевания (рис. ++ А). Согласно полученной модели, наиболее высокая частота инвазии наблюдается с конца весны до середины лета (май - июль, рис. ++ Б). 
+
+
+```{r}
+tidy(Mod_chalm_1) %>%
+  mutate(
+    term = recode(term,
+                  "s(DOY_2)" = "Сезонный тренд (s(DOY))",
+                  "s(year)" = "Годовой тренд (s(Year))")
+  ) %>% 
+  flextable() %>%
+  colformat_double(j = c(2, 3, 4), digits = 1) %>% 
+  colformat_double(j = 5, digits = 4) %>% 
+  set_header_labels(values = c("Сглаживающая функция", "edf", "ref.df", "Chi.sq Statistic", "p-value" )) %>% 
+  autofit() ->
+  ft
+
+ft  
+```
+
+
+```{r}
+
+Pl_seasons <-
+sm %>% 
+  filter(.smooth == "s(DOY_2)") %>% 
+  ggplot(aes(x = DOY_2, y = .estimate_pi)) +
+  geom_ribbon(aes(ymax = .upper_ci_pi,
+                  ymin = .lower_ci_pi),
+              alpha = 0.4) +
+  geom_line(color = "blue", linewidth = 1) + 
+  geom_point(data = chalm, aes(y = BTN_prevalence, fill = fYear), size = 4, shape = 21) +
+  scale_fill_viridis_d()  +
+  scale_x_continuous(
+    name = "Месяц",
+    breaks = c(15, 45, 75, 105, 135, 165, 195, 225, 255, 285, 315, 345),
+    labels = c("Янв", "Фев", "Мар", "Апр", "Май", "Июн", 
+               "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек")
+  ) +
+  labs(x = "Месяц", y = "Частота", fill = "Годы") +
+  theme_bw()+
+    theme(axis.text = element_text(size = 10))
+
+
+
+Pl_years <- 
+  sm %>% 
+  filter(.smooth == "s(year)") %>% 
+  ggplot(aes(x = year, y = .estimate_pi)) +
+  geom_ribbon(aes(ymax = .upper_ci_pi,
+                  ymin = .lower_ci_pi),
+              alpha = 0.4) +
+  geom_line(color = "blue", linewidth = 1) +
+    geom_point(data = chalm, aes(y = BTN_prevalence), size = 4, shape = 21, fill = "blue")+
+    labs(x = "Годы", y = "Частота") +
+    theme_bw() +
+    theme(axis.text = element_text(size = 10))
+  
+
+
+```
+
+
+```{r fig.width=15, fig.height=9}
+plot_grid(Pl_years, Pl_seasons, labels = c("А", "Б"))
+```
+
