@@ -45,7 +45,7 @@ library(flextable)
 
 default_theme <- 
   theme_bw() + 
-  theme(axis.text = element_text(size = 15), axis.title = element_text(size = 20) )
+  theme(axis.text = element_text(size = 15), axis.title.y = element_text(size = 15), axis.title.x = element_text(size = 20) )
 
 theme_set(default_theme)
 ```
@@ -193,7 +193,7 @@ Pl_hist
 ```
 
 
-```{r, fig.cap = "Частота BTN варьирует вдоль побережья", dpi = 300, fig.width= 8}
+```{r, fig.cap = "Частота BTN варьирует вдоль побережья", dpi = 600, fig.width= 8, eval=FALSE}
 Pl_map_BTN
 ```
 
@@ -373,7 +373,7 @@ Pl_size_stricture
 
 
 
-```{r, fig.cap="Cвязь доли молоди со значениями PC1." }
+```{r, fig.cap="Cвязь доли молоди со значениями PC1.", eval=FALSE}
 ggplot(pca_scores_scam, aes(PC1, N_Juv/(N_Juv + N_Large))) + 
   geom_text(aes(label = Site)) +
   labs(x = "Значения PC1", y = "Доля молоди") +
@@ -543,9 +543,11 @@ sm %>%
   geom_rug(data = cancer_2023_long, aes(x =Dist_Port) ) +
   labs(x = "Растояние от порта (км)", y = "Partial effect")  +
   geom_hline(yintercept = 0, linetype = 2) +
-  theme_bw()+
-  theme(axis.title.x = element_text(size = 15)) +
-  ylim(-3,4.5)
+  # theme_bw()+
+  # theme(axis.title = element_text(size = 15)) +
+  ylim(-3,4.5) +
+  theme(axis.text = element_text(size = 15))
+  
 
 ```
 
@@ -563,8 +565,8 @@ sm %>%
   geom_rug(data = cancer_2023_long, aes(x =fetch) ) +
   labs(x = "Прибойность, Fetch (км)", y = "Partial effect")  +
   geom_hline(yintercept = 0, linetype = 2) +
-  theme_bw()+
-  theme(axis.title.x = element_text(size = 15)) +
+  # theme_bw()+
+  # theme(axis.title.x = element_text(size = 15)) +
   annotate(geom = "text", x = 5, y = -2.5, label = "Закрытое побережье", size = 5) +
   annotate(geom = "text", x = 25, y = -2.5, label = "Открытое побережье", size = 5) +
   ylim(-3, 5.5)
@@ -587,11 +589,11 @@ sm %>%
   geom_rug(data = cancer_2023_long, aes(x =PC1) ) +
   labs(x = "PC1", y = "Partial effect")  +
   geom_hline(yintercept = 0, linetype = 2) +
-  theme_bw()+
-  theme(axis.title.x = element_text(size = 15)) +
+  # theme_bw()+
+  # theme(axis.title.x = element_text(size = 15)) +
   annotate(geom = "text", x = -0.45, y = -3.8, label = "Много молоди", size = 5) +
   annotate(geom = "text", x = 0.08, y = -3.8, label = "Много старых", size = 5)  +
-  annotate(geom = "segment", y = -4, yend = -4, x = -0.36, xend = -0.01, arrow = arrow(ends = "both", type = "closed", angle = 10), color = "black") +
+  # annotate(geom = "segment", y = -4, yend = -4, x = -0.36, xend = -0.01, arrow = arrow(ends = "both", type = "closed", angle = 10), color = "black") +
  ylim(-5.1, 4.5)
   
 
@@ -612,8 +614,11 @@ sm %>%
   geom_rug(data = cancer_2023_long, aes(x =OGP) ) +
   labs(x = "OGP", y = "Partial effect")  +
   geom_hline(yintercept = 0, linetype = 2) +
-  theme_bw()+
-  theme(axis.title.x = element_text(size = 15))
+  # theme_bw()+
+  annotate(geom = "text", x = 0.85, y = -3.7, label = "Медленный рост", size = 5) +
+  annotate(geom = "text", x = 1.2, y = -3.7, label = "Быстрый рост", size = 5)  +
+  # theme(axis.title.x = element_text(size = 15)) +
+  ylim(-4, 4.5)
 
 ```
 
@@ -631,8 +636,8 @@ sm %>%
   geom_rug(data = cancer_2023_long, aes(x =Dist_Port) ) +
   labs(x = "Растояние от порта (км)", y = "Partial effect")  +
   geom_hline(yintercept = 0, linetype = 2) +
-  theme_bw()+
-  theme(axis.title.x = element_text(size = 15)) +
+  # theme_bw()+
+  # theme(axis.title.x = element_text(size = 15)) +
   ylim(-3,4.5)
 
 ```
@@ -651,8 +656,8 @@ sm %>%
   geom_rug(data = cancer_2023_long, aes(x =fetch) ) +
   labs(x = "Прибойность, Fetch (км)", y = "Partial effect")  +
   geom_hline(yintercept = 0, linetype = 2) +
-  theme_bw()+
-  theme(axis.title.x = element_text(size = 15)) +
+  # theme_bw()+
+  # theme(axis.title.x = element_text(size = 15)) +
   annotate(geom = "text", x = 5, y = -2.5, label = "Закрытое побережье", size = 5) +
   annotate(geom = "text", x = 25, y = -2.5, label = "Открытое побережье", size = 5)  +
   ylim(-3, 5.5)
@@ -676,11 +681,11 @@ sm %>%
   geom_rug(data = cancer_2023_long, aes(x =PC1) ) +
   labs(x = "PC1", y = "Partial effect")  +
   geom_hline(yintercept = 0, linetype = 2) +
-  theme_bw()+
-  theme(axis.title.x = element_text(size = 15)) +
+  # theme_bw()+
+  # theme(axis.title.x = element_text(size = 15)) +
   annotate(geom = "text", x = -0.45, y = -3.8, label = "Много молоди", size = 5) +
   annotate(geom = "text", x = 0.08, y = -3.8, label = "Много старых", size = 5)  +
-  annotate(geom = "segment", y = -4, yend = -4, x = -0.36, xend = -0.01, arrow = arrow(ends = "both", type = "closed", angle = 10), color = "black")+
+  # annotate(geom = "segment", y = -4, yend = -4, x = -0.36, xend = -0.01, arrow = arrow(ends = "both", type = "closed", angle = 10), color = "black")+
   ylim(-5.1, 4.5)  
 
 
@@ -700,9 +705,11 @@ sm %>%
   geom_rug(data = cancer_2023_long, aes(x =OGP) ) +
   labs(x = "OGP", y = "Partial effect")  +
   geom_hline(yintercept = 0, linetype = 2) +
-  theme_bw()+
-  theme(axis.title.x = element_text(size = 15))+
-  ylim(-4, 4)
+  # theme_bw()+
+  annotate(geom = "text", x = 0.85, y = -3.7, label = "Медленный рост", size = 5) +
+  annotate(geom = "text", x = 1.2, y = -3.7, label = "Быстрый рост", size = 5)  +
+  # theme(axis.title.x = element_text(size = 15))+
+  ylim(-4, 4.5)
 
 ```
 
@@ -711,6 +718,7 @@ sm %>%
 
 plot_grid(Pl_BTN1_Port, Pl_BTN2_Port, Pl_BTN1_Fetch, Pl_BTN2_Fetch, Pl_BTN1_PC1, Pl_BTN2_PC1,  Pl_BTN1_OGP, Pl_BTN2_OGP, ncol = 2)
 
+ggsave("BTN1_BTN2_Predictors_Magadan.jpg", dpi=600)
 ```
 
 Зависимость от изученных внешних факторов у BTN2 выражена слабо. У BTN1 связи более сильные. Это можно трактовать, как более выраженную стенобионтность линии BTN1. BTN2 - более эврибионтная линия.  
@@ -893,7 +901,7 @@ sm %>%
   labs(x = "Доля (%) анеуплоидных клеток") +
   ylim(-5, 4)+
   annotate(geom = "text", x = 25, y = 0.5, label = "Среднее значение")  +
-  theme_bw() +
+  # theme_bw() +
   theme(axis.title.x = element_text(size = 15))
 
   
@@ -916,7 +924,7 @@ sm %>%
   labs(x = "Доля (%) анеуплоидных клеток") +
   ylim(-5, 4)+
   annotate(geom = "text", x = 25, y = 0.5, label = "Среднее значение")  +
-  theme_bw() +
+  # theme_bw() +
   theme(axis.title.x = element_text(size = 15))
 
 ```
@@ -924,6 +932,8 @@ sm %>%
 
 ```{r, fig.width=15, fig.height=9}
 plot_grid(Pl_gonad_BTN1, Pl_gonad_BTN2)
+
+ggsave("BTN1_BTN2_gonad_Magadan.jpg", dpi=600)
 ```
 
 При заражении MtrBTN1 видимые нарушения наступают на более поздних стадиях заболевания, при заражении MtrBTN2 видимые нарушения наступают раньше, уже начиная с ранних стадий заболевания
@@ -981,7 +991,7 @@ Pl_Last_ring <-
   ylim(-30, 30) +
   labs(fill = "", color = "Статус", x = "Расстояние до последнего кольца") +
   ggtitle(NULL, subtitle = NULL)  +
-  theme_bw() +
+  # theme_bw() +
   guides(fill = "none", color = "none")+
   theme(axis.title.x = element_text(size = 15))
 
@@ -1032,7 +1042,7 @@ Pl_Status <-
       c("BTN2", "Здоровые")),
       annotations = c("W = 6.5, p = 0.011", "W = 7.5, p = 0.006")
       )  +
-  theme_bw()+
+  # theme_bw()+
   theme(axis.text.x = element_text(size = 15)) +
   guides(fill = "none")
   
@@ -1062,6 +1072,8 @@ Pl_Last_ring
 
 ```{r, fig.width=15, fig.height=9}
 plot_grid(Pl_Status, Pl_Staus_initial, labels = c("А", "Б"))
+
+ggsave("BTN1_BTN2_growth_Magadan.jpg", dpi=600)
 ```
 
 Рис. ++. Относительный прирост последнего года у моллюсков, зараженных разными линиями BTN, и у здоровых особей. A. Предсказание модели с учетом ковариаты $L_{LastRing}$. Усы отражают 95% доверительный интервал. Над усами приведены значения критерия Вальда. Б. Диаграмма, отражающая распределение ядерной плотности для исходных значений относительных приростов последнего года.   
