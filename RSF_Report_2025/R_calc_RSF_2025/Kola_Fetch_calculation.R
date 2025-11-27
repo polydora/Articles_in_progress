@@ -23,7 +23,7 @@ murm_shape <- st_read("Data/Maps/Murmanskaya_obl/boundary-polygon-land-lvl4.shp"
 # Установка системы координат если нужно
 murm_shape <- st_set_crs(murm_shape, 4326) # WGS84
 
-plot(murm_shape)
+# plot(murm_shape)
 
 # Установка системы координат если нужно
 murm_shape <- st_set_crs(murm_shape, 4326) # WGS84)
@@ -57,6 +57,8 @@ fetch.df$lat[19] <- 69.082767
 
 
 fetch_locs = SpatialPoints(fetch.df[, 1:2])
+str(fetch_locs)
+
 
 fetch_locs <- st_as_sf(fetch_locs)
 

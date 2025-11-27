@@ -594,7 +594,9 @@ sm %>%
   annotate(geom = "text", x = -0.45, y = -3.8, label = "Много молоди", size = 5) +
   annotate(geom = "text", x = 0.08, y = -3.8, label = "Много старых", size = 5)  +
   # annotate(geom = "segment", y = -4, yend = -4, x = -0.36, xend = -0.01, arrow = arrow(ends = "both", type = "closed", angle = 10), color = "black") +
- ylim(-5.1, 4.5)
+ ylim(-5.1, 4.5)  +
+  scale_x_reverse()
+  
   
 
 
@@ -686,7 +688,8 @@ sm %>%
   annotate(geom = "text", x = -0.45, y = -3.8, label = "Много молоди", size = 5) +
   annotate(geom = "text", x = 0.08, y = -3.8, label = "Много старых", size = 5)  +
   # annotate(geom = "segment", y = -4, yend = -4, x = -0.36, xend = -0.01, arrow = arrow(ends = "both", type = "closed", angle = 10), color = "black")+
-  ylim(-5.1, 4.5)  
+  ylim(-5.1, 4.5) +
+  scale_x_reverse()  
 
 
 ```
