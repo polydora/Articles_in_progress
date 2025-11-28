@@ -111,7 +111,7 @@ myt %>%
 # library(writexl)
 # write_xlsx(x = kola_btn, path = "Data/sites_info_KolaBay_with_predictors.xlsx")
 
-
+# Читаем файл со всеми предикторами
 kola_btn_predictors <- read_excel("Data/sites_info_KolaBay_with_predictors.xlsx")
 
 
@@ -119,7 +119,10 @@ kola_btn_predictors <-
   kola_btn_predictors %>% 
   mutate(N_helthy = N_FC - N_BTN )
 
-M_foo <- lm(Prevalence_BTN ~ PC1 + PC2 +  B_sq_m + Distance_to_BK + Fetch, data = kola_btn)
+names(kola_btn_predictors)
+
+
+M_foo <- lm(Prevalence_BTN ~ PC1 + PC2 +  B_sq_m + Distance_to_BK + Distance_to_TU + Coast + Fetch, data = kola_btn_predictors)
 
 library(car)
 
@@ -127,29 +130,78 @@ vif(M_foo)
 
 names(kola_btn_predictors)
 
-Mod <- glm(cbind(N_BTN, N_helthy) ~ PC1 + PC2 +  B_sq_m + Distance_to_BK + Fetch, data = kola_btn_predictors, family = "binomial")
+Mod <- glm(cbind(N_BTN, N_helthy) ~ PC1 + PC2 +  B_sq_m + Distance_to_BK + Distance_to_TU + Coast + Fetch, data = kola_btn_predictors, family = "binomial")
 
-summary(Mod)
+drop1(Mod)
+
+Mod2 <- update(Mod, . ~.-Fetch) 
+
+drop1(Mod2)
+
+Mod3 <- update(Mod2, . ~.-Coast) 
+
+drop1(Mod3)
+
+Mod4 <- update(Mod3, . ~.-PC2) 
+
+
+drop1(Mod4)
+
+Mod5 <- update(Mod4, . ~.-Distance_to_TU)
+
+
+drop1(Mod5)
+
+
+# Mod5 - final model
+
+### провера валидности
 
 library(performance)
 
-check_overdispersion(Mod)
+check_overdispersion(Mod5)
 
 library(DHARMa)
 
-check_residuals(Mod)
+check_residuals(Mod5)
 
-sim_res <- simulate_residuals(Mod)
+sim_res <- simulate_residuals(Mod5)
 plot(sim_res)
 
+# Итоги
+summary(Mod5)
+
+# Для оценки относительной силы влияния предикторов
+
+Mod5_scaled <- update(Mod5, .~scale(PC1) + scale(B_sq_m) + scale(Distance_to_BK))
+
+summary(Mod5_scaled)
+
+# Итого, чем больше PC1 (положительная связь с обилием моллюсков размером до 10 мм) тем меньше рака. То есть рак часто встречается там, где доминируют старые особи. Ну и чем дальше от Белокаменки тем меньше рака. Расстояние до Белокаменки немного более влиятельный предиктор, чем все остальные (собственно, PC1)  
 
 
-Mod <- gam(cbind(N_BTN, N_helthy) ~ s(PC1, k = 5) + s(PC2, k = 5) +  s(B_sq_m, k = 5) + s(Distance_to_BK, k = 5) + s(Fetch, k = 5), data = kola_btn_predictors, family = "binomial")
+# Рисовать смысла не вижу, но если хочется, то вот
 
-library(ggplot2)
-library(gratia)
-
-summary(Mod)
+library(ggeffects)
 
 
-plot(Mod)
+model_data <- as.data.frame(model.frame(Mod5))
+
+
+  as.data.frame(ggpredict(Mod5, terms = "PC1", typical = "weighted.mean")) %>% 
+  select(x, predicted, conf.low, conf.high) %>% 
+  ggplot(aes(x, predicted)) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2) +
+    geom_line(color = "blue") +
+    labs(x = "PC1", y = "Частота BTN")
+    
+  
+  
+  
+  as.data.frame(ggpredict(Mod5, terms = "Distance_to_BK", typical = "weighted.mean")) %>% 
+    select(x, predicted, conf.low, conf.high) %>% 
+    ggplot(aes(x, predicted)) +
+    geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2) +
+    geom_line(color = "blue")+
+    labs(x = "Расстояние до Белокаменки", y = "Частота BTN")
+  
