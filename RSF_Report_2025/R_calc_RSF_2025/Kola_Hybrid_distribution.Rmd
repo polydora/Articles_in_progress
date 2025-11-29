@@ -1,0 +1,351 @@
+---
+title: ""
+output: html_document
+date: ""
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+
+
+```{r}
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(mgcv)
+library(gratia)
+library(magrittr)
+library(DHARMa)
+library(ggplot2)
+library(cowplot)
+```
+
+
+```{r}
+
+# Читаем данные
+myt <- read_excel("Data/ALLO_BarentsSea_inter.xlsx", na = "NA")
+
+myt <- 
+  myt %>% 
+  rename(Lon = E, Lat = N)
+
+
+myt_tyuv <-
+  myt %>%
+  filter(region == "Tyuva")
+
+myt_kola <-
+  myt %>%
+  filter(region %in% c("Kola Bay and vicinity", "Tyuva"))
+
+site_excluded <- c("Ura Inlet", "Mogil'naya", "Kil'din, sunduki", "Kil'dinskaya salma" )
+
+myt_kola <- 
+  myt_kola %>% 
+  filter(!site %in% site_excluded)
+
+
+myt_kola %>% 
+  group_by(site, pop) %>% 
+  summarise(Lon = mean(Lon), 
+            Lat = mean(Lat), 
+            N_total = n(), 
+            N_hybr = sum(str < 0.9 &  str > 0.1), 
+            N_hybr_1 = sum(str < 0.6 &  str > 0.4), 
+            N_pure = N_total - N_hybr, 
+            Prop_hybr = N_hybr/N_total,
+            Prop_hybr_1 = N_hybr_1/N_total,
+            Mean_str = mean(str),
+            SD_str = sd(str)) %>% 
+  rename(Sample_ID = pop, Site_ID = site) ->
+  myt_hybr
+
+```
+
+
+Анализ частоты гибридов был очень непростым!
+
+Сделать этот анализх только по данным Тювы нельзя, так как там очень мало разрезов в которых есть честные данные по Structure. Вот эти точки. 
+
+```{r}
+paste(unique(myt_tyuv$pop), sep = ";")
+```
+
+Точнее даже их меньше, так как значения предикторов определялись для сайта
+
+```{r}
+paste(unique(myt_tyuv$site), sep = ";")
+```
+
+
+
+Установить какие-то значимые связи частоты гибридов с предикторами не удается.  
+
+
+Поэтому я взял все данные по Кольскому заливу (включая Тюву), убрав из них сайты, которые явно за пределами основного массива данных. Вот эти сайты.
+
+```{r}
+paste(site_excluded, sep = ";")
+```
+
+
+Дадее анализ идет на основе данных вот с этих выборок.
+
+```{r}
+paste(unique(myt_kola$pop))
+```
+
+В каждой выборке за гибридов я считал тех, у кого 0.1 < str < 0.9.
+
+```{r}
+
+library(raster)
+
+lst <- list.files(path="D:/Data_LMBE/BIO_Oracle_predictors/",pattern='asc$',full.names = T) # list the name of files in the specified
+
+predictors <- stack(lst)
+
+names(predictors) <- c(
+  "Chlorophyll",
+  "Current",
+  "Dissolved_O2",
+  "Nitrate",
+  "pH",
+  "Phosphate",
+  "Phytoplankton",
+  "Primary_Prod",
+  "Salinity",
+  "Silicate",
+  "Temperature"
+)
+
+
+my.sites <- as.matrix(myt_hybr %>% ungroup() %>% dplyr::select(Lon, Lat))
+
+df_predictors <- as.data.frame(extract(predictors, my.sites, method = 'bilinear'))
+
+
+preds <- data.frame(Lon = my.sites[, 1], Lat = my.sites[, 2],  df_predictors)
+
+
+
+###### Расстояние от основного источника опреснения ############
+
+
+
+Tuloma_mouth <- data.frame(Lon = 32.839244, Lat = 68.832372)
+
+
+library(geosphere)
+
+# Вычисляем расстояния в метрах Для точек с индивидуальными данными STRUCTURE
+distances <- distGeo(
+  c(Tuloma_mouth$Lon, Tuloma_mouth$Lat),
+  myt_kola[, c("Lon", "Lat")]
+)
+
+myt_kola$Distance_Tuloma <- distances/1000
+
+
+
+
+# Вычисляем расстояния в метрах Для точек с оцененной долей гибридов
+distances <- distGeo(
+  c(Tuloma_mouth$Lon, Tuloma_mouth$Lat),
+  myt_hybr[, c("Lon", "Lat")]
+)
+
+myt_hybr$Distance_Tuloma <- distances/1000
+
+
+
+# Объединяем данные по доле гибридов с данными по предикторам из базы ORACLE
+myt_hybr_preds <-
+merge(myt_hybr, preds)
+
+
+
+```
+
+
+Далее в качестве основного предиктора, который говорит что-то про соленость (и возможно еще что-то) буду использовать расстояние от устья Туломы. На всякий случай показываю, что это расстояние - прокси для солености, даже в оценке через базу ORACLE, которая хороша для макрогеографии, но на таких масштабах дает нереалистичные значения.
+
+```{r}
+Pl_Salinity <-
+myt_hybr_preds %>% 
+  ggplot(aes(x = Distance_Tuloma, y = Salinity)) +
+  geom_point() +
+  geom_smooth() +
+  labs(x = "Расстояние от устья Туломы", y = "Соленость по ORACLE") +
+  theme_bw()
+
+Pl_Current <-
+myt_hybr_preds %>% 
+  ggplot(aes(x = Distance_Tuloma, y = Current)) +
+  geom_point() +
+  geom_smooth() +
+  labs(x = "Расстояние от устья Туломы", y = "Скорость течения по ORACLE") +
+  theme_bw()
+
+
+```
+
+
+```{r}
+plot_grid(Pl_Salinity, Pl_Current)
+```
+
+Важно отметить, что на расстоянии около 30 км начинается повышение солености и снижается скорость течения, то есть происходит какое-то изменение гидрологического режима, заметное даже для модели ORACLE.
+
+
+### Модель
+
+Просто вот так описать связь частоты гибридов с расстоянием от Туломы нельзя. С очевидностью надо учитывать еще и среднее значение STRUCTURE. Вот так меняется STRUCTURE по мере увеличения расстояния от Туломы.
+
+```{r}
+
+Pl_str_vs_dist <-
+myt_kola %>% 
+  filter(region %in% c("Tyuva", "Kola Bay and vicinity")) %>% 
+  ggplot(aes(x = Distance_Tuloma, y = str)) +
+  geom_point(position = position_jitter(width = 2)) +
+  geom_smooth(method = "gam") +
+  theme_bw() +
+  labs(x = "Расстояние от устья Туломы (км)", y = "STRUCTURE")
+```
+
+
+
+```{r}
+Pl_str_vs_dist
+```
+
+
+
+
+После долгого траха с моделью стало понятно, что неучитывать взаимодействие Distance_Tuloma:Mean_str нельзя. Поэтому в модели будет взаимодействие (забегая вперед - значимое).  Стало быть, main effect каждого из предикторов - отражает лишь часть правды. 
+
+```{r}
+library(mgcv)
+library(gratia)
+
+
+Mod_additive <- gam(
+  cbind(N_hybr, N_pure) ~ 
+    s(Distance_Tuloma, k = -1) +
+    s(Mean_str, k = 5) +
+    ti(Distance_Tuloma, Mean_str, k = c(8, 6)),   # Взаимодействие
+  family = binomial(link = "logit"),
+  data = myt_hybr_preds, 
+  method = "REML"
+)
+```
+
+
+```{r}
+
+logit_back <- function(x) exp(x)/(1 + exp(x)) # обратная логит-трансформация
+
+
+sm <- smooth_estimates(Mod_additive)  %>% 
+  add_confint()
+
+
+
+sm <-
+  sm %>%
+  mutate(.estimate_pi = logit_back(.estimate + coef(Mod_additive)["(Intercept)"]), 
+         .lower_ci_pi = logit_back(.lower_ci + coef(Mod_additive)["(Intercept)"]), 
+         .upper_ci_pi = logit_back(.upper_ci +coef(Mod_additive)["(Intercept)"]))
+
+Pl_Distance_Tuloma <- 
+sm %>% 
+  filter(.smooth == "s(Distance_Tuloma)") %>% 
+  ggplot(aes(x = Distance_Tuloma, y = .estimate_pi)) +
+  geom_ribbon(aes(ymin = .lower_ci_pi, ymax = .upper_ci_pi), alpha = 0.2) +
+  geom_line() +
+  geom_hline(yintercept = mean(myt_hybr_preds$Prop_hybr), linetype = 2) +
+  geom_point(data = myt_hybr, aes(y = Prop_hybr)) +
+  labs(x = "Расстояние от устья Туломы", y = "Partial effect") +
+  theme_bw()
+
+
+
+Pl_Mean_str <- 
+sm %>% 
+  filter(.smooth == "s(Mean_str)") %>% 
+  ggplot(aes(x = Mean_str, y = .estimate_pi)) +
+  geom_ribbon(aes(ymin = .lower_ci_pi, ymax = .upper_ci_pi), alpha = 0.2) +
+  geom_line() +
+  geom_hline(yintercept = mean(myt_hybr_preds$Prop_hybr), linetype = 2) +
+  geom_point(data = myt_hybr, aes(y = Prop_hybr)) +
+  labs(x = "Среднее значение STRUCTURE", y = "Partial effect") +
+  theme_bw()
+
+My_data <- expand.grid(Mean_str = seq(0, 1, length.out = 100), Distance_Tuloma = seq(min(myt_hybr_preds$Distance_Tuloma), max(myt_hybr_preds$Distance_Tuloma), length.out = 100))
+
+
+My_data$Predicted <- predict(Mod_additive, newdata = My_data, type = "response")
+
+Pl_interaction <- 
+My_data %>% 
+  ggplot(aes(x = Distance_Tuloma, y = Mean_str, z = Predicted)) +
+  geom_tile(aes(fill= Predicted)) +
+  scale_fill_gradient(low = "yellow", high = "red") +
+  geom_contour(color = "black", alpha = 0.6, binwidth = 0.25 ) +   # кол-во изолиний
+  labs(x = "Расстояние от устья Туломы", y = "Среднее значение STRUCTURE", fill = "Частота гибридов") +
+  theme_bw() 
+  
+
+
+```
+
+
+Вот summary построенной модели.
+
+```{r}
+summary(Mod_additive)
+```
+
+Главные эффекты и их взаимодействие значимы.
+
+
+Вот главный эффект STRUCTURE, то есть то, как меняется частота гибридов в зависимость от среднего значения STRUCTURE. Здесь и далее горизонтальная лини отражает среднее для всего массива значение частоты гибридов. Точки - первичные данные. НО!!! Помним, что первичные данные в этих осях - это **ФЭЙК**! Для множественных моделей предсказанное значение (линия регрессии) это то, что отражает связь с данным предиктором при условии, что остальные предикторы неизменны (например, равны среднему). В первичных данных такого partial effect нет!!! Поэтому предсказанное значение может сильно не совпадать с первичными данными. Как понял?  
+
+```{r}
+Pl_Mean_str
+```
+
+
+Вот главный эффект расстояния от Туломы.
+
+```{r}
+Pl_Distance_Tuloma
+```
+
+
+Здесь надо увидеть, что если мы возьмем точку, расположенную ближе к Туломе, то модель предсказывает частоту гибридов выше среднего. По мере удаления от кута частота становится ниже среднего. Что там за горб справа не понимаю, но он значимо не отличается от среднего. 
+
+Гораздо информативнее смотреть на взаимодействие. 
+
+
+```{r}
+Pl_interaction 
+```
+
+
+
+
+```{r}
+Pl_interaction +
+  geom_text(data = myt_hybr_preds, aes(label = Sample_ID, z = 0), size = 3)
+```
+
+
+
+
+
