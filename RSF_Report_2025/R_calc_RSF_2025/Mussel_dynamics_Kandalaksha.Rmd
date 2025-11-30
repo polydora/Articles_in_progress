@@ -1,0 +1,143 @@
+---
+title: "Многолетняя динамика таксономического состава поселений мидий в вершине Кандалакшского залива"
+output: html_document
+date: "2025-11-30"
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+  
+  opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+```{r}
+library(reshape2)
+library(ggplot2)
+library(ggmap)
+library(readxl)
+library(dplyr)
+library(mgcv)
+library(gratia)
+```
+
+
+Мониторинг проводится на 4 участках: 
+
+1. о. Большой Лубчостров
+2. о. Малый
+3. о. Овечий
+4. о. Ряжков
+
+
+```{r}
+Kand_upper_x <- c(32.2, 33.06)
+Kand_upper_y <- c(66.9, 67.16)
+
+ggKand_upper <- read.csv("Data/ggKand_upper.csv")
+
+
+Plot_Kand_upper <- 
+  ggplot(ggKand_upper, aes(x=long, y=lat, group=group)) + 
+  geom_polygon(fill = "gray70", colour = "black") + 
+  coord_map(xlim = Kand_upper_x, ylim = Kand_upper_y) + 
+  theme(axis.ticks=element_blank(), axis.title.x =element_blank(),  axis.title.y= element_blank(), plot.background = element_rect(fill = NULL), panel.grid = element_blank())  +  
+  annotate (x= 32.410973,  y = 67.154371, geom =  "point", size = 5, shape = 21, color = "black", fill = "white") +
+  annotate (x= 32.52,  y = 67.154371, geom = "text", label =  "Кандалакша")
+
+
+
+points <- read_excel("Data/Point_coordiates.xlsx")
+
+
+library(ggrepel)
+
+Pl_monitoring_position <-
+  Plot_Kand_upper + 
+  geom_point(data = points %>% filter(Type =="NT_monitoring"), aes(x = Lon, y = Lat, group = 1), size = 5, fill = "yellow", shape = 21) +
+  geom_text(data = points %>% filter(Type =="NT_monitoring"), aes(x = Lon, y = Lat, group = 1, label = 1:4)) 
+# +
+  # geom_point(data = points %>% filter(Type !="NT_monitoring"), aes(x = Lon, y = Lat, group = 1), size = 4, fill = "blue", shape = 22) +
+  # annotate (x= 32.663313,  y = 67.13, geom = "text", label =  "Лувеньгский архипелаг") +
+  # annotate (x= 32.461079,  y = 66.91, geom = "text", label =  "Воронья губа") 
+
+```
+
+
+
+
+Здесь ежегодно берется по несколько проб талломов фукоидов. У мидий, обитающих на водорслях оценивается морфотип и определяется частота мидий Т-морфотипа. 
+
+```{r}
+
+# Читаем данные
+monitor <- read_excel("Data/nt_ne_monitoring_2002_2025.xlsx") 
+
+monitor$PropT <- with(monitor, Nt/(Nt+Ne))
+
+monitor$Site <- factor(monitor$Site)
+
+
+monitor <- monitor %>% mutate(Site2 = case_when(Site == "Lupch" ~ "о. Б. Лубчостров",
+                                                Site == "Malij" ~ "о. Малый",
+                                                Site == "Ovech" ~ "о. Овечий",
+                                                Site == "Ryashkov" ~ "о. Ряжков")) 
+
+
+monitor <- 
+  monitor %>% 
+  mutate(Ptros = exp(-2.4 + 5.4*PropT)/(1 + exp(-2.4 + 5.4*PropT)) ) %>% 
+   mutate(PropT_corrected = case_when( PropT == 1 ~ 0.9999,
+                                      PropT == 0 ~ 0.0001,
+                                      PropT != 1 & PropT !=0 ~ PropT))
+           
+           
+           
+Mod_monitor_1 <- gam(PropT_corrected ~ s(Year, by = Site, bs = "tp") + Site, family = betar(link = "logit"), data = monitor)
+
+# appraise(Mod_monitor_1)
+# 
+# library(DHARMa)
+# 
+# simulateResiduals(Mod_monitor_1, plot = T)
+# 
+
+
+
+MyData2 <- expand.grid(Year = seq(min(monitor$Year), max(monitor$Year), 0.1), Site = levels(monitor$Site))
+
+
+MyData2$Predict <- predict(Mod_monitor_1, newdata = MyData2, type = "response", se = T)$fit
+
+MyData2$SE <- predict(Mod_monitor_1, newdata = MyData2, type = "response", se = T)$se.fit
+
+
+MyData2 <- MyData2 %>% mutate(Site2 = case_when(Site == "Lupch" ~ "о. Б. Лубчостров",
+                                                Site == "Malij" ~ "о. Малый",
+                                                Site == "Ovech" ~ "о. Овечий",
+                                                Site == "Ryashkov" ~ "о. Ряжков"))
+
+```
+
+```{r}
+Pl_dynam <- 
+  ggplot(MyData2, aes(x = Year, y = Predict)) + 
+  facet_wrap(~Site2) + 
+  geom_point(data = monitor, aes(x = Year, y = PropT )) + 
+  geom_ribbon(aes(ymin = Predict - 1.96*SE, ymax = Predict + 1.96*SE), alpha = 0.2) + 
+  geom_path(color = "black", size = 1) +
+  theme_bw() + 
+  xlab("Годы") + 
+  ylab("Доля мидий с T-морфотипом")  + 
+  scale_x_continuous(breaks = seq(min(monitor$Year), max(monitor$Year), 1) )+
+  theme(axis.text.x = element_text(angle = 90))
+
+```
+
+
+
+```{r, fig.width=15, fig.height=8}
+library(patchwork)
+
+Pl_monitoring_position + Pl_dynam
+```
+

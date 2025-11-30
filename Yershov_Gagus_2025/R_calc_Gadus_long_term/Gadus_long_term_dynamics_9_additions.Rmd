@@ -1,0 +1,264 @@
+---
+title: ''
+output: word_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+Sys.setlocale("LC_TIME", "en_US.UTF-8")
+```
+
+
+```{r Пакеты}
+library(dplyr)
+library(ggplot2)
+library(readxl)
+library(flextable)
+library(lubridate)
+library(mgcv)
+library(gratia)
+library(cowplot)
+library(reshape2)
+
+theme_set(theme_bw())
+```
+
+
+```{r}
+gadus <- read_excel("Data/ТРЕСКА_LONG-TERM_CHANGES.xlsx")
+
+gadus <-
+gadus %>% 
+  mutate(Date2 = as.POSIXct(as.Date(Date2, format = "%d.%m.%Y")), 
+         DOY = yday(Date2), Month = month(Date2, label = TRUE), DOM = day(Date2)) 
+
+
+
+```
+
+
+## Размерная структура
+
+
+
+```{r}
+gadus <-
+  gadus %>% 
+  filter(Year != 2016)
+```
+
+
+Вот средине и размах варьирования по каждому году
+
+```{r}
+gadus %>% 
+  group_by(Year) %>% 
+  summarise(Mean_L = round(mean(L), 1), SD = round(sd(L), 2), Min = min(L), Max = max(L)) %>% 
+  kable()
+```
+
+
+По всему материалу
+
+```{r}
+gadus %>% 
+  summarise(Mean_L = round(mean(L), 1), SD = round(sd(L), 2), Min = min(L), Max =max(L)) %>% 
+  kable()
+
+```
+
+
+
+Модель для описания многолетней и сезонной динамики размеров 
+
+
+```{r echo=TRUE}
+Model_L <-  gam(L ~ s(Year) + s(DOY, k = 8), data = gadus)
+```
+
+
+
+Вот результаты подбора этой модели.
+
+```{r}
+# summary(Model_L)
+library(flextable)
+library(broom)
+
+ft <-
+tidy(Model_L) %>% 
+  flextable() %>%
+  colformat_double(j = c(2, 3, 4), digits = 1) %>% 
+  colformat_double(j = 5, digits = 3) %>% 
+  set_header_labels(values = c("Smoother term", "edf", "ref.df", "F", "p-value" )) 
+  
+ft
+# draw(Model_L)
+```
+
+
+```{r}
+sm <- smooth_estimates(Model_L) |>
+  add_confint()
+
+sm %>% 
+  filter(.smooth == "s(Year)") ->
+  smoother_year
+
+sm %>% 
+  filter(.smooth == "s(DOY)") ->
+  smoother_doy
+
+```
+
+
+```{r}
+# gadus %>% 
+#   ggplot(aes(x = Year, y = L)) +
+#   geom_boxplot(aes(group = Year)) +
+#   geom_hline(yintercept = mean(gadus$L), linetype = 2) +
+#    scale_y_continuous(breaks = seq(0, max(gadus$L), by = 5)) +
+#   geom_line(data = smoother_year, aes(x = Year, y = .estimate + mean(gadus$L))))
+#   
+Pl_L_boxplot <-
+gadus %>% 
+  ggplot() +
+  geom_boxplot(aes(x = Year, y = L, group = Year)) +
+  geom_ribbon(data = smoother_year, aes(x = Year, ymin = .lower_ci + mean(gadus$L), ymax = .upper_ci + mean(gadus$L)), alpha = 0.8, fill = "gray") + 
+  geom_line(data = smoother_year, aes(x = Year, y = .estimate + mean(gadus$L)),
+            color = "blue", linewidth = 1) +
+  geom_hline(yintercept = mean(gadus$L), linetype = 2) +
+  scale_y_continuous(breaks = seq(0, max(gadus$L), by = 5)) +
+  labs(x = "Year", y = "Length, cm")
+```
+
+```{r}
+Pl_L_hist <-
+  gadus %>% 
+  ggplot(aes(x = L)) +
+  geom_histogram(aes(y = after_stat(density * 100)), binwidth = 1) +
+  labs(x = "Length, cm", y = "Proportion, %") +
+  scale_x_continuous(breaks = seq(0, max(gadus$L), by = 5)) 
+  
+```
+
+
+```{r}
+Pl_doy <- 
+  ggplot() +
+  geom_ribbon(data = smoother_doy, aes(x = DOY, ymin = .lower_ci + mean(gadus$L), ymax = .upper_ci + mean(gadus$L)), alpha = 0.8, fill = "gray") + 
+  geom_line(data = smoother_doy, aes(x = DOY, y = .estimate + mean(gadus$L)),
+            color = "blue", linewidth = 1) +
+  geom_hline(yintercept = mean(gadus$L), linetype = 2) +
+    labs(x = "DOY", y = "Length, cm")
+  
+```
+
+```{r}
+library(patchwork)
+Pl_L_hist/(Pl_L_boxplot + Pl_doy)
+```
+
+
+
+# Общее описание рациона
+
+```{r}
+
+gadus %>% 
+  select(-Date, -W, - Date2) %>% 
+  melt(id.vars = c("Id", "Year", "DOY","Month", "DOM",  "Sex", "L"), variable.name = "Species", value.name = "Weight") ->
+  gadus_long
+
+gadus_long <-
+  gadus_long %>% 
+  mutate(Decade = case_when(DOM %in% 1:10 ~ 1,
+                            DOM %in% 11:20~ 2, 
+                            DOM %in% 21:31 ~ 3))
+```
+
+
+
+
+## Таблица с характеристиками питания
+
+
+<!-- Средний вес в пищевом комке -->
+
+```{r}
+gadus_long  %>% 
+  group_by(Species, Year) %>% 
+  summarise(Mean_Weight = round(mean(Weight),2) ) %>% 
+  dcast(formula = Species ~ Year) ->
+  mean_weight
+```
+
+
+
+
+
+
+<!-- Встречаемость (%) -->
+
+```{r}
+gadus_long  %>% 
+  group_by(Species, Year) %>% 
+  summarise(Freq = round(sum(Weight !=0)/n(), 3) *100 ) %>% 
+  dcast(formula = Species ~ Year) ->
+  freq
+```
+
+
+
+
+
+
+
+```{r}
+sci_name <- read_excel("Data/ТРЕСКА_LONG-TERM_CHANGES.xlsx", sheet = "Species")
+
+sci_name$Group <- factor(sci_name$Group, levels = c( "Polychaeta", "Crustacea", "Ophiuroidea", "Holothuroidea", "Pisces"))
+
+gadus_long %>% 
+  group_by(Species) %>% 
+  summarise(Freq = round(sum(Weight !=0)/n(), 4) *100,  Sum_Weight = sum(Weight)) %>% 
+  mutate(Prop =  round(Sum_Weight/sum(.$Sum_Weight)*100, 2)) %>% 
+  merge(., sci_name) %>% 
+  select(Group, Sci_name, Freq, Prop ) %>% 
+  arrange(Group) %>% 
+  mutate(Freq = ifelse(round(Prop, 1) <= 0.1, "+", Freq), Prop = ifelse(round(Prop, 1) <= 0.1, "+", Prop)) %>% 
+  select(-Group) %>% 
+  flextable() %>% 
+  set_header_labels(values = c("Species", "Frequency", "Weight proportion")) ->
+  ft
+  
+ft %>% 
+  autofit()
+
+```
+
+
+
+Таблица с описанием долей для отдельных групп
+
+```{r}
+gadus_long %>% 
+  merge(., sci_name) %>%
+  group_by(Group) %>% 
+  summarise(Freq = round(sum(Weight !=0)/n(), 4) *100,  Sum_Weight = sum(Weight)) %>% 
+  mutate(Prop =  round(Sum_Weight/sum(.$Sum_Weight)*100, 2)) %>% 
+  select(Group, Freq, Prop ) %>% 
+  arrange(Group) %>% 
+  flextable() %>% 
+  set_header_labels(values = c("Group", "Frequency", "Weight proportion")) ->
+  ft
+  
+ft %>% 
+  autofit()
+
+```
+
+
+
+
