@@ -54,23 +54,20 @@ library(ggrepel)
 Pl_monitoring_position <-
   Plot_Kand_upper + 
   geom_point(data = points %>% filter(Type =="NT_monitoring"), aes(x = Lon, y = Lat, group = 1), size = 5, fill = "yellow", shape = 21) +
-  geom_text(data = points %>% filter(Type =="NT_monitoring"), aes(x = Lon, y = Lat, group = 1, label = 1:4)) 
-# +
-  # geom_point(data = points %>% filter(Type !="NT_monitoring"), aes(x = Lon, y = Lat, group = 1), size = 4, fill = "blue", shape = 22) +
-  # annotate (x= 32.663313,  y = 67.13, geom = "text", label =  "Лувеньгский архипелаг") +
-  # annotate (x= 32.461079,  y = 66.91, geom = "text", label =  "Воронья губа") 
+  geom_text(data = points %>% filter(Type =="NT_monitoring"), aes(x = Lon, y = Lat, group = 1, label = 1:4)) +
+geom_point(data = points %>% filter(Type !="NT_monitoring"), aes(x = Lon, y = Lat, group = 1), size = 4, fill = "blue", shape = 22) +
+annotate (x= 32.663313,  y = 67.13, geom = "text", label =  "Лувеньгский архипелаг") +
+annotate (x= 32.461079,  y = 66.91, geom = "text", label =  "Воронья губа")
 
 ```
 
 
 
 
-Здесь ежегодно берется по несколько проб талломов фукоидов. У мидий, обитающих на водорслях оценивается морфотип и определяется частота мидий Т-морфотипа. 
 
 ```{r}
-
 # Читаем данные
-monitor <- read_excel("Data/nt_ne_monitoring_2002_2025.xlsx") 
+monitor <- read_excel("data/nt_ne_monitoring_2002_2025.xlsx") 
 
 monitor$PropT <- with(monitor, Nt/(Nt+Ne))
 
@@ -78,60 +75,90 @@ monitor$Site <- factor(monitor$Site)
 
 
 monitor <- monitor %>% mutate(Site2 = case_when(Site == "Lupch" ~ "о. Б. Лубчостров",
-                                                Site == "Malij" ~ "о. Малый",
-                                                Site == "Ovech" ~ "о. Овечий",
-                                                Site == "Ryashkov" ~ "о. Ряжков")) 
+                                     Site == "Malij" ~ "о. Малый",
+                                     Site == "Ovech" ~ "о. Овечий",
+                                     Site == "Ryashkov" ~ "о. Ряжков")) 
+monitor$Biotope <- "Fucales"
+
+myt <- read_excel("Data/nt_ne_mussel beds_2010_2025.xlsx", sheet = "Соотношение T и E  в пробах", na = "NA")
+
+myt$Biotope <- "Bank" 
+
+```
 
 
-monitor <- 
-  monitor %>% 
-  mutate(Ptros = exp(-2.4 + 5.4*PropT)/(1 + exp(-2.4 + 5.4*PropT)) ) %>% 
-   mutate(PropT_corrected = case_when( PropT == 1 ~ 0.9999,
+```{r}
+
+all_monitor <- data.frame(Year = c(monitor$Year, myt$year),
+                          Site = c(monitor$Site, myt$bank), 
+                          Sample = c(monitor$Sample, myt$sample),
+                          Biotope = c(monitor$Biotope, myt$Biotope),
+                          N_T = c(monitor$Nt, myt$N_T),
+                          N_E = c(monitor$Ne, myt$N_E))
+
+all_monitor$Biotope <- factor(all_monitor$Biotope)
+all_monitor$Site <- factor(all_monitor$Site)
+
+all_monitor <- 
+  all_monitor %>% 
+  mutate(PropT = N_T/(N_T + N_E))
+
+all_monitor <- 
+  all_monitor %>%
+  mutate(PropT_corrected = case_when( PropT == 1 ~ 0.9999,
                                       PropT == 0 ~ 0.0001,
                                       PropT != 1 & PropT !=0 ~ PropT))
-           
-           
-           
-Mod_monitor_1 <- gam(PropT_corrected ~ s(Year, by = Site, bs = "tp") + Site, family = betar(link = "logit"), data = monitor)
 
-# appraise(Mod_monitor_1)
+all_monitor2 <-
+  all_monitor %>% 
+  filter(Year >= 2010)
+  
+```
+
+
+```{r}
+
+Mod <- gam(PropT_corrected ~ s(Year, bs = "cr") + s(Site, bs = "re"), family = "betar", method = "REML", data = all_monitor)
+
+
+# appraise(Mod)
 # 
-# library(DHARMa)
-# 
-# simulateResiduals(Mod_monitor_1, plot = T)
-# 
+# simulateResiduals(Mod, plot = T)
 
 
+# draw(Mod)
 
-MyData2 <- expand.grid(Year = seq(min(monitor$Year), max(monitor$Year), 0.1), Site = levels(monitor$Site))
-
-
-MyData2$Predict <- predict(Mod_monitor_1, newdata = MyData2, type = "response", se = T)$fit
-
-MyData2$SE <- predict(Mod_monitor_1, newdata = MyData2, type = "response", se = T)$se.fit
-
-
-MyData2 <- MyData2 %>% mutate(Site2 = case_when(Site == "Lupch" ~ "о. Б. Лубчостров",
-                                                Site == "Malij" ~ "о. Малый",
-                                                Site == "Ovech" ~ "о. Овечий",
-                                                Site == "Ryashkov" ~ "о. Ряжков"))
-
+# summary(Mod)
 ```
 
 ```{r}
-Pl_dynam <- 
-  ggplot(MyData2, aes(x = Year, y = Predict)) + 
-  facet_wrap(~Site2) + 
-  geom_point(data = monitor, aes(x = Year, y = PropT )) + 
-  geom_ribbon(aes(ymin = Predict - 1.96*SE, ymax = Predict + 1.96*SE), alpha = 0.2) + 
-  geom_path(color = "black", size = 1) +
-  theme_bw() + 
-  xlab("Годы") + 
-  ylab("Доля мидий с T-морфотипом")  + 
-  scale_x_continuous(breaks = seq(min(monitor$Year), max(monitor$Year), 1) )+
-  theme(axis.text.x = element_text(angle = 90))
+logit_back <- function(x) exp(x)/(1 + exp(x)) # обратная логит-трансформация
+
+
+sm <- smooth_estimates(Mod)  %>% 
+  add_confint()
+
+
+
+sm <-
+  sm %>%
+  mutate(.estimate_pi = logit_back(.estimate + coef(Mod)["(Intercept)"]), 
+         .lower_ci_pi = logit_back(.lower_ci + coef(Mod)["(Intercept)"]), 
+         .upper_ci_pi = logit_back(.upper_ci +coef(Mod)["(Intercept)"]))
+
+ptros <- function()
+sm <- 
+  sm %>%
+  mutate(ptros = logit_back(.estimate + coef(Mod)["(Intercept)"]), 
+         .lower_ci_pi = logit_back(.lower_ci + coef(Mod)["(Intercept)"]), 
+         .upper_ci_pi = logit_back(.upper_ci +coef(Mod)["(Intercept)"]))
+  
 
 ```
+
+
+Мониторинг таксономического состава поселений мидий проводится с 2002 г. на девяти участках. На четырех участках ежегодно отбираются пробы фукоидов. На пяти участках (два в Лувеньгском архипелаге и три в Вороньей губе) отбор проб происходит на мидиевых банках (Рис. ++ А). Оценка таксономической структуры смешанных поселений проводится на основе анализа частот морфотипов (Khaitov et al., 2021). В целом, на всей акватории залива отмечено увеличение доли *M.trossulus* (Рис. ++ Б).     
+
 
 
 
@@ -140,4 +167,52 @@ library(patchwork)
 
 Pl_monitoring_position + Pl_dynam
 ```
+
+
+
+```{r}
+
+bank <- read_excel("Data/nt_ne_mussel beds_2010_2025.xlsx", sheet = "Соотношение T и E  в пробах", na = "NA")
+
+bank <- 
+bank %>% 
+  mutate(PropT = N_T/(N_T + N_E))
+
+bank$bank <- factor(bank$bank)
+
+bank<-
+bank %>%
+  filter(bank %in% c("mat", "korg", "vor2", "vor4", "vor5")) %>% 
+  filter(year >= 2012)
+  
+
+```
+
+
+```{r}
+bank <-
+  bank %>% 
+  mutate(PropT_corrected = case_when( PropT == 1 ~ 0.9999,
+                                      PropT == 0 ~ 0.0001,
+                                      PropT != 1 & PropT !=0 ~ PropT))
+
+```
+
+
+```{r}
+Mod_bank <- gam(PropT_corrected ~ s(year, by = bank, bs = "tp", k = 5) + bank, family = betar(link = "logit"), data = bank)
+
+
+```
+
+
+```{r}
+draw(Mod_bank)
+```
+
+
+
+
+
+
 

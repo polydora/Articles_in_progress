@@ -68,7 +68,7 @@ library(reshape2)
 
 size <- 
   myt %>% 
-  select(Site_code, Size_class)
+  dplyr::select(Site_code, Size_class)
 
 
 scam <- dcast(Site_code ~ Size_class, data = size)
@@ -79,6 +79,10 @@ scam <- dcast(Site_code ~ Size_class, data = size)
 library(vegan)
 pca_scam <- rda(decostand(scam[ , -c(1)], method = "hellinger" ))
 
+plot(pca_scam, display = "species", type = "t")
+
+
+
 
 sum_pca_scam <- summary(pca_scam)
 
@@ -88,6 +92,13 @@ pca_scam_scores <- as.data.frame(scores(pca_scam)$sites)
 
 
 pca_scam_scores$Site_code <- scam$Site_code
+
+myt %>% 
+  merge(., pca_scam_scores) %>% 
+  arrange(PC1) %>% 
+  ggplot(aes(x = Length)) + 
+  geom_histogram(binwidth = 5) + 
+  facet_wrap(~Site_code, ncol = 3, scales = "free_y", dir = "v")
 
 
 # Получаем общее описание предикторов для сайтов
@@ -118,6 +129,9 @@ kola_btn_predictors <- read_excel("Data/sites_info_KolaBay_with_predictors.xlsx"
 kola_btn_predictors <-
   kola_btn_predictors %>% 
   mutate(N_helthy = N_FC - N_BTN )
+
+
+hist(kola_btn_predictors$PT)
 
 names(kola_btn_predictors)
 
