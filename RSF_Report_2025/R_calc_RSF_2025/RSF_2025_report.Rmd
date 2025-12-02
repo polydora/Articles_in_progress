@@ -114,7 +114,7 @@ myt <- read_excel("Data/summary table_Magadan_itog.xlsx", sheet = "data")
 
 myt <-
 myt %>% 
-  select(-Site) %>% 
+  dplyr::select(-Site) %>% 
   mutate(Site = Site_code)
 
 
@@ -128,7 +128,7 @@ myt_23 <-
 
 
 myt_23 %<>%
-  select(-c(Site, Lat, Lon,  Date, BTN2.1, BTN2.2,  DN_FC  )) %>% 
+  dplyr::select(-c(Site, Lat, Lon,  Date, BTN2.1, BTN2.2,  DN_FC  )) %>% 
   mutate(Site = Site_code)
 
 cancer <- 
@@ -139,7 +139,7 @@ cancer <-
 cancer2 <-
   cancer %>% 
   filter(Year == 2023) %>% 
-  select(-Site) %>% 
+  dplyr::select(-Site) %>% 
   rename(Site = Site_code)
 
 
@@ -153,7 +153,7 @@ cancer %>%
   group_by(Site) %>% 
   summarise(Lat = mean(Lat), Lon = mean(Lon), N_total = sum(N), BTN1 = sum(BTN1), BTN2 = sum(BTN2)) %>% 
   mutate(BTN1 = BTN1/N_total*100, BTN2 = BTN2/N_total*100) %>% 
-  select(Site, Lat, Lon, BTN1, BTN2)  %>% 
+  dplyr::select(Site, Lat, Lon, BTN1, BTN2)  %>% 
   melt(., id.vars = c("Site", "Lat", "Lon"), value.name = "Prop_BTN", variable.name = "Lineage" ) ->
   prop_BTN
   
@@ -214,7 +214,7 @@ myt <- read_excel("Data/summary table_Magadan_itog.xlsx", sheet = "data")
 
 myt <-
 myt %>% 
-  select(-Site) %>% 
+  dplyr::select(-Site) %>% 
   mutate(Site = Site_code)
 
 
@@ -230,7 +230,7 @@ Prob_BTN2_total <- sum(myt$BTN2)/sum(myt$N)
 
 
 myt_23 %<>%
-  select(-c(Site, Lat, Lon,  Date, BTN2.1, BTN2.2,  DN_FC  )) %>% 
+  dplyr::select(-c(Site, Lat, Lon,  Date, BTN2.1, BTN2.2,  DN_FC  )) %>% 
   mutate(Site = Site_code)
 
 
@@ -306,7 +306,7 @@ cancer <-
 cancer2 <-
   cancer %>% 
   filter(Year == 2023) %>% 
-  select(-Site) %>% 
+  dplyr::select(-Site) %>% 
   rename(Site = Site_code)
 
 
@@ -396,7 +396,7 @@ growth <- read.table("Data/Mussel_growth_Magadan_2021_2023.csv", sep = ";", head
 
 growth <-
   growth %>% 
-  select(-Site) %>% 
+  dplyr::select(-Site) %>% 
   rename(Site = Site_code)
 
 # str(growth)
@@ -426,7 +426,7 @@ OGP_23$Sample <- factor(OGP_23$Sample)
 
 cancer_2023_long <- 
 cancer_2023 %>% 
-  select(Site, Sample, Salinity, Dist_Port, fetch, Sample, PC1, PC2, N_Large, N_Juv, N_Total, Cover, N, BTN1, BTN2) %>%
+  dplyr::select(Site, Sample, Salinity, Dist_Port, fetch, Sample, PC1, PC2, N_Large, N_Juv, N_Total, Cover, N, BTN1, BTN2) %>%
   # mutate(Sample = 1:nrow(.)) %>% 
   melt(., id.vars = c("Site", "Sample", "Salinity", "Dist_Port", "fetch",   "PC1", "PC2", "N_Large", "N_Juv", "N_Total",  "Cover", "N"), variable.name = "Lineage", value.name = "N_cancer") %>% 
   mutate(N_helthy = N - N_cancer)
@@ -916,19 +916,38 @@ sm <-
 Pl_gonad_BTN1 <-
 sm %>% 
   filter(.smooth == "s(Aneuploid_Proportion):LineageBTN1") %>% 
-  ggplot(aes(x = Aneuploid_Proportion, y = .estimate)) +
-  geom_ribbon(aes(ymax = .upper_ci,
-                  ymin = .lower_ci),
+  ggplot(aes(x = Aneuploid_Proportion, y = .estimate_pi)) +
+  geom_ribbon(aes(ymax = .upper_ci_pi,
+                  ymin = .lower_ci_pi),
               alpha = 0.4) +
   geom_line(color = "red", linewidth = 1)+
-  geom_hline(yintercept = 0, linetype = 2) +
+  # geom_hline(yintercept = 0, linetype = 2) +
   ggtitle("BTN1", subtitle = "") +
   labs(x = "Доля (%) анеуплоидных клеток", y = "Partial effect") +
-  ylim(-5, 4)+
+  # ylim(-5, 4)+
   # annotate(geom = "text", x = 25, y = 0.5, label = "Среднее значение")  +
   # theme_bw() +
   theme(axis.title.x = element_text(size = 15)) 
   # geom_point(data = part_residuals, aes(x = Aneuploid_Proportion, y = `s(Aneuploid_Proportion):LineageBTN1`))
+
+Mean_aomalia_proportion <- mean(myt_ind_clean_not_healthy$Gonad_Out)
+
+myt_ind_clean %>% 
+  filter(Rate_of_aneuploid_cells == 0) %>%
+  mutate(Gonad_Out = ifelse(Gonad_quality == "Нет гамет", 1, 0)) %>% 
+  pull(Gonad_Out) %>% 
+  mean() ->
+  Mean_anomalia_proportion_helthy
+
+ 
+
+
+Pl_gonad_BTN1 <- 
+Pl_gonad_BTN1 +
+  geom_hline(yintercept = Mean_aomalia_proportion, linetype = 2) +
+  geom_hline(yintercept = Mean_anomalia_proportion_helthy, linetype = 1, color = "darkgreen", linewidth = 3) +
+  annotate(x = 30, y = Mean_aomalia_proportion, geom = "text", label = "Средняя по популяции \nдоля среди больных") +
+  annotate(x = 50, y = Mean_anomalia_proportion_helthy + 0.05, geom = "text", label = "Средняя по популяции доля среди здоровых") 
 
 ```
 
@@ -938,19 +957,26 @@ sm %>%
 Pl_gonad_BTN2 <-
 sm %>% 
   filter(.smooth == "s(Aneuploid_Proportion):LineageBTN2") %>% 
-  ggplot(aes(x = Aneuploid_Proportion, y = .estimate)) +
-  geom_ribbon(aes(ymax = .upper_ci,
-                  ymin = .lower_ci),
+  ggplot(aes(x = Aneuploid_Proportion, y = .estimate_pi)) +
+  geom_ribbon(aes(ymax = .upper_ci_pi,
+                  ymin = .lower_ci_pi),
               alpha = 0.4) +
   geom_line(color = "blue", linewidth = 1)+
-  geom_hline(yintercept = 0, linetype = 2) +
+  # geom_hline(yintercept = 0, linetype = 2) +
   ggtitle("BTN2", subtitle = "") +
   labs(x = "Доля (%) анеуплоидных клеток", y = "Partial effect") +
-  ylim(-5, 4)+
+  # ylim(-5, 4)+
   # annotate(geom = "text", x = 25, y = 0.5, label = "Среднее значение")  +
   # theme_bw() +
   theme(axis.title.x = element_text(size = 15)) 
   # geom_point(data = part_residuals, aes(x = Aneuploid_Proportion, y = `s(Aneuploid_Proportion):LineageBTN2`))
+
+Pl_gonad_BTN2 <- 
+Pl_gonad_BTN2 +
+  geom_hline(yintercept = Mean_aomalia_proportion, linetype = 2) +
+  geom_hline(yintercept = Mean_anomalia_proportion_helthy, linetype = 1, color = "darkgreen", linewidth = 3) +
+  annotate(x = 30, y = Mean_aomalia_proportion, geom = "text", label = "Средняя по популяции \nдоля среди больных") +
+  annotate(x = 50, y = Mean_anomalia_proportion_helthy + 0.05, geom = "text", label = "Средняя по популяции доля среди здоровых") 
 
 ```
 
@@ -1051,7 +1077,7 @@ library(ggeffects)
 
 My_data <-
 as.data.frame(ggpredict(Mod_prop_incr_btn, terms = "BTN_Type", typical = "weighted.mean")) %>% 
-  select(x, predicted, conf.low, conf.high) %>% 
+  dplyr::select(x, predicted, conf.low, conf.high) %>% 
   mutate(P_incr = Fi_back(predicted), upr = Fi_back(conf.high), lwr = Fi_back(conf.low), BTN_Type = x )
 
 library(ggsignif)

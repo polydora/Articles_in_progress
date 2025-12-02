@@ -1,0 +1,215 @@
+---
+title: ""
+output: html_document
+date: ""
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+
+
+```{r}
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(mgcv)
+library(gratia)
+library(magrittr)
+library(DHARMa)
+library(ggplot2)
+library(cowplot)
+```
+
+
+```{r}
+
+# Читаем данные
+myt <- read_excel("Data/ALLO_BarentsSea_inter.xlsx", na = "NA")
+
+myt <- 
+  myt %>% 
+  rename(Lon = E, Lat = N)
+
+
+myt_tyuv <-
+  myt %>%
+  filter(region == "Tyuva")
+
+myt_kola <-
+  myt %>%
+  filter(region %in% c("Kola Bay and vicinity", "Tyuva"))
+
+site_excluded <- c("Ura Inlet", "Mogil'naya", "Kil'din, sunduki", "Kil'dinskaya salma" )
+
+myt_kola <- 
+  myt_kola %>% 
+  filter(!site %in% site_excluded)
+
+
+myt_kola %>% 
+  mutate(Hybride = ifelse( (str<0.9 & str>0.1), 1, 0)) %>% 
+  rename(Sample_ID = pop, Site_ID = site) ->
+  myt_kola
+
+```
+
+В каждой выборке за гибридов я считал тех, у кого 0.1 < str < 0.9.
+
+
+```{r}
+###### Расстояние от основного источника опреснения ############
+
+
+
+Tuloma_mouth <- data.frame(Lon = 32.839244, Lat = 68.832372)
+
+
+library(geosphere)
+
+# Вычисляем расстояния в метрах Для точек с индивидуальными данными STRUCTURE
+distances <- distGeo(
+  c(Tuloma_mouth$Lon, Tuloma_mouth$Lat),
+  myt_kola[, c("Lon", "Lat")]
+)
+
+myt_kola$Distance_Tuloma <- distances/1000
+
+```
+
+
+
+
+
+```{r}
+# Убираем те сайты, которые по слова Стерлкова не нужно включать, так как они находятся в зоне клины.
+
+# За границу берем Мишуково, для котрой расстояние до Туломы составляет 25.19617 км
+myt_kola_out_cline <- 
+  myt_kola %>% 
+  filter(Distance_Tuloma > 25)
+
+myt_kola_out_cline <- 
+  myt_kola_out_cline %>% 
+  filter(!is.na(depth))
+
+# str(myt_kola_out_cline)
+
+# hist(myt_kola_out_cline$depth)
+
+```
+
+
+
+```{r}
+
+Pl_str_vs_dist <-
+myt_kola %>%
+  filter(Distance_Tuloma > 25) %>% 
+  filter(region %in% c("Tyuva", "Kola Bay and vicinity")) %>% 
+  ggplot(aes(x = Distance_Tuloma, y = str)) +
+  geom_point(position = position_jitter(width =0.5)) +
+  geom_smooth(method = "gam", formula = y ~ s(x, k = 5), method.args = list(family = "betar")) +
+  theme_bw() +
+  labs(x = "Расстояние от устья Туломы (км)", y = "STRUCTURE")
+```
+
+
+На всякий случай привожу то, как ведет себя STRUCTURE за пределами клины.
+
+Эту величину я в модель не вставлял.
+
+```{r}
+Pl_str_vs_dist
+```
+
+
+Для выявления зависомтси частоты гибридов от доступных для оценки факторов были взяты выборки, расположенные за пределами клины. 
+
+Для оценки уровня солености использовали расстояние от устья Туломы. Глубина, на которой представлено поселение, оценивалась как высота от нуля глубин (положительная высота - литораль, отрицательная  - сублитораль). 
+
+Кроме того в модель был включен год сбора мидий. 
+
+```{r}
+library(mgcv)
+library(gratia)
+
+
+
+# names(myt_kola_out_cline)
+
+Mod_additive <- gam(
+   Hybride ~ 
+    Distance_Tuloma +
+     depth + 
+     s(year, k = 4), 
+     
+  family = binomial(link = "logit"),
+  data = myt_kola_out_cline, 
+  method = "REML"
+)
+
+
+
+
+```
+
+```{r}
+logit_back <- function(x) exp(x)/(1 + exp(x)) # обратная логит-трансформация
+
+
+sm <- smooth_estimates(Mod_additive)  %>% 
+  add_confint()
+
+
+
+sm <-
+  sm %>%
+  mutate(.estimate_pi = logit_back(.estimate + coef(Mod_additive)["(Intercept)"]), 
+         .lower_ci_pi = logit_back(.lower_ci + coef(Mod_additive)["(Intercept)"]), 
+         .upper_ci_pi = logit_back(.upper_ci +coef(Mod_additive)["(Intercept)"]))
+
+```
+
+```{r}
+Pl_year <- 
+sm %>% 
+  filter(.smooth == "s(year)") %>% 
+  ggplot(aes(x = year, y = .estimate_pi)) +
+  geom_ribbon(aes(ymin = .lower_ci_pi, ymax = .upper_ci_pi), alpha = 0.2) +
+  geom_line() +
+  # geom_hline(yintercept = mean(myt_hybr_preds$Prop_hybr), linetype = 2) +
+  # geom_point(data = myt_hybr, aes(y = Prop_hybr)) +
+  labs(x = "Годы", y = "Partial effect") +
+  theme_bw()
+
+
+```
+
+Вот summary этой модели
+
+```{r}
+summary(Mod_additive)
+```
+
+Вот визуализация связи с годом. 
+
+```{r}
+Pl_year
+```
+
+
+```{r}
+# myt_kola_out_cline %>% 
+#   group_by(year) %>% 
+#   summarise(Prop_hybr = mean(Hybride))
+```
+
+
+Статистически значимых связей с соленостью (оцененной как расстояние от устья Туломы) и с глубиной (градиент от литорали до сублиторали) выявлено не было.
+
+Частота гибридов за пределами клины демонстрировала значимые многолетние изменения. За период наблюдений она снизилась почти на 10%. 
+
+

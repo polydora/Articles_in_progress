@@ -1,0 +1,324 @@
+---
+title: "cancer_diagnostics"
+authr: "Polina Aleksandrova"
+output: html_document
+date: "2025-11-05"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages, include=FALSE, eval=T}
+library(dplyr)
+library(readxl)
+library(ggplot2)
+
+```
+
+# Диагностика рака
+
+Данные: в анализ пошли данные, полученные в ходе сбора и обработки материала в Магадане в 2023 году, в Мурманске летом 2024 года и в Мурманске весной 2025 года.
+
+```{r data_preparing, echo = FALSE}
+# Подготовка данных 
+
+raw_data <- read_excel('Data/Kola24_25_Magadan23.xlsx', na = "NA")
+
+raw_data <- raw_data[, c('Year', 'Location', 'ID', 'LM', 'Operator', 'Microscope', 'FC', 'AneuRate')]
+
+# str(raw_data)
+
+raw_data$AneuRate <- as.numeric(raw_data$AneuRate)
+  
+  
+# unique(raw_data$AneuRate)
+
+
+raw_data_clean <- 
+  raw_data %>% 
+  mutate(LM = case_when(LM == "екк и пузыри" ~ "екк",
+                        LM == "екк или пузыри" ~ "екк",
+                        LM == "СУПЕР РАК" ~ "рак",
+                        LM == "сильный рак на цитометре, глазами не видела. мб засер из предыдущей?" ~ NA,
+                        LM == "повышенный анеуплоидный пик на цитометре, на LM ничего" ~ NA,
+                        LM == "пузыри" ~ NA,
+                        LM == "РАК 95%" ~ "рак",
+                        LM == "СУПЕР РАК 95%" ~ "рак",
+                        LM == "кк 20% и пузыри" ~ "четвертьрак",
+                        LM == "кк 15% и пузыри" ~ "екк",
+                        LM == "кк 70% и пузыри" ~ "рак",
+                        LM == "кк  15%" ~ "екк",
+                        LM == "РАК 70%" ~ "рак",
+                        LM == "полурак?" ~ "полурак",
+                        LM == "полурак и пузыри" ~ "полурак",
+                        LM == "не расправились гемоциты" ~ "рак",
+                        LM == "РАК" ~ "рак",
+                        LM == "РАК, умирающая мидия" ~ "рак",
+                        LM == "куча пузырей или полурак?" ~ "полурак",
+                        LM == "рак 75%" ~ "рак",
+                        LM == "кк 10%" ~ "екк",
+                        LM == "кк 40%" ~ "полурак",
+                        LM == "кк 20%" ~ "четвертьрак",
+                        LM == "кк 15%" ~ "екк",
+                        LM == "кк 30%" ~ "четвертьрак",
+                        LM == "кк 25%" ~ "четвертьрак",
+                        LM == "cancer" ~ "рак",
+                        LM == "round cells" ~ "екк",
+                        LM == "мб сбой в нумерации" ~ NA,
+                        LM == "есть немного круглых клеток" ~ "екк",
+                        LM == "в этом блоке первые м.б. перепутаны" ~ NA,
+                        LM == "рак умеренно" ~ "полурак",
+                        LM == "сильнораковая!" ~ "рак",
+                        LM == "есть круглые клетки" ~ "екк",
+                        LM == "есть круглые клетки и в гонаде и в гемолимфе; Майорова говорит они странные, не такие как при DN" ~ "екк",
+                        LM == "редкие круглые клетки" ~ "екк",
+                        LM == "в гонаде круглые клетки" ~ "екк в гонаде",
+                        LM == "рак очень!" ~ "рак",
+                        LM == "рак слабо!" ~ "слабый рак",
+                        LM == "единичные круглые клетки" ~ "екк",
+                        LM == "в гонаде круглые клетки" ~ "екк в гонаде",
+                        LM == "слабый рак, есть круглые клетки" ~ "екк",
+                        LM == "полурак, 80% круглых клеток" ~ "полурак",
+                        LM == "рак очень! С пузырями (?)" ~ "рак",
+                        LM == "есть круглые клетки, в гонаде их много" ~ "екк, много в гонаде",
+                        LM == "рак слабо! Но в гонаде много" ~ "екк, много в гонаде",
+                        LM == "полурак!" ~ "полурак",
+                        LM == "рак слабо! = ЕКК" ~ "екк",
+                        LM == "*подозрение на гермафр" ~ NA,
+                        LM == "полудохлая мидия"  ~ NA,
+                        LM == "Майорова не видит, я вижу круглые клетки" ~ "екк",
+                        LM == "полурак 80% круглых клеток" ~ "полурак",
+                        LM == "есть круглые клетки, причем в гонаде их много" ~ "екк, много в гонаде",
+                        LM == "полурак 50% круглых клеток" ~ "полурак",
+                        LM == "глисты!" ~ "паразиты",
+                        LM == "есть круглые клетки в гемо, причем в гонаде их много!" ~ "екк, много в гонаде",
+                        LM == "полурак или засер от N23..." ~ "полурак",
+                        LM == "слабый рак! Необычно крупные круглые клетки в гемолимфе" ~ "слабый рак",
+                        LM == "рак очень! Есть бактерии в гемолимфе" ~ "рак",
+                        LM == "потеряна гемолимфа" ~ NA,
+                        LM == "умеренно раковая" ~ "полурак",
+                        LM == "рак слабый" ~ "слабый рак",
+                        LM == "глисты" ~ "паразиты",
+                        LM == "рак слабый; мало в гемолимфе но много в гонаде" ~ "екк, много в гонаде",
+                        LM == "рак очень слабый" ~ "слабый рак",
+                        LM == "рак слабо" ~ "слабый рак",
+                        LM == "round cells are present but does not look like cancer" ~ NA,
+                        LM == "round cells?" ~ "екк",
+                        LM == "странная, но рак не диагностировал" ~ NA,
+                        LM == "не видел" ~ NA,
+                        LM == "Полурак" ~ "полурак",
+                        LM == "Супер рак" ~ "рак",
+                        LM == "супер рак" ~ "рак",
+                        
+                        T ~ as.character(LM)
+                            )) %>% 
+  mutate(FC = case_when(FC == "done" ~ "healthy",
+                        FC == "no" ~ "healthy",
+                        FC == "yes" ~ "DN",
+                        FC == "DN мб засер" ~ "DN",
+                        FC == "не получилось" ~ "low quality",
+                        FC == "плохо получилось" ~ "low quality",
+                        FC == "NA" ~ NA,
+                        T ~ as.character(FC)
+  ))
+
+
+unique(raw_data_clean$LM)
+
+
+raw_data_clean$LM[is.na(raw_data_clean$LM)] <- c("healthy")
+
+raw_data_clean$AneuRate[is.na(raw_data_clean$AneuRate)] <- 0
+
+raw_data_clean <-
+  raw_data_clean %>% mutate(
+    Location = as.factor(Location),
+    Year = as.factor(Year),
+    LM = as.factor(LM),
+    Operator = as.factor(Operator),
+    Microscope = as.factor(Microscope),
+    FC = as.factor(FC),
+    AneuRate = as.numeric(AneuRate)
+  ) 
+
+df_cancer <- raw_data_clean
+  
+########
+
+# head(df_cancer)
+
+
+# sensitivity  
+
+df_cancer <-
+  mutate(df_cancer, sensitivity = case_when( (df_cancer$FC == "DN") & (df_cancer$LM == "рак") ~ "TP",
+                                             (df_cancer$FC == "DN") & (df_cancer$LM == "екк") ~ "TP", 
+                                             (df_cancer$FC == "DN") & (df_cancer$LM == "полурак") ~ "TP", 
+                                             (df_cancer$FC == "DN") & (df_cancer$LM == "четвертьрак") ~ "TP", 
+                                             (df_cancer$FC == "DN") & (df_cancer$LM == "слабый рак") ~ "TP",
+                                             (df_cancer$FC == "DN") & (df_cancer$LM == "екк в гонаде") ~ "TP",
+                                             (df_cancer$FC == "DN") & (df_cancer$LM == "екк, много в гонаде") ~ "TP",
+                                             (df_cancer$FC == "DN") & (df_cancer$LM == "healthy") ~ "FN",
+                                             (df_cancer$FC == "DN") & (df_cancer$LM == "паразиты") ~ "FN"
+                                            )) 
+
+
+df_cancer$LM <- as.factor(df_cancer$LM)
+                                                
+head(df_cancer)           
+
+# accuracy 
+
+df_cancer <-
+  mutate(df_cancer, accuracy = case_when( (df_cancer$FC == "DN") & (df_cancer$LM == "рак") ~ "TP",
+                                          (df_cancer$FC == "DN") & (df_cancer$LM == "екк") ~ "TP", 
+                                          (df_cancer$FC == "DN") & (df_cancer$LM == "полурак") ~ "TP", 
+                                          (df_cancer$FC == "DN") & (df_cancer$LM == "четвертьрак") ~ "TP", 
+                                          (df_cancer$FC == "DN") & (df_cancer$LM == "слабый рак") ~ "TP",
+                                          (df_cancer$FC == "DN") & (df_cancer$LM == "екк в гонаде") ~ "TP",
+                                          (df_cancer$FC == "DN") & (df_cancer$LM == "екк, много в гонаде") ~ "TP",
+                                          (df_cancer$FC == "DN") & (df_cancer$LM == "healthy") ~ "FN",
+                                          (df_cancer$FC == "DN") & (df_cancer$LM == "паразиты") ~ "FN",
+                                          (df_cancer$FC == "healthy") & (df_cancer$LM == "рак") ~ "FP",
+                                          (df_cancer$FC == "healthy") & (df_cancer$LM == "екк") ~ "FP", 
+                                          (df_cancer$FC == "healthy") & (df_cancer$LM == "полурак") ~ "FP", 
+                                          (df_cancer$FC == "healthy") & (df_cancer$LM == "четвертьрак") ~ "FP", 
+                                          (df_cancer$FC == "healthy") & (df_cancer$LM == "слабый рак") ~ "FP",
+                                          (df_cancer$FC == "healthy") & (df_cancer$LM == "екк в гонаде") ~ "FP",
+                                          (df_cancer$FC == "healthy") & (df_cancer$LM == "екк, много в гонаде") ~ "FP",
+                                          (df_cancer$FC == "healthy") & (df_cancer$LM == "healthy") ~ "TN",
+                                          (df_cancer$FC == "healthy") & (df_cancer$LM == "паразиты") ~ "TN",
+                                          
+  )) 
+
+
+df_cancer$accuracy <- as.factor(df_cancer$accuracy)
+
+
+df_cancer <- mutate(df_cancer, LM_num = case_when(df_cancer$LM == "рак" ~ 4,
+                                                     df_cancer$LM == "полурак" ~ 3,
+                                                     df_cancer$LM == "четвертьрак" ~ 2,
+                                                     df_cancer$LM == "екк" ~ 1,
+                                                     df_cancer$LM == "слабый рак" ~ 2,
+                                                     df_cancer$LM == "екк, много в гонаде" ~ 1,
+                                                     df_cancer$LM == "екк в гонаде" ~ 1,
+                                                     df_cancer$LM == "паразиты" ~ 0,
+                                                     df_cancer$LM == "healthy" ~ 0,
+                                                     df_cancer$LM == "no data yet" ~ NA))
+
+df_cancer <- mutate(df_cancer, LM_log = case_when(df_cancer$LM == "рак" ~ 1,
+                                                     df_cancer$LM == "полурак" ~ 1,
+                                                     df_cancer$LM == "четвертьрак" ~ 1,
+                                                     df_cancer$LM == "екк" ~ 1,
+                                                     df_cancer$LM == "слабый рак" ~ 1,
+                                                     df_cancer$LM == "екк, много в гонаде" ~ 1,
+                                                     df_cancer$LM == "екк в гонаде" ~ 1,
+                                                     df_cancer$LM == "паразиты" ~ 0,
+                                                     df_cancer$LM == "healthy" ~ 0,
+                                                     df_cancer$LM == "no data yet" ~ NA))
+
+
+head(df_cancer)
+```
+
+
+
+```{r}
+
+
+df_cancer <- df_cancer %>% filter(!is.na(AneuRate), !is.na(LM_log))
+
+
+df_cancer$gold <- ifelse(df_cancer$AneuRate >= 10, 1, 0)
+
+
+df_cancer <- df_cancer %>%
+  mutate(
+    bin = cut(
+      AneuRate,
+      breaks = c(0, 20, 40, 50, 60, 80, 100),
+      include.lowest = TRUE
+    )
+  )
+
+
+sen_spec <- df_cancer %>%
+  group_by(bin) %>%
+  summarise(
+    sensitivity = mean(LM_log[gold == 1] == 1),
+    n = n()
+  )
+
+
+# Чувствительность
+
+ggplot(sen_spec, aes(x = bin, y = sensitivity, group = 1)) +
+  geom_line() +
+  geom_point(size=3) +
+  ylim(0, 1) +
+  ggtitle("Sensitivity by AneuRate bin") +
+  xlab("AneuRate") +
+  ylab("Sensitivity") +
+  theme_bw()
+
+# по оператору 
+
+sen_spec2 <- df_cancer %>%
+  group_by(bin, Operator) %>%
+  summarise(
+    sensitivity = mean(LM_log[gold == 1] == 1),
+    n = n()
+  )
+
+
+
+ggplot(sen_spec2, aes(x = bin, y = sensitivity, group = Operator, color = Operator)) +
+  geom_line() +
+  geom_point(size=3) +
+  ylim(0, 1) +
+  ggtitle("Sensitivity by AneuRate bin and operator") +
+  xlab("AneuRate") +
+  ylab("Sensitivity") +
+  theme_bw()
+
+
+```
+
+
+
+
+```{r}
+library(lme4)
+
+
+# Mod <- glmer(LM_log ~ AneuRate +(1|Operator), family = "binomial", data = df_cancer)
+
+
+Mod <- glm (LM_log ~ AneuRate*Operator, family = "binomial", data = df_cancer)
+
+summary(Mod)
+
+# library(performance)
+# check_overdispersion(Mod)
+
+library(ggeffects)
+
+
+# as.data.frame(ggpredict(Mod, terms = "AneuRate [all]", typical = "weighted.mean")) %>% 
+#   ggplot(aes(x, predicted)) +
+#   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2) +
+#   geom_line()
+
+
+as.data.frame(ggpredict(Mod, terms = c("AneuRate [all]", "Operator"))) %>% 
+  ggplot(aes(x, predicted)) +
+# + geom_ribbon(aes(ymin = conf.low, ymax = conf.low, fill = group), alpha = 0.2) +
+  geom_line(aes(color = group), linewidth = 2) +
+  scale_color_discrete(name = "Operator") +
+  scale_fill_discrete(name = "Operator") +
+  labs(x = "AneuRate", y = "Predicted values")
+
+```
+
+Почему при AneuRate = 0 есть 1 в зависимой переенной??? Надо проверить, прваильо ли создана колонка LM_log
