@@ -1,7 +1,7 @@
 ---
 title: "Многолетняя динамика таксономического состава поселений мидий в вершине Кандалакшского залива"
 output: html_document
-date: "2025-11-30"
+date: ""
 ---
 
 ```{r setup, include=FALSE}
@@ -21,12 +21,6 @@ library(gratia)
 ```
 
 
-Мониторинг проводится на 4 участках: 
-
-1. о. Большой Лубчостров
-2. о. Малый
-3. о. Овечий
-4. о. Ряжков
 
 
 ```{r}
@@ -53,11 +47,12 @@ library(ggrepel)
 
 Pl_monitoring_position <-
   Plot_Kand_upper + 
-  geom_point(data = points %>% filter(Type =="NT_monitoring"), aes(x = Lon, y = Lat, group = 1), size = 5, fill = "yellow", shape = 21) +
-  geom_text(data = points %>% filter(Type =="NT_monitoring"), aes(x = Lon, y = Lat, group = 1, label = 1:4)) +
-geom_point(data = points %>% filter(Type !="NT_monitoring"), aes(x = Lon, y = Lat, group = 1), size = 4, fill = "blue", shape = 22) +
-annotate (x= 32.663313,  y = 67.13, geom = "text", label =  "Лувеньгский архипелаг") +
-annotate (x= 32.461079,  y = 66.91, geom = "text", label =  "Воронья губа")
+  geom_point(data = points, aes(x = Lon, y = Lat, group = 1), size = 4, fill = "blue", shape = 21)
+# +
+#   geom_text(data = points %>% filter(Type =="NT_monitoring"), aes(x = Lon, y = Lat, group = 1, label = 1:4)) +
+ # geom_point(data = points %>% filter(Type !="NT_monitoring"), aes(x = Lon, y = Lat, group = 1), size = 4, fill = "blue", shape = 22) +
+# annotate (x= 32.663313,  y = 67.13, geom = "text", label =  "Лувеньгский архипелаг") +
+# annotate (x= 32.461079,  y = 66.91, geom = "text", label =  "Воронья губа")
 
 ```
 
@@ -118,7 +113,7 @@ all_monitor2 <-
 
 ```{r}
 
-Mod <- gam(PropT_corrected ~ s(Year, bs = "cr") + s(Site, bs = "re"), family = "betar", method = "REML", data = all_monitor)
+Mod <- gam(PropT_corrected ~ s(Year, bs = "tp", k = 5) + s(Site, bs = "re"), family = "betar", method = "REML", data = all_monitor)
 
 
 # appraise(Mod)
@@ -146,73 +141,56 @@ sm <-
          .lower_ci_pi = logit_back(.lower_ci + coef(Mod)["(Intercept)"]), 
          .upper_ci_pi = logit_back(.upper_ci +coef(Mod)["(Intercept)"]))
 
-ptros <- function()
+ptros <- function(PT) {exp(-2.4 + 5.4*PT)/(1 + exp(-2.4 + 5.4*PT))}
+
 sm <- 
   sm %>%
-  mutate(ptros = logit_back(.estimate + coef(Mod)["(Intercept)"]), 
-         .lower_ci_pi = logit_back(.lower_ci + coef(Mod)["(Intercept)"]), 
-         .upper_ci_pi = logit_back(.upper_ci +coef(Mod)["(Intercept)"]))
+  mutate(ptros = ptros(.estimate_pi), 
+         .lower_ci_ptros = ptros(.lower_ci_pi), 
+         .upper_ci_ptros = ptros(.upper_ci_pi))
   
 
 ```
 
+```{r}
 
-Мониторинг таксономического состава поселений мидий проводится с 2002 г. на девяти участках. На четырех участках ежегодно отбираются пробы фукоидов. На пяти участках (два в Лувеньгском архипелаге и три в Вороньей губе) отбор проб происходит на мидиевых банках (Рис. ++ А). Оценка таксономической структуры смешанных поселений проводится на основе анализа частот морфотипов (Khaitov et al., 2021). В целом, на всей акватории залива отмечено увеличение доли *M.trossulus* (Рис. ++ Б).     
+all_monitor %>% 
+  group_by(Year, Site) %>% 
+  summarise(N_T = sum(N_T), N_E = sum(N_E), Ptros = ptros(N_T/(N_T + N_E)) ) ->
+  all_monitor_mean
+
+sm %>% 
+  filter(.smooth == "s(Year)") %>% 
+  ggplot(aes(x = Year, y = ptros)) +
+  geom_line(linewidth = 2)+ 
+  geom_ribbon(aes(ymin = .lower_ci_ptros, ymax = .upper_ci_ptros), alpha = 0.2) +   
+  geom_point(data = all_monitor_mean, aes(x = Year, y = Ptros), size = 1, color = "blue") +
+  xlab("Годы") + 
+  ylab("Оценка частоты M.trossulus") +
+  scale_x_continuous(breaks = seq(2002,2025, 1) ) + 
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90)) +
+  ylim(0, 1) +
+  labs(color = "Биотоп") ->
+  Pl_dynam
+
+
+
+```
+
+**- динамика МЕ и МТ в Белом море, желательно долгосрочная, но с учетом последних лет, по морфологическим данным (Хайтов + текст)**
+
+
+
+Мониторинг таксономического состава поселений мидий проводится с 2002 г. на девяти участках (Рис. ++ А). Оценка таксономической структуры смешанных поселений проводится на основе анализа частот морфотипов (Khaitov et al., 2021). В целом, на всей акватории вершины Кандалкшского залива отмечено увеличение доли *M.trossulus* (Рис. ++ Б), которая после 2010 г., демонстрируя межгодовые флуктуации, оставалась на стабильно высоком уровне.     
 
 
 
 
 ```{r, fig.width=15, fig.height=8}
-library(patchwork)
+library(cowplot)
 
-Pl_monitoring_position + Pl_dynam
+plot_grid(Pl_monitoring_position, Pl_dynam, nrow = 1, labels = c("А", "Б"))
 ```
 
-
-
-```{r}
-
-bank <- read_excel("Data/nt_ne_mussel beds_2010_2025.xlsx", sheet = "Соотношение T и E  в пробах", na = "NA")
-
-bank <- 
-bank %>% 
-  mutate(PropT = N_T/(N_T + N_E))
-
-bank$bank <- factor(bank$bank)
-
-bank<-
-bank %>%
-  filter(bank %in% c("mat", "korg", "vor2", "vor4", "vor5")) %>% 
-  filter(year >= 2012)
-  
-
-```
-
-
-```{r}
-bank <-
-  bank %>% 
-  mutate(PropT_corrected = case_when( PropT == 1 ~ 0.9999,
-                                      PropT == 0 ~ 0.0001,
-                                      PropT != 1 & PropT !=0 ~ PropT))
-
-```
-
-
-```{r}
-Mod_bank <- gam(PropT_corrected ~ s(year, by = bank, bs = "tp", k = 5) + bank, family = betar(link = "logit"), data = bank)
-
-
-```
-
-
-```{r}
-draw(Mod_bank)
-```
-
-
-
-
-
-
-
+Рисунок ++. Частота *Mytilus trossulus* на литорали вершины Кандалашского залива Белого моря. А. Расположение точек мониторинга. Б. Аппроксимация многолетних изменений частоты *М.trossulus* обобщенной аддитивной моделью.  
