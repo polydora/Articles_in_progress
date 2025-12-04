@@ -166,10 +166,19 @@ Pl_L_hist/(Pl_L_boxplot + Pl_doy)
 
 ```{r}
 
+# Отбираем только тех рыб, у которых была пища в желудках
 gadus %>% 
   select(-Date, -W, - Date2) %>% 
   melt(id.vars = c("Id", "Year", "DOY","Month", "DOM",  "Sex", "L"), variable.name = "Species", value.name = "Weight") ->
-  gadus_long
+  gadus_long 
+
+gadus_long %>% 
+  group_by(Id) %>% 
+  summarise(Weight_total = sum(Weight)) %>% 
+  filter(Weight_total == 0) %>% 
+  pull(Id) ->
+  empty_stomack
+
 
 gadus_long <-
   gadus_long %>% 
@@ -221,8 +230,9 @@ sci_name <- read_excel("Data/ТРЕСКА_LONG-TERM_CHANGES.xlsx", sheet = "Spec
 sci_name$Group <- factor(sci_name$Group, levels = c( "Polychaeta", "Crustacea", "Ophiuroidea", "Holothuroidea", "Pisces"))
 
 gadus_long %>% 
+  filter(!Id %in% empty_stomack) %>% 
   group_by(Species) %>% 
-  summarise(Freq = round(sum(Weight !=0)/n(), 4) *100,  Sum_Weight = sum(Weight)) %>% 
+  summarise(Freq = round(sum(Weight !=0)/length(unique(Id)), 4) *100,  Sum_Weight = sum(Weight)) %>% 
   mutate(Prop =  round(Sum_Weight/sum(.$Sum_Weight)*100, 2)) %>% 
   merge(., sci_name) %>% 
   select(Group, Sci_name, Freq, Prop ) %>% 
@@ -244,9 +254,12 @@ ft %>%
 
 ```{r}
 gadus_long %>% 
+  filter(!Id %in% empty_stomack) %>%
   merge(., sci_name) %>%
+  group_by(Id, Group) %>% 
+  summarise(Occur = sum(Weight !=0), Weight = sum(Weight)) %>% 
   group_by(Group) %>% 
-  summarise(Freq = round(sum(Weight !=0)/n(), 4) *100,  Sum_Weight = sum(Weight)) %>% 
+  summarise(Freq = round(sum(Occur !=0)/length(unique(Id)), 4) *100,  Sum_Weight = sum(Weight)) %>% 
   mutate(Prop =  round(Sum_Weight/sum(.$Sum_Weight)*100, 2)) %>% 
   select(Group, Freq, Prop ) %>% 
   arrange(Group) %>% 
