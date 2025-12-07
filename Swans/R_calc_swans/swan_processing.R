@@ -19,7 +19,7 @@ dat2$Site <- factor(dat2$Site)
 library(mgcv)
 
 Mod <- gam(N ~ s(Year, by = Species, k = 5) +
-             s(Dist, Depth,  by = interaction(Species, Ice), k = 5) +
+             s(Dist, Depth,  by = interaction(Species, Ice), k = 10) +
              Species + Ice +
              s(Site, bs = "re", k = length(unique(dat2$Site))),
            data = dat2,
@@ -35,7 +35,7 @@ library(DHARMa)
 simulateResiduals(Mod, plot = T)
 
 
-
+library(ggplot2)
 
 draw(Mod, select = 7) +
 guides(fill = "none") +
