@@ -1,0 +1,423 @@
+---
+title: "Общая канва"
+output: html_document
+date: ""
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+
+```{r}
+library(vegan)
+library(dplyr)
+library(broom)
+library(readxl)
+library(ggmap)
+library(maps)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(reshape2)
+library(scatterpie)
+
+
+```
+
+
+
+```{r}
+
+# Загрузка данных о странах мира
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+# Фильтрация стран Евразии по континенту
+eurasia <- subset(world, continent %in% c("Europe", "Asia", "Africa"))
+
+# Построение карты Евразии
+Pl_map <- 
+ggplot(data = world) +
+  geom_sf(fill = "lightgreen", color = "gray30") 
+# +
+#   coord_sf(
+#     xlim = c(10, 110),   # Долгота: от Португалии до Японии
+#     ylim = c(0, 60)     # Широта: от Индонезии до России
+#   ) 
+
+Pl_map_local <- 
+ggplot(data = eurasia) +
+  geom_sf(fill = "lightgreen", color = "gray30") +
+  coord_sf(
+    xlim = c(43, 90),   
+    ylim = c(35, 60)   
+  ) +
+  theme_minimal() +
+  theme(panel.grid = element_blank())
+
+```
+
+
+```{r}
+points <- read_excel("Data/Table1.xls", sheet = "Coordinates")
+
+
+```
+
+
+
+
+## 1. Характеристика материала
+
+
+
+```{r}
+birds <-  read_excel("Data/Table1.xls", sheet = "Data")
+
+efort <- read_excel("Data/Table1.xls", sheet = "Sampling effort")
+
+birds2 <- birds/efort$n
+
+```
+
+
+
+<!-- ```{r} -->
+<!-- kable(efort) -->
+<!-- ``` -->
+
+
+
+```{r}
+birds3 <- 
+  birds2 %>% 
+  decostand(method = "total", MARGIN = 2)
+
+birds3$Site <- points$Site
+
+```
+
+
+Карта расположения точек отлова птиц.Размер точки пропорционален количеству дней отлова.
+
+```{r}
+Pl_map_local +
+  geom_point(data = points, aes(x = Lon, y = Lat, size = efort$n)) +
+  labs(size = "Catch efforts")
+```
+
+
+
+
+## Модель географической приуроченности видов
+
+Анализ был проведен в два этапа. 
+
+1 этап. Многомерный анализ. В качестве матрицы зависимых переменных была использована матрица частот кажого из видов в каждой из локаций. Для получения этой матрицы количество пойманных птиц в каждой из локаций делили  количество дней отловов. Далее находили долю численности каждого из видов в общей численности птиц, пойманных в данной локации. 
+
+Полученную матрицу далее использовали, как матрицу зависимых переменных в каноническом корреспондентном анализе (Ter Braak, 1986; Legendre & Legendre, 2012). В качестве предикторов в анализе были использованы географические координаты точек отлова птиц. Однако, поскольку композиция видов в каждой точке отлова в значительной степени определяется биотопом установки сетей, то для учета этого смещяющего фактора в качестве ковариат в модель были включены доли в отловах, вычисленные для трех групп птиц, различающихся по своей биотопической приуроченности.
+
++ **Phyl** - "пеночки"
++ **Acro** - "камышевки"
++ **Fice** - "мухоловки"
+
+
+На основе CCA были найдены те канонические оси, которые имеют максимальную корреляцию (высокие положительные или отрицательные нагрузки) с географическими координатами точек отлова. 
+
+Оценка статистической значимости как сами канонических осей, так и отдельных предикторов проводилась с помощью пермутационной процедуры, 9999 пермутаций ( Legendre & Legendre, 2012; Borcard et al. 2012).
+
+Для описанного анализа был испльзован пакет "vegan" (Oksanen et al., 2022) для языка статистического программирования R (R Core Team, 202++).
+
+
+2 этап. Анализ связи канонических осей с географическими координатами центроидов мест зимовки птиц. 
+
+Используя материалы базы данных (++++) были получены географические полигоны, описывающие ареалы зимовки видов птиц, включенных в анализ. При этом для двух пар видов, определение которых было затруднено (*Ficedula albicilla* + *F. parva*  и *Phylloscopus collybita* + *Ph.tristis*) географические полигоны были объединены. Далее для каждого из полигонов были вычислены географические координаты их центроидов. Для  этих вычислений использовались функции пакета "sf" (Pebesma & Bivand, 2023).
+
+С помощью робустного регрессионного анализа была подобрана модель, описывающая связь между канонической осью, полученной на предыдущем этапе, и географическими координатами центроидов. Подбор модели осуществлялся с помощью функции rlm() из пакета "MASS" (Venable & Ripley, 2002).   
+
+
+
+```{r}
+species <- read_excel("Data/Table1.xls", sheet = "Species")
+
+birds %>%
+  mutate(Site = points$Site) %>%
+  melt(variable.name = "Species_code") %>%
+  merge(., species, by = "Species_code") %>%
+  dplyr::select(Species_code, Site, value, Group) %>%
+  group_by(Site, Group) %>%
+  summarise(N_Group = sum(value)) %>%
+  dcast(formula = Site ~ Group) %>%
+  merge(points, .,  by = "Site") %>%
+  merge(efort, .,  by = "Site") %>% 
+  dplyr::select(-Years) ->
+  points_group_proportion
+
+
+birds3 %>%
+  merge(points_group_proportion) %>%
+   dplyr::select(-c( "Site", "Lat",  "Lon",  "Acro", "Fice", "Phyl", "n")) ->
+  birds4
+```
+
+
+```{r}
+
+points_group_proportion <-
+  points_group_proportion %>%
+  mutate(Acro_per_Day = Acro / n,
+         Fice_per_Day = Fice / n,
+         Phyl_per_Day = Phyl / n,
+         Prop_Acro = Acro_per_Day / (Acro_per_Day + Fice_per_Day + Phyl_per_Day),
+         Prop_Fice = Fice_per_Day / (Acro_per_Day + Fice_per_Day + Phyl_per_Day),
+         Prop_Phyl = Phyl_per_Day / (Acro_per_Day + Fice_per_Day + Phyl_per_Day)
+         )
+
+
+# points_group_proportion %>%
+  # select(Site, Lat, Lon,  Acro, Fice, Phyl) %>%
+  # kable()
+```
+
+
+
+
+```{r}
+
+library(vegan)
+
+mod <- cca(birds4 ~ Acro_per_Day + Fice_per_Day + Phyl_per_Day + Lat + Lon , data = points_group_proportion)
+
+```
+
+
+
+
+
+
+```{r}
+
+species_data <- read_excel("Data/Table1.xls", sheet = "Species")
+
+```
+
+
+```{r}
+CCA_species <- as.data.frame(scores(mod)$species)
+
+
+group1 <-
+CCA_species %>% 
+  filter(CCA2 >0 ) %>% 
+  row.names()
+
+geogr_group1 <- data.frame(Name = group1, Rus_name = species$Species[species$Species_code %in% group1], Sci_Name = species$Sci_Name[species$Species_code %in% group1])
+
+
+group2 <-
+CCA_species %>% 
+  filter(CCA2 < 0 ) %>% 
+  row.names()
+
+
+geogr_group2 <- data.frame(Name = group2, Rus_name = species$Species[species$Species_code %in% group2], Sci_Name = species$Sci_Name[species$Species_code %in% group2])
+
+
+```
+
+
+
+```{r}
+sum <- summary(mod)
+```
+
+## Результаты
+
+Полученные в анализе канонические оси в сумме описывают `r round(sum$cont$importance[3,5]*100, 1)`% общей инерции (of total Inertia). 
+Сама модель была статистически значимой (Табл. +1). 
+
+
+```{r}
+tidy(anova(mod, permutations = 9999)) %>% 
+  kable(caption = "Таблица +1. Оценка статистической значимости модели канонического корреспондентного анализа")
+```
+
+
+При этом статистически значимыми были все пять канонических осей (Табл. +2). 
+
+
+```{r}
+
+tidy(anova(mod, by = "axis", permutations = 9999)) %>% 
+  kable(caption = "Таблица +2. Оценка статистической значимости  канонических корреспондентных осей")
+```
+
+Нагрузки по каждой из корреспондентных осей (Табл. +3) дают возможность дать их интерпретацию. 
+
+```{r}
+
+scores(mod, choices = 1:5)$biplot %>% 
+  kable(caption = "Таблица +. Нагрузки канонических осей для включенных в модель предикторов")
+```
+
+Наиболее высокие нагрузки для географических координат точек отлова были по CCA2. Эта ось, таким образом, отражает находящиеся в фокусе исследования географические компоненты, при учете влияния прочих ковариат.
+
+
+
+
+## Связь географии отлова с географией зимовки
+
+Географию зимовки оцениваем по центроиду ареала зимовки. Наша гипотеза - между ареалом (центроидом) зимовки и CCA2 должна быть корреляция.
+
+Для двух видов западные и восточные виды были рассмотрены как один комплекс, который потенциаоно не различали кольцеватели. 
+
+
+
+```{r}
+centroids <- 
+  read_excel("Data/Table1.xls", sheet = "Range_centroids_joined")
+```
+
+
+
+```{r}
+
+# Подготовка даных по CCA2 и центроидам
+
+CCA_species <- as.data.frame(scores(mod)$species)
+
+
+CCA_species$Species_code <- rownames(CCA_species)
+
+merge(CCA_species, species) %>% 
+  select(Species_code, Sci_Name, CCA2) ->
+  CCA2_species
+
+centroids %>% 
+  select(Sci_Name, Range_type, Lon, Lat) %>% 
+  filter(!Sci_Name %in% c("Phylloscopus tristis", "Ficedula albicilla"))->
+  centroids
+
+
+
+
+CCA2_species_centroids <-
+merge(CCA2_species, centroids, all.y = T) 
+
+
+```
+
+
+```{r}
+library(ggrepel)
+
+Pl_dots_names <-
+CCA2_species_centroids %>% 
+  filter(Range_type == "Wintering") %>% 
+  ggplot(aes(x = Lon, y = Lat)) +
+  geom_point(aes(color = CCA2), size = 3) +
+  geom_text_repel(aes(label = Species_code)) +
+  scale_color_gradient(high = "red", low = "yellow")
+
+
+Pl_dots_names
+```
+
+Видно, что вырисовываются два облака. Левое это африканские зимовщики, правое - Индо-Азиатские зимовщики. Те виды, что зимуют в Африке, в основном, имеют отрицательные нагрузки по ССА2 Большинство видов, что зимуют в Индии и Азии имеют положительные нагрузки по ССА2.
+
+
+Для проверки связи между CCA2 (характеризует географию отловов) и долготой центроида ареала зимовки строим робустную регрессию, которая описывает тенденцию, лишенную влияния аутлаеров.
+
+
+
+```{r}
+library(MASS)
+
+CCA2_species_centroids$Range_type <- factor(CCA2_species_centroids$Range_type)
+
+Mod_cca2 <- rlm(CCA2 ~ Lon, data =  CCA2_species_centroids %>% filter(Range_type == "Wintering"), maxit = 100)
+
+# library(car)
+# vif(Mod_cca2)
+
+# summary(Mod_cca2)
+```
+
+
+
+```{r}
+# Фильтруем данные
+wintering_data <- CCA2_species_centroids %>% 
+  filter(Range_type == "Wintering")
+
+# Строим робастную модель
+robust_model <- rlm(CCA2 ~ Lon, data = wintering_data, maxit = 100)
+
+# Создаем данные для предсказания
+pred_data <- data.frame(
+  Lon = seq(min(wintering_data$Lon), 
+            max(wintering_data$Lon), 
+            length.out = 100)
+)
+
+# Предсказания с интервалами
+predictions <- predict(robust_model, newdata = pred_data, 
+                       interval = "prediction", level = 0.90)
+
+# Объединяем с данными для графика
+pred_data <- cbind(pred_data, predictions)
+
+# Строим график
+ggplot(wintering_data, aes(x = Lon, y = CCA2)) +
+  geom_point(aes(color = CCA2), size = 3) +
+  geom_text_repel(aes(label = Species_code)) +
+  scale_color_gradient(high = "red", low = "yellow") +
+  geom_ribbon(data = pred_data, 
+              aes(y = fit, ymin = lwr, ymax = upr), 
+              alpha = 0.2, fill = "blue") +
+  geom_line(data = pred_data, aes(y = fit), color = "blue", size = 1) +
+  geom_smooth(method = "rlm", method.args = list(maxit = 100)) +
+  labs(x = "Longitude Wintering range centroid")
+
+
+```
+
+Построенная модель позволяет сделать два заключения
+
+1. Существует связь между географией отлова  с географией зимовки. Иными словами те птицы, которые с большей вероятностью ловятся на западе, летят на запад. И наоборот.   
+
+2. Есть некоторое количество аутлаевров, которые не вписываются в предсказания этой модели. Для выявления таких видов можно построить область предсказаний модели или отфильровать виды по величине остатков модели (взять тех, кто за пределами 0.025 и 0.975 квантилей)
+
+```{r}
+
+res_mod_cca2 <- residuals(Mod_cca2)
+
+diagn_mod_cca2 <- data.frame(Species_code = wintering_data$Species_code, fortify(Mod_cca2))
+
+q1 <- quantile(diagn_mod_cca2$.resid, probs = 0.025) 
+
+q2 <- quantile(diagn_mod_cca2$.resid, probs = 0.975)
+
+# diagn_mod_cca2 %>% 
+#   filter(.resid <= q1 |  .resid >= q2)
+
+```
+
+Оба метода дают два однозначных аутлаера:
+
++  Fice_prav (+Fice_albi) много ловится на западе, хотя ей лететь на восток. 
++  Acro_scir ловится часто на востоке, но лететь ей на запад, в Африку.
+
+Можно расширить границы поиска аутлаеров.
+
+
+
+
+
+
+
+## Приложение: карты ареалов видов 
+
+Пока в работе 
