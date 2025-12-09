@@ -1,0 +1,145 @@
+---
+title: "Разделение экологических ниш между тремя видами лебедей"
+author: ""
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+  opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+
+
+```{r}
+library(readxl)
+library(dplyr)
+library(reshape2)
+library(mgcv)
+library(ggplot2)
+library(cowplot)
+library(gratia)
+
+
+
+```
+
+
+```{r}
+
+dat <- read_excel("Data/swans.xlsx")
+
+
+dat <-
+  dat %>% 
+  filter(Depth < 20)
+
+dat2 <- 
+dat %>% 
+  select(Ice, Depth,  Dist,  Year, Date, Site, Sp1, Sp2, Sp3 ) %>% 
+  melt(id.vars = c("Ice", "Depth",  "Dist",  "Year", "Date", "Site" ), variable.name = "Species", value.name = "N")
+
+
+dat2$Species <- factor(dat2$Species)
+dat2$Ice <- factor(dat2$Ice, labels = c("Ice_cover", "No_ice"))
+dat2$Site <- factor(dat2$Site)
+
+```
+
+
+Я удалил те несколько наблюдений, которые имели глубину 20 м. Они при дальнейшей обработке оказались выбросами.
+
+Модель, описывающая разделение ниш двух видов была подобрана, как обобщенная аддитивная модель, основанная на отрицательном биномиальном распределении. 
+
+Зависимая переменная: Число лебедей в учете (N)                    
+
+Предикторы:                    
+- Год (Year). Сплайн подбирается отдельно для каждого из видов.                  
+- Глубина (Depth) и Расстояние от берега (Distance). Эти две величины сильно коррелируют, поэтому, чтобы не рассматривать только одну из них, в модели подбираются двумерные сплайны (непараметрические сглаживающие функции). Эти двумерные сплайны подбираются отдельно для каждого вида и каждой ледовой обстановки (см. ниже).            
+- Вид лебедя (Species): градации Sp1, Sp2, Sp3     
+- Ледовая обстановка (Ice): градации "Ice_cover", "No_ice"      
+- Случайный фактор Site. Введение случайного фактора было необходимо, поскольку в одной точке проводились повторные измерения (нарушение независимости наблюдений).      
+
+Вот так выглядит модель
+
+```{r echo=TRUE}
+library(mgcv)
+
+Mod <- gam(N ~ s(Year, by = Species, k = 5) +
+             s(Dist, Depth,  by = interaction(Species, Ice), k = 10) +
+             Species + Ice +
+             s(Site, bs = "re", k = length(unique(dat2$Site))),
+             data = dat2,
+             family = nb(),
+             method = "REML")
+```
+
+
+
+Валидацию модели не привожу, но там боле или менее терпимо.
+
+
+## Что получилось
+
+Вот summary подобранной модели
+
+```{r}
+library(broom)
+
+kable(tidy(Mod))
+
+# summary(Mod)
+```
+
+Что здесь важно увидеть. 
+
+1. У всех видов многолетняя есть выраженная динамика численности. Ниже я приведу графики.
+2. В ледовый период отчетливых паттернов привязки к градиенту Depth-Distance не выявляется ни у одного из видов. 
+3. В безледный период у всех трех видов наблюдается статистически значимая связь с градиентом  Depth-Distance.
+
+## Визуализации
+
+### Многолетняя динамика
+
+```{r}
+draw(Mod, select = 1:3)
+```
+
+Колебания численности есть, но разбираться в них пока не будем. 
+
+### Разделение экологических ниш в градиенте Depth-Distance в безледный период
+
+```{r}
+Pl_sp1 <- 
+draw(Mod, select = 7) +
+guides(fill = "none") +
+scale_fill_gradient(low = "yellow", high = "red") +
+ggtitle("Sp1 в безледный период", subtitle = NULL)
+
+
+Pl_sp2 <- 
+draw(Mod, select = 8) +
+guides(fill = "none") +
+scale_fill_gradient(low = "yellow", high = "red") +
+ggtitle("Sp2 в безледный период", subtitle = NULL)
+
+Pl_sp3 <- 
+draw(Mod, select = 9) +
+guides(fill = "none") +
+scale_fill_gradient(low = "yellow", high = "red") +
+ggtitle("Sp3 в безледный период", subtitle = NULL)
+
+
+
+```
+
+
+```{r, fig.width=10, fig.cap="Распределение трех видов лебедей в гардиенте глубины и удаленности от берега. Чем краснее заливка, тем больше обилие."}
+
+
+plot_grid(Pl_sp1, Pl_sp2, Pl_sp3, nrow = 1)
+
+```
+
+Видно, что Sp1 держится на большей глубине и при этом может уходить достаточно далеко от берега. Sp2 и Sp3 держатся близко от берега и на малой глубине. При этом, Sp2 смотрится как самый стенобионтный вид, он не заплывает далеко от берега, в то время как Sp3 может заходить дальше. 
+
