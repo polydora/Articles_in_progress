@@ -1,0 +1,635 @@
+---
+title: ''
+output: word_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+Sys.setlocale("LC_TIME", "en_US.UTF-8")
+```
+
+
+```{r Пакеты}
+library(dplyr)
+library(ggplot2)
+library(readxl)
+library(flextable)
+library(lubridate)
+library(mgcv)
+library(gratia)
+library(cowplot)
+library(reshape2)
+
+theme_set(theme_bw())
+```
+
+
+```{r}
+gadus <- read_excel("Data/ТРЕСКА_LONG-TERM_CHANGES.xlsx")
+
+gadus <-
+gadus %>% 
+  mutate(Date2 = as.POSIXct(as.Date(Date2, format = "%d.%m.%Y")), 
+         DOY = yday(Date2), Month = month(Date2, label = TRUE), DOM = day(Date2)) 
+
+
+
+```
+
+
+## Размерная структура
+
+
+
+```{r}
+gadus <-
+  gadus %>% 
+  filter(Year != 2016)
+```
+
+
+Вот средине и размах варьирования по каждому году
+
+```{r}
+gadus %>% 
+  group_by(Year) %>% 
+  summarise(Mean_L = round(mean(L), 1), SD = round(sd(L), 2), Min = min(L), Max = max(L)) %>% 
+  kable()
+```
+
+
+По всему материалу
+
+```{r}
+gadus %>% 
+  summarise(Mean_L = round(mean(L), 1), SD = round(sd(L), 2), Min = min(L), Max =max(L)) %>% 
+  kable()
+
+```
+
+
+
+Модель для описания многолетней и сезонной динамики размеров 
+
+
+```{r echo=TRUE}
+Model_L <-  gam(L ~ s(Year) + s(DOY, k = 8), data = gadus)
+```
+
+
+
+Вот результаты подбора этой модели.
+
+```{r}
+# summary(Model_L)
+library(flextable)
+library(broom)
+
+ft <-
+tidy(Model_L) %>% 
+  flextable() %>%
+  colformat_double(j = c(2, 3, 4), digits = 1) %>% 
+  colformat_double(j = 5, digits = 3) %>% 
+  set_header_labels(values = c("Smoother term", "edf", "ref.df", "F", "p-value" )) 
+  
+ft
+# draw(Model_L)
+```
+
+
+```{r}
+sm <- smooth_estimates(Model_L) |>
+  add_confint()
+
+sm %>% 
+  filter(.smooth == "s(Year)") ->
+  smoother_year
+
+sm %>% 
+  filter(.smooth == "s(DOY)") ->
+  smoother_doy
+
+```
+
+
+```{r}
+# gadus %>% 
+#   ggplot(aes(x = Year, y = L)) +
+#   geom_boxplot(aes(group = Year)) +
+#   geom_hline(yintercept = mean(gadus$L), linetype = 2) +
+#    scale_y_continuous(breaks = seq(0, max(gadus$L), by = 5)) +
+#   geom_line(data = smoother_year, aes(x = Year, y = .estimate + mean(gadus$L))))
+#   
+Pl_L_boxplot <-
+gadus %>% 
+  ggplot() +
+  geom_boxplot(aes(x = Year, y = L, group = Year)) +
+  geom_ribbon(data = smoother_year, aes(x = Year, ymin = .lower_ci + mean(gadus$L), ymax = .upper_ci + mean(gadus$L)), alpha = 0.8, fill = "gray") + 
+  geom_line(data = smoother_year, aes(x = Year, y = .estimate + mean(gadus$L)),
+            color = "blue", linewidth = 1) +
+  geom_hline(yintercept = mean(gadus$L), linetype = 2) +
+  scale_y_continuous(breaks = seq(0, max(gadus$L), by = 5)) +
+  labs(x = "Year", y = "Length, cm")
+```
+
+```{r}
+Pl_L_hist <-
+  gadus %>% 
+  ggplot(aes(x = L)) +
+  geom_histogram(aes(y = after_stat(density * 100)), binwidth = 1) +
+  labs(x = "Length, cm", y = "Proportion, %") +
+  scale_x_continuous(breaks = seq(0, max(gadus$L), by = 5)) 
+  
+```
+
+
+```{r}
+Pl_doy <- 
+  ggplot() +
+  geom_ribbon(data = smoother_doy, aes(x = DOY, ymin = .lower_ci + mean(gadus$L), ymax = .upper_ci + mean(gadus$L)), alpha = 0.8, fill = "gray") + 
+  geom_line(data = smoother_doy, aes(x = DOY, y = .estimate + mean(gadus$L)),
+            color = "blue", linewidth = 1) +
+  geom_hline(yintercept = mean(gadus$L), linetype = 2) +
+    labs(x = "DOY", y = "Length, cm")
+  
+```
+
+```{r}
+library(patchwork)
+Pl_L_hist/(Pl_L_boxplot + Pl_doy)
+```
+
+
+
+# Общее описание рациона
+
+```{r}
+
+# Отбираем только тех рыб, у которых была пища в желудках
+gadus %>% 
+  select(-Date, -W, - Date2) %>% 
+  melt(id.vars = c("Id", "Year", "DOY","Month", "DOM",  "Sex", "L"), variable.name = "Species", value.name = "Weight") ->
+  gadus_long 
+
+gadus_long %>% 
+  group_by(Id) %>% 
+  summarise(Weight_total = sum(Weight)) %>% 
+  filter(Weight_total == 0) %>% 
+  pull(Id) ->
+  empty_stomack
+
+
+gadus_long <-
+  gadus_long %>% 
+  mutate(Decade = case_when(DOM %in% 1:10 ~ 1,
+                            DOM %in% 11:20~ 2, 
+                            DOM %in% 21:31 ~ 3))
+```
+
+
+
+
+## Таблица с характеристиками питания
+
+
+<!-- Средний вес в пищевом комке -->
+
+```{r}
+gadus_long  %>% 
+  group_by(Species, Year) %>% 
+  summarise(Mean_Weight = round(mean(Weight),2) ) %>% 
+  dcast(formula = Species ~ Year) ->
+  mean_weight
+```
+
+
+
+
+
+
+<!-- Встречаемость (%) -->
+
+```{r}
+gadus_long  %>% 
+  group_by(Species, Year) %>% 
+  summarise(Freq = round(sum(Weight !=0)/n(), 3) *100 ) %>% 
+  dcast(formula = Species ~ Year) ->
+  freq
+```
+
+
+
+
+
+
+
+```{r}
+sci_name <- read_excel("Data/ТРЕСКА_LONG-TERM_CHANGES.xlsx", sheet = "Species")
+
+sci_name$Group <- factor(sci_name$Group, levels = c( "Polychaeta", "Crustacea", "Ophiuroidea", "Holothuroidea", "Pisces"))
+
+gadus_long %>% 
+  filter(!Id %in% empty_stomack) %>% 
+  group_by(Species) %>% 
+  summarise(Freq = round(sum(Weight !=0)/length(unique(Id)), 4) *100,  Sum_Weight = sum(Weight)) %>% 
+  mutate(Prop =  round(Sum_Weight/sum(.$Sum_Weight)*100, 2)) %>% 
+  merge(., sci_name) %>% 
+  select(Group, Sci_name, Freq, Prop ) %>% 
+  arrange(Group) %>% 
+  mutate(Freq = ifelse(round(Prop, 1) <= 0.1, "+", Freq), Prop = ifelse(round(Prop, 1) <= 0.1, "+", Prop)) %>% 
+  select(-Group) %>% 
+  flextable() %>% 
+  set_header_labels(values = c("Species", "Frequency", "Weight proportion")) ->
+  ft
+  
+ft %>% 
+  autofit()
+
+```
+
+
+
+Таблица с описанием долей для отдельных групп
+
+```{r}
+gadus_long %>% 
+  filter(!Id %in% empty_stomack) %>%
+  merge(., sci_name) %>%
+  group_by(Id, Group) %>% 
+  summarise(Occur = sum(Weight !=0), Weight = sum(Weight)) %>% 
+  group_by(Group) %>% 
+  summarise(Freq = round(sum(Occur !=0)/length(unique(Id)), 4) *100,  Sum_Weight = sum(Weight)) %>% 
+  mutate(Prop =  round(Sum_Weight/sum(.$Sum_Weight)*100, 2)) %>% 
+  select(Group, Freq, Prop ) %>% 
+  arrange(Group) %>% 
+  flextable() %>% 
+  set_header_labels(values = c("Group", "Frequency", "Weight proportion")) ->
+  ft
+  
+ft %>% 
+  autofit()
+
+```
+
+
+
+
+## Динамика пустых желудков
+
+```{r}
+gadus_long %>% 
+  group_by(Id, L, Year, DOY) %>% 
+  summarise(Total_Weight = sum(Weight)) ->
+  total_weight 
+
+```
+
+
+
+
+
+
+```{r}
+
+total_weight %>% 
+  mutate(Empty = ifelse(Total_Weight == 0, 1, 0)) -> 
+  total_weight
+
+total_weight <-
+total_weight %>% 
+  filter(Year != 2016)
+
+```
+
+```{r}
+Mod_Empty <- gam(Empty ~ s(Year) + s(DOY) + s(L), data = total_weight, family = "binomial")
+
+# summary(Mod_Empty)
+
+```
+
+
+```{r}
+ft <-
+tidy(Mod_Empty) %>% 
+  flextable() %>%
+  colformat_double(j = c(2, 3, 4), digits = 1) %>% 
+  colformat_double(j = 5, digits = 3) %>% 
+  set_header_labels(values = c("Smoother term", "edf", "ref.df", "Chi.sq", "p-value" )) 
+  
+ft
+# draw(Model_L)
+```
+
+
+```{r}
+sm <- smooth_estimates(Mod_Empty) |>
+  add_confint()
+
+sm %>% 
+  filter(.smooth == "s(Year)") ->
+  smoother_year
+
+sm %>% 
+  filter(.smooth == "s(DOY)") ->
+  smoother_doy
+
+```
+
+
+
+
+
+
+
+```{r}
+Pl_doy <- 
+  ggplot() +
+  geom_ribbon(data = smoother_doy, aes(x = DOY, ymin = .lower_ci, ymax = .upper_ci), alpha = 0.8, fill = "gray") + 
+  geom_line(data = smoother_doy, aes(x = DOY, y = .estimate),
+            color = "blue", linewidth = 1) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  geom_rug(data = total_weight, aes(x = DOY) ) +
+  ggtitle("Model prediction for \nseasonal dynamics") +
+  labs(y = "Partial effect") +
+  annotate(geom = "segment",y = -1.6, yend = -1.6, x = 172, xend = 182, linewidth = 1, color = "gray80") +
+  annotate(geom = "text", x = 177, y =-1.45, label = "June")+
+  annotate(geom = "segment",y = -1.6, yend = -1.6, x = 183, xend = 213, linewidth = 1, color = "gray60") +
+  annotate(geom = "text", x = 198, y =-1.45, label = "July") +
+  annotate(geom = "segment",y = -1.6, yend = -1.6, x = 214, xend = 231, linewidth = 1, color = "gray40") +
+  annotate(geom = "text", x = 222, y =-1.45, label = "August") 
+
+  
+```
+
+
+```{r}
+Pl_year <- 
+  ggplot() +
+  geom_ribbon(data = smoother_year, aes(x = Year, ymin = .lower_ci, ymax = .upper_ci), alpha = 0.8, fill = "gray") + 
+  geom_line(data = smoother_year, aes(x = Year, y = .estimate),
+            color = "blue", linewidth = 1) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  geom_rug(data = total_weight, aes(x = Year) ) +
+  ggtitle("Model prediction for \nlong-term dynamics") +
+  labs(y = "Partial effect")
+```
+
+
+```{r}
+
+Pl_year + Pl_doy
+```
+
+
+## Динамика веса пищевого комка в заполненных желудках
+
+
+```{r}
+total_weight %>% 
+  mutate(Empty = ifelse(Total_Weight == 0, 1, 0)) %>% 
+  filter(Empty == 0) -> 
+  total_weight_full
+
+```
+
+```{r}
+Mod_Total_Weight <- gam(Total_Weight ~ s(Year) + s(DOY) + s(L, k = 5), data = total_weight_full)
+
+# summary(Mod_Total_Weight)
+```
+
+
+
+```{r}
+ft <-
+tidy(Mod_Total_Weight) %>% 
+  flextable() %>%
+  colformat_double(j = c(2, 3, 4), digits = 1) %>% 
+  colformat_double(j = 5, digits = 3) %>% 
+  set_header_labels(values = c("Smoother term", "edf", "ref.df", "F", "p-value" )) 
+  
+ft
+# draw(Model_L)
+```
+
+
+```{r}
+sm <- smooth_estimates(Mod_Total_Weight) |>
+  add_confint()
+
+sm %>% 
+  filter(.smooth == "s(Year)") ->
+  smoother_year
+
+sm %>% 
+  filter(.smooth == "s(L)") ->
+  smoother_L
+
+```
+
+
+```{r}
+Pl_year <- 
+  ggplot() +
+  geom_ribbon(data = smoother_year, aes(x = Year, ymin = .lower_ci, ymax = .upper_ci), alpha = 0.8, fill = "gray") + 
+  geom_line(data = smoother_year, aes(x = Year, y = .estimate),
+            color = "blue", linewidth = 1) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  geom_rug(data = total_weight, aes(x = Year) ) +
+  ggtitle("Model prediction for \nlong-term dynamics") +
+  labs(y = "Partial effect")
+```
+
+
+
+```{r}
+Pl_L <- 
+  ggplot() +
+  geom_ribbon(data = smoother_L, aes(x = L, ymin = .lower_ci, ymax = .upper_ci), alpha = 0.8, fill = "gray") + 
+  geom_line(data = smoother_L, aes(x = L, y = .estimate),
+            color = "blue", linewidth = 1) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  geom_rug(data = total_weight, aes(x = L) ) +
+  ggtitle("Model prediction for \nbody size") +
+  labs(y = "Partial effect") +
+  xlim(20, 75)
+```
+
+```{r}
+Pl_year + Pl_L
+```
+
+
+
+
+
+```{r}
+gadus_long <-
+merge(gadus_long, total_weight_full)
+
+
+gadus_long %>%  
+  select(-Empty) %>% 
+  mutate(Prop = Weight/Total_Weight) -> 
+  gadus_long
+
+gadus_long %>% 
+  mutate(Presence = ifelse(Prop == 0, 0, 1)) ->
+  gadus_long
+
+gadus_long <- 
+  gadus_long %>% 
+  filter(Year != 2016)
+
+```
+
+
+## Динамика встречаемости пищевых объектов
+
+
+```{r}
+gadus_long %>% 
+  group_by(Species) %>% 
+  summarise(Freq = mean(Presence), Mean_Prop = mean(Prop)) %>% 
+  arrange(desc(Freq)) ->
+  gadus_total_means
+
+```
+
+
+```{r}
+Freq_threshould <- 0.05
+```
+
+
+```{r}
+gadus_total_means %>% 
+  filter(Freq >= Freq_threshould) %>% 
+  pull(Species) ->
+  selected_Species
+```
+
+
+
+
+```{r}
+abund_species <- 
+  gadus_long %>% 
+  filter(Species %in% selected_Species)
+```
+
+
+```{r}
+
+mod_freq <- gam(Presence ~ s(Year, by = Species, k =5) + s(DOY, by = Species, k =5) + s(L, by = Species, k =5) + Species, data = abund_species, family = "binomial")
+
+# summary(mod_freq)
+```
+
+
+
+
+
+```{r}
+ft <-
+tidy(mod_freq) %>% 
+  flextable() %>%
+  colformat_double(j = c(2, 3, 4), digits = 1) %>% 
+  colformat_double(j = 5, digits = 3) %>% 
+  set_header_labels(values = c("Smoother term", "edf", "ref.df", "Chi.sq", "p-value" )) 
+  
+ft
+# draw(Model_L)
+```
+
+
+
+```{r}
+sm <- smooth_estimates(mod_freq) |>
+  add_confint()
+
+sm %>% 
+  filter(if_any(everything(), ~ grepl("s\\(Year\\)", .))) ->
+  smoother_year
+
+sm %>% 
+  filter(if_any(everything(), ~ grepl("s\\(DOY\\)", .))) ->
+  smoother_doy
+
+
+sm %>% 
+  filter(if_any(everything(), ~ grepl("s\\(L\\)", .))) ->
+  smoother_L
+
+```
+
+
+
+```{r}
+Pl_L_species <- 
+  ggplot() +
+  geom_ribbon(data = smoother_L, aes(x = L, ymin = .lower_ci, ymax = .upper_ci), alpha = 0.8, fill = "gray") + 
+  geom_line(data = smoother_L, aes(x = L, y = .estimate),
+            color = "blue", linewidth = 1) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  geom_rug(data = total_weight, aes(x = L) ) +
+  ggtitle("Body size") +
+  labs(y = "Partial effect") +
+  facet_wrap(~Species, ncol = 3) +
+  xlim(20, 75)
+```
+
+```{r}
+Pl_year_species <- 
+  ggplot() +
+  geom_ribbon(data = smoother_year, aes(x = Year, ymin = .lower_ci, ymax = .upper_ci), alpha = 0.8, fill = "gray") + 
+  geom_line(data = smoother_year, aes(x = Year, y = .estimate),
+            color = "blue", linewidth = 1) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  geom_rug(data = total_weight, aes(x = Year) ) +
+  ggtitle("Long-term dynamics") +
+  labs(y = "Partial effect")+
+  facet_wrap(~Species, ncol = 3) 
+
+```
+
+
+```{r}
+Pl_doy_species <- 
+  ggplot() +
+  geom_ribbon(data = smoother_doy, aes(x = DOY, ymin = .lower_ci, ymax = .upper_ci), alpha = 0.8, fill = "gray") + 
+  geom_line(data = smoother_doy, aes(x = DOY, y = .estimate),
+            color = "blue", linewidth = 1) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  geom_rug(data = total_weight, aes(x = DOY) ) +
+  ggtitle("Seasonal dynamics") +
+  labs(y = "Partial effect") + 
+  annotate(geom = "segment",y = -5, yend = -5, x = 172, xend = 182, linewidth = 1, color = "gray80") +
+  annotate(geom = "text", x = 177, y =-4.5, label = "June")+
+  annotate(geom = "segment",y = -5, yend = -5, x = 183, xend = 213, linewidth = 1, color = "gray60") +
+  annotate(geom = "text", x = 198, y =-4.5, label = "July") +
+  annotate(geom = "segment",y = -5, yend = -5, x = 214, xend = 231, linewidth = 1, color = "gray40") +
+  annotate(geom = "text", x = 222, y =-4.5, label = "August") +
+  facet_wrap(~Species, ncol = 3) 
+
+
+```
+
+
+```{r}
+Pl_L_species
+```
+
+
+
+```{r}
+Pl_doy_species
+```
+
+
+```{r}
+Pl_year_species
+```
+
