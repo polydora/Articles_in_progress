@@ -1142,3 +1142,141 @@ ggsave("BTN1_BTN2_growth_Magadan.jpg", dpi=600)
 - В отличие от $MtrBTN2$, $MtrBTN1$ сильно зависит от факторов среды II порядка. Возможно это является следствием менее эффективного использования ресурсов среды I порядка.
 - С разной стратегией двух линий $BTN$ могут  быть связаны особенности их географического распространения: более узкое (субарктика) у $MtrBTN1$ и более широкое (практически всесветное) у $MtrBTN2$
 
+
+## Зависимость прироста от доли анеуплоидных клеток
+
+
+```{r}
+names(myt_ind_clean_not_healthy)
+nrow(myt_ind_clean_not_healthy)
+
+myt_ind_clean$Rate_of_aneuploid_cells
+
+Mod_Fi_incr_aneupl <- gam(Fi_Increment ~ s(Aneuploid_Proportion, by = Lineage, bs = "cr") + s(Last_ring, by = Lineage) + Lineage,  family = "gaussian",   data = myt_ind_clean_not_healthy, method = "REML")
+
+
+summary(Mod_Fi_incr_aneupl)
+
+draw(Mod_Fi_incr_aneupl, scales = "fixed" ) 
+```
+
+```{r}
+Mod_Fi_incr_aneupl <- gam(Fi_Increment ~ s(Aneuploid_Proportion, by = Lineage, bs = "cr") + s(Last_ring, by = Lineage) + Lineage,  family = "gaussian",   data = myt_ind_clean_not_healthy, method = "REML")
+
+my_data <- 
+  expand.grid(Aneuploid_Proportion = 8:100, Lineage = c("BTN1", "BTN2"), Last_ring = mean(myt_ind_clean_not_healthy$Last_ring))
+
+
+pred <- predict(Mod_Fi_incr_aneupl, newdata = my_data, se.fit = T)
+
+
+my_data$predicted <- pred$fit 
+  
+my_data$SE <- pred$se.fit  
+  
+myt_ind_clean$BTN_Type
+
+
+x_range <- range(my_data$Aneuploid_Proportion, na.rm = TRUE)
+
+
+healthy_summary <- 
+  myt_ind_clean %>% 
+  filter(BTN_Type == "Здоровые") %>% 
+  group_by(BTN_Type) %>% 
+  summarise(
+    Mean_Fi = mean(Fi_Increment), 
+    CI_lower = t.test(Fi_Increment)$conf.int[1],
+    CI_upper = t.test(Fi_Increment)$conf.int[2],
+    n = n(),
+    SE = sd(Fi_Increment) / sqrt(n()),
+    x_min = x_range[1],  # минимальное значение X
+    x_max = x_range[2]   # максимальное значение X
+  )
+
+
+
+my_data %>% 
+  ggplot() + 
+  geom_line(aes(x = Aneuploid_Proportion, y = predicted)) +
+  geom_ribbon(aes(x = Aneuploid_Proportion, ymin = predicted - 1.96*SE, ymax = predicted + 1.96*SE), alpha = 0.2) +
+  facet_wrap(~Lineage) +
+  geom_hline(data = healthy_summary, aes(yintercept = Mean_Fi), color = "darkgreen") +
+  geom_rect(
+    data = healthy_summary,
+    aes(xmin = x_min, xmax = x_max, ymin = CI_lower, ymax = CI_upper),
+    alpha = 0.2,
+    fill = "darkgreen"
+  )
+```
+
+
+## Связь размера с долей анеуплоидных клеток.
+```{r}
+myt_ind_clean %>%
+  ggplot(aes(x = BTN_Type, y = L)) +
+  geom_boxplot()
+  
+myt_ind_clean %>% 
+  select(Rate_of_aneuploid_cells, L, BTN_Type) %>% 
+melt(id.vars = c("Rate_of_aneuploid_cells", "BTN_Type")) -> 
+  L_Rate_aneuploid
+
+
+Mod_L_RAC <- gam(value ~ s(Rate_of_aneuploid_cells, by = BTN_Type) + BTN_Type, data = L_Rate_aneuploid %>% filter(BTN_Type != "Здоровые")) 
+
+draw(Mod_L_RAC)
+
+
+summary(Mod_L_RAC)
+```
+
+
+```{r}
+
+L_Rate_aneuploid <-
+L_Rate_aneuploid %>% 
+  mutate(Categor = BTN_Type) %>% 
+  mutate(Categor = ifelse(BTN_Type == "Здоровые", "H", Categor ))
+
+one_hot <- model.matrix(value ~ Categor - 1, data = L_Rate_aneuploid) %>% 
+  as.data.frame()
+
+L_Rate_aneuploid <- cbind(L_Rate_aneuploid, one_hot)
+
+L_Rate_aneuploid  %>% 
+  select(value, Categor1, Categor2) ->
+  df
+  
+str(df)
+dim(df)
+  
+L_Rate_aneuploid$BTN_Type_int <- as.integer(L_Rate_aneuploid$BTN_Type)-1
+
+
+
+
+
+df <- 
+  L_Rate_aneuploid %>%
+  mutate(
+    is_btn1 = as.integer(BTN_Type == "BTN1"),
+    is_btn2 = as.integer(BTN_Type == "BTN2")
+  )
+
+table(df$is_btn1)
+table(df$is_btn2)
+
+nrow(df)
+
+
+# Мультиномиальная GAM модель
+gam_multinom <- gam(list(
+  is_btn1 ~ s(value, k = 15, bs = "cr"),  # Вероятность btn1 относительно h
+  is_btn2 ~ s(value, k = 15, bs = "cr")   # Вероятность btn2 относительно h
+), family = multinom(K = 2),  # K = число категорий минус 1
+data = df,
+method = "REML")
+
+```
+
