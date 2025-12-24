@@ -359,7 +359,8 @@ diversity <- data.frame(H_com, H_crang)
 ```{r fig.cap=figRef("Diversity", "Зависимость разнообразия рациона креветок от разнообразия сообщества, в котором происходит кормление. Dependence of shrimp diet diversity on the diversity of the community in which feeding occurs.")}
 
 ggplot(diversity, aes(x = H_com, y = H_crang)) +
-  geom_point() +
+  geom_point(size = 3) +
+  geom_smooth(method = "lm") +
   labs(x = "Видовое разнообразие сообщества бентоса", y = "Разнообразие рациона")
 
 ```
