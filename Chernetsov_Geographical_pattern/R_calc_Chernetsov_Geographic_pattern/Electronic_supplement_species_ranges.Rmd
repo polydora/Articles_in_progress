@@ -1,0 +1,506 @@
+---
+title: ""
+output:
+  pdf_document:
+    latex_engine: pdflatex
+header-includes:
+  - \usepackage[T2A]{fontenc}
+  - \usepackage[utf8]{inputenc}
+  - \usepackage[russian]{babel}
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+
+```{r}
+library(vegan)
+library(dplyr)
+library(broom)
+library(readxl)
+library(ggmap)
+library(maps)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(reshape2)
+library(scatterpie)
+
+
+```
+
+
+
+```{r}
+
+# Загрузка данных о странах мира
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+# Фильтрация стран Евразии по континенту
+eurasia <- subset(world, continent %in% c("Europe", "Asia", "Africa"))
+
+# Построение карты Евразии
+Pl_map <- 
+ggplot(data = world) +
+  geom_sf(fill = "lightgreen", color = "gray30") 
+# +
+#   coord_sf(
+#     xlim = c(10, 110),   # Долгота: от Португалии до Японии
+#     ylim = c(0, 60)     # Широта: от Индонезии до России
+#   ) 
+
+Pl_map_local <- 
+ggplot(data = eurasia) +
+  geom_sf(fill = "lightgreen", color = "gray30") +
+  coord_sf(
+    xlim = c(40, 90),   # Долгота: от Португалии до Японии
+    ylim = c(35, 60)     # Широта: от Индонезии до России
+  ) 
+
+```
+
+
+```{r}
+points <- read_excel("Data/Table1.xls", sheet = "Coordinates")
+
+
+```
+
+<!-- ## Расположение точек отлова  -->
+
+
+
+```{r}
+birds <-  read_excel("Data/Table1.xls", sheet = "Data")
+
+efort <- read_excel("Data/Table1.xls", sheet = "Sampling effort")
+
+birds2 <- birds/efort$n
+
+```
+
+
+
+```{r}
+birds3 <- 
+  birds2 %>% 
+  decostand(method = "total", MARGIN = 2)
+
+birds3$Site <- points$Site
+
+```
+
+
+
+```{r}
+species <- read_excel("Data/Table1.xls", sheet = "Species")
+
+birds %>% 
+  mutate(Site = points$Site) %>% 
+  melt(variable.name = "Species_code") %>% 
+  merge(., species) %>% 
+  select(Species_code, Site, value, Group) %>% 
+  dplyr::group_by(Site, Group) %>% 
+  summarise(N_Group = sum(value)) %>% 
+  dcast(formula = Site ~ Group) %>% 
+  merge(points, .,  by = "Site") %>% 
+  merge(efort, .,  by = "Site") %>% 
+  dplyr::select(-Years) ->
+  points_group_proportion
+
+
+birds3 %>% 
+  merge(points_group_proportion) %>% 
+  select(-c( "Site", "Lat",  "Lon",  "Acro", "Fice", "Phyl", "n")) ->
+  birds4
+```
+
+
+
+```{r}
+
+points_group_proportion <-
+  points_group_proportion %>%
+  mutate(Acro_per_Day = Acro / n,
+         Fice_per_Day = Fice / n,
+         Phyl_per_Day = Phyl / n,
+         Prop_Acro = Acro_per_Day / (Acro_per_Day + Fice_per_Day + Phyl_per_Day),
+         Prop_Fice = Fice_per_Day / (Acro_per_Day + Fice_per_Day + Phyl_per_Day),
+         Prop_Phyl = Phyl_per_Day / (Acro_per_Day + Fice_per_Day + Phyl_per_Day)
+         )
+
+
+# points_group_proportion %>%
+  # select(Site, Lat, Lon,  Acro, Fice, Phyl) %>%
+  # kable()
+```
+
+
+```{r}
+
+mod <- cca(birds4 ~ Acro_per_Day + Fice_per_Day + Phyl_per_Day + Lat + Lon , data = points_group_proportion)
+
+anova(mod)
+# summary(mod)
+
+```
+
+
+
+```{r}
+
+species_data <- read_excel("Data/Table1.xls", sheet = "Species")
+
+```
+
+
+```{r}
+CCA_species <- as.data.frame(scores(mod)$species)
+
+
+group1 <-
+CCA_species %>% 
+  filter(CCA2 >0 ) %>% 
+  row.names()
+
+geogr_group1 <- data.frame(Name = group1, Rus_name = species$Species[species$Species_code %in% group1], Sci_Name = species$Sci_Name[species$Species_code %in% group1])
+
+
+group2 <-
+CCA_species %>% 
+  filter(CCA2 < 0 ) %>% 
+  row.names()
+
+
+geogr_group2 <- data.frame(Name = group2, Rus_name = species$Species[species$Species_code %in% group2], Sci_Name = species$Sci_Name[species$Species_code %in% group2])
+
+
+```
+
+
+
+```{r}
+centroids <- 
+  read_excel("Data/Table1.xls", sheet = "Range_centroids_joined")
+```
+
+
+
+
+```{r}
+map_draw <- function(Sci_name = "Phylloscopus trochiloides"){
+  
+    df <- 
+    birds4 %>% select(species$Species_code[species$Sci_Name == Sci_name])
+  
+  tr_name <- 
+    species_data %>% 
+    filter(Sci_Name == Sci_name) %>% 
+    pull(Species)
+  
+  points_non_zero <- 
+    points_group_proportion %>% 
+    filter(df[,1] != 0)
+  
+  df_non_zero <- 
+    df %>% 
+    filter(df[,1] != 0)
+  
+  range_data <- st_read(paste("Data/Bird_Range_Polygons/", Sci_name, ".kml", sep = ""), quiet =  TRUE)
+  
+  # if(Sci_name == "Ficedula parva") range_data$Name = c("Nesting", "Wintering", "Wintering") 
+  
+  # else 
+  
+  if(species$Reversed[species$Sci_Name == Sci_name] == 0) range_data$Name = c("Wintering", "Nesting") else range_data$Name = c("Nesting", "Wintering")
+  # 
+  
+centr <-   
+centroids %>% 
+  filter(Name == Sci_name)
+  
+ # ggtitle(paste(Sci_name, " (", species$Species[species$Sci_Name == Sci_name],")", sep =""))   
+  Pl_map +
+    ggtitle(paste(Sci_name)) +
+    geom_sf(data = range_data, aes(fill = Name), alpha = 0.7) +
+    geom_point(data = points_non_zero, aes(x = Lon, y = Lat, size = df_non_zero[, 1])) +
+    guides(size = "none") +
+    coord_sf(
+    xlim = c(-15, 180),  
+    ylim = c(-35, 70)) +
+    geom_point(data = centr, aes(x = Lon, y = Lat, shape = Range_type), size = 3, fill = "yellow") +
+    scale_shape_manual(values = c(21, 22)) +
+    scale_fill_manual(values = c("red", "blue")) +
+    guides(fill = "none", shape = "none") +
+    theme_bw() +
+    labs(x= "Longitude", y = "Latitude")
+  
+ } 
+
+
+
+
+
+```
+
+
+```{r}
+map_draw_without_catching_points <- function(Sci_name = "Phylloscopus tristis"){
+  
+  species <- read_excel("Data/Species_polygon_revision.xlsx")
+  
+  range_data <- st_read(paste("Data/Bird_Range_Polygons/", Sci_name, ".kml", sep = ""), quiet = TRUE)
+  
+  if(species$Correct_area_Type[species$Sci_Name == Sci_name] == 0) range_data$Name = c("Nesting", "Wintering") else range_data$Name = c("Wintering", "Nesting")
+  # 
+  
+centr <-   
+centroids %>% 
+  filter(Name == Sci_name)
+  
+  
+  Pl_map +
+    # ggtitle(paste(Sci_name, " (", species$Species[species$Sci_Name == Sci_name],")", sep ="")) +
+    ggtitle(paste(Sci_name)) +
+    geom_sf(data = range_data, aes(fill = Name), alpha = 0.7) +
+    coord_sf(
+    xlim = c(-15, 180),  
+    ylim = c(-35, 70)) +
+    geom_point(data = centr, aes(x = Lon, y = Lat, shape = Range_type), size = 3, fill = "yellow") +
+    scale_shape_manual(values = c(21, 22)) +
+    scale_fill_manual(values = c("red", "blue")) +
+    guides(fill = "none", shape = "none") +
+    theme_bw() +
+    labs(x= "Longitude", y = "Latitude")
+}
+```
+
+Карты ареалов гнездования (красные области) и зимовки (синие области) видов, включенных в анализ.
+
+Черными точками отражаются сайты отлова, размер точки пропорционален обилию птиц (количество пойманных птиц отнесенное к продолжительности отлова). Точки с нулевыми значениями численности не приводятся. 
+
+Желтые кружки - центроиды ареала генздования.
+
+Желтые квадратики - центроиды ареала зимовки.
+
+
+
+# Группа 1 (положительные значения CCA2)
+
+<!-- Здесь и далее приводятся только ненулевые точки отловов. Размер точки пропорционален вероятности отлова. Желтые точки демонстрируют центроиды соответcnвующих полигонов. -->
+
+
+```{r}
+map_draw(geogr_group1$Sci_Name[1])
+
+```
+
+
+
+```{r}
+map_draw(geogr_group1$Sci_Name[2])
+```
+
+
+
+```{r}
+map_draw(geogr_group1$Sci_Name[3])
+```
+
+
+```{r}
+map_draw(geogr_group1$Sci_Name[4])
+```
+
+
+
+```{r}
+map_draw(geogr_group1$Sci_Name[5])
+```
+
+
+```{r}
+map_draw(geogr_group1$Sci_Name[6])
+```
+
+
+# Группа 2 (отрицательные значения CCA2)
+
+<!-- Для двух видов рисую карты вручную, чтобы объединить на карте ареалы -->
+
+
+```{r}
+
+Sci_name = geogr_group2$Sci_Name[1]
+
+ df <- 
+    birds4 %>% select(species$Species_code[species$Sci_Name == Sci_name])
+  
+  tr_name <- 
+    species_data %>% 
+    filter(Sci_Name == Sci_name) %>% 
+    pull(Species)
+  
+  points_non_zero <- 
+    points_group_proportion %>% 
+    filter(df[,1] != 0)
+  
+  df_non_zero <- 
+    df %>% 
+    filter(df[,1] != 0)
+  
+  range_data <- st_read(paste("Data/Bird_Range_Polygons/", Sci_name, ".kml", sep = ""), quiet =  TRUE)
+  
+  if(species$Reversed[species$Sci_Name == Sci_name] == 0) range_data$Name = c("Wintering", "Nesting") else range_data$Name = c("Nesting", "Wintering")
+
+  
+species_2 <- read_excel("Data/Species_polygon_revision.xlsx")
+
+range_data_2 <- st_read(paste("Data/Bird_Range_Polygons/", "Phylloscopus tristis", ".kml", sep = ""), quiet =  TRUE)
+  
+  if(species_2$Correct_area_Type[species_2$Sci_Name == "Phylloscopus tristis"] == 0) range_data_2$Name = c("Wintering", "Nesting") else range_data_2$Name = c("Nesting", "Wintering")
+
+
+    
+centr <-   
+centroids %>% 
+  filter(Sci_Name == Sci_name)
+  
+ # ggtitle(paste(Sci_name, " (", species$Species[species$Sci_Name == Sci_name],")", sep =""))   
+  Pl_map +
+    ggtitle(paste(Sci_name,",", "Phylloscopus tristis", sep = "")) +
+    geom_sf(data = range_data, aes(fill = Name), alpha = 0.7) + 
+    geom_sf(data = range_data_2, aes(fill = Name), alpha = 0.4) + 
+    geom_point(data = points_non_zero, aes(x = Lon, y = Lat, size = df_non_zero[, 1])) +
+    guides(size = "none") +
+    coord_sf(
+    xlim = c(-15, 180),  
+    ylim = c(-35, 70)) +
+    geom_point(data = centr, aes(x = Lon, y = Lat, shape = Range_type), size = 3, fill = "yellow") +
+    scale_shape_manual(values = c(21, 22)) +
+    scale_fill_manual(values = c("red", "blue")) +
+    guides(fill = "none", shape = "none") +
+    theme_bw() +
+    labs(x= "Longitude", y = "Latitude")
+  
+ 
+
+```
+
+Для двух видов приведены усредненные центроиды.
+
+
+```{r}
+map_draw(geogr_group2$Sci_Name[2])
+```
+
+
+
+```{r}
+map_draw(geogr_group2$Sci_Name[3])
+```
+
+
+```{r}
+map_draw(geogr_group2$Sci_Name[4])
+```
+
+
+
+
+```{r}
+map_draw(geogr_group2$Sci_Name[5])
+```
+
+
+
+
+<!-- Для двух видов рисую карты вручную, чтобы объединить на карте ареалы -->
+
+```{r}
+Sci_name = geogr_group2$Sci_Name[6]
+
+ df <- 
+    birds4 %>% select(species$Species_code[species$Sci_Name == Sci_name])
+  
+  tr_name <- 
+    species_data %>% 
+    filter(Sci_Name == Sci_name) %>% 
+    pull(Species)
+  
+  points_non_zero <- 
+    points_group_proportion %>% 
+    filter(df[,1] != 0)
+  
+  df_non_zero <- 
+    df %>% 
+    filter(df[,1] != 0)
+  
+  range_data <- st_read(paste("Data/Bird_Range_Polygons/", Sci_name, ".kml", sep = ""), quiet =  TRUE)
+  
+  if(species$Reversed[species$Sci_Name == Sci_name] == 0) range_data$Name = c("Wintering", "Nesting") else range_data$Name = c("Nesting", "Wintering")
+
+  
+species_2 <- read_excel("Data/Species_polygon_revision.xlsx")
+
+range_data_2 <- st_read(paste("Data/Bird_Range_Polygons/", "Ficedula albicilla", ".kml", sep = ""), quiet =  TRUE)
+  
+  if(species_2$Correct_area_Type[species_2$Sci_Name == "Ficedula albicilla"] == 0) range_data_2$Name = c("Wintering", "Nesting") else range_data_2$Name = c("Nesting", "Wintering")
+
+
+    
+centr <-   
+centroids %>% 
+  filter(Sci_Name == Sci_name)
+  
+ # ggtitle(paste(Sci_name, " (", species$Species[species$Sci_Name == Sci_name],")", sep =""))   
+  Pl_map +
+    ggtitle(paste(Sci_name,",", "Ficedula albicilla", sep = "")) +
+    geom_sf(data = range_data, aes(fill = Name), alpha = 0.7) + 
+    geom_sf(data = range_data_2, aes(fill = Name), alpha = 0.4) + 
+    geom_point(data = points_non_zero, aes(x = Lon, y = Lat, size = df_non_zero[, 1])) +
+    guides(size = "none") +
+    coord_sf(
+    xlim = c(-15, 180),  
+    ylim = c(-35, 70)) +
+    geom_point(data = centr, aes(x = Lon, y = Lat, shape = Range_type), size = 3, fill = "yellow") +
+    scale_shape_manual(values = c(21, 22)) +
+    scale_fill_manual(values = c("red", "blue")) +
+    guides(fill = "none", shape = "none") +
+    theme_bw() +
+    labs(x= "Longitude", y = "Latitude")
+  
+ 
+```
+
+Для двух видов приведены усредненные центроиды.
+
+
+
+<!-- ```{r} -->
+<!-- map_draw(geogr_group2$Sci_Name[6]) -->
+<!-- ``` -->
+
+
+<!-- Аналогичная теньковкам ситуация. Вот карта для *Ficedula albicilla* -->
+
+
+<!-- ```{r} -->
+<!-- map_draw_without_catching_points("Ficedula albicilla") -->
+<!-- ``` -->
+
+
+```{r}
+map_draw(geogr_group2$Sci_Name[7])
+```
+
+
+
+```{r}
+map_draw(geogr_group2$Sci_Name[8])
+```
+
+
