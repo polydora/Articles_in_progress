@@ -294,36 +294,53 @@ centroids %>%
 
 
 ```{r}
-map_draw(geogr_group1$Sci_Name[1])
+Pl <- map_draw(geogr_group1$Sci_Name[1])
+Pl
+ggsave(filename = paste("SEM_Figures/",geogr_group1$Sci_Name[1],".svg", sep = ""))
+```
+
+
+
+```{r}
+Pl <- map_draw(geogr_group1$Sci_Name[2])
+
+Pl
+ggsave(filename = paste("SEM_Figures/",geogr_group1$Sci_Name[2],".svg", sep = ""))
+```
+
+
+
+```{r}
+Pl <- map_draw(geogr_group1$Sci_Name[3])
+
+Pl
+ggsave(filename = paste("SEM_Figures/",geogr_group1$Sci_Name[3],".svg", sep = ""))
+```
+
+
+```{r}
+Pl <- map_draw(geogr_group1$Sci_Name[4])
+
+Pl
+ggsave(filename = paste("SEM_Figures/",geogr_group1$Sci_Name[4],".svg", sep = ""))
 
 ```
 
 
 
 ```{r}
-map_draw(geogr_group1$Sci_Name[2])
-```
+Pl <- map_draw(geogr_group1$Sci_Name[5])
 
-
-
-```{r}
-map_draw(geogr_group1$Sci_Name[3])
-```
-
-
-```{r}
-map_draw(geogr_group1$Sci_Name[4])
-```
-
-
-
-```{r}
-map_draw(geogr_group1$Sci_Name[5])
+Pl 
+ggsave(filename = paste("SEM_Figures/",geogr_group1$Sci_Name[5],".svg", sep = ""))
 ```
 
 
 ```{r}
-map_draw(geogr_group1$Sci_Name[6])
+Pl <- map_draw(geogr_group1$Sci_Name[6])
+
+Pl
+ggsave(filename = paste("SEM_Figures/",geogr_group1$Sci_Name[6],".svg", sep = ""))
 ```
 
 
@@ -370,7 +387,8 @@ centroids %>%
   filter(Sci_Name == Sci_name)
   
  # ggtitle(paste(Sci_name, " (", species$Species[species$Sci_Name == Sci_name],")", sep =""))   
-  Pl_map +
+Pl <-   
+Pl_map +
     ggtitle(paste(Sci_name,",", "Phylloscopus tristis", sep = "")) +
     geom_sf(data = range_data, aes(fill = Name), alpha = 0.7) + 
     geom_sf(data = range_data_2, aes(fill = Name), alpha = 0.4) + 
@@ -387,6 +405,8 @@ centroids %>%
     labs(x= "Longitude", y = "Latitude")
   
  
+Pl
+ggsave(filename = paste("SEM_Figures/",Sci_name,"_", "Phylloscopus tristis",".svg", sep = ""))
 
 ```
 
@@ -394,25 +414,42 @@ centroids %>%
 
 
 ```{r}
-map_draw(geogr_group2$Sci_Name[2])
+
+Pl <- map_draw(geogr_group2$Sci_Name[2])
+
+Pl
+ggsave(filename = paste("SEM_Figures/",geogr_group2$Sci_Name[2],".svg", sep = ""))
+
 ```
 
 
 
 ```{r}
-map_draw(geogr_group2$Sci_Name[3])
+Pl <- map_draw(geogr_group2$Sci_Name[3])
+
+Pl
+ggsave(filename = paste("SEM_Figures/",geogr_group2$Sci_Name[3],".svg", sep = ""))
+
 ```
 
 
 ```{r}
-map_draw(geogr_group2$Sci_Name[4])
+Pl <- map_draw(geogr_group2$Sci_Name[4])
+
+Pl
+ggsave(filename = paste("SEM_Figures/",geogr_group2$Sci_Name[4],".svg", sep = ""))
+
 ```
 
 
 
 
 ```{r}
-map_draw(geogr_group2$Sci_Name[5])
+Pl <- map_draw(geogr_group2$Sci_Name[5])
+
+Pl
+ggsave(filename = paste("SEM_Figures/",geogr_group2$Sci_Name[5],".svg", sep = ""))
+
 ```
 
 
@@ -457,6 +494,8 @@ centroids %>%
   filter(Sci_Name == Sci_name)
   
  # ggtitle(paste(Sci_name, " (", species$Species[species$Sci_Name == Sci_name],")", sep =""))   
+
+Pl <- 
   Pl_map +
     ggtitle(paste(Sci_name,",", "Ficedula albicilla", sep = "")) +
     geom_sf(data = range_data, aes(fill = Name), alpha = 0.7) + 
@@ -474,6 +513,9 @@ centroids %>%
     labs(x= "Longitude", y = "Latitude")
   
  
+Pl
+ggsave(filename = paste("SEM_Figures/",Sci_name,"_", "Ficedula albicilla",".svg", sep = ""))
+
 ```
 
 Для двух видов приведены усредненные центроиды.
@@ -494,13 +536,21 @@ centroids %>%
 
 
 ```{r}
-map_draw(geogr_group2$Sci_Name[7])
+Pl <- map_draw(geogr_group2$Sci_Name[7])
+
+Pl
+ggsave(filename = paste("SEM_Figures/",geogr_group2$Sci_Name[7],".svg", sep = ""))
+
 ```
 
 
 
 ```{r}
-map_draw(geogr_group2$Sci_Name[8])
+Pl <- map_draw(geogr_group2$Sci_Name[8])
+
+Pl
+ggsave(filename = paste("SEM_Figures/",geogr_group2$Sci_Name[8],".svg", sep = ""))
+
 ```
 
 

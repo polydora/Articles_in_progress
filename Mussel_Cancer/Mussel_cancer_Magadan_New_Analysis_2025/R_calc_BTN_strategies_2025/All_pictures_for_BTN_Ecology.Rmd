@@ -334,8 +334,9 @@ SCAM <-
 ```{r}
 # scam_23 <- scam %>% filter(Year == 2023)
 
+# pca_scam <- rda(decostand(SCAM[ , -c(1,2)], method = "hellinger" ))
 
-pca_scam <- rda(decostand(SCAM[ , -c(1,2)], method = "hellinger" ))
+pca_scam <- rda(SCAM[ , -c(1,2)])
 
 # plot(pca_scam, display = "sp")
 
@@ -465,6 +466,31 @@ ggplot(pca_scores_scam, aes(PC1, N_Juv/(N_Juv + N_Large))) +
 
 ```
 
+
+
+
+```{r, fig.cap="Cвязь плотности молоди со значениями PC1."}
+ggplot(pca_scores_scam, aes(PC1, N_Juv)) + 
+  geom_text(aes(label = Site)) +
+  labs(x = "Значения PC1", y = "Плтность молоди") +
+  geom_smooth(method = "lm") +
+  theme_bw()
+
+```
+
+
+
+```{r, fig.cap="Cвязь общей плотности поселения со значениями PC1."}
+ggplot(pca_scores_scam, aes(PC1, N_Total)) + 
+  geom_text(aes(label = Site)) +
+  labs(x = "Значения PC1", y = "Плотность поселения") +
+  geom_smooth(method = "lm") +
+  theme_bw()
+
+```
+
+
+
 <br>
 <br>
 
@@ -538,7 +564,7 @@ cancer_2023_long$Site <- factor(cancer_2023_long$Site)
 # summary(Mod_btn1_btn2)
 
 
-Mod_btn1_btn2_no_re <- gam(cbind(N_cancer, N_helthy) ~ s((Dist_Port), by = Lineage, k = 10, bs = "tp") + s((fetch), by = Lineage, k = 10, bs = "tp")  + s((PC1), by = Lineage, k = 10, bs = "tp") + s((OGP), by = Lineage, k = 10, bs = "tp")  +  Lineage,  family = "binomial", method = "REML", data = cancer_2023_long )
+Mod_btn1_btn2_no_re <- gam(cbind(N_cancer, N_helthy) ~ s((Dist_Port), by = Lineage, k = 10, bs = "tp") + s((fetch), by = Lineage, k = 10, bs = "tp")  + s((PC1), by = Lineage, k = 10, bs = "tp") + s((OGP), by = Lineage, k = 5, bs = "tp")  +  Lineage,  family = "binomial", method = "REML", data = cancer_2023_long )
 
 
 # draw(Mod_btn1_btn2_no_re)
@@ -636,7 +662,7 @@ sm %>%
   geom_hline(yintercept = 0, linetype = 2) +
   # theme_bw()+
   # theme(axis.title = element_text(size = 15)) +
-  ylim(-3,4.5) +
+  # ylim(-3,4.5) +
   theme(axis.text = element_text(size = 15)) +
   geom_point(data = part_residuals, aes(x = Dist_Port, y = `s(Dist_Port):LineageBTN1`))
   
@@ -659,9 +685,9 @@ sm %>%
   geom_hline(yintercept = 0, linetype = 2) +
   # theme_bw()+
   # theme(axis.title.x = element_text(size = 15)) +
-  annotate(geom = "text", x = 5, y = -2.5, label = "Закрытое побережье", size = 5) +
-  annotate(geom = "text", x = 25, y = -2.5, label = "Открытое побережье", size = 5) +
-  ylim(-3, 5.5) +
+  # annotate(geom = "text", x = 5, y = -2.5, label = "Закрытое побережье", size = 5) +
+  # annotate(geom = "text", x = 25, y = -2.5, label = "Открытое побережье", size = 5) +
+  # ylim(-3, 5.5) +
   geom_point(data = part_residuals, aes(x = fetch, y = `s(fetch):LineageBTN1`))
   
 
@@ -684,12 +710,13 @@ sm %>%
   geom_hline(yintercept = 0, linetype = 2) +
   # theme_bw()+
   # theme(axis.title.x = element_text(size = 15)) +
-  annotate(geom = "text", x = -0.45, y = -3.8, label = "Много молоди", size = 5) +
-  annotate(geom = "text", x = 0.08, y = -3.8, label = "Много старых", size = 5)  +
+  # annotate(geom = "text", x = 0.45, y = -3.8, label = "Низкая \nплотность", size = 5) +
+  # annotate(geom = "text", x = 100, y = -3.8, label = "Высокая \nплотность", size = 5)  +
   # annotate(geom = "segment", y = -4, yend = -4, x = -0.36, xend = -0.01, arrow = arrow(ends = "both", type = "closed", angle = 10), color = "black") +
- ylim(-5.1, 4.5)  +
-  geom_point(data = part_residuals, aes(x = PC1, y = `s(PC1):LineageBTN1`)) +
-   scale_x_reverse() 
+ # ylim(-5.1, 4.5)  +
+  geom_point(data = part_residuals, aes(x = PC1, y = `s(PC1):LineageBTN1`)) 
+# +
+#    scale_x_reverse() 
   
   
 
@@ -714,7 +741,7 @@ sm %>%
   annotate(geom = "text", x = 0.85, y = -3.7, label = "Медленный рост", size = 5) +
   annotate(geom = "text", x = 1.2, y = -3.7, label = "Быстрый рост", size = 5)  +
   # theme(axis.title.x = element_text(size = 15)) +
-  ylim(-4, 4.5)  +
+  # ylim(-4.5, 4.5)  +
   geom_point(data = part_residuals, aes(x = OGP, y = `s(OGP):LineageBTN1`))
 
 ```
@@ -735,7 +762,7 @@ sm %>%
   geom_hline(yintercept = 0, linetype = 2) +
   # theme_bw()+
   # theme(axis.title.x = element_text(size = 15)) +
-  ylim(-3,4.5) +
+  # ylim(-3,4.5) +
   geom_point(data = part_residuals, aes(x = Dist_Port, y = `s(Dist_Port):LineageBTN2`))
 
 ```
@@ -756,9 +783,9 @@ sm %>%
   geom_hline(yintercept = 0, linetype = 2) +
   # theme_bw()+
   # theme(axis.title.x = element_text(size = 15)) +
-  annotate(geom = "text", x = 5, y = -2.5, label = "Закрытое побережье", size = 5) +
-  annotate(geom = "text", x = 25, y = -2.5, label = "Открытое побережье", size = 5)  +
-  ylim(-3, 5.5)+
+  # annotate(geom = "text", x = 5, y = -2.5, label = "Закрытое побережье", size = 5) +
+  # annotate(geom = "text", x = 25, y = -2.5, label = "Открытое побережье", size = 5)  +
+  # ylim(-3, 5.5)+
   geom_point(data = part_residuals, aes(x = fetch, y = `s(fetch):LineageBTN2`))
   
 
@@ -782,12 +809,13 @@ sm %>%
   geom_hline(yintercept = 0, linetype = 2) +
   # theme_bw()+
   # theme(axis.title.x = element_text(size = 15)) +
-  annotate(geom = "text", x = -0.45, y = -3.8, label = "Много молоди", size = 5) +
-  annotate(geom = "text", x = 0.08, y = -3.8, label = "Много старых", size = 5)  +
+ # annotate(geom = "text", x = 0.45, y = -3.8, label = "Низкая \nплотность", size = 5) +
+ #  annotate(geom = "text", x = 100, y = -3.8, label = "Высокая \nплотность", size = 5)  +
   # annotate(geom = "segment", y = -4, yend = -4, x = -0.36, xend = -0.01, arrow = arrow(ends = "both", type = "closed", angle = 10), color = "black")+
-  ylim(-5.1, 4.5) +
-  geom_point(data = part_residuals, aes(x = PC1, y = `s(PC1):LineageBTN2`))+
-  scale_x_reverse()  
+  # ylim(-5.1, 4.5) +
+  geom_point(data = part_residuals, aes(x = PC1, y = `s(PC1):LineageBTN2`))
+# +
+#   scale_x_reverse()  
 
 
 ```
@@ -807,10 +835,10 @@ sm %>%
   labs(x = "OGP", y = "Partial effect")  +
   geom_hline(yintercept = 0, linetype = 2) +
   # theme_bw()+
-  annotate(geom = "text", x = 0.85, y = -3.7, label = "Медленный рост", size = 5) +
-  annotate(geom = "text", x = 1.2, y = -3.7, label = "Быстрый рост", size = 5)  +
+  # annotate(geom = "text", x = 0.85, y = -3.7, label = "Медленный рост", size = 5) +
+  # annotate(geom = "text", x = 1.2, y = -3.7, label = "Быстрый рост", size = 5)  +
   # theme(axis.title.x = element_text(size = 15))+
-  ylim(-4, 4.5) +
+  # ylim(-5, 5) +
   geom_point(data = part_residuals, aes(x = OGP, y = `s(OGP):LineageBTN2`))
 
 ```
@@ -863,87 +891,107 @@ merge(predictors_21, pca_scores_scam)
 
 
 
-cancer_2021 <- 
+cancer3 <-
   cancer %>% 
-  filter(Year == 2021)
+  filter(Year == 2021) %>% 
+  dplyr::select(-Site) %>% 
+  rename(Site = Site_code)
+
+
+
+
+cancer_2021 <- 
+  cancer3 %>% 
+  group_by(Site) %>% 
+  summarise(N = sum(N), BTN1 = sum(BTN1), BTN2 = sum(BTN2))
+
+
+
+
+cancer_2021_long <- 
+cancer_2021 %>% 
+  melt(., id.vars = c("Site", "N"), variable.name = "Lineage", value.name = "N_cancer") %>% 
+  mutate(N_helthy = N - N_cancer)
+
+cancer_2021_long$Site <- factor(cancer_2021_long$Site)
+
+
+cancer_2021_long <- 
+merge(cancer_2021_long, predictors_21)  
+
+cancer_2021_long <-
+  cancer_2021_long %>% 
+  mutate(Prop_BTN = N_cancer/N)
+
+```
+
+
+
+```{r}
+cancer_2021_long$Predicted_Prevalence <- 
+predict(Mod_btn1_btn2_no_re, newdata = cancer_2021_long, type = "response")
+```
+
+
+```{r}
+
+cancer_2021_long %>% 
+  ggplot(aes(PC1, Prop_BTN)) +
+  geom_point() +
+  facet_wrap(~Lineage) +
+  geom_smooth(method = "lm")
   
 
-cancer_predictors_2021 <-
-merge(cancer_2021, predictors_21 )
+cancer_2021_long %>% 
+  ggplot(aes(N_Juv, Prop_BTN)) +
+  geom_point() +
+  facet_wrap(~Lineage) +
+  geom_smooth(method = "lm")
+
+
+cancer_2021_long %>% 
+  ggplot(aes(N_Large, Prop_BTN)) +
+  geom_point() +
+  facet_wrap(~Lineage) +
+  geom_smooth(method = "lm")
+
+
+cancer_2021_long %>% 
+  ggplot(aes(Dist_Port, Prop_BTN)) +
+  geom_point() +
+  facet_wrap(~Lineage) +
+  geom_smooth(method = "lm")
+
+
+
+cancer_2021_long %>% 
+  ggplot(aes(fetch, Prop_BTN)) +
+  geom_point() +
+  facet_wrap(~Lineage) +
+  geom_smooth(method = "lm")
+
+
+cancer_2021_long %>% 
+  ggplot(aes(OGP, Prop_BTN)) +
+  geom_point() +
+  facet_wrap(~Lineage) +
+  geom_smooth(method = "lm")
+
+
 ```
 
+
+#################################
 
 
 ```{r}
-
-
-
-predict(Mod_btn1_btn2_no_re, newdata = cancer_predictors_2021, type = "response")
+cancer_2021_long %>% 
+  ggplot(aes(Prop_BTN, Predicted_Prevalence)) +
+  geom_point() +
+  facet_wrap(~Lineage) +
+  geom_smooth(method = "lm") +
+  geom_abline()
 ```
-
-
-```{r}
-cancer_predictors_2021 %>% 
-  ggplot(aes(PC1, Prop_BTN1)) +
-  geom_point()
-
-
-  cor.test(x = cancer_predictors_2021$PC1, y = cancer_predictors_2021$Prop_BTN1, method = "pearson")
-
-
-cancer_predictors_2021 %>% 
-  ggplot(aes(PC1, Prop_BTN2)) +
-  geom_point()
-
-cor.test(x = cancer_predictors_2021$PC1, y = cancer_predictors_2021$Prop_BTN2, method = "pearson")
-
-
-cancer_predictors_2021 %>% 
-  ggplot(aes(Dist_Port, Prop_BTN1)) +
-  geom_point()
-
-cor.test(x = cancer_predictors_2021$Dist_Port, y = cancer_predictors_2021$Prop_BTN1, method = "pearson")
-
-
-cancer_predictors_2021 %>% 
-  ggplot(aes(Dist_Port, Prop_BTN2)) +
-  geom_point()
-
-cor.test(x = cancer_predictors_2021$Dist_Port, y = cancer_predictors_2021$Prop_BTN2, method = "pearson")
-
-
-cancer_predictors_2021 %>% 
-  ggplot(aes(fetch, Prop_BTN1)) +
-  geom_point()
-
-cor.test(x = cancer_predictors_2021$fetch, y = cancer_predictors_2021$Prop_BTN1, method = "pearson")
-
-
-cancer_predictors_2021 %>% 
-  ggplot(aes(fetch, Prop_BTN2)) +
-  geom_point()
-
-cor.test(x = cancer_predictors_2021$fetch, y = cancer_predictors_2021$Prop_BTN2, method = "pearson")
-
-
-cancer_predictors_2021 %>% 
-  ggplot(aes(OGP, Prop_BTN1)) +
-  geom_point()
-
-cor.test(x = cancer_predictors_2021$OGP, y = cancer_predictors_2021$Prop_BTN1, method = "pearson")
-
-
-cancer_predictors_2021 %>% 
-  ggplot(aes(OGP, Prop_BTN2)) +
-  geom_point()
-
-cor.test(x = cancer_predictors_2021$OGP, y = cancer_predictors_2021$Prop_BTN2, method = "pearson")
-
-
-
-```
-
-
 
 
 

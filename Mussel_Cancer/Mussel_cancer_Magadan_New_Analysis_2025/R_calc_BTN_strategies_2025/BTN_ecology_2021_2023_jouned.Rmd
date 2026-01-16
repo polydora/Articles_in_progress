@@ -1,0 +1,439 @@
+---
+title: ""
+author: ""
+date: ""
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(fig.show='hold',  warning=FALSE, message=FALSE, cache = FALSE, echo = FALSE)
+
+
+```
+
+
+```{r}
+
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+
+
+library(sp)
+library(ggmap)
+library(mapproj)
+library(maps)
+
+library(ggmap)
+library(readxl)
+library(ggrepel)
+library(dplyr)
+library(reshape2)
+library(cowplot)
+library(magrittr)
+library(patchwork)
+library(vegan)
+library(mgcv)
+library(gratia)
+library(broom.mixed) 
+
+library(rvg)
+
+library(flextable)
+
+
+default_theme <- 
+  theme_bw() + 
+  theme(axis.text = element_text(size = 15), axis.title.y = element_text(size = 15), axis.title.x = element_text(size = 20) )
+
+theme_set(default_theme)
+```
+
+
+
+```{r}
+points <- 
+  read_excel("Data/Magadan_2021_2023_ecology_cleaned.xlsx", sheet = "Points  characteristic 2021-23", na = "NA")
+
+points_local <- 
+  points %>% 
+  filter(lat > 59.3)
+```
+
+
+
+
+```{r, fig.cap="Точки сбора материала"}
+
+load("Data/gg_Magadan_large.RData")
+
+Magadan <- data.frame(long = 150 + 48/60, lat = 59 + 34/60)
+
+Pl_map <- 
+ggplot(gg_Magadan_large, aes(x = long, y = lat, group = group)) + 
+  geom_polygon(fill = "gray30") + 
+  coord_map(xlim = c(150., 151.52), ylim = c(59.4, 59.8) ) +
+  theme(plot.margin = unit(c(0, 0, 0, 0), "cm")) +
+  theme_map() 
+
+
+```
+
+
+```{r}
+Pl_map +
+  geom_point(data = points_local, aes(x = lon, y = lat, group = 1), shape = 21, fill = "yellow", size = 3) +
+  scale_fill_manual(values =  c("gray50", "yellow")) +
+  theme_minimal() +
+  guides(fill = "none", size = "none") +
+  labs(x = "Долгота", y = "Широта") +
+  geom_point(data = Magadan, aes(x = long + 0.01), shape = 22, group = 1, fill = "red", size = 6)+
+  geom_text(data =  Magadan, aes(x = long, y = lat+0.02, label = "Магадан", group = 1), color = "white")+
+  theme_map()
+
+```
+
+
+
+```{r}
+cancer <- read_excel("Data/Cancer_Magadan_2021-2023.xlsx", na = "NA", sheet = "Magadan_cancer_prevalence")
+
+cancer2 <-
+  cancer %>%
+  group_by(Year, Site, Sample_ID) %>%
+  summarise(N_processed = sum(N_Processed), N_cancer = sum(BTN)) %>% 
+  filter(Year == 2023)
+
+```
+
+
+```{r}
+# Данные по разновидности BTN
+myt <- read_excel("Data/summary table_Magadan_itog.xlsx", sheet = "data")
+
+myt <-
+myt %>% 
+  dplyr::select(-Site) %>% 
+  mutate(Site = Site_code)
+
+
+myt %<>%
+  mutate(BTN2 = BTN2.1 + BTN2.2)
+
+myt_23 <- 
+  myt %>% 
+  filter(Year == 2023)
+
+
+
+myt_23 %<>%
+  dplyr::select(-c(Site, Lat, Lon,  Date, BTN2.1, BTN2.2,  DN_FC  )) %>% 
+  mutate(Site = Site_code)
+
+cancer <- 
+  myt %>% 
+  mutate(Prop_BTN1 = BTN1/N, Prop_BTN2 = (BTN2.1 + BTN2.2)/N, Prop_BTN2.1 = (BTN2.1)/N,  Prop_BTN2.2 = (BTN2.2)/N ) 
+
+
+cancer2 <-
+  cancer %>% 
+  filter(Year == 2023) %>% 
+  dplyr::select(-Site) %>% 
+  rename(Site = Site_code)
+
+
+
+
+cancer <- 
+  merge(points_local, cancer)
+
+
+cancer %>% 
+  group_by(Site) %>% 
+  summarise(Lat = mean(Lat), Lon = mean(Lon), N_total = sum(N), BTN1 = sum(BTN1), BTN2 = sum(BTN2)) %>% 
+  mutate(BTN1 = BTN1/N_total*100, BTN2 = BTN2/N_total*100) %>% 
+  dplyr::select(Site, Lat, Lon, BTN1, BTN2)  %>% 
+  melt(., id.vars = c("Site", "Lat", "Lon"), value.name = "Prop_BTN", variable.name = "Lineage" ) ->
+  prop_BTN
+  
+```
+
+
+
+
+
+
+```{r}
+Pl_map_BTN <- 
+Pl_map + 
+  geom_point(data = prop_BTN, aes(x = Lon, y = Lat, size = Prop_BTN, group = 1), shape = 21, fill = "yellow") + 
+  theme_map()+
+  guides(size = "none") +
+  scale_size_continuous(range = c(0, 5)) + 
+  facet_wrap(~ Lineage, ncol = 1)
+
+```
+
+
+```{r}
+Pl_hist <- 
+  ggplot(prop_BTN, aes(x = Prop_BTN)) +
+  geom_histogram(binwidth = 1.9) +
+  labs(x = "Доля зараженных (%)", y = "Количество участков") +
+  theme_bw() +
+  facet_wrap(~ Lineage)
+
+```
+
+
+
+```{r, fig.cap = "Частота зараженных мидий невелика: единицы процентов в поселении"}
+Pl_hist
+```
+
+
+```{r, fig.cap = "Частота BTN варьирует вдоль побережья", dpi = 600, fig.width= 8}
+Pl_map_BTN
+```
+
+
+
+```{r, fig.cap="Соленость варьирует в очень узких пределах", eval=FALSE}
+points_local %>% 
+  ggplot(aes(Salinity)) + 
+  geom_histogram(binwidth = 5) +
+  labs(x = "Соленость", y = "Количество участков")  +
+  theme_bw()
+```
+
+
+```{r}
+# Данные по разновидности BTN
+myt <- read_excel("Data/summary table_Magadan_itog.xlsx", sheet = "data")
+
+myt <-
+myt %>% 
+  dplyr::select(-Site) %>% 
+  mutate(Site = Site_code)
+
+
+myt %<>%
+  mutate(BTN2 = BTN2.1 + BTN2.2)
+
+myt_23 <- 
+  myt %>% 
+  filter(Year == 2023)
+
+Prob_BTN1_total <- sum(myt$BTN1)/sum(myt$N)
+Prob_BTN2_total <- sum(myt$BTN2)/sum(myt$N)
+
+
+myt_23 %<>%
+  dplyr::select(-c(Site, Lat, Lon,  Date, BTN2.1, BTN2.2,  DN_FC  )) %>% 
+  mutate(Site = Site_code)
+
+
+```
+
+
+## Проективные покрытия мидий по данным 2023 года
+
+
+```{r}
+cover <- read_excel("Data/Magadan_2021_2023_ecology_cleaned.xlsx", sheet = "Покрытия миидий 2023")
+
+cover %>% 
+  group_by(Site) %>% 
+  summarise(Mean_Cover = mean(`Number of squares`)/30) ->
+  site_cover
+
+
+
+```
+
+Для сайтов, где проективное покрытие не менее 10% присваивается индекc "High", для сайтов, где покрытие меньше 10% - "Low".  Это делается для того, чтобы экстраполировать покрытия, измеренные в 2023 году на те сайты, которые были описаны в 2021 году, но не обследовались в 2023. 
+
+```{r}
+site_cover <-
+  site_cover %>% 
+  mutate(Cover_Type = ifelse(Mean_Cover >= 0.10, "High", "Low"))
+
+Cover_factor <- 
+site_cover %>% 
+  group_by(Cover_Type) %>% 
+  summarise(Mean_Cover = mean(Mean_Cover)) %>% 
+  pull(Mean_Cover) 
+
+High_factor <- (Cover_factor[1])
+Low_factor <- (Cover_factor[2])
+```
+
+
+
+
+
+```{r}
+
+size <- read_excel("Data/Magadan_2021_2023_ecology_cleaned.xlsx", na = "NA", sheet = "Размерная струкутра 2023 2021")
+
+size <- size[complete.cases(size), ]
+
+library(reshape2)
+
+scam <- dcast(Year + Site ~ Size_class, data = size)
+
+area <- read_excel("Data/Magadan_2021_2023_ecology_cleaned.xlsx", na = "NA", sheet = "Площадь проб на размер")
+
+sample_area <- 
+  area %>% 
+  group_by(Year, Site) %>% 
+  summarise(Total_area = sum(Area))
+
+scam <- 
+  scam %>% group_by(Year, Site)
+
+
+scam [ ,3:ncol(scam)] <- 
+  round((scam[ ,3:ncol(scam)] / sample_area$Total_area) *10000, 0)
+
+```
+
+
+Теперь умножаем SCAM на множитель проективного покрытия
+
+```{r}
+df <- 
+  merge(site_cover, scam, all.y = T) 
+
+
+# Расставляем типы покрытия (Cove_Type), оцененные по воспоминаниям 
+
+df$Cover_Type[c(3,4, 11)] <- "Low"
+df$Mean_Cover[c(3,4, 11)] <- Low_factor
+
+df$Cover_Type[c(14, 23)] <- "High"
+df$Mean_Cover[c(14, 23)] <- High_factor
+
+SCAM <- df
+
+SCAM[,5:ncol(SCAM)] <- SCAM[,5:ncol(SCAM)] * df$Mean_Cover
+
+SCAM <-
+  SCAM %>% 
+  select(-c(Mean_Cover, Cover_Type)) %>% 
+  arrange(Year)
+
+
+```
+
+
+
+
+
+```{r}
+# scam_23 <- scam %>% filter(Year == 2023)
+
+# pca_scam <- rda(decostand(SCAM[ , -c(1,2)], method = "hellinger" ))
+
+# pca_scam <- rda(SCAM[ , -c(1,2)])
+
+pca_scam <- rda(decostand(SCAM[ , -c(1,2)], method = "log" ))
+
+
+# plot(pca_scam, display = "sp")
+
+sum_pca_scam <- summary(pca_scam)
+
+pca_scam_size_scores <- as.data.frame(scores(pca_scam)$species)
+
+
+pca_scam_scores <- as.data.frame(scores(pca_scam)$sites)
+
+pca_scam_scores$N_Juv <- SCAM$L3    
+
+pca_scam_scores$N_Large = SCAM$L8 + SCAM$L13 + SCAM$L18 + SCAM$L18 + SCAM$L23 + SCAM$L28 + SCAM$L33 + SCAM$L38 + SCAM$L43 
+
+pca_scam_scores$N_Total <- SCAM$L3 + SCAM$L8 + SCAM$L13 + SCAM$L18 + SCAM$L23 + SCAM$L28 + SCAM$L33 + SCAM$L38 + SCAM$L43 + SCAM$L48 + SCAM$L53 + SCAM$L58
+
+pca_scores_scam <- data.frame(Year = SCAM$Year, Site = SCAM$Site, pca_scam_scores)
+```
+
+
+```{r}
+pca_scores_scam <-
+merge(pca_scores_scam, df %>% select(1:2,4), all = T) 
+
+pca_scores_scam %>% 
+  ggplot(aes(PC1, N_Juv/N_Total)) +
+  geom_point()
+  
+```
+
+
+
+```{r}
+myt %>% 
+  select(Site_code, Year, Sample, N, BTN1, BTN2) %>%
+  group_by(Site_code, Year) %>% 
+  summarise(N = sum(N), BTN1 = sum(BTN1), BTN2 = sum(BTN2)) %>% 
+  melt(., id.vars = c( "Site_code", "Year", "N"), variable.name = "Lineage", value.name = "N_cancer") %>% 
+  mutate(N_helthy = N - N_cancer) %>% 
+  rename(Site = Site_code) ->
+  cancer_21_23
+
+df <- merge(cancer_21_23, points, all_x = T)
+
+
+growth <- read.table("Data/Mussel_growth_Magadan_2021_2023.csv", sep = ";", header = T, dec = ",")
+
+growth <-
+  growth %>% 
+  dplyr::select(-Site) %>% 
+  rename(Site = Site_code) 
+
+ogp <- 
+  growth %>% 
+  group_by(Site) %>% 
+  summarise(OGP = mean(OGP_site))
+  
+
+df2 <-merge(df, pca_scores_scam)
+
+cancer_21_23_predictors <- merge(df2, ogp)
+
+cancer_21_23_predictors$Year <- factor(cancer_21_23_predictors$Year)
+
+cancer_21_23_predictors$Site <- factor(cancer_21_23_predictors$Site) 
+```
+
+
+
+
+```{r}
+Mod <- gam(cbind(N_cancer, N_helthy) ~ s((Dist_Port), by = Lineage, k = 10, bs = "tp") + s((fetch), by = Lineage, k = 10, bs = "tp")  + s((PC1), by = Lineage, k = 10, bs = "tp") + s((OGP), by = Lineage, k = 5, bs = "tp")  +  Lineage +  Year + s(Site, bs = "re"),  family = "binomial", method = "REML", data = cancer_21_23_predictors )
+
+
+
+# Mod2 <- gam(cbind(N_cancer, N_helthy) ~ s((Dist_Port), by = interaction(Lineage, Year), k = 10, bs = "tp") + s((fetch), by = interaction(Lineage, Year), k = 10, bs = "tp")  + s((PC1), by = interaction(Lineage, Year), k = 10, bs = "tp") + s((OGP), by = interaction(Lineage, Year), k = 5, bs = "tp")  +  Lineage + Year +  s(Site, bs = "re"),  family = "binomial", method = "REML", data = cancer_21_23_predictors )
+
+```
+
+
+
+```{r}
+library(DHARMa)
+
+simulateResiduals(Mod, plot = T)
+```
+
+```{r}
+summary(Mod)
+```
+
+
+
+```{r}
+draw(Mod)
+```
+

@@ -102,9 +102,14 @@ birds3$Site <- points$Site
 Карта расположения точек отлова птиц.Размер точки пропорционален количеству дней отлова.
 
 ```{r}
+Pl <-
 Pl_map_local +
   geom_point(data = points, aes(x = Lon, y = Lat, size = efort$n)) +
   labs(size = "Catch efforts")
+
+Pl
+ggsave(filename = paste("SEM_Figures/Catch_efforts.svg", sep = ""))
+
 ```
 
 
