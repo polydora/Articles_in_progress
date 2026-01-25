@@ -1,0 +1,155 @@
+---
+title: "Somateria mollissima escape distance"
+author: "V. Khaitov"
+date: "2026-01-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+  opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+```{r}
+library(ggplot2)
+library(readxl)
+library(lubridate)
+library(mgcv) 
+library(gratia)
+library(dplyr)
+library(DHARMa)
+```
+
+
+```{r}
+som <- read_excel("Data/Somateria_escape_distance.xlsx", na = "NA")
+
+som <- 
+  som %>% 
+  mutate(Year = year(Date))
+
+
+som <-
+  som %>% 
+  filter(complete.cases(.)) %>% 
+  filter(incubation_period < 30)
+
+isl <- read_excel("Data/Острова -2005-2011_ расстояния_eng.xls")
+
+som_isl <- merge(som, isl)
+
+som_isl$Place <- factor(som_isl$Place)
+som_isl$Region <- factor(som_isl$Region)
+
+som_isl$Log_Area <- log(som_isl$Area)
+som_isl$Log_Ed <- log(som_isl$Ed + 1)
+```
+
+Зависимая переменная сильно асимметрично распределена. 
+
+```{r}
+hist(som$Ed)
+```
+
+
+Поэтому, увы, будем ее логарифмировать (позднее подумаю, может какое иное преобразование применем). Распределение логарифмированной переменной более человекообразное. 
+
+
+
+```{r}
+hist(som_isl$Log_Ed)
+```
+
+
+Модель, которую я построил на данном этапе имеет следующий вид
+
+
+```{r echo=TRUE}
+
+mod <- gam(Log_Ed ~ 
+             s(incubation_period) +
+             s(N_eggs, k = 4) + 
+             s(Year, k = 6) + 
+             s(Log_Area, k = 5 ) + 
+             s(Dist_to_Mainland) + 
+             s(Dist_to_town, k = 5)  + 
+             Region + 
+             s(Place, k = 87, bs = "re"), 
+           data = som_isl)
+
+```
+
+
+Проверяем валидность модели 
+
+```{r}
+appraise(mod)
+
+```
+
+Не супер, но и не ужас-ужас-ужас...
+
+
+Вот summary от этой модели
+
+```{r}
+summary(mod)
+```
+
+
+Итого, значимые связи выявляются с фактором "Region", и со следующими непрерывными ковариатами: incubation_period, N_eggs, Year, Log_Area (взяты логарифмы площадей островов, так как там есть несколько больших островов оутлаеров).  
+
+
+Визуализации связей следующие (привожу только значимые связи).
+
+```{r}
+ggplot(som_isl, aes(x = Region, y = Log_Ed)) +
+  geom_boxplot(fill = "gray80") +
+  annotate(geom = "text", label = "a", x = 1, y = 4.5, size = 8) +
+  annotate(geom = "text", label = "b", x = 2, y = 4.5, size = 8) +
+  annotate(geom = "text", label = "a", x = 3, y = 4.5, size = 8) +
+  theme_bw()
+```
+
+Вот результаты попарного сравнения Log_Ed в разных архипелагах
+
+```{r}
+
+library(itsadug)
+wald_gam(mod)
+
+```
+
+Ну... да, на островах Оленьего архипелага гаги взлетают раньше, чем на островах более заповедных.
+
+А вот с остальными предикторами все смешнее.
+
+```{r}
+draw(mod, select = 1)
+```
+
+Здесь все понятно. Чем больше период насиживания, тем ближе подпускает гага к себе человека.
+
+```{r}
+draw(mod, select = 2)
+
+```
+
+Эта связь, скорее всего означает, что пока кладка не завершена гага осторожничает.
+
+```{r}
+draw(mod, select = 3)
+
+```
+
+А вот этот график очень показательный. Кто научился за перод наблюдений? Гаги научились подпускать ближе или люди научились подкрадываться тише?
+
+
+```{r}
+draw(mod, select = 4)
+
+```
+
+Эту связь очень легко объяснить, тем, что на малых островах незамеченным не подойдешь и гаги более остоожные, чем н аболее крупных островах. Впрочем, может тут и хищники виноваты. Пока не выяснил как тут играет роль плотность поселения. Позднее вставлю в модель. 
+
+Остальные пока изученные ковариаты не влияют.
