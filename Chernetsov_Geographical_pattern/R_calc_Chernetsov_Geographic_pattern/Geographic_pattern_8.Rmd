@@ -432,10 +432,38 @@ predictions <- predict(robust_model_CCA2, newdata = pred_data,
 # Объединяем с данными для графика
 pred_data <- cbind(pred_data, predictions)
 
+species <- wintering_data$Sci_Name
+
+# Преобразование названий
+species_modified <- sapply(species, function(x) {
+  # Разделяем на род и видовой эпитет
+  parts <- strsplit(x, " ")[[1]]
+  genus <- parts[1]
+  epithet <- parts[2]
+  
+  # Проверяем, начинается ли род с "Ph"
+  if (grepl("^Ph", genus, ignore.case = TRUE)) {
+    genus_abbr <- "Ph."
+  } else {
+    # Берем только первую букву и добавляем точку
+    genus_abbr <- paste0(substr(genus, 1, 1), ".")
+  }
+  
+  # Собираем обратно
+  return(paste(genus_abbr, epithet))
+}, USE.NAMES = FALSE)
+
+
+species_modified <- gsub(pattern = " ", replacement = "", x = species_modified)
+
+wintering_data$Sci_Name_full <- species_modified
+
+
 # Строим график
+Pl_mod_predict <-
 ggplot(wintering_data, aes(x = Lon, y = CCA2)) +
   geom_point( size = 3) +
-  geom_text_repel(aes(label = Species_code)) +
+  geom_text_repel(aes(label = Sci_Name_full)) +
   scale_color_gradient(high = "red", low = "yellow") +
   geom_ribbon(data = pred_data, 
               aes(y = fit, ymin = lwr, ymax = upr), 
@@ -447,6 +475,9 @@ ggplot(wintering_data, aes(x = Lon, y = CCA2)) +
   geom_hline(yintercept = 0, linetype = 2)
 
 
+ggsave(filename = "Figure_2.svg", plot = Pl_mod_predict)
+
+Pl_mod_predict 
 ```
 
 Рисунок +. Связь между значениями CCA2 для видов (оценка обилия видов в разных локациях, с учетом влияния ограничивающих ковариат) и долготой центроида ареала зимовки вида. Синяя линия - предсказания робустной модели, серая область - 95% доверительный интервал для модели, зеленая область 90% итервал предсказаний. Точки, выходящие за пределы интервала предсказаний рассматриваются как аутлаеры.   

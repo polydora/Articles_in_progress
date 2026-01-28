@@ -1,0 +1,156 @@
+---
+title: "Инфузории в фекалиях лошадей Part 2"
+author: "В. М. Хайтов"
+date: "2025-11-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+
+```{r}
+library(readxl)
+library(vegan)
+library(dplyr)
+library(ggplot2)
+
+```
+
+
+## Данные для анализа
+
+```{r}
+dat <- read_excel("Data/Infusoria_abundance_new.xlsx")
+
+kable(dat)
+```
+
+
+## Сравнение групп лошадей по составу сообщества инфузорий
+
+Ординация сообществ на основе матрицы коэффициентов Брей-Куртиса
+
+```{r}
+ord <- 
+  dat %>% 
+  select(-Name,-Sex, -Origin, -Type) %>% 
+  metaMDS(., trace = FALSE )
+
+
+MDS_sites <- as.data.frame(scores(ord)$sites)
+
+MDS_species <- as.data.frame(scores(ord)$species)
+
+MDS_species <-
+MDS_species %>% 
+  mutate(Species = row.names(.))
+
+```
+
+```{r}
+
+Pl_site <- 
+MDS_sites %>% 
+  mutate(Sex = dat$Sex, Origin = dat$Origin, Type = dat$Type) %>% 
+  ggplot(aes(x = NMDS1, y = NMDS2)) +
+  geom_point(aes(fill = Type), size = 4, shape = 21) +
+  # scale_shape_manual(values = c(21, 22, 23)) +
+  scale_fill_manual(values = c("red", "gray", "blue")) +
+  labs(fill = "Группa") +
+  theme_bw()
+
+Pl_site
+```
+
+На ординации хорошо видно, что сообщество инфузорий домашних лошадей сильно отличается от сообщества лошадей Пржевальского. У последних также отличаются сообщества у лошадей из загона и у лошадей из вольного выпаса. 
+
+Для трактовки связей видов с типом местообитания приводим ординацию в тех же осях видов 
+
+```{r}
+library(ggrepel)
+
+Pl_site +
+  geom_point(data = MDS_species) +
+  geom_text_repel(data = MDS_species, aes(label = Species))
+```
+
+Для домашних лошадей характерны A.intestinalis, Sp.equi, T.dogeli, D.funinucleum, D.brevinucleum. Возможно это какие-то виды-специалисты, которые в качестве хозяина испоьзуют только домашних лошадей.
+
+Виды, которые Характерны для двух видов лошадей, занимают промежуточную позицию: B.angusta, S.confusum, C.periactum. Возможно это какие-то виды универсалы, которым важно, чтобы хозяин был лошадью, а вид хозяина не столь важен. 
+
+Виды, которые характерны для загонных лошадей Пржевальского: C.edentatum, B.microcorys, C.minimum 
+
+Все остальные виды характеризуют сообщество инфузорий вольных лошадей Пржевальсткого. 
+
+**Важно!** Попробуйте прикинуть нет ли чего-то общего у видов инфузорий из указанных групп (размер, форма тела, что-то про клетку, по филогенетическое родство и т.п.). Если тут есть за что зацепиться, то будем думать каким анализом это вытащить.
+
+
+
+Далее будем анализировать только лошадей Пржевальского. 
+Вот ординация сообщества инфузорий для них.
+
+```{r}
+dat2 <-
+  dat %>% 
+  filter(Type !="Домашняя")
+
+
+ord <- 
+  dat2 %>% 
+  select(-Name,-Sex, -Origin, -Type) %>% 
+  metaMDS(., trace = FALSE )
+
+
+MDS_sites <- as.data.frame(scores(ord)$sites)
+
+MDS_species <- as.data.frame(scores(ord)$species)
+
+MDS_species <-
+MDS_species %>% 
+  mutate(Species = row.names(.))
+```
+
+
+
+```{r}
+
+Pl_site2 <- 
+MDS_sites %>% 
+  mutate(Sex = dat2$Sex, Origin = dat2$Origin, Type = dat2$Type) %>% 
+  ggplot(aes(x = NMDS1, y = NMDS2, shape = Origin, fill = Type)) +
+  geom_point(aes(fill = Type), size = 4) +
+  scale_shape_manual(values = c(21, 22, 23)) +
+  scale_fill_manual(values = c("red",  "blue")) +
+  guides(fill = "none") +
+  theme_bw()
+
+Pl_site2
+```
+
+Для проверки статистической значимости влияния факторов на структуру сообщества применяем PERMANOVA (10000 пермутаций).
+
+```{r}
+
+permanova_dat <- adonis2(formula = dat2[,-c(1:4)] ~ Sex + Type + Origin, data = dat2, permutations = 10000, by = "margin")
+
+library(broom)
+
+kable(tidy(permanova_dat))
+```
+
+Видно, что тип содержания лошадей оказывает значимое влияние. Остальные факторы сильно не влияют. Для трактовки различий проведем анализ SIMPER.
+
+```{r}
+simp <- simper(comm = dat2[,-c(1:4)],group = dat2$Type, permutations = 10000)
+summary(simp)
+```
+
+Важно! Нет какого-то конкретного вида, который был бы характерен только для загонных или вольных лошадей. За 90% различий (колонка cumsum) отвечают 8 первых видов. 
+
+При этом первые три вида имеют обилие на порядок больше в группе вольных (колонка ava) по сравнению с группой загонных  (avb).
+
+Можно ли что-то сказать про эти виды? Опять же они могут чем-то быть похожи. 
+
