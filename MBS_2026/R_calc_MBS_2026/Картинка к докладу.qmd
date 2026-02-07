@@ -1,0 +1,78 @@
+---
+title: "Untitled"
+format: html
+---
+
+## Динамика частоты *M.trossulus* в вершине Кандалакшского залива
+
+Данные из Чупы (Матренин и Сухая салма) удалены.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(dplyr)
+library(mgcv)
+library(readxl)
+library(ggplot2)
+library(mgcv)
+library(gratia)
+
+dat <- read_excel("Data/Mytilus old and new samples morphotype count 2022.xlsx", na = "NA")
+
+
+dat2 <-
+  dat %>% 
+  filter(Site  != "Matrenin") %>% 
+  mutate(Prop_T = N_T/(N_T+N_E)) %>% 
+  filter(complete.cases(.))
+
+dat2 <-
+  dat2 %>% 
+  mutate(Period = factor(Period, labels = c("Новые данные", "Исторические сборы"))) %>% 
+  mutate(Ptros = exp(-2.4 + 5.4*Prop_T)/(1+exp(-2.4 + 5.4*Prop_T))) 
+
+
+  # mutate(Prop_T = case_when(Prop_T == 0 ~ 0.000001,
+  #                           Prop_T == 1 ~ 0.999999,
+  #                           Prop_T !=0 & Prop_T !=1 ~ Prop_T)) 
+
+
+m <- gam(Ptros ~ s(Year, k = 5), family = "betar", data = dat2)
+
+new_data <- data.frame(
+  Year = seq(min(dat2$Year), max(dat2$Year), length.out = 200)
+)
+
+# Получаем предсказания на шкале отклика (type = "response")
+predictions <- predict(m, newdata = new_data, type = "response", se.fit = TRUE)
+
+plot_data <- data.frame(
+  Year = new_data$Year,
+  fit = predictions$fit,
+  se = predictions$se.fit,
+  lower = predictions$fit - 1.96 * predictions$se.fit,
+  upper = predictions$fit + 1.96 * predictions$se.fit
+)
+
+dat2%>% 
+  ggplot(aes(Year)) +
+  geom_point(aes(y = Ptros, color = Period), size = 4) +
+  scale_color_manual(values = c("blue", "black")) +
+  theme_bw() +
+  labs(x = "Годы", y = "Предсказанная частота M.trossulus") +
+  geom_line(data = plot_data, aes(x = Year, y = fit), color = "red", linewidth = 2) +
+  geom_ribbon(data = plot_data, aes(x = Year, ymin = lower, ymax = upper), alpha = 0.2) +
+  guides(color = "none") +
+  theme(axis.text = element_text(size = 10), axis.title = element_text(size = 15))
+
+
+```
+
+Черные точки - исторические сборы из коллекций КГПЗ
+Синие точки - переобслеование сайтов исторических сборов.
+
+Аддитивная обобщенная модель (красная линия) описвает связь частоты Ptros со временем. Серая область  - 95% доверительный интервал.
+
+Предсказание частоты Ptros проведено на основании частоты мидий T-морфотипа, согласно формуле 
+
+$$
+Ptros = \frac{e^{-2.5 + 5.4\cdot PT}}{1+e^{-2.5 + 5.4\cdot PT}}
+$$

@@ -352,7 +352,7 @@ size_classes$W <- predict(mod_W, newdata = size_classes)
 
 Biomass <- as.numeric(as.matrix(SCAM[ , -c(1:2)]) %*% as.vector(size_classes$W))
 
-df$Biomass <- Biomass
+df$Biomass <- Biomass * df$Mean_Cover
 ```
 
 
@@ -370,7 +370,14 @@ df %>%
 
 # pca_scam <- rda(decostand(SCAM[ , -c(1,2)], method = "hellinger" ))
 
+
+# pca_scam <- rda(log(SCAM[ , -c(1,2)] + 1))
+
+
+
 # pca_scam <- rda(SCAM[ , -c(1,2)])
+
+# plot(pca_scam)
 
 pca_scam <- rda(decostand(SCAM[ , -c(1,2)], method = "log" ))
 
@@ -400,7 +407,7 @@ pca_scores_scam <- data.frame(Year = SCAM$Year, Site = SCAM$Site, pca_scam_score
 
 ```{r}
 pca_scores_scam %>% 
-  ggplot(aes(PC1, N_Total)) +
+  ggplot(aes(PC1, N_Juv)) +
   geom_point()
 ```
 
@@ -443,16 +450,20 @@ pca_scores_scam %>%
 
 
 pca_scores_scam %>% 
-  ggplot(aes(PC1, Biomass)) +
+  ggplot(aes(PC1, Mean_Cover)) +
   geom_point() +
   geom_text_repel(aes(label = Site_Year)) 
 
 
 pca_scores_scam %>% 
-  ggplot(aes(Biomass, N_Total)) +
+  ggplot(aes(PC1, Biomass)) +
   geom_point() +
   geom_text_repel(aes(label = Site_Year)) 
 
+pca_scores_scam %>% 
+  ggplot(aes(PC2, Biomass)) +
+  geom_point() +
+  geom_text_repel(aes(label = Site_Year)) 
 
 ```
 
@@ -465,7 +476,7 @@ PC1 - это плотность поселения и доминирование
 
 ```{r}
 Sites_Year <- 
-pca_scores_scam %>% arrange(Site) %>% pull(Site_Year) %>% unique() 
+pca_scores_scam %>% arrange(PC1) %>% pull(Site_Year) %>% unique() 
 
 size <-
 size %>%
@@ -496,21 +507,6 @@ Pl_size_stricture
 
 Я здесь вижу также еще и типичное разнообразие размерных структур, которое порождается динамикой. Так в левой части градиента PC1 находится VES_23, VES_21 с отчетливой бимодальной структурой, характерной для послезаморного состояния. Здесь же находятся MCHK_21, DUK_21, GER_21 с характреной для предзамоного состояния унимодальной размерной струкутрой с доминированием стариков. В правой части градиента находятся размерные структуры с доминированием молоди, характерные для восстанавливающихся мидиевых банок. Короче, это можно натянуть на динамику мидиевых поселений, которая в Магадане также описана (см. Khalaman, 2020, там у него, правда, анализ не полный и ряды короткие, но циклы там видны).Если это фантазии, то старые поселения в предзаморном состоянии - это   что-то около <-1<PC1<0, Послезаморные банки это PC1<-1, "Зрелые" банки 1> PC1 >0, а молодые только что сформировавшиеся банки - это PC1 >1. Собственно этот цикл виден вот на этом рисунке и читать его надо по часовой стрелке.
 
-
-```{r}
-pca_scores_scam %>% 
-  ggplot(aes(PC1, N_Total)) +
-  geom_point() +
-  geom_text_repel(aes(label = Site_Year)) +
-  labs(y = "Proportion of Juveniles")
-
-pca_scores_scam %>% 
-  ggplot(aes(PC1, Biomass)) +
-  geom_point() +
-  geom_text_repel(aes(label = Site_Year)) +
-  labs(y = "Proportion of Juveniles")
-
-```
 
 Не спеши, как всегда, говорить, что все хуйня. Подумай. Тут что-то есть, в особенности если смотреть на связь с зараженностью BTN1 (см. ниже).
 
@@ -558,7 +554,7 @@ cancer_21_23_predictors$Site <- factor(cancer_21_23_predictors$Site)
 # Связь зараженности со средовыми предикторами
 
 ```{r}
-Mod <- gam(cbind(N_cancer, N_helthy) ~ s((Dist_Port), by = Lineage,  bs = "cr", k = 10) + s((fetch), by = Lineage,  bs = "cr", k = 10)  + s((PC1), by = Lineage, bs = "cr", k = 10)  + s((OGP), by = Lineage, bs = "cr", k = 10)  +  Lineage +  Year + s(Site, bs = "re"),  family = "binomial", method = "REML", data = cancer_21_23_predictors )
+Mod <- gam(cbind(N_cancer, N_helthy) ~ s((Dist_Port), by = Lineage,  bs = "cr", k = 5) + s((fetch), by = Lineage,  bs = "cr", k = 5) +  s((PC1), by = Lineage,  bs = "cr", k = 5) + s((OGP), by = Lineage, bs = "cr", k = 5) +  Lineage +  s(Year, Site, bs = "re"),  family = "binomial", method = "REML", data = cancer_21_23_predictors )
 
 # summary(Mod)
 
@@ -584,10 +580,6 @@ simulateResiduals(Mod, plot = T)
 ```{r}
 summary(Mod)
 ```
-
-
-Здесь нашел небольшую багу в модели (лучше исполльзовать  basic spline не "thin plate", как было, a "cubic regression"). После объединения данных 2021 и 2023 гг OGP значимо влияет на частоту обеих форм BTN 
-
 
 
 ### Визуализация модели 
