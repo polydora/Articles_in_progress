@@ -1,0 +1,1257 @@
+---
+title: ""
+author: ""
+date: ""
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(fig.show='hold',  warning=FALSE, message=FALSE, cache = FALSE, echo = FALSE)
+
+
+```
+
+
+```{r}
+
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+
+
+library(sp)
+library(ggmap)
+library(mapproj)
+library(maps)
+
+library(ggmap)
+library(readxl)
+library(ggrepel)
+library(dplyr)
+library(reshape2)
+library(cowplot)
+library(magrittr)
+library(patchwork)
+library(vegan)
+library(mgcv)
+library(gratia)
+library(broom.mixed) 
+
+library(rvg)
+
+library(flextable)
+
+
+default_theme <- 
+  theme_bw() + 
+  theme(axis.text = element_text(size = 15), axis.title.y = element_text(size = 15), axis.title.x = element_text(size = 20) )
+
+theme_set(default_theme)
+```
+
+
+
+```{r}
+points <- 
+  read_excel("Data/Magadan_2021_2023_ecology_cleaned.xlsx", sheet = "Points  characteristic 2021-23", na = "NA")
+
+points_local <- 
+  points %>% 
+  filter(lat > 59.3)
+```
+
+
+
+
+```{r, fig.cap="Точки сбора материала"}
+
+load("Data/gg_Magadan_large.RData")
+
+Magadan <- data.frame(long = 150 + 48/60, lat = 59 + 34/60)
+
+Pl_map <- 
+ggplot(gg_Magadan_large, aes(x = long, y = lat, group = group)) + 
+  geom_polygon(fill = "gray30") + 
+  coord_map(xlim = c(150., 151.52), ylim = c(59.4, 59.8) ) +
+  theme(plot.margin = unit(c(0, 0, 0, 0), "cm")) +
+  theme_map() 
+
+
+```
+
+
+```{r}
+Pl_map +
+  geom_point(data = points_local, aes(x = lon, y = lat, group = 1), shape = 21, fill = "yellow", size = 3) +
+  scale_fill_manual(values =  c("gray50", "yellow")) +
+  theme_minimal() +
+  guides(fill = "none", size = "none") +
+  labs(x = "Долгота", y = "Широта") +
+  geom_point(data = Magadan, aes(x = long + 0.01), shape = 22, group = 1, fill = "red", size = 6)+
+  geom_text(data =  Magadan, aes(x = long, y = lat+0.02, label = "Магадан", group = 1), color = "white")+
+  theme_map()
+
+```
+
+
+
+```{r}
+cancer <- read_excel("Data/Cancer_Magadan_2021-2023.xlsx", na = "NA", sheet = "Magadan_cancer_prevalence")
+
+cancer2 <-
+  cancer %>%
+  group_by(Year, Site, Sample_ID) %>%
+  summarise(N_processed = sum(N_Processed), N_cancer = sum(BTN)) %>% 
+  filter(Year == 2023)
+
+```
+
+
+```{r}
+# Данные по разновидности BTN
+myt <- read_excel("Data/summary table_Magadan_itog.xlsx", sheet = "data")
+
+myt <-
+myt %>% 
+  dplyr::select(-Site) %>% 
+  mutate(Site = Site_code)
+
+
+myt %<>%
+  mutate(BTN2 = BTN2.1 + BTN2.2)
+
+myt_23 <- 
+  myt %>% 
+  filter(Year == 2023)
+
+
+
+myt_23 %<>%
+  dplyr::select(-c(Site, Lat, Lon,  Date, BTN2.1, BTN2.2,  DN_FC  )) %>% 
+  mutate(Site = Site_code)
+
+cancer <- 
+  myt %>% 
+  mutate(Prop_BTN1 = BTN1/N, Prop_BTN2 = (BTN2.1 + BTN2.2)/N, Prop_BTN2.1 = (BTN2.1)/N,  Prop_BTN2.2 = (BTN2.2)/N ) 
+
+
+cancer2 <-
+  cancer %>% 
+  filter(Year == 2023) %>% 
+  dplyr::select(-Site) %>% 
+  rename(Site = Site_code)
+
+
+
+
+cancer <- 
+  merge(points_local, cancer)
+
+
+cancer %>% 
+  group_by(Site) %>% 
+  summarise(Lat = mean(Lat), Lon = mean(Lon), N_total = sum(N), BTN1 = sum(BTN1), BTN2 = sum(BTN2)) %>% 
+  mutate(BTN1 = BTN1/N_total*100, BTN2 = BTN2/N_total*100) %>% 
+  dplyr::select(Site, Lat, Lon, BTN1, BTN2)  %>% 
+  melt(., id.vars = c("Site", "Lat", "Lon"), value.name = "Prop_BTN", variable.name = "Lineage" ) ->
+  prop_BTN
+  
+```
+
+
+
+
+
+
+```{r}
+Pl_map_BTN <- 
+Pl_map + 
+  geom_point(data = prop_BTN, aes(x = Lon, y = Lat, size = Prop_BTN, group = 1), shape = 21, fill = "yellow") + 
+  theme_map()+
+  guides(size = "none") +
+  scale_size_continuous(range = c(0, 5)) + 
+  facet_wrap(~ Lineage, ncol = 1)
+
+```
+
+
+```{r}
+Pl_hist <- 
+  ggplot(prop_BTN, aes(x = Prop_BTN)) +
+  geom_histogram(binwidth = 1.9) +
+  labs(x = "Доля зараженных (%)", y = "Количество участков") +
+  theme_bw() +
+  facet_wrap(~ Lineage)
+
+```
+
+
+
+```{r, fig.cap = "Частота зараженных мидий невелика: единицы процентов в поселении"}
+Pl_hist
+```
+
+
+```{r, fig.cap = "Частота BTN варьирует вдоль побережья", dpi = 600, fig.width= 8}
+Pl_map_BTN
+```
+
+
+
+
+```{r, fig.cap="Соленость варьирует в очень узких пределах", eval=FALSE}
+points_local %>% 
+  ggplot(aes(Salinity)) + 
+  geom_histogram(binwidth = 5) +
+  labs(x = "Соленость", y = "Количество участков")  +
+  theme_bw()
+```
+
+
+```{r}
+# Данные по разновидности BTN
+myt <- read_excel("Data/summary table_Magadan_itog.xlsx", sheet = "data")
+
+myt <-
+myt %>% 
+  dplyr::select(-Site) %>% 
+  mutate(Site = Site_code)
+
+
+myt %<>%
+  mutate(BTN2 = BTN2.1 + BTN2.2)
+
+myt_23 <- 
+  myt %>% 
+  filter(Year == 2023)
+
+Prob_BTN1_total <- sum(myt$BTN1)/sum(myt$N)
+Prob_BTN2_total <- sum(myt$BTN2)/sum(myt$N)
+
+
+myt_23 %<>%
+  dplyr::select(-c(Site, Lat, Lon,  Date, BTN2.1, BTN2.2,  DN_FC  )) %>% 
+  mutate(Site = Site_code)
+
+
+```
+
+
+
+
+
+
+
+```{r}
+cover <- read_excel("Data/Magadan_2021_2023_ecology_cleaned.xlsx", sheet = "Покрытия миидий 2023")
+
+cover %>% 
+  group_by(Site) %>% 
+  summarise(Mean_Cover = mean(`Number of squares`)/30) ->
+  site_cover
+
+
+
+```
+
+
+```{r}
+site_cover <-
+  site_cover %>% 
+  mutate(Cover_Type = ifelse(Mean_Cover >= 0.10, "High", "Low"))
+
+Cover_factor <- 
+site_cover %>% 
+  group_by(Cover_Type) %>% 
+  summarise(Mean_Cover = mean(Mean_Cover)) %>% 
+  pull(Mean_Cover) 
+
+High_factor <- (Cover_factor[1])
+Low_factor <- (Cover_factor[2])
+```
+
+
+
+
+
+```{r}
+
+size <- read_excel("Data/Magadan_2021_2023_ecology_cleaned.xlsx", na = "NA", sheet = "Размерная струкутра 2023 2021")
+
+size <- size[complete.cases(size), ]
+
+library(reshape2)
+
+scam <- dcast(Year + Site ~ Size_class, data = size)
+
+area <- read_excel("Data/Magadan_2021_2023_ecology_cleaned.xlsx", na = "NA", sheet = "Площадь проб на размер")
+
+sample_area <- 
+  area %>% 
+  group_by(Year, Site) %>% 
+  summarise(Total_area = sum(Area))
+
+scam <- 
+  scam %>% group_by(Year, Site)
+
+
+scam [ ,3:ncol(scam)] <- 
+  round((scam[ ,3:ncol(scam)] / sample_area$Total_area) *10000, 0)
+
+```
+
+
+
+```{r}
+# Связь размера и веса мидии.
+
+LW <- read_excel("Data/Magadan_2021_mussel_L_W.xlsx")
+LW$W <- as.numeric(gsub(pattern = ",", replacement = ".", x = LW$W))
+
+mod_W <- lm(W ~ I(L^3) - 1, data = LW)
+
+LW$Predicted <- predict(mod_W)
+
+# LW %>%
+#   ggplot() +
+#   geom_point(aes(x = L, W)) +
+#   geom_point(aes(L, Predicted), color = "blue")
+
+```
+
+
+
+
+
+```{r}
+df <- 
+  merge(site_cover, scam, all.y = T) 
+
+
+# Расставляем типы покрытия (Cove_Type), оцененные по воспоминаниям 
+
+df$Cover_Type[c(3,4, 11)] <- "Low"
+df$Mean_Cover[c(3,4, 11)] <- Low_factor
+
+df$Cover_Type[c(14, 23)] <- "High"
+df$Mean_Cover[c(14, 23)] <- High_factor
+
+
+SCAM <- df
+
+# SCAM[,5:ncol(SCAM)] <- SCAM[,5:ncol(SCAM)] * df$Mean_Cover
+
+
+SCAM <-
+  SCAM %>%
+  select(-c(Mean_Cover, Cover_Type)) %>%
+  arrange(Year)
+
+size_classes <- data.frame(L = as.numeric(gsub(x = names(SCAM)[-c(1:2)], pattern = "L", replacement = "")))
+
+
+size_classes$W <- predict(mod_W, newdata = size_classes)
+
+Biomass <- as.numeric(as.matrix(SCAM[ , -c(1:2)]) %*% as.vector(size_classes$W))
+
+df$Biomass <- Biomass * df$Mean_Cover
+
+
+SCAM <- df
+
+SCAM <-
+  SCAM %>%
+  select(-c(Cover_Type)) %>%
+  arrange(Year)
+
+```
+
+
+```{r}
+growth <- read.table("Data/Mussel_growth_Magadan_2021_2023.csv", sep = ";", header = T, dec = ",")
+
+growth <-
+  growth %>% 
+  dplyr::select(-Site) %>% 
+  rename(Site = Site_code) 
+
+ogp <- 
+  growth %>% 
+  group_by(Site) %>% 
+  summarise(OGP = mean(OGP_site))
+
+```
+
+<!-- ```{r} -->
+<!-- SCAM <- merge(SCAM, ogp) -->
+<!-- ``` -->
+
+
+
+
+```{r}
+# scam_23 <- scam %>% filter(Year == 2023)
+
+# pca_scam <- rda(decostand(SCAM[ , -c(1,2)], method = "hellinger" ))
+
+
+# pca_scam <- rda(log(SCAM[ , -c(1,2)] + 1))
+
+
+
+# pca_scam <- rda(SCAM[ , -c(1,2)])
+
+# plot(pca_scam)
+
+pca_scam <- rda(decostand(SCAM[ , -c(1, 3)], method = "standardize" ))
+
+
+
+# plot(pca_scam, display = "sp")
+
+# sum_pca_scam_1 <- summary(pca_scam_1)
+
+sum_pca_scam <- summary(pca_scam)
+
+
+pca_scam_size_scores <- as.data.frame(scores(pca_scam)$species)
+
+
+pca_scam_scores <- as.data.frame(scores(pca_scam)$sites)
+
+pca_scam_scores$N_Juv <- SCAM$L3    
+
+pca_scam_scores$N_Large = SCAM$L8 + SCAM$L13 + SCAM$L18 + SCAM$L18 + SCAM$L23 + SCAM$L28 + SCAM$L33 + SCAM$L38 + SCAM$L43 
+
+pca_scam_scores$N_Total <- SCAM$L3 + SCAM$L8 + SCAM$L13 + SCAM$L18 + SCAM$L23 + SCAM$L28 + SCAM$L33 + SCAM$L38 + SCAM$L43 + SCAM$L48 + SCAM$L53 + SCAM$L58
+
+pca_scores_scam <- data.frame(Year = SCAM$Year, Site = SCAM$Site,  Biomass = SCAM$Biomass, Mean_Cover = SCAM$Mean_Cover, pca_scam_scores)
+
+
+pca_scores_scam <-
+  pca_scores_scam %>% 
+  mutate(Site_Year = paste(Site, "_", Year, sep = ""))
+
+pca_scores_scam$Site_Year <- gsub(pattern = "20", replacement = "", x = pca_scores_scam$Site_Year) 
+
+```
+
+## Новое в обработке данных за 2021, 2023 гг. 
+
+Все показатели, которые характеризуют популяционную структуру (кроме OGP, которая про рост) сведены в ОДИН PCA. При этом L3 - L58 это локальное обилие размерных классов в точках взятия проб. Biomass - это биомасса на всем сайте, с учетом проективного покрытия. Перед вычислением PCA все перменные были стандартизованы (средняя = 0, sd = 1), то есть уравнены во вкладах в формирование главных осей.
+
+```{r}
+pca_scam_size_scores %>% 
+  mutate(Param = row.names(.)) %>% 
+  ggplot(aes(PC1, PC2)) +
+  geom_text(aes(label = Param)) +
+  geom_hline(yintercept = 0) +
+  geom_vline(xintercept = 0)
+```
+
+PC1 - это градиент от разреженных банок с доминированием крупных мидий L38-L58 к банкам с большим количеством молоди, высоким покрытием и большой биомассой. 
+
+
+
+
+<!-- ```{r} -->
+<!-- pca_scores_scam %>%  -->
+<!--   ggplot(aes(PC1, N_Juv)) + -->
+<!--   geom_point() + -->
+<!--   geom_smooth() -->
+
+<!-- pca_scores_scam %>%  -->
+<!--   ggplot(aes(PC1, N_Large)) + -->
+<!--   geom_point() + -->
+<!--   geom_smooth() -->
+
+
+<!-- pca_scores_scam %>%  -->
+<!--   ggplot(aes(PC1, Biomass)) + -->
+<!--   geom_point()+ -->
+<!--   geom_smooth() -->
+
+
+<!-- pca_scores_scam %>%  -->
+<!--   ggplot(aes(PC1, Mean_Cover)) + -->
+<!--   geom_point() + -->
+<!--   geom_smooth() -->
+
+<!-- ``` -->
+
+
+
+Вот так распределены банки в осях PCA.
+
+```{r}
+pca_scores_scam %>% 
+  ggplot(aes(PC1, PC2)) +
+  geom_text(aes(label = Site_Year)) +
+  geom_hline(yintercept = 0) +
+  geom_vline(xintercept = 0)
+
+```
+
+А вот теперь самое интересное. Нарисуем в тех же осях те сайты, которые были пересобраны в 2023 г.
+
+```{r}
+# unique(pca_scores_scam$Site)
+# 
+# table(pca_scores_scam$Site)
+
+pca_scores_scam %>% 
+  filter(Site %in% c("KHOL","MAM", "MAR", "NUK-I", "UM", "VES")) %>% 
+  ggplot(aes(x = PC1, y = PC2)) +
+  # Соединяем одинаковые Site (группируем по Site)
+  geom_line(aes(group = Site), 
+            color = "gray60", 
+            alpha = 0.7, 
+            linewidth = 0.6,
+            linetype = "dashed") +
+  # Точки с цветом по году
+  geom_point(aes(color = as.factor(Year)), size = 3) +
+  # Метки с Site и Year
+  geom_text(aes(label = paste0(Site, "\n", Year)), 
+            size = 2.8, 
+            nudge_y = 0.02) +
+  scale_color_viridis_d(name = "Year")
+
+
+```
+
+Обрати внимание, что за исключением "Khol", все сайты сместились слва направо вдоль оси PC1. 
+
+Вот для этих же сайтов бокс-плот со значениями PC1 в два разных года.
+
+```{r}
+pca_scores_scam %>% 
+  filter(Site %in% c("KHOL","MAM", "MAR", "NUK-I", "UM", "VES")) %>% 
+  ggplot(aes(x = Year, y = PC1, group = Year)) +
+  geom_boxplot()
+
+```
+
+То есть PC1 - это ПРО ДИНАМИКУ. Типа старые банки - переходят в молодые (если уж так не любишь старика Наумова с его циклами, хотя это именно они!). 
+
+
+
+
+
+```{r}
+pca_scores_scam <-
+merge(pca_scores_scam, df , all = T) 
+
+```
+
+
+
+```{r}
+Sites_Year <- 
+pca_scores_scam %>% arrange(PC1) %>% pull(Site_Year) %>% unique() 
+
+size <-
+size %>%
+  mutate(Site_Year = paste(Site, "_", Year, sep = ""))
+
+size$Site_Year <- gsub(pattern = "20", replacement = "", x = size$Site_Year) 
+
+
+size$Site_Year <- factor(size$Site_Year, levels = Sites_Year)
+
+
+
+Pl_size_stricture <-
+size %>% 
+  ggplot(., aes(x = L)) +
+  geom_histogram(binwidth = 5) +
+  facet_wrap(~Site_Year, scales = "free_y", dir = "v", ncol = 4) +
+  theme_bw() +
+  # theme(strip.text = element_blank()) +
+  labs(x = "Размерные классы (мм)", y = "Частота")
+```
+
+```{r, fig.height=15}
+Pl_size_stricture
+```
+
+Здесь сайты упорядочены по мере увеличения значения PC1 (вниз по каждой колонке). 
+
+Для людей, не желающих здесь видеть циклическую динамику, можно продать идею, что это про градиент от банок с плохим пополнением к банкам с хорошим пополнением. 
+
+
+
+
+```{r}
+myt %>% 
+  select(Site_code,  Year,  N, BTN1, BTN2) %>%
+  group_by(Site_code, Year) %>% 
+  summarise(N = sum(N), BTN1 = sum(BTN1), BTN2 = sum(BTN2)) %>% 
+  melt(., id.vars = c( "Site_code",  "Year", "N"), variable.name = "Lineage", value.name = "N_cancer") %>% 
+  mutate(N_helthy = N - N_cancer) %>% 
+  rename(Site = Site_code) ->
+  cancer_21_23
+
+df <- merge(cancer_21_23, points)
+
+
+df2 <-merge(df, pca_scores_scam)
+
+cancer_21_23_predictors <- merge(df2, ogp)
+
+cancer_21_23_predictors$Year <- factor(cancer_21_23_predictors$Year)
+
+cancer_21_23_predictors$Site <- factor(cancer_21_23_predictors$Site) 
+
+```
+
+
+
+
+## "Первичные" данные в градиентах факторов
+
+<!-- > *Многие из них до сих пор боялись, что их ударит током. Они все еще называли электричку чугункой.* (А. и Б. Стругацкие) -->
+
+Здесь приведены иллюстрации о связи "сырых" частот BTN1 и DTN2 с предикторами. 
+Понятно, что где-то связь не выглядит суперской, так как не удалено влияние других предикторов. Ну и я не даю доверительных интервалов так как это совсем уж не корректно. 
+
+
+```{r}
+cancer %>% 
+  group_by(Site, Year) %>% 
+  summarise(Lat = mean(Lat), Lon = mean(Lon), N_total = sum(N), BTN1 = sum(BTN1), BTN2 = sum(BTN2)) %>% 
+  mutate(BTN1 = BTN1/N_total*100, BTN2 = BTN2/N_total*100) %>% 
+  dplyr::select(Site,Year, Lat, Lon, BTN1, BTN2)  %>% 
+  melt(., id.vars = c("Site", "Year", "Lat", "Lon"), value.name = "Prop_BTN", variable.name = "Lineage" ) ->
+  prop_BTN_2
+
+
+prop_BTN_2_points <- 
+  merge(prop_BTN_2, cancer_21_23_predictors)
+
+
+```
+
+
+```{r}
+prop_BTN_2_points %>% 
+  ggplot(aes(x = Dist_Port, y = Prop_BTN)) +
+  geom_point() +
+  facet_wrap(~Lineage) +
+  geom_smooth(method = "lm", se = F) +
+  labs(y = "BTN proportion (%)")
+  
+
+prop_BTN_2_points %>% 
+  ggplot(aes(x = fetch, y = Prop_BTN)) +
+  geom_point() +
+  facet_wrap(~Lineage)+
+  geom_smooth(method = "lm", se = F) +
+  labs(y = "BTN proportion (%)")
+
+
+
+prop_BTN_2_points %>% 
+  ggplot(aes(x = PC1, y = Prop_BTN)) +
+  geom_point() +
+  facet_wrap(~Lineage)+
+  geom_smooth(method = "loess", se = F) +
+  labs(y = "BTN proportion (%)")
+
+  
+prop_BTN_2_points %>% 
+  ggplot(aes(x = OGP, y = Prop_BTN)) +
+  geom_point() +
+  facet_wrap(~Lineage) +
+  geom_smooth(method = "lm", se = F) +
+  labs(y = "BTN proportion (%)")
+
+
+```
+
+
+
+# Модель, отражающая связь зараженности со средовыми предикторами
+
+```{r}
+Mod <- gam(cbind(N_cancer, N_helthy) ~ 
+             s((Dist_Port), by = Lineage,  bs = "cs", k = 5) + 
+             s((fetch), by = Lineage,  bs = "cs", k = 5) +  
+             s((PC1), by = Lineage,  bs = "cs", k = 5) + 
+             s((OGP), by = Lineage, bs = "cs", k = 5) +  
+             Lineage +  
+             s(Year, Site, bs = "re"),  
+           family = "binomial", 
+           method = "REML", 
+           data = cancer_21_23_predictors )
+
+
+# summary(Mod)
+
+
+# Mod_no_re <- gam(cbind(N_cancer, N_helthy) ~ 
+#              s((Dist_Port), by = Lineage,  bs = "tp", k = 5) + 
+#              s((fetch), by = Lineage,  bs = "tp", k = 5) +  
+#              s((PC1), by = Lineage,  bs = "tp", k = 5) + 
+#              s((OGP), by = Lineage, bs = "tp", k = 5) +  
+#              Lineage + Year,  
+#            family = "binomial", 
+#            method = "REML", 
+#            data = cancer_21_23_predictors )
+
+
+
+
+# Mod2 <- gam(cbind(N_cancer, N_helthy) ~ s((Dist_Port), by = interaction(Lineage, Year), k = 10, bs = "tp") + s((fetch), by = interaction(Lineage, Year), k = 10, bs = "tp")  + s((PC1), by = interaction(Lineage, Year), k = 10, bs = "tp") + s((OGP), by = interaction(Lineage, Year), k = 5, bs = "tp")  +  Lineage + Year +  s(Site, bs = "re"),  family = "binomial", method = "REML", data = cancer_21_23_predictors )
+
+```
+
+
+Это заготовки текста для MM.
+
+All continuous predictors were modeled using cubic regression splines with shrinkage (bs = 'cs') to allow for flexible but regularized nonlinear relationships
+
+
+Generalized Additive Models (GAMs) were fitted using the mgcv package in R. 
+Continuous predictors (distance to port, fetch, principal component 1, and 
+growth proxy) were modeled as smooth terms using cubic regression splines 
+with shrinkage (bs = 'cs', k = 5) to allow for flexible but regularized 
+nonlinear relationships. Lineage was included as a fixed factor, and 
+Year/Site as random effects. The binomial family with logit link was used 
+to model cancer incidence. Model fitting used REML for smoothness selection.
+
+### Проверка валидности модели
+
+```{r}
+library(DHARMa)
+
+
+sim_res <- simulateResiduals(fittedModel = Mod, plot = F, n = 2500, refit = FALSE)
+
+# 2. Дополнительные тесты
+testResiduals(sim_res)  # Комплексная проверка
+# 
+testDispersion(sim_res)
+
+
+# conc <- concurvity(Mod, full = T)
+# print(conc)
+
+gam.check(Mod)
+
+```
+
+Не супер, но можно принять...
+
+
+### Результат построения модели
+
+
+```{r}
+summary(Mod)
+```
+
+
+### Визуализация модели 
+
+```{r}
+draw(Mod, residuals = T, select = 1)+ 
+  geom_hline(yintercept = 0, linetype = 2)
+```
+
+
+```{r}
+draw(Mod, residuals = T, select = 2)+ 
+  geom_hline(yintercept = 0, linetype = 2)
+```
+
+Здесь все как было!
+
+```{r}
+draw(Mod, residuals = T, select = 3) +   
+  geom_hline(yintercept = 0, linetype = 2)
+```
+
+
+```{r}
+draw(Mod, residuals = T, select = 4) +   
+  geom_hline(yintercept = 0, linetype = 2)
+```
+
+
+Здесь все как было!
+
+```{r}
+draw(Mod, residuals = T, select = 5) + 
+  geom_hline(yintercept = 0, linetype = 2)
+```
+
+
+```{r}
+draw(Mod, residuals = T, select = 6) + 
+  geom_hline(yintercept = 0, linetype = 2)
+```
+
+Нелинейность связи BTN1 для меня опять же про циклы, но можно обойтись и без них. Этот график про то, что зараженность BTN1 высокая в левой части градиента PC1, там где старые разреженные банки.  
+
+```{r}
+draw(Mod, residuals = T, select = 7)+ 
+  geom_hline(yintercept = 0, linetype = 2)
+```
+
+
+```{r}
+draw(Mod, residuals = T, select = 8)+ 
+  geom_hline(yintercept = 0, linetype = 2)
+```
+
+
+Есть положительная связь с OGP у обеих BTN, хотя значимая только для BTN2. Формально это означает, что если "убрано" (учтено) влияние прочих предикторов, то при прочих равных обе линии себя лучше чувствуют в поселениях, где мидии лучше идет рост. "В здоровом теле здоровый паразит"?  Это, возможно, мэтчится с нелюбовью близости к порту, так как антропогенное влияние должно как-то подавлять рост. 
+
+Дальше в анализах ничего не менял пока.
+
+<!-- # Влияние BTN на хозяина -->
+
+
+<!-- ```{r} -->
+<!-- # Данные по индивидуальным характристикам мидий -->
+<!-- myt_ind <- read_excel("Data/Mussel_growth_Magadan_2021_2023.xlsx", na = "NA") -->
+
+<!-- myt_ind$Sample <- paste(myt_ind$Site_code, myt_ind$Sample, sep = "_") -->
+
+
+<!-- # Удаляем идий, которые были испольованы для анализа роста, но не анализировались с для определения BTN -->
+
+<!-- myt_ind %<>% -->
+<!--   filter(!is.na(DN)) -->
+
+
+<!-- myt_ind$DN <- factor(myt_ind$DN) -->
+<!-- myt_ind$Site_code <- factor(myt_ind$Site_code) -->
+<!-- myt_ind$Sample <- factor(myt_ind$Sample) -->
+<!-- myt_ind$Rate_of_aneuploid_cells <- as.numeric(myt_ind$Rate_of_aneuploid_cells) -->
+
+<!-- myt_ind %<>% -->
+<!--   mutate(Prop_Increment = Increment/L) %>%  -->
+<!--   mutate(BTN_Type = case_when(BTN_genotype == "BTN1" ~ "BTN1", -->
+<!--                               BTN_genotype %in% c("BTN2.1", "BTN2.2") ~ "BTN2", -->
+<!--                               BTN_genotype == "healthy" ~ "healthy")) -->
+
+<!-- myt_ind$BTN_Type <- factor(myt_ind$BTN_Type) -->
+
+
+<!-- myt_ind %<>% -->
+<!--   mutate(Gonad_quality = case_when(Sex == "male" ~ "Developed", -->
+<!--                                    Sex == "female" ~ "Developed", -->
+<!--                                    Sex == "no gametes" ~ "No")) -->
+
+
+<!-- myt_ind <- -->
+<!--   myt_ind %>%  -->
+<!--   filter(!is.na(BTN_Type)) -->
+
+
+
+<!-- # myt_ind %>%   -->
+<!-- #   filter(!is.na(Sex)) %>%  -->
+<!-- #   ggplot(aes(BTN_Type, Prop_Increment, fill = BTN_Type)) + -->
+<!-- #   geom_boxplot() + -->
+<!-- #   facet_grid(Sex ~ Year) -->
+
+
+
+
+<!-- myt_ind_clean <-  -->
+<!--   myt_ind %>%   -->
+<!--   filter(!is.na(BTN_Type)) %>%  -->
+<!--   filter(Sex != "hermaphrodite") %>%  -->
+<!--   filter(!is.na(Sex))  -->
+
+<!-- myt_ind_clean$Fi_Increment <- 2*asin(sqrt(myt_ind_clean$Prop_Increment)) * 180/pi -->
+
+<!-- points <- read_excel("Data/Magadan_2021_2023_ecology_cleaned.xlsx", sheet = "Points  characteristic 2021-23", na = "NA") -->
+
+<!-- points %<>% -->
+<!--   rename(Site_code = Site) -->
+
+
+<!-- # points_2023 <-  -->
+<!-- #   points %>%  -->
+<!-- #   filter(Year == 2023) %>%  -->
+<!-- #   rename(Site_code = Site) -->
+
+<!-- myt_ind_clean <- merge(myt_ind_clean, points) -->
+
+
+<!-- myt_ind_clean$BTN_Type <- factor(myt_ind_clean$BTN_Type, labels = c("BTN1", "BTN2", "Здоровые")) -->
+
+<!-- myt_ind_clean$Gonad_quality <- factor(myt_ind_clean$Gonad_quality, labels = c("Есть гаметы", "Нет гамет")) -->
+
+<!-- ``` -->
+
+
+
+<!-- ```{r, fig.cap="У мидий, зараженных $BTN$, часто нарушено развитие гонад",  fig.width=10, eval=FALSE} -->
+
+<!-- # At! размер картинки на слайдах этого типа регулируется fig.width= -->
+
+<!-- myt_ind_clean %>% -->
+<!--   group_by(Year, BTN_Type, Gonad_quality) %>%  # Группируем по годам и типам BTN -->
+<!--   summarise(Frequency = n(), .groups = 'drop') %>%  # Считаем количество наблюдений -->
+<!--   group_by(Year, BTN_Type) %>%  # Группируем для вычисления долей -->
+<!--   mutate(Frequency = Frequency / sum(Frequency)) %>%  # Преобразуем в доли -->
+<!--   ggplot(aes(x = "", y = Frequency, fill = Gonad_quality)) + -->
+<!--   geom_bar(stat = "identity", width = 1, color = "black") + -->
+<!--   coord_polar("y", start = 0) + -->
+<!--   theme_void() + -->
+<!--   facet_grid(Year ~ BTN_Type) + # Разделяем на подграфики по годам и типам BTN -->
+<!--   scale_fill_manual(values = c("green", "red")) + -->
+<!--   labs(fill = "") + -->
+<!--   theme(strip.text = element_text(size = 18)) -->
+
+
+<!-- ``` -->
+
+
+<!-- ## Зависимость частоты нарушения развития гонад от степени развития заболевания -->
+
+<!-- ```{r} -->
+
+<!-- myt_ind_clean %>% -->
+<!--   mutate(Gonad_Out = ifelse(Gonad_quality == "Нет гамет", 1, 0)) %>%  -->
+<!--   filter(BTN_Type != "Здоровые") -> -->
+<!--   myt_ind_clean_not_healthy -->
+
+<!-- myt_ind_clean_not_healthy <- -->
+<!--   myt_ind_clean_not_healthy %>%  -->
+<!--   mutate(Lineage = BTN_Type, Aneuploid_Proportion = Rate_of_aneuploid_cells) -->
+
+
+<!-- Mod_gonad <- gam(Gonad_Out ~ s(Aneuploid_Proportion, by = Lineage) + Lineage , family = "binomial",  method = "REML", data = myt_ind_clean_not_healthy) -->
+
+<!-- mod_sum2 <- tidy(Mod_gonad) -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- ft <- flextable(mod_sum2) -->
+
+<!-- ft <- -->
+<!--   ft %>%  -->
+<!--   colformat_double(j = 2:4, digits = 1) %>%  -->
+<!--   colformat_double(j = 5, digits = 3) %>%  -->
+<!--   bg(i = c(1), bg = "yellow", part = "body") %>%  -->
+<!--   set_header_labels(statistic = "Chi.sq Statistic", -->
+<!--                     term = "Член модели") %>%  -->
+<!--   set_caption(caption = "Параметры GAM") -->
+
+<!-- ft %>%  -->
+<!--   # Увеличиваем размер таблицы для заполнения слайда -->
+<!--   fontsize(size = 14, part = "all") %>% -->
+<!--   height_all(height = 0.4) %>% -->
+<!--   width(width = 2.5) %>% -->
+<!--   autofit() -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+
+<!-- part_residuals <- add_partial_residuals(model =  Mod_gonad, data = myt_ind_clean_not_healthy) -->
+
+
+
+<!-- logit_back <- function(x) exp(x)/(1 + exp(x)) # обратная логит-трансформация -->
+
+
+<!-- sm <- smooth_estimates(Mod_gonad)  %>%  -->
+<!--   add_confint() -->
+
+
+
+<!-- sm <- -->
+<!--   sm %>% -->
+<!--   mutate(.estimate_pi = logit_back(.estimate + coef(Mod_gonad)["(Intercept)"]),  -->
+<!--          .lower_ci_pi = logit_back(.lower_ci + coef(Mod_gonad)["(Intercept)"]),  -->
+<!--          .upper_ci_pi = logit_back(.upper_ci +coef(Mod_gonad)["(Intercept)"])) -->
+
+
+
+
+<!-- ``` -->
+
+
+
+<!-- ```{r} -->
+<!-- Pl_gonad_BTN1 <- -->
+<!-- sm %>%  -->
+<!--   filter(.smooth == "s(Aneuploid_Proportion):LineageBTN1") %>%  -->
+<!--   ggplot(aes(x = Aneuploid_Proportion, y = .estimate_pi)) + -->
+<!--   geom_ribbon(aes(ymax = .upper_ci_pi, -->
+<!--                   ymin = .lower_ci_pi), -->
+<!--               alpha = 0.4) + -->
+<!--   geom_line(color = "red", linewidth = 1)+ -->
+<!--   # geom_hline(yintercept = 0, linetype = 2) + -->
+<!--   ggtitle("BTN1", subtitle = "") + -->
+<!--   labs(x = "Доля (%) анеуплоидных клеток", y = "Partial effect") + -->
+<!--   # ylim(-5, 4)+ -->
+<!--   # annotate(geom = "text", x = 25, y = 0.5, label = "Среднее значение")  + -->
+<!--   # theme_bw() + -->
+<!--   theme(axis.title.x = element_text(size = 15))  -->
+<!--   # geom_point(data = part_residuals, aes(x = Aneuploid_Proportion, y = `s(Aneuploid_Proportion):LineageBTN1`)) -->
+
+<!-- Mean_aomalia_proportion <- mean(myt_ind_clean_not_healthy$Gonad_Out) -->
+
+<!-- myt_ind_clean %>%  -->
+<!--   filter(Rate_of_aneuploid_cells == 0) %>% -->
+<!--   mutate(Gonad_Out = ifelse(Gonad_quality == "Нет гамет", 1, 0)) %>%  -->
+<!--   pull(Gonad_Out) %>%  -->
+<!--   mean() -> -->
+<!--   Mean_anomalia_proportion_helthy -->
+
+
+
+
+<!-- Pl_gonad_BTN1 <-  -->
+<!-- Pl_gonad_BTN1 + -->
+<!--   geom_hline(yintercept = Mean_aomalia_proportion, linetype = 2) + -->
+<!--   geom_hline(yintercept = Mean_anomalia_proportion_helthy, linetype = 1, color = "darkgreen", linewidth = 3) + -->
+<!--   annotate(x = 30, y = Mean_aomalia_proportion, geom = "text", label = "Средняя по популяции \nдоля среди больных") + -->
+<!--   annotate(x = 50, y = Mean_anomalia_proportion_helthy + 0.05, geom = "text", label = "Средняя по популяции доля среди здоровых")  -->
+
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+
+<!-- Pl_gonad_BTN2 <- -->
+<!-- sm %>%  -->
+<!--   filter(.smooth == "s(Aneuploid_Proportion):LineageBTN2") %>%  -->
+<!--   ggplot(aes(x = Aneuploid_Proportion, y = .estimate_pi)) + -->
+<!--   geom_ribbon(aes(ymax = .upper_ci_pi, -->
+<!--                   ymin = .lower_ci_pi), -->
+<!--               alpha = 0.4) + -->
+<!--   geom_line(color = "blue", linewidth = 1)+ -->
+<!--   # geom_hline(yintercept = 0, linetype = 2) + -->
+<!--   ggtitle("BTN2", subtitle = "") + -->
+<!--   labs(x = "Доля (%) анеуплоидных клеток", y = "Partial effect") + -->
+<!--   # ylim(-5, 4)+ -->
+<!--   # annotate(geom = "text", x = 25, y = 0.5, label = "Среднее значение")  + -->
+<!--   # theme_bw() + -->
+<!--   theme(axis.title.x = element_text(size = 15))  -->
+<!--   # geom_point(data = part_residuals, aes(x = Aneuploid_Proportion, y = `s(Aneuploid_Proportion):LineageBTN2`)) -->
+
+<!-- Pl_gonad_BTN2 <-  -->
+<!-- Pl_gonad_BTN2 + -->
+<!--   geom_hline(yintercept = Mean_aomalia_proportion, linetype = 2) + -->
+<!--   geom_hline(yintercept = Mean_anomalia_proportion_helthy, linetype = 1, color = "darkgreen", linewidth = 3) + -->
+<!--   annotate(x = 30, y = Mean_aomalia_proportion, geom = "text", label = "Средняя по популяции \nдоля среди больных") + -->
+<!--   annotate(x = 50, y = Mean_anomalia_proportion_helthy + 0.05, geom = "text", label = "Средняя по популяции доля среди здоровых")  -->
+
+<!-- ``` -->
+
+
+<!-- ```{r, fig.width=15, fig.height=9} -->
+<!-- plot_grid(Pl_gonad_BTN1, Pl_gonad_BTN2) -->
+
+<!-- # ggsave("BTN1_BTN2_gonad_Magadan.jpg", dpi=600) -->
+<!-- ``` -->
+
+<!-- При заражении MtrBTN1 видимые нарушения наступают на более поздних стадиях заболевания, при заражении MtrBTN2 видимые нарушения наступают раньше, уже начиная с ранних стадий заболевания -->
+
+
+
+
+<!-- ## Влияние BTN на рост моллюсков -->
+
+
+
+<!-- ```{r} -->
+<!-- Mod_prop_incr_btn <- gam(Fi_Increment ~ BTN_Type + s(Last_ring, bs = "cr", by = BTN_Type)  + s(Sample, bs = "re"), family = "gaussian", data = myt_ind_clean, method = "REML") -->
+
+<!-- # summary(Mod_prop_incr_btn) -->
+<!-- mod_sum3 <- tidy(Mod_prop_incr_btn, parametric = T) -->
+
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- ft <- flextable(mod_sum3) -->
+
+<!-- ft <- -->
+<!--   ft %>%  -->
+<!--   colformat_double(j = 2:4, digits = 2) %>%  -->
+<!--   colformat_double(j = 5, digits = 4) %>%  -->
+<!--   set_header_labels(statistic = "F", -->
+<!--                     term = "Член модели") %>%  -->
+<!--   set_caption(caption = "") -->
+
+<!-- ft %>%  -->
+<!--   # Увеличиваем размер таблицы для заполнения слайда -->
+<!--   fontsize(size = 14, part = "all") %>% -->
+<!--   height_all(height = 0.4) %>% -->
+<!--   width(width = 2.5) %>% -->
+<!--   autofit() -->
+<!-- ``` -->
+
+
+
+<!-- ```{r} -->
+<!-- Pl_Last_ring <-  -->
+<!--   draw(Mod_prop_incr_btn, grouped_by = T, select = c(1, 2, 3)) +  -->
+<!--   xlim(20, 55) + -->
+<!--   ylim(-30, 30) + -->
+<!--   labs(fill = "", color = "Статус", x = "Расстояние до последнего кольца") + -->
+<!--   ggtitle(NULL, subtitle = NULL)  + -->
+<!--   # theme_bw() + -->
+<!--   guides(fill = "none", color = "none")+ -->
+<!--   theme(axis.title.x = element_text(size = 15)) -->
+
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+
+<!-- My_data <- data.frame(BTN_Type = levels(myt_ind_clean$BTN_Type), Last_ring = mean(myt_ind_clean$Last_ring)) -->
+
+
+
+<!-- Predicted <- predict(Mod_prop_incr_btn, newdata = My_data, exclude = "s(Sample)", newdata.guaranteed=TRUE, se.fit = TRUE) -->
+
+<!-- My_data$Fit <- Predicted$fit -->
+<!-- My_data$SE <- Predicted$se.fit -->
+
+<!-- Fi_back <- function(x) (sin((x*pi)/360))^2 -->
+
+<!-- My_data$P_incr <- Fi_back(My_data$Fit) -->
+<!-- My_data$upr <- Fi_back(My_data$Fit + 1.96*My_data$SE) -->
+<!-- My_data$lwr <- Fi_back(My_data$Fit - 1.96*My_data$SE) -->
+
+
+<!-- library(itsadug) -->
+
+<!-- # wald_gam(Mod_prop_incr_btn) -->
+
+
+
+<!-- library(ggeffects) -->
+
+<!-- My_data <- -->
+<!-- as.data.frame(ggpredict(Mod_prop_incr_btn, terms = "BTN_Type", typical = "weighted.mean")) %>%  -->
+<!--   dplyr::select(x, predicted, conf.low, conf.high) %>%  -->
+<!--   mutate(P_incr = Fi_back(predicted), upr = Fi_back(conf.high), lwr = Fi_back(conf.low), BTN_Type = x ) -->
+
+<!-- library(ggsignif) -->
+
+<!-- Pl_Status <- -->
+<!--   ggplot(My_data, aes(x = BTN_Type, y = P_incr)) + -->
+<!--   geom_col(aes(fill = BTN_Type), color = "black") + -->
+<!--   scale_fill_manual(values = c("red", "blue", "green")) + -->
+<!--   geom_errorbar(aes(ymin = lwr, ymax = upr), width = 0.2, color = "black") + -->
+<!--   labs(x = "", y = "Partial effect") + -->
+<!--   geom_signif(comparisons = list( -->
+<!--       c("BTN1", "BTN2"), -->
+<!--       c("BTN2", "Здоровые")), -->
+<!--       annotations = c("W = 6.5, p = 0.011", "W = 7.5, p = 0.006") -->
+<!--       )  + -->
+<!--   # theme_bw()+ -->
+<!--   theme(axis.text.x = element_text(size = 15)) + -->
+<!--   guides(fill = "none") -->
+
+
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+
+<!-- Pl_Staus_initial <- -->
+<!--   ggplot(data = myt_ind_clean, aes(x = BTN_Type, y = Prop_Increment)) + -->
+<!--   geom_violin(aes(fill = BTN_Type))  + -->
+<!--   scale_fill_manual(values = c("red", "blue", "green")) + -->
+<!--   labs(x = "", y = "Относительный прирост \nпоследнего года") + -->
+<!--    guides(fill = "none") -->
+
+<!-- ``` -->
+
+
+
+
+
+<!-- ```{r, fig.cap="По мере увеличения размеров прирост последнего года закономерно снижается", eval=FALSE} -->
+<!-- Pl_Last_ring -->
+<!-- ``` -->
+
+
+<!-- ```{r, fig.width=15, fig.height=9} -->
+<!-- plot_grid(Pl_Staus_initial, Pl_Status,  labels = c("Б", "В")) -->
+
+<!-- # ggsave("BTN1_BTN2_growth_Magadan.jpg", dpi=600) -->
+<!-- ``` -->
+
+<!-- Рис. ++. Относительный прирост последнего года у моллюсков, зараженных разными линиями BTN, и у здоровых особей. A. Предсказание модели с учетом ковариаты $L_{LastRing}$. Усы отражают 95% доверительный интервал. Над усами приведены значения критерия Вальда. Б. Диаграмма, отражающая распределение ядерной плотности для исходных значений относительных приростов последнего года.    -->
+
+
+<!-- ## Зависимость прироста от доли анеуплоидных клеток -->
+
+
+<!-- ```{r} -->
+<!-- # names(myt_ind_clean_not_healthy) -->
+<!-- # nrow(myt_ind_clean_not_healthy) -->
+
+
+
+<!-- Mod_Fi_incr_aneupl <- gam(Fi_Increment ~ s(Aneuploid_Proportion, by = Lineage, bs = "cr") + s(Last_ring, by = Lineage) + Lineage,  family = "gaussian",   data = myt_ind_clean_not_healthy, method = "REML") -->
+
+
+<!-- summary(Mod_Fi_incr_aneupl) -->
+
+<!-- draw(Mod_Fi_incr_aneupl, scales = "fixed" )  -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- Mod_Fi_incr_aneupl <- gam(Fi_Increment ~ s(Aneuploid_Proportion, by = Lineage, bs = "cr") + s(Last_ring, by = Lineage) + Lineage,  family = "gaussian",   data = myt_ind_clean_not_healthy, method = "REML") -->
+
+<!-- my_data <-  -->
+<!--   expand.grid(Aneuploid_Proportion = 8:100, Lineage = c("BTN1", "BTN2"), Last_ring = mean(myt_ind_clean_not_healthy$Last_ring)) -->
+
+
+<!-- pred <- predict(Mod_Fi_incr_aneupl, newdata = my_data, se.fit = T) -->
+
+
+<!-- my_data$predicted <- pred$fit  -->
+
+<!-- my_data$SE <- pred$se.fit   -->
+
+
+<!-- x_range <- range(my_data$Aneuploid_Proportion, na.rm = TRUE) -->
+
+
+<!-- healthy_summary <-  -->
+<!--   myt_ind_clean %>%  -->
+<!--   filter(BTN_Type == "Здоровые") %>%  -->
+<!--   group_by(BTN_Type) %>%  -->
+<!--   summarise( -->
+<!--     Mean_Fi = mean(Fi_Increment),  -->
+<!--     CI_lower = t.test(Fi_Increment)$conf.int[1], -->
+<!--     CI_upper = t.test(Fi_Increment)$conf.int[2], -->
+<!--     n = n(), -->
+<!--     SE = sd(Fi_Increment) / sqrt(n()), -->
+<!--     x_min = x_range[1],  # минимальное значение X -->
+<!--     x_max = x_range[2]   # максимальное значение X -->
+<!--   ) -->
+
+
+
+<!-- my_data %>%  -->
+<!--   ggplot() +  -->
+<!--   geom_line(aes(x = Aneuploid_Proportion, y = predicted)) + -->
+<!--   geom_ribbon(aes(x = Aneuploid_Proportion, ymin = predicted - 1.96*SE, ymax = predicted + 1.96*SE), alpha = 0.2) + -->
+<!--   facet_wrap(~Lineage) + -->
+<!--   geom_hline(data = healthy_summary, aes(yintercept = Mean_Fi), color = "darkgreen") + -->
+<!--   geom_rect( -->
+<!--     data = healthy_summary, -->
+<!--     aes(xmin = x_min, xmax = x_max, ymin = CI_lower, ymax = CI_upper), -->
+<!--     alpha = 0.2, -->
+<!--     fill = "darkgreen" -->
+<!--   ) -->
+<!-- ``` -->
+

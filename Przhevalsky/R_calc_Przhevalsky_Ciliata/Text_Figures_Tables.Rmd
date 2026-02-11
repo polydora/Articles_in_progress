@@ -1,0 +1,350 @@
+---
+title: "Инфузории в фекалиях лошадей Part 2"
+author: "В. М. Хайтов"
+date: "2025-11-15"
+output:
+  word_document:
+    reference_docx: style_for_RMD.docx
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+
+```{r}
+library(readxl)
+library(vegan)
+library(dplyr)
+library(ggplot2)
+
+```
+
+
+<!-- ## Данные для анализа -->
+
+```{r}
+dat <- read_excel("Data/Infusoria_abundance_new.xlsx")
+
+dat$Type <- factor(dat$Type, levels = c("Вольный", "Загон", "Домашняя"), labels = c("Przewalski's horse (free-ranging)",  "Przewalski's horse (enclosure grazing)", "Domestic horse"))
+
+# kable(dat)
+```
+
+## Вставка для MM
+
+To visualize differences in ciliate species composition among horse groups, non-metric multidimensional scaling (nMDS; Shepard, 1962) was performed using the metaMDS() function from the `vegan` package (Oksanen et al., 2025) based on Bray-Curtis dissimilarity matrix. Group centroids were labeled by calculating the mean coordinates from the resulting ordination. To assess the degree of between-group differences, the R-statistic from ANOSIM (Analysis of Similarities; Clarke, 1993) was computed. This value was used solely to evaluate the magnitude of group separation, without testing its statistical significance. To test the hypothesis regarding differences in ciliate community composition across three factors (sex, management conditions, and origin of Przhevalsky's horses), PERMANOVA (Permutational Multivariate Analysis of Variance; Anderson, 2001) was employed. P-values were estimated using permutation tests (9,999 permutations). The PERMANOVA model included only main effects, without factor interactions. All calculations were performed using the adonis2() function from the vegan package. To assess the contribution of ciliate species to differences between groups, Similarity Percentage (SIMPER) analysis was employed (Clarke, 1993). The analysis was performed with simper() function from the vegan package.
+
+
+
+
+```{r}
+ord <- 
+  dat %>% 
+  select(-Name,-Sex, -Origin, -Type) %>% 
+  metaMDS(., trace = FALSE )
+
+
+MDS_sites <- as.data.frame(scores(ord)$sites)
+
+MDS_sites$Origin <- dat$Origin
+MDS_sites$Type <- dat$Type
+
+
+MDS_species <- as.data.frame(scores(ord)$species)
+
+MDS_species <-
+MDS_species %>% 
+  mutate(Species = row.names(.))
+
+```
+
+```{r}
+
+Pl_site <- 
+MDS_sites %>% 
+  ggplot(aes(x = NMDS1, y = NMDS2)) +
+  geom_point(aes(fill = Type), size = 4, shape = 21) +
+  # scale_shape_manual(values = c(21, 22, 23)) +
+  scale_fill_manual(values = c("red", "blue", "gray")) +
+  labs(fill = "Group") +
+  theme_bw()
+
+
+MDS_sites %>% 
+  group_by(Type) %>% 
+  summarise(Centroipd_X = mean(NMDS1), Centroid_Y = mean(NMDS2)) %>% 
+  as.data.frame()->
+  Centroids
+
+
+Centroids$Type <- factor(Centroids$Type,  labels = c("Przewalski's horse (free-ranging)",  "Przewalski's horse (enclosure grazing)", "Domestic horse"))
+
+Pl_site <-
+Pl_site +
+  annotate(geom = "segment", x = Centroids[1,2], y = Centroids[1,3], xend = Centroids[2,2], yend = Centroids[2,3]) +
+  annotate(geom = "segment", x = Centroids[2,2], y = Centroids[2,3], xend = Centroids[3,2], yend = Centroids[3,3]) +
+  annotate(geom = "segment", x = Centroids[3,2], y = Centroids[3,3], xend = Centroids[1,2], yend = Centroids[1,3]) +
+  geom_point(data = Centroids, aes(Centroipd_X, Centroid_Y, color = Type), shape = 8,size = 2, stroke = 2) +
+  scale_color_manual(values = c("red",  "blue", "gray")) +
+  guides(color = "none") +
+  theme(legend.position = "bottom")
+
+  
+```
+
+```{r}
+dat %>% 
+  filter(Type != "Przewalski's horse (enclosure grazing)") %>% 
+  select(-Name,-Sex, -Origin, -Type) %>% 
+  anosim(grouping = dat$Type[dat$Type != "Przewalski's horse (enclosure grazing)"]) ->
+  anosim_result
+
+V_D <- round(anosim_result$statistic, 2)
+
+
+dat %>% 
+  filter(Type != "Domestic horse") %>% 
+  select(-Name,-Sex, -Origin, -Type) %>% 
+  anosim(grouping = dat$Type[dat$Type != "Domestic horse"]) ->
+  anosim_result
+
+V_Z <- round(anosim_result$statistic, 2)
+
+
+dat %>% 
+  filter(Type != "Przewalski's horse (free-ranging)") %>% 
+  select(-Name,-Sex, -Origin, -Type) %>% 
+  anosim(grouping = dat$Type[dat$Type != "Przewalski's horse (free-ranging)"]) ->
+  anosim_result
+
+D_Z <- round(anosim_result$statistic, 2)
+
+
+```
+
+
+
+```{r}
+Pl_site +
+  annotate(geom = "text", x = 0.4, y = -0.09, label = V_D ) +
+  annotate(geom = "text", x = 0.6, y = 0.15, label = D_Z ) +
+  annotate(geom = "text", x = 0, y = 0.1, label = V_Z ) ->
+  Pl_site_final
+  
+```
+
+```{r fig.cap="Figure ++. Non-metric multidimensional scaling (nMDS) ordination of samples from Przewalski's horse (free-ranging and enclosure populations) and domestic horse groups. Group centroids and between-group dissimilarities (ANOSIM R-statistic) are shown." , dpi=300, fig.width=7, fig.height=5}
+
+Pl_site_final
+```
+
+
+
+```{r}
+library(ggrepel)
+
+ggplot(MDS_species, aes(NMDS1, NMDS2)) + 
+  geom_point(data = Centroids, aes(Centroipd_X, Centroid_Y, color = Type), shape = 8, size = 2, stroke = 2) +
+  scale_color_manual(values = c("red",  "blue", "gray")) +
+  theme_bw() +
+   annotate(geom = "segment", x = Centroids[1,2], y = Centroids[1,3], xend = Centroids[2,2], yend = Centroids[2,3]) +
+  annotate(geom = "segment", x = Centroids[2,2], y = Centroids[2,3], xend = Centroids[3,2], yend = Centroids[3,3]) +
+  annotate(geom = "segment", x = Centroids[3,2], y = Centroids[3,3], xend = Centroids[1,2], yend = Centroids[1,3]) +
+  geom_point() +
+  geom_text_repel(aes(label = Species), force = 0.5, segment.alpha = 0) +
+  theme(legend.position = "bottom") +
+  labs(color = "Group") +
+  labs(x = "NMDS1", y = "NMDS2")->
+  Pl_species_final
+  
+```
+
+
+```{r fig.cap="Figure ++. Species ordination in nMDS axes consistent with Figure ++", dpi=300, fig.width=7, fig.height=5}
+Pl_species_final
+```
+
+
+```{r}
+dat2 <-
+  dat %>% 
+  filter(Type !="Domestic horse")
+
+
+ord <- 
+  dat2 %>% 
+  select(-Name,-Sex, -Origin, -Type) %>% 
+  metaMDS(., trace = FALSE )
+
+
+MDS_sites <- as.data.frame(scores(ord)$sites)
+
+MDS_species <- as.data.frame(scores(ord)$species)
+
+MDS_species <-
+MDS_species %>% 
+  mutate(Species = row.names(.))
+```
+
+
+
+```{r}
+
+Pl_site2 <- 
+MDS_sites %>% 
+  mutate(Sex = dat2$Sex, Origin = dat2$Origin, Type = dat2$Type) %>% 
+  ggplot(aes(x = NMDS1, y = NMDS2, shape = Origin, fill = Type)) +
+  geom_point(aes(fill = Type), size = 4) +
+  scale_shape_manual(values = c(21, 22, 23)) +
+  scale_fill_manual(values = c("red",  "blue")) +
+  guides(fill = "none") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+
+```
+
+
+```{r fig.cap="Figure ++. Non-metric multidimensional scaling (nMDS) ordination of samples from Przewalski's horse with  with varying origins and management regimes.", dpi=300, fig.width=7, fig.height=5 }
+
+Pl_site2
+```
+
+
+
+```{r}
+permanova_dat <- adonis2(formula = dat2[,-c(1:4)] ~ Sex + Type + Origin, data = dat2, permutations = 10000, by = "margin")
+
+
+
+```
+
+```{r}
+library(pairwiseAdonis)
+
+posthoc_origin <- pairwise.adonis2(
+  dat2[,-c(1:4)] ~ Origin, 
+  data = dat2,
+  permutations = 10000,
+  p.adjust.m = "bonferroni"
+)
+
+```
+
+
+
+
+```{r}
+
+
+library(broom)
+library(flextable)
+library(officer)
+
+
+ft <- flextable(tidy(permanova_dat))
+
+# Задаем заголовки столбцов
+headers <- c("Term", "Df", "SS", "R²", "F-statistic", "p-value")
+
+# Устанавливаем заголовки
+ft <- set_header_labels(ft, 
+                       values = setNames(headers, names(tidy(permanova_dat))))
+
+# Добавляем оформление (опционально, но рекомендуется)
+ft <- ft %>%
+  # Форматирование чисел
+  colformat_double(j = 3:5, 
+                   digits = 2) %>%
+  colformat_double(j = 6, 
+                   digits = 4) %>%
+  # Жирный шрифт для заголовков
+  bold(part = "header") %>%
+  # Автоподбор ширины столбцов
+  autofit() %>%
+  # Выравнивание заголовков по центру
+  align(j = 2:6, align = "center", part = "header") %>%
+  # Выравнивание данных по центру (кроме первого столбца)
+  align(j = 2:6, align = "center", part = "body")
+
+# %>%
+#   # Добавляем границы
+#   border_outer(border = fp_border(color = "black", width = 1)) %>%
+#   border_inner_h(border = fp_border(color = "gray", width = 0.5), part = "body")
+# 
+# # Если нужно выделить значимые p-значения
+# ft <- ft %>%
+#   bg(j = "p-value", 
+#      bg = ~ ifelse(`p-value` < 0.05, "#E6F3FF", "transparent"))
+
+
+
+ft %>% 
+  set_caption("Table +++. Results of PERMANOVA for comparisons of three groups   ")
+
+
+```
+
+
+Важное дополнение. Все-таки PERMANOVA дает значимый результат и  для фактора Origin. Я не до конца понимаю эти группы. Если они в фокусе исследования, то по ним надо проводить SIMPER и приводить прочие результаты.  
+
+
+
+```{r}
+library(tidyr)
+
+dat2$Type <- factor(dat2$Type)
+
+levels(dat2$Type) <- c("Free", "Enclosure")
+
+simp <- simper(comm = dat2[,-c(1:4)],group = dat2$Type, permutations = 10000)
+
+
+as.data.frame(summary(simp)$Free_Enclosure) %>% 
+  select(-c(average, sd, ratio, p)) ->
+  simper_results
+
+simper_results$Species <- row.names(simper_results) 
+
+simper_results <-
+  simper_results %>% 
+  select(Species, ava, avb, cumsum )
+  
+row.names(simper_results) <- NULL
+
+simper_results %>% 
+  filter(ava!=0 & avb !=0) ->
+  simper_results
+  
+
+```
+
+
+```{r}
+ft <- simper_results %>%
+  flextable() %>%
+  # Форматирование числовых столбцов
+  colformat_double(j = 2:3, 
+                digits = 1) %>%
+  colformat_double(j = 4, 
+                digits = 2) %>%
+
+    bold(part = "header") %>%
+  # Чередование цветов строк для лучшей читаемости
+  align(align = "center", part = "header") %>%
+  # Переименование столбцов для понятности
+  set_header_labels(
+    Species = "Species",
+    ava = "Free",
+    avb = "Enclosure",
+    cumsum = "Cumulative\nContribution"
+  ) 
+
+ft %>% 
+  set_caption("Table ++. Mean species abundance in samples from free-ranging and enclosure grazing Przewalski's horse and  cumulative contribution to between-group dissimilarity (SIMPER analysis)") %>% 
+  autofit()
+```
+
+

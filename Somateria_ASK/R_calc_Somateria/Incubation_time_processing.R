@@ -264,4 +264,22 @@ nest_param %>%
   geom_smooth()
 
 
+nest_param %>%
+  ggplot(aes(x = Max_Inc_Time, y = SD_incub_time)) +
+  geom_point() +
+  geom_smooth()
 
+
+nest_param %>%
+  ggplot(aes(x = Diff, y = SD_incub_time)) +
+  geom_point() 
+
+nest_param %>%
+  ggplot(aes(x = N_eggs, y = Diff)) +
+  geom_point(position = position_jitter(width = 0.1)) 
+
+nest_param %>%
+  ggplot(aes(x = N_eggs)) +
+  geom_histogram(binwidth = 1) + 
+  facet_wrap(~Exclude, scales = "free_y") +
+  geom_point(data = nest_param %>% filter(Diff > 1.5), aes(x = N_eggs, y = 0), color ="yellow", position = position_jitter(height = 10))
