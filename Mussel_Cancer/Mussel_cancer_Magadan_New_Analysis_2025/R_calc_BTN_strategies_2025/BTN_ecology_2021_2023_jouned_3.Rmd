@@ -632,6 +632,60 @@ prop_BTN_2_points <-
 
 ```
 
+А вот так выглядит динамика зараженности двумя линиями на тех банках, которые переописывались
+
+
+
+```{r}
+Pl_BTN1_dynamics <- 
+prop_BTN_2_points %>% 
+  filter(Site %in% c("KHOL","MAM", "MAR", "NUK-I", "UM", "VES")) %>% 
+  filter(Lineage == "BTN1") %>% 
+  ggplot(aes(x = Year, y = Prop_BTN, group = Year)) +
+  geom_boxplot() +
+  ggtitle("BTN1") +
+  ylim(0, 7.5)
+
+Pl_BTN2_dynamics <- 
+prop_BTN_2_points %>% 
+  filter(Site %in% c("KHOL","MAM", "MAR", "NUK-I", "UM", "VES")) %>% 
+  filter(Lineage == "BTN2") %>% 
+  ggplot(aes(x = Year, y = Prop_BTN, group = Year)) +
+  geom_boxplot() +
+  ggtitle("BTN2") +
+  ylim(0, 7.5)
+
+```
+
+
+```{r}
+plot_grid(Pl_BTN1_dynamics, Pl_BTN2_dynamics)
+```
+
+То есть, в среднем, на шести переописанных банках частота BTN1 в период с 2021 по 2023 гг. уменьшилась.
+
+```{r}
+prop_BTN_2_points %>% 
+  filter(Site %in% c("KHOL","MAM", "MAR", "NUK-I", "UM", "VES")) %>% 
+  filter(Lineage == "BTN1") %>% 
+  ggplot(aes(x = PC1, y = Prop_BTN, group = Site)) +
+  geom_line(arrow = arrow(type = "closed", angle = 10)) +
+  ggtitle("BTN1") +
+  ylim(0, 7.5)
+```
+
+
+```{r}
+prop_BTN_2_points %>% 
+  filter(Site %in% c("KHOL","MAM", "MAR", "NUK-I", "UM", "VES")) %>% 
+  filter(Lineage == "BTN2") %>% 
+  ggplot(aes(x = PC1, y = Prop_BTN, group = Site)) +
+  geom_line(arrow = arrow(type = "closed", angle = 10)) +
+  ggtitle("BTN2") +
+  ylim(0, 7.5)
+
+```
+
 
 ```{r}
 prop_BTN_2_points %>% 
