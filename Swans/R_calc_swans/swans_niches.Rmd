@@ -47,20 +47,45 @@ dat2$Site <- factor(dat2$Site)
 ```
 
 
-Я удалил те несколько наблюдений, которые имели глубину 20 м. Они при дальнейшей обработке оказались выбросами.
+## Вставка в материал и методику
 
-Модель, описывающая разделение ниш двух видов была подобрана, как обобщенная аддитивная модель, основанная на отрицательном биномиальном распределении. 
+Для оценки влияния факторов на численность лебедей и выявления различий в использовании пространства тремя видами (Sp1, Sp2, Sp3) мы применили обобщенные аддитивные модели (GAM, generalized additive models). Данный подход позволяет моделировать нелинейные зависимости между предикторами и откликом без априорного задания функциональной формы связи (Wood, 2017).
 
-Зависимая переменная: Число лебедей в учете (N)                    
+В качестве зависимой переменной выступало число особей каждого вида, учтенное на точке наблюдения (N). Учитывая, что данные представляют собой счетные величины с избыточной дисперсией, мы использовали семейство отрицательного биномиального распределения, которое лучше подходит для таких данных по сравнению с распределением Пуассона (Zuur et al., 2009).
 
-Предикторы:                    
-- Год (Year). Сплайн подбирается отдельно для каждого из видов.                  
-- Глубина (Depth) и Расстояние от берега (Distance). Эти две величины сильно коррелируют, поэтому, чтобы не рассматривать только одну из них, в модели подбираются двумерные сплайны (непараметрические сглаживающие функции). Эти двумерные сплайны подбираются отдельно для каждого вида и каждой ледовой обстановки (см. ниже).            
-- Вид лебедя (Species): градации Sp1, Sp2, Sp3     
-- Ледовая обстановка (Ice): градации "Ice_cover", "No_ice"      
-- Случайный фактор Site. Введение случайного фактора было необходимо, поскольку в одной точке проводились повторные измерения (нарушение независимости наблюдений).      
+Модель включала следующие фиксированные эффекты:
 
-Вот так выглядит модель
+Год (Year) – для учета межгодовой динамики численности. Поскольку тренды могли различаться у разных видов, сглаживающий сплайн (smooth spline) подбирался отдельно для каждого вида. 
+
+Глубина (Depth) и расстояние от берега (Dist) – ключевые факторы, определяющие доступность кормовых биотопов. Предварительный анализ выявил высокую корреляцию между этими переменными, поэтому для избежания мультиколлинеарности и потери информации мы использовали двумерный сплайн. Это позволяет моделировать совместное влияние этих факторов на численность лебедей. Поскольку характер использования акватории мог зависеть как от вида, так и от ледовой обстановки, двумерные сплайны подбирались отдельно для каждой комбинации вида и ледовой обстановки. 
+
+Вид лебедя (Species) – категориальный предиктор с тремя градациями (Sp1, Sp2, Sp3), позволяющий оценить общие различия в численности между видами.
+
+Ледовая обстановка (Ice) – бинарный фактор, характеризующий наличие или отсутствие ледового покрова в момент учета (градации: Ice_cover – ледовый покров, No_ice – открытая вода).
+
+Для учета псевдоповторности, обусловленной проведением повторных учетов на одних и тех же станциях (Site), в модель был включен случайный эффект точки наблюдения в виде сглаживающего члена с штрафом, что эквивалентно случайному интерцепту в смешанных моделях (Wood, 2017). 
+
+Оценка параметров модели проводилась методом ограниченного максимального правдоподобия (REML), который обеспечивает наилучший компромисс между смещением и дисперсией оценок сглаживания (Wood, 2011). Модель была реализована в среде R версии 4.5.2 (R Core Team, 2025) с использованием пакета mgcv (Wood, 2017). Для проверки валидности построенной модели и визуализации результатов применяли функции из пакета gratia (Simpson, 2024) 
+
+Литература:
+
+R Core Team (2025). _R: A Language and Environment for Statistical
+  Computing_. R Foundation for Statistical Computing, Vienna, Austria.
+  <https://www.R-project.org/>.
+
+Simpson G (2024). “gratia: An R package for exploring generalized
+  additive models.” _Journal of Open Source Software_, *9*(104), 6962.
+  doi:10.21105/joss.06962 <https://doi.org/10.21105/joss.06962>.
+  
+Wood S.N. (2017) Generalized Additive Models: An Introduction with R. 2nd edn. Chapman and Hall/CRC.
+
+Wood S.N. (2011) Fast stable restricted maximum likelihood and marginal likelihood estimation of semiparametric generalized linear models. Journal of the Royal Statistical Society (B) 73(1):3-36.
+
+Zuur A.F. et al. (2009) Mixed Effects Models and Extensions in Ecology with R. Springer.
+
+
+
+## Вот так выглядит модель
 
 ```{r echo=TRUE}
 library(mgcv)
@@ -76,17 +101,24 @@ Mod <- gam(N ~ s(Year, by = Species, k = 5) +
 
 
 
-Валидацию модели не привожу, но там боле или менее терпимо.
 
 
-## Что получилось
 
 Вот summary подобранной модели
 
 ```{r}
 library(broom)
+library(flextable)
 
-kable(tidy(Mod))
+
+ft <- flextable(tidy(Mod))
+
+
+ft %>%
+  colformat_double(j = c(2, 3, 4), digits = 1) %>% 
+  colformat_double(j = 5, digits = 3) %>% 
+  set_header_labels(values = c("Smoother term", "edf", "ref.df", "F", "p-value" )) %>% 
+  set_caption("Таблица 1. Результаты подгонки обобщенной аддитивной модели  (GAMM) для оценки влияния факторов на пространственное распределение трех видов лебедей (Sp1, Sp2, Sp3) в ледовый и безледовый периоды  Table 1. Fitting results of the generalized additive mixed model (GAMM) assessing the effects of environmental factors on the spatial distribution of three swan species (Sp1, Sp2, Sp3) during ice-covered and ice-free periods")
 
 # summary(Mod)
 ```
@@ -144,6 +176,43 @@ plot_grid(Pl_sp1, Pl_sp2, Pl_sp3, nrow = 1)
 Видно, что Sp1 держится на большей глубине и при этом может уходить достаточно далеко от берега. Sp2 и Sp3 держатся близко от берега и на малой глубине. При этом, Sp2 смотрится как самый стенобионтный вид, он не заплывает далеко от берега, в то время как Sp3 может заходить дальше. 
 
 
+### Разделение экологических ниш в градиенте Depth-Distance в безледный период
+
+```{r}
+Pl_sp1_ice <- 
+draw(Mod, select = 4) +
+guides(fill = "none") +
+scale_fill_gradient(low = "yellow", high = "red") +
+ggtitle("Sp1 в период схода льда", subtitle = NULL)
+
+
+Pl_sp2_ice <- 
+draw(Mod, select = 5) +
+guides(fill = "none") +
+scale_fill_gradient(low = "yellow", high = "red") +
+ggtitle("Sp2 в период схода льда", subtitle = NULL)
+
+Pl_sp3_ice <- 
+draw(Mod, select = 6) +
+guides(fill = "none") +
+scale_fill_gradient(low = "yellow", high = "red") +
+ggtitle("Sp3 в период схода льда", subtitle = NULL)
+
+
+
+```
+
+
+```{r, fig.width=10, fig.cap="Распределение трех видов лебедей в гардиенте глубины и удаленности от берега в период схода льда. Чем краснее заливка, тем больше обилие."}
+
+
+plot_grid(Pl_sp1_ice, Pl_sp2_ice, Pl_sp3_ice, nrow = 1)
+
+```
+
+
+
+
 ## Дополнения
 
 **1. можно ли показать, что кликун и тундровый лебедь в сборе корма строго ограничены изобатой 1,5 м (или около того).**
@@ -176,39 +245,6 @@ dat2 %>%
          
 ```
 
-Это просто первичка, из которой видно, что у шипуна ненулевая медиана численности наблюдается  на глубинах от 1 до 5 м. У кликуна от 0 до 2. У самого стенобионтного вида, тундряного, ненулевая медиана наблюдается на нулевой изобате. 
-
-Аналогичная картинка вот такая.
-
-```{r}
-ggplot(dat2, aes(x = (Depth), y = log(N+1))) +
-  geom_jitter(width = 0.2, alpha = 0.3, color = "gray50") +
-  stat_summary(
-    fun = median,
-    geom = "line",
-    aes(group = 1),
-    size = 1,
-    color = "blue"
-  ) +
-  stat_summary(
-    fun = median,
-    geom = "point",
-    size = 2,
-    color = "darkred"
-  ) +
-  facet_grid(Species ~ Ice) +
-  labs(
-    x = "Depth",
-    y = "log(N+1)") +
-  theme_bw()
-
-
-```
-
-Здесь линия показывает изменение медианы численности по мере роста глубины. Это фактически тот же рисунок. Но здесь можно пофантазировать, например, залить ту часть зоны под кривой, которая составляет, например, 95% всей площади. Это от лукавого, но дает какую-то иллюзию границы распределения вида. Мне кажется, что это лишнее.  
-
-
-
 
 **2. В части касающейся первого периода со льдом (где все сложно) все лебеди держались на двух кормовых биотопах — первых полыньях на самых мелководных участках у берега и на глубоководной акватории за линией припая. Можем ли показать, что тундровый лебедь и кликун были только на полыньях, а шипун — как на полыньях так и на глубокой воде за припаем? Это весьма важно.**
 
@@ -226,5 +262,100 @@ dat2 %>%
 
 Возможно эту визуализацию можно улучшить, например, введя классификацию полыней. Тапа, "маленькая прибрежная полынья" "большая прибрежная полынья", "за пределами зоны припая". Или что-то подобное. Есть возможность такую колонку сделать в файле с первичкой. 
 
+### Дополнение 2
+
+Сергей!
+Предлагаю вот такую простую визуализацию, характеризующую распределение численностей видов по двум типам свободной воды в ледовый период. Это просто пай-чарты, отражающие соотношение средних численностей лебедей в двух типах свободной воды в период таяния льда. По мне так здесь все отчетливо видно. 
+
+
+
+
+```{r}
+dat_ice <- read_excel("Data/swans.xlsx", sheet = "Ice_period")
+
+
+dat_ice_long <- 
+melt(dat_ice, id.vars = c("ID", "Ice", "Feeding_place", "Depth", "Dist"       , "Year", "Date", "Site" ), variable.name = "Species", value.name = "Abund")
+
+dat_ice_long %>% 
+  group_by(Feeding_place, Species) %>% 
+  summarise(Mean_abund = mean(Abund))
+
+
+```
+
+
+```{r}
+
+mean_data <- dat_ice_long %>%
+  group_by(Feeding_place, Species) %>%
+  summarise(Mean_abund = mean(Abund, na.rm = TRUE), .groups = "drop") %>%
+  group_by(Species) %>%
+  mutate(Proportion = Mean_abund / sum(Mean_abund))  # доля для секторной диаграммы
+
+
+# Создание палитры для Feeding_place
+feeding_place_colors <- c(
+  "Coastal shallow-water polynyas" = "#66c2a5",
+  "Remote deep-water areas near the fast ice" = "#fc8d62"
+)
+
+# Функция для создания диаграммы для одного вида
+plot_species_pie <- function(species_name) {
+  species_data <- mean_data %>%
+    filter(Species == species_name)
+  
+  ggplot(species_data, aes(x = "", y = Proportion, fill = Feeding_place)) +
+    geom_bar(stat = "identity", width = 1, color = "white") +
+    coord_polar("y", start = 0) +
+    scale_fill_manual(values = c("#66c2a5", "#fc8d62")) +
+    labs(title = paste(species_name),
+         fill = "Feeding place",
+         x = NULL, y = NULL) +
+    theme_minimal() +
+    theme(
+      axis.text = element_blank(),
+      panel.grid = element_blank(),
+      plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+      legend.position = "bottom",
+      legend.text = element_text(size = 10),
+      legend.title = element_text(size = 11, face = "bold")
+    ) 
+    # # Добавление процентов на диаграмму
+    # geom_text(aes(label = paste0(round(Proportion * 100, 1), "%")),
+    #           position = position_stack(vjust = 0.5),
+    #           color = "black", fontface = "bold", size = 5)
+}
+
+# Создание диаграмм для каждого вида
+plot_Sp1 <- plot_species_pie("Sp1")
+plot_Sp2 <- plot_species_pie("Sp2")
+plot_Sp3 <- plot_species_pie("Sp3")
+
+
+library(patchwork)
+
+combined_plots <- plot_Sp1 + plot_Sp2 + plot_Sp3 +
+  plot_layout(guides = "collect") &  # собираем все легенды в одну
+  theme(legend.position = "bottom")   # размещаем общую легенду снизу
+
+combined_plots
+```
+
+
+Но если важно как-то учесть еще и расстояние, то тут появится проблема, так как каждый из типов полыней очень жестко связан с глубиной и расстоянием до берега. То есть это практически одно и то же.    
+
+```{r}
+dat_ice %>% 
+  ggplot(aes(x = Feeding_place, y = Depth)) +
+  geom_boxplot()
+```
+
+
+```{r}
+dat_ice %>% 
+  ggplot(aes(x = Feeding_place, y = Dist)) +
+  geom_boxplot()
+```
 
 

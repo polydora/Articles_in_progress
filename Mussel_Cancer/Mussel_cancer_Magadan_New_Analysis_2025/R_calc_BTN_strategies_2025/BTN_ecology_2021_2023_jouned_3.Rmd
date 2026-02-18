@@ -80,22 +80,6 @@ ggplot(gg_Magadan_large, aes(x = long, y = lat, group = group)) +
 
 ```
 
-
-```{r}
-Pl_map +
-  geom_point(data = points_local, aes(x = lon, y = lat, group = 1), shape = 21, fill = "yellow", size = 3) +
-  scale_fill_manual(values =  c("gray50", "yellow")) +
-  theme_minimal() +
-  guides(fill = "none", size = "none") +
-  labs(x = "Долгота", y = "Широта") +
-  geom_point(data = Magadan, aes(x = long + 0.01), shape = 22, group = 1, fill = "red", size = 6)+
-  geom_text(data =  Magadan, aes(x = long, y = lat+0.02, label = "Магадан", group = 1), color = "white")+
-  theme_map()
-
-```
-
-
-
 ```{r}
 cancer <- read_excel("Data/Cancer_Magadan_2021-2023.xlsx", na = "NA", sheet = "Magadan_cancer_prevalence")
 
@@ -180,7 +164,7 @@ Pl_map +
 Pl_hist <- 
   ggplot(prop_BTN, aes(x = Prop_BTN)) +
   geom_histogram(binwidth = 1.9) +
-  labs(x = "Доля зараженных (%)", y = "Количество участков") +
+  labs(x = "Prevalence (%)", y = "Number of sites") +
   theme_bw() +
   facet_wrap(~ Lineage)
 
@@ -188,23 +172,15 @@ Pl_hist <-
 
 
 
-```{r, fig.cap = "Частота зараженных мидий невелика: единицы процентов в поселении"}
-Pl_hist
-```
-
-
-```{r, fig.cap = "Частота BTN варьирует вдоль побережья", dpi = 600, fig.width= 8}
-Pl_map_BTN
-```
 
 
 
 
-```{r, fig.cap="Соленость варьирует в очень узких пределах", eval=FALSE}
+```{r, fig.cap="Salinity varies in narrow limits", eval=FALSE}
 points_local %>% 
   ggplot(aes(Salinity)) + 
   geom_histogram(binwidth = 5) +
-  labs(x = "Соленость", y = "Количество участков")  +
+  labs(x = "Salinity", y = "Number of sites")  +
   theme_bw()
 ```
 
@@ -239,6 +215,49 @@ myt_23 %<>%
 
 
 
+
+
+```{r}
+library(ggspatial)
+
+points_local %>% 
+  mutate(Group = ifelse(Site %in% c("KHOL","MAM", "MAR", "NUK-I", "UM", "VES"), yes = "Resampled", no = "One")) ->
+  points_local
+
+points_local %>% 
+mutate(Group = case_when(Group == "Resampled" ~  "Resampled",
+                         Group == "One" & Year == 2021 ~ "2021",
+                         Group == "One" & Year == 2023 ~ "2023")) ->
+  points_local
+
+points_local$Group <- factor(points_local$Group)
+
+Pl_map +
+  geom_point(data = points_local, aes(x = lon, y = lat, group = 1, fill = Group), shape = 21,  size = 3) +
+  scale_fill_manual(values =  c("white", "yellow", "red")) +
+  theme_minimal() +
+  guides(size = "none") +
+  labs(x = "Lon", y = "Lat") +
+  geom_point(data = Magadan, aes(x = long + 0.01), shape = 22, group = 1, fill = "gray", size = 6)+
+  geom_text(data =  Magadan, aes(x = long, y = lat+0.03, label = "Magadan", group = 1), color = "white")+
+  annotate(geom = "text", x= 150.25, y = 59.5, label = "Sea of \nOkhotsk")
+```
+
+Areas surveyed only in 2021 are marked in white, only in 2023 in yellow, and in both years in red. 
+
+
+```{r, fig.cap = "The frequency distribution of BTN1 and BTN2."}
+Pl_hist
+```
+
+The prevalence of BTN1 in samples averages `r round(Prob_BTN1_total * 100, 2)`%, BTN2 – `r round(Prob_BTN2_total * 100, 2)`   %.
+
+
+```{r, fig.cap = "PRevalence of BTN1 and BTN2 along shore", dpi = 600, fig.width= 8}
+Pl_map_BTN
+```
+
+Symbol size is proportional to BTN prevalence, with data for BTN1 and BTN2 presented separately.
 
 
 
@@ -437,11 +456,9 @@ pca_scores_scam$Site_Year <- gsub(pattern = "20", replacement = "", x = pca_scor
 
 ```
 
-## Новое в обработке данных за 2021, 2023 гг. 
+## Mussel population structure
 
-Все показатели, которые характеризуют популяционную структуру (кроме OGP, которая про рост) сведены в ОДИН PCA. При этом L3 - L58 это локальное обилие размерных классов в точках взятия проб. Biomass - это биомасса на всем сайте, с учетом проективного покрытия. Перед вычислением PCA все перменные были стандартизованы (средняя = 0, sd = 1), то есть уравнены во вкладах в формирование главных осей.
-
-```{r}
+```{r fig.cap="Ordination of popukation parameters in PCA axes."}
 pca_scam_size_scores %>% 
   mutate(Param = row.names(.)) %>% 
   ggplot(aes(PC1, PC2)) +
@@ -449,9 +466,6 @@ pca_scam_size_scores %>%
   geom_hline(yintercept = 0) +
   geom_vline(xintercept = 0)
 ```
-
-PC1 - это градиент от разреженных банок с доминированием крупных мидий L38-L58 к банкам с большим количеством молоди, высоким покрытием и большой биомассой. 
-
 
 
 
@@ -480,11 +494,7 @@ PC1 - это градиент от разреженных банок с доми
 
 <!-- ``` -->
 
-
-
-Вот так распределены банки в осях PCA.
-
-```{r}
+```{r, fig.cap="Ordination of all sites in PCA axes."}
 pca_scores_scam %>% 
   ggplot(aes(PC1, PC2)) +
   geom_text(aes(label = Site_Year)) +
@@ -493,7 +503,16 @@ pca_scores_scam %>%
 
 ```
 
-А вот теперь самое интересное. Нарисуем в тех же осях те сайты, которые были пересобраны в 2023 г.
+In the analysis, L3-L58 is the abundance of mussel size classes in quantitative samples at each sampling site. (At each site 2-3 samples were taken for mussel size structure analysis). Biomass is the biomass at the entire site, taking into account the cover of mussels.  
+
+Before calculating PCA, all variables were standardized (mean = 0, sd = 1).
+
+#### PCA interpretation
+
+PC1 reflects a gradient from sparse mussel beds dominated by large molluscs with length 38-58 mm to populations with abundant young mussels, high projective cover and high biomass.
+
+
+
 
 ```{r}
 # unique(pca_scores_scam$Site)
@@ -520,9 +539,13 @@ pca_scores_scam %>%
 
 ```
 
-Обрати внимание, что за исключением "Khol", все сайты сместились слва направо вдоль оси PC1. 
 
-Вот для этих же сайтов бокс-плот со значениями PC1 в два разных года.
+The same figure, but only the populations studied in 2021 and 2023 are shown.
+Note that, with the exception of the "Khol" site, all populations have shifted from left to right along the PC1 axis. That is, the populations have become, on average, younger over the two years. Below are box plots of PC1 values for the same sites in different years.
+
+Thus PC1 reflecs the temporal changes in mussel population structure: аfrom old-dominated settlements to young-dominated ones. 
+
+
 
 ```{r}
 pca_scores_scam %>% 
@@ -531,8 +554,6 @@ pca_scores_scam %>%
   geom_boxplot()
 
 ```
-
-То есть PC1 - это ПРО ДИНАМИКУ. Типа старые банки - переходят в молодые (если уж так не любишь старика Наумова с его циклами, хотя это именно они!). 
 
 
 
@@ -572,12 +593,27 @@ size %>%
 ```
 
 ```{r, fig.height=15}
-Pl_size_stricture
+growth %>% 
+  select(Site, Year, L) %>% 
+  filter(complete.cases(.)) ->
+  analyzed_myt_size
+
+ size %>% 
+   select(Year, Site, Site_Year) %>% 
+   unique(.) %>% 
+   merge(., analyzed_myt_size) ->
+   analyzed_myt_size
+ 
+ 
+
+Pl_size_stricture +
+  geom_rug(data = analyzed_myt_size, aes(y = 0, x = L), color = "blue")
+  
 ```
 
-Здесь сайты упорядочены по мере увеличения значения PC1 (вниз по каждой колонке). 
+Size structure and abundance of mussels at study sites. Blue rug on axes mark the sizes of mussels analyzed for BTN presence. 
 
-Для людей, не желающих здесь видеть циклическую динамику, можно продать идею, что это про градиент от банок с плохим пополнением к банкам с хорошим пополнением. 
+The size structures of mussels in samples are shown here, with sites ordered by increasing PC1 value (down each column).
 
 
 
@@ -608,12 +644,7 @@ cancer_21_23_predictors$Site <- factor(cancer_21_23_predictors$Site)
 
 
 
-## "Первичные" данные в градиентах факторов
-
-<!-- > *Многие из них до сих пор боялись, что их ударит током. Они все еще называли электричку чугункой.* (А. и Б. Стругацкие) -->
-
-Здесь приведены иллюстрации о связи "сырых" частот BTN1 и DTN2 с предикторами. 
-Понятно, что где-то связь не выглядит суперской, так как не удалено влияние других предикторов. Ну и я не даю доверительных интервалов так как это совсем уж не корректно. 
+## Row data in gradients of predictors 
 
 
 ```{r}
@@ -662,17 +693,83 @@ prop_BTN_2_points %>%
 plot_grid(Pl_BTN1_dynamics, Pl_BTN2_dynamics)
 ```
 
-То есть, в среднем, на шести переописанных банках частота BTN1 в период с 2021 по 2023 гг. уменьшилась.
+То есть, в среднем, на шести переописанных банках частота BTN1 в период с 2021 по 2023 гг. уменьшилась. Явного временного патерна для BTN2 нет.
 
 ```{r}
 prop_BTN_2_points %>% 
-  filter(Site %in% c("KHOL","MAM", "MAR", "NUK-I", "UM", "VES")) %>% 
+  filter(Site %in% c("MAM", "MAR", "NUK-I", "UM", "VES")) %>% 
   filter(Lineage == "BTN1") %>% 
   ggplot(aes(x = PC1, y = Prop_BTN, group = Site)) +
-  geom_line(arrow = arrow(type = "closed", angle = 10)) +
+  geom_line(aes(group = Site), 
+            color = "gray60", 
+            alpha = 0.7, 
+            linewidth = 0.6,
+            linetype = 1,
+            arrow = arrow(angle = 15, type = "closed")) +
+  # Точки с цветом по году
+  geom_point(aes(color = as.factor(Year)), size = 3) +
+  geom_line(data = prop_BTN_2_points %>% filter(Site %in% c("KHOL") & Lineage == "BTN1"), aes(group = Site), 
+            color = "gray60", 
+            alpha = 0.7, 
+            linewidth = 0.6,
+            linetype = 1,
+            arrow = arrow(angle = 15, type = "closed", ends = "first")) +
+  geom_point(data = prop_BTN_2_points %>% filter(Site %in% c("KHOL") & Lineage == "BTN1"), aes(color = as.factor(Year)), size = 3) +
+  geom_point(data = prop_BTN_2_points %>% filter(!Site %in% c("KHOL", "MAM", "MAR", "NUK-I", "UM", "VES") & Lineage == "BTN1")) +
+  scale_color_viridis_d(name = "Year") +
   ggtitle("BTN1") +
-  ylim(0, 7.5)
+  geom_smooth(data = prop_BTN_2_points %>% filter(Lineage == "BTN1"), method = "gam", aes(group = 1), se = F) +
+  ylim(0, 7.5) ->
+  BTN1_PC1
+
+
+
+
 ```
+
+
+```{r}
+prop_BTN_2_points %>% 
+  filter(Site %in% c("MAM", "MAR", "NUK-I", "UM", "VES")) %>% 
+  filter(Lineage == "BTN2") %>% 
+  ggplot(aes(x = PC1, y = Prop_BTN, group = Site)) +
+  geom_line(aes(group = Site), 
+            color = "gray60", 
+            alpha = 0.7, 
+            linewidth = 0.6,
+            linetype = 1,
+            arrow = arrow(angle = 15, type = "closed")) +
+  # Точки с цветом по году
+  geom_point(aes(color = as.factor(Year)), size = 3) +
+  geom_line(data = prop_BTN_2_points %>% filter(Site %in% c("KHOL") & Lineage == "BTN2"), aes(group = Site), 
+            color = "gray60", 
+            alpha = 0.7, 
+            linewidth = 0.6,
+            linetype = 1,
+            arrow = arrow(angle = 15, type = "closed", ends = "first")) +
+  geom_point(data = prop_BTN_2_points %>% filter(Site %in% c("KHOL") & Lineage == "BTN1"), aes(color = as.factor(Year)), size = 3) +
+  geom_point(data = prop_BTN_2_points %>% filter(!Site %in% c("KHOL", "MAM", "MAR", "NUK-I", "UM", "VES") & Lineage == "BTN2")) +
+  scale_color_viridis_d(name = "Year") +
+  ggtitle("BTN2") +
+  geom_smooth(data = prop_BTN_2_points %>% filter(Lineage == "BTN2"), method = "gam", aes(group = 1), se = F) +
+  ylim(0, 7.5) ->
+  BTN2_PC1
+
+```
+
+
+
+```{r}
+prop_BTN_2_points %>% 
+  filter(!Site %in% c("KHOL","MAM", "MAR", "NUK-I", "UM", "VES")) %>% 
+  filter(Lineage == "BTN1") ->
+  df_21_23_btn1
+  
+BTN1_PC1 +
+  geom_point(data = df_21_23_btn1, color = "gray", size = 4) +
+  geom_smooth(data = prop_BTN_2_points %>% filter(Lineage == "BTN1"), aes(x = PC1, y = Prop_BTN))
+```
+
 
 
 ```{r}
@@ -725,7 +822,7 @@ prop_BTN_2_points %>%
 
 
 
-# Модель, отражающая связь зараженности со средовыми предикторами
+# Modelling the dependencies of BTN prevalences on predictors 
 
 ```{r}
 Mod <- gam(cbind(N_cancer, N_helthy) ~ 
@@ -760,17 +857,13 @@ Mod <- gam(cbind(N_cancer, N_helthy) ~
 
 ```
 
-
-Это заготовки текста для MM.
-
 All continuous predictors were modeled using cubic regression splines with shrinkage (bs = 'cs') to allow for flexible but regularized nonlinear relationships
 
 
 Generalized Additive Models (GAMs) were fitted using the mgcv package in R. 
-Continuous predictors (distance to port, fetch, principal component 1, and 
-growth proxy) were modeled as smooth terms using cubic regression splines 
-with shrinkage (bs = 'cs', k = 5) to allow for flexible but regularized 
-nonlinear relationships. Lineage was included as a fixed factor, and 
+Continuous predictors (distance to port, fetch, PC1, and 
+OGP) were modeled as smooth terms using cubic regression splines 
+with shrinkage (bs = 'cs', k = 5). Lineage was included as a fixed factor, and 
 Year/Site as random effects. The binomial family with logit link was used 
 to model cancer incidence. Model fitting used REML for smoothness selection.
 
