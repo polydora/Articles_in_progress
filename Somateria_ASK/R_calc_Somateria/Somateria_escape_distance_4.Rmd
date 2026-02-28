@@ -1,0 +1,332 @@
+---
+title: "Somateria mollissima escape distance"
+author: "V. Khaitov"
+date: ""
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+  opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+```{r}
+library(ggplot2)
+library(readxl)
+library(lubridate)
+library(mgcv) 
+library(gratia)
+library(dplyr)
+library(DHARMa)
+
+library(ggmap)
+
+
+```
+
+
+```{r}
+som <- read_excel("Data/all_nests.xlsx")
+
+som <- 
+  som %>% 
+  mutate(Year = year(Date))
+
+
+isl <- read_excel("Data/Острова_2005_2011_расстояния_коорд_eng.xls")
+
+isl <- 
+  isl %>% 
+  select(-Region)
+  
+  
+som_isl <- merge(som, isl)
+
+
+som_isl$Place <- factor(som_isl$Place)
+som_isl$Region_2 <- factor(som_isl$Region_2)
+som_isl$Region_2 <- relevel(som_isl$Region_2, ref = "Not protected")
+
+som_isl$Region <- factor(som_isl$Region)
+
+
+
+som_isl$Log_Area <- log(som_isl$Area)
+som_isl$Log_Ed <- log(som_isl$Ed + 1)
+
+```
+
+
+### Фильтрация данных
+
+Итак, мы точно удаляем все гнезда, где больше 6 яиц. Аргументы в пользу этого меня пока не убеждают, но да ладно.
+
+Было: `r nrow(som_isl)` гнезда.
+
+```{r}
+som_isl <-
+  som_isl %>% 
+  filter(N_eggs <= 6)
+```
+
+Стало: `r nrow(som_isl)` гнезда.
+
+
+
+```{r}
+# Удаляем гнезда с неполными кладками
+
+n_not_finished <-
+  som_isl %>% 
+  filter((N_eggs <= 3 & Number_D  == 0 &  
+           ((A1 < 30 & A2 < 30 & A3 < 30) |
+            (A1 < 30 & A2 < 30 & is.na(A3))|
+            (A1 < 30 & is.na(A2) & is.na(A3))))) %>% 
+  nrow()
+
+
+```
+
+
+```{r}
+som_isl <- 
+  som_isl %>% 
+  mutate(Q = Ed * log10(Tinc_mean + 2))
+```
+
+
+```{r}
+som_isl <- 
+  som_isl %>% 
+  mutate(Q2 = ifelse(Q == 0, 0.00001, Q),
+         Q3 = Q2/max(Q2))
+```
+
+
+```{r}
+
+
+ggKand_upper <- read.csv("data/ggKand_upper_2021.csv")
+
+
+Kand_upper_x <- c(min(som_isl$Lon) - 0.1, max(som_isl$Lon) + 0.1)
+Kand_upper_y <- c(min(som_isl$Lat) - 0.05, max(som_isl$Lat) + 0.01)
+
+
+
+Plot_Kand_upper <- 
+  ggplot(ggKand_upper, aes(x=Lon, y=Lat, group=group)) + 
+  geom_polygon(fill = "gray70", colour = "black") + 
+  coord_map(xlim = Kand_upper_x, ylim = Kand_upper_y) +
+  theme(panel.grid = element_blank(), panel.background = element_rect(fill = "white")) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+```
+
+
+
+
+```{r}
+
+Q1 <- quantile(som_isl$Q, probs = 0.25)
+
+som_isl %>% 
+  group_by(Place) %>% 
+  summarise(Prop_high_Q = 1 - mean(Q <= Q1),
+            Q = mean(Q),
+            Lon = mean(Lon),
+            Lat = mean(Lat)) %>% 
+  arrange(Q)->
+  df_mean_Q
+
+```
+
+
+```{r}
+Plot_Kand_upper +
+  geom_point(data = df_mean_Q, aes(x = Lon, y = Lat, group = 1, fill = Q), size = 4, shape = 21) +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = mean(som_isl$Q))  +
+  ggtitle("Среднее значение Q")
+
+```
+
+
+<!-- ```{r} -->
+<!-- Plot_Kand_upper + -->
+<!--   geom_point(data = df_mean_Q, aes(x = Lon, y = Lat, group = 1, fill = Prop_high_Q), size = 4, shape = 21) + -->
+<!--   scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = mean(median$Q))  + -->
+<!--   ggtitle("Доля гнезд с высокой осторожностью  (Q > Q1)") -->
+
+<!-- ``` -->
+
+
+В принципе, на сырых данных виден некоторый паттерн - самая высокая осторожность в районе Оленьего архипелага. 
+
+
+```{r}
+
+som_isl_region_joined <-  som_isl 
+
+som_isl_region_joined$Region_3 <- som_isl_region_joined$Region_2 
+
+som_isl_region_joined$Region_3[som_isl_region_joined$Region_3 == "Not protected"] <- "Oleny arhipelag"
+  
+         # в Not protected нет варьирования по расстояниям до материака и до населенных пунктов!
+
+som_isl_region_joined$Region_3 <- factor(som_isl_region_joined$Region_3) 
+
+```
+
+
+### Модель
+
+Теперь построим модель, в которой будут учтены и другие предикторы.
+
+Плохо, конечно, но в качестве зависимой переменной буду использовать log(Q + 1). 
+
+```{r echo=TRUE}
+
+mod <- bam(log(Q +1) ~ 
+             s(Year, k = 6) +
+             s(N_eggs, k = 4) + 
+             s(Log_Area) + 
+             # s(Dist_to_Mainland, by = Region_3) + 
+             # s(Dist_to_town, by = Region_3)  +
+             te(Lon, Lat, bs = "tp") +
+             # Region_2 + регионы коллинеарны расстояниям до материка и до населенных пунктов
+             s(Place, k = 87, bs = "re"),
+           family = gaussian(),
+           data = som_isl_region_joined)
+
+```
+
+
+
+
+
+### Проверяем валидность модели 
+
+```{r}
+appraise(mod)
+
+```
+
+Почти хорошо.... Но есть левый пик в остатках. Это все нули виноваты.  
+
+```{r}
+simulateResiduals(mod, plot = TRUE)
+```
+
+
+Диагностика модели все равно плохая, но пока лучшее, что я видел с этим материалом.
+
+
+
+Вот summary от этой модели
+
+```{r}
+summary(mod)
+
+```
+
+
+
+
+#### Многолетняя динамика
+
+
+```{r}
+draw(mod, select = 1)
+```
+
+
+
+####  Количество яиц
+
+```{r}
+draw(mod, select = 2)
+
+```
+
+
+####  Размер острова
+
+
+```{r}
+draw(mod, select = 3)
+
+```
+
+
+####  Пространственный паттерн
+
+```{r}
+draw(mod, select = 4)
+
+```
+
+Та же картинка, но с наложенной картой
+
+
+```{r}
+
+
+
+
+sm <- 
+  smooth_estimates(mod) %>%  
+  filter(.smooth == "te(Lon,Lat)")  
+
+
+
+Kand_upper_x <- c(min(sm$Lon), max(sm$Lon))
+Kand_upper_y <- c(min(sm$Lat), max(sm$Lat))
+
+sm %>% 
+  ggplot(aes(Lon, Lat)) +
+  geom_raster(aes(fill = .estimate))+ 
+  geom_point(data = df_mean_Q, aes(x = Lon, y = Lat))+ 
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+  geom_contour(aes(z = .estimate), color = "white", alpha = 0.5)+
+  geom_polygon(data = ggKand_upper, aes(group = group), color = "black", fill = "gray") +
+  coord_map(xlim = Kand_upper_x, ylim = Kand_upper_y) +
+  theme(panel.grid = element_blank(), panel.background = element_rect(fill = "white")) +
+  theme(plot.title = element_text(hjust = 0.5)) 
+
+
+
+```
+
+Видно, что модель предсказывает более высокую осторожность в районах, расположенных ближе к Кандалакше. 
+
+Тут еще надо поработать, но вот такой вариант модели мне пока нравится больше. То есть мы не включаем в модель всяческие расстояния до (они коррелируют с координатами). Это, конечно, снижает интерпретабельность модели.  Однако пространственный выявленный паттерн позволяет говорить о том, что в куту залива они более пугливые. Почему? Может там беспокойства больше? 
+
+#### Глянем на остатки модели
+Явной Связи остатков с Dist_to_Mainland и Dist_to_town не наблюдается. Это говорит о том, что пространственная модель "вбирает" в себя и эти ипредикторы. 
+
+```{r}
+som_isl$mod_residuals <- residuals(mod)
+
+som_isl %>% 
+  ggplot(aes(x = Dist_to_Mainland, y = mod_residuals, color = Region_2)) +
+  geom_smooth() +
+  geom_point()
+
+som_isl %>% 
+  ggplot(aes(x = Dist_to_town, y = mod_residuals, color = Region_2)) +
+  geom_smooth() +
+  geom_point()
+
+```
+
+
+Фактор "Region" тоже ОК, не показывает какого-то паттерна в остатках. То есть модель и это как-то учитывает. 
+
+```{r}
+som_isl %>% 
+  ggplot(aes(x = Region_2, y = mod_residuals)) +
+  geom_boxplot()
+
+```
+
