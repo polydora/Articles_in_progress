@@ -1,0 +1,437 @@
+---
+title: "Динамика гидрологических показателей в Южной губе о. Ряжкова в летние месяцы 2025 года."
+author: "В. М. Хайтов"
+output: 
+      word_document:
+                reference_docx: Letopis_template.docx
+                fig_width: 6
+                fig_height: 6
+
+---
+
+::: {custom-style="Abstract"}
+**Хайтов В. М. Динамика гидрологических показателей в Южной губе о. Ряжкова в летние месяцы 2025 года** // Толмачева Е. Л. (ред.) Летопись природы Кадалакшского заповедника за 2025 год (ежегодный отчет). Кандалакша. Т.1 (Летопись природы Кандалакшского заповедника, кн. ++)
+
+Рассматриваются данные гидрологических проб, бравшихся в период 03.06.25 по 21.08.25
+
+**Khaitov V.M. Dynamics of salinity, water and air temperature and wind characteristics in the Youzhnaya inlet (Ryazhkov island)** // Tolmacheva E. L. (ed.) The Chronicle of Nature by the Kandalaksha Reserve for 2025 (Annual report). Kandalaksha. V.1. (The Chronicle of Nature by the Kandalaksha Reserve, Book N ++)
+
+The data of hydrological samples is discussed. Samples were collected during most summer months.
+:::
+
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, dpi=300)
+
+library(reshape2)
+library(knitr)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(cowplot)
+library(officer)
+library(lubridate)
+
+
+editor <- "Толмачева Е. Л."
+editor_eng <- "Tolmacheva E.L."
+
+Year <- 2025
+
+# Функция, задающая нумерацию рисунков
+
+figRef <- local({
+    tag <- numeric()
+    created <- logical()
+    used <- logical()
+    function(label, caption, prefix = options("figcap.prefix"), 
+        sep = options("figcap.sep"), prefix.highlight = options("figcap.prefix.highlight")) {
+        i <- which(names(tag) == label)
+        if (length(i) == 0) {
+            i <- length(tag) + 1
+            tag <<- c(tag, i)
+            names(tag)[length(tag)] <<- label
+            used <<- c(used, FALSE)
+            names(used)[length(used)] <<- label
+            created <<- c(created, FALSE)
+            names(created)[length(created)] <<- label
+        }
+        if (!missing(caption)) {
+            created[label] <<- TRUE
+            paste0(prefix.highlight, prefix, " ", i, sep, prefix.highlight, 
+                " ", caption)
+        } else {
+            used[label] <<- TRUE
+            paste(prefix, tag[label])
+        }
+    }
+})
+
+options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**")
+
+
+theme_set(theme_bw())
+```
+
+
+```{r flextable_setup}
+library(flextable)
+
+# Глобальная настройка размера шрифта для заголовков
+set_flextable_defaults(
+  font.size = 8,           # базовый размер шрифта
+  font.size.title = 10,     # размер шрифта для заголовков таблицы (если используется add_header_lines)
+  font.size.subtitle = 9,  # размер для подзаголовков
+  font.size.footer = 9,     # размер для нижнего колонтитула
+  font.size.header = 10,    # размер для заголовков колонок
+  font.size.body = 8,       # размер для тела таблицы
+  font.size.caption = 10
+  )
+
+#установка параметров грид в таблице
+library(officer)
+std_border = fp_border(color="gray", width = 1)
+
+```
+
+
+
+
+
+```{r}
+# Читаем данные
+hydr <- read_excel("data/Meteodata_Summer_2025.xlsx", na = "NA")
+
+# str(hydr)
+
+hydr$Date_Time <- paste(format(hydr$Date, format = "%d.%m.%Y"), format(hydr$Time, format = "%H"))
+
+hydr$Date2 <- as.POSIXct(hydr$Date_Time, tz = "Europe/Moscow", format = "%d.%m.%Y %H")
+
+hydr$Date <- format(hydr$Date2, "%d.%m:%H")
+hydr$Year <- format(hydr$Date2, "%Y")
+hydr$H <- hour(hydr$Date2)
+
+hydr$Air_T <- as.numeric(hydr$Air_T)
+hydr$Water_T <- as.numeric(hydr$Water_T)
+hydr$S <- as.numeric(hydr$S)
+
+
+
+
+
+```
+
+
+```{r}
+water_logger <- read_excel("data/Water_Temperature_Logger_2025.xlsx")
+
+water_logger$Water_T <- gsub(pattern = ",", replacement = ".", x = water_logger$Water_T)
+
+water_logger$Water_T <- as.numeric(water_logger$Water_T) 
+
+water_logger$Date_Time <- 
+  as.POSIXct(water_logger$Date_Time, tz = "Europe/Moscow", format = "%d-%m-%Y %H:%M")
+  
+  
+library(hms)
+# Оставляем только стандартные часы наблюдений
+water_logger %>% 
+  filter(hour(Date_Time) %in% c(0, 6, 12, 18)) %>% 
+  mutate(H = hour(Date_Time), H_M = as_hms(Date_Time)) %>% 
+  group_by(H) %>% 
+  filter(H_M == min(H_M)) %>% 
+  select(-H_M) %>% 
+  rename(Date2 = Date_Time, Water_T_logger = Water_T) -> water_logger
+
+# water_logger$Date <- format(water_logger$Date_Time, "%d.%m:%H")
+
+hydr2 <- 
+merge(hydr, water_logger) 
+  
+#######
+
+# air_logger <- read_excel("Data/Air_Temperature_Logger_2024.xlsx", col_types = c("date", "numeric"))
+# 
+# # Переводим китайское время в московское
+# air_logger$Date_Time <- air_logger$Date_Time - hours(5)
+# 
+# # Оставляем только стандартные часы наблюдений
+# air_logger %>% 
+#   filter(hour(Date_Time) %in% c(0,6, 12, 18)) %>% 
+#   mutate(H = hour(Date_Time), H_M = as_hms(Date_Time)) %>% 
+#   group_by(H) %>% 
+#   filter(H_M == min(H_M)) %>% 
+#   select(-H_M) %>% 
+#   rename(Date_Time_logger = Date_Time, Air_T_logger = Air_T) -> air_logger
+# 
+# 
+# air_logger$Date <- format(air_logger$Date_Time_logger, "%d.%m:%H")
+# 
+# air_logger %>% 
+#   select(-Date_Time_logger) -> air_logger
+#   
+# 
+# hydr <- 
+# merge(hydr, air_logger) 
+
+
+```
+
+
+
+
+```{r}
+hydr_print <- 
+  hydr2 %>% 
+  select(Date_Time, Air_T, S, Water_T, Water_T_logger, Wind, Wave)
+  
+
+# hydr_print <- 
+#   hydr_print %>% 
+#   filter(!(is.na(Air_T) & is.na(Air_T)) )
+
+  
+
+hydr_print <- as.data.frame(hydr_print)
+hydr_print[is.na(hydr_print)] <- "нет данных"
+
+
+```
+
+
+```{r}
+hydr_long <- read_excel("data/Hydrology_monitoring_Youzhnzya_inlet_2007_2025.xlsx", na = "NA")
+
+hydr_long$Air_T <- as.numeric(hydr_long$Air_T )
+hydr_long$Water_T <- as.numeric(hydr_long$Water_T)
+hydr_long$S <- as.numeric(hydr_long$S)
+
+hydr_long$Date2 <- as.POSIXct(hydr_long$Date_Time, format = "%d.%m.%Y %H", tz = "Europe/Moscow")
+
+hydr_long_all <-  hydr_long
+
+hydr_long_all$Year <- format(hydr_long_all$Date2, "%Y")
+
+
+Means_long <- hydr_long_all %>% 
+  group_by(Year) %>% 
+  summarise(Mean_S = mean(S, na.rm = T), SD_S = sd(S, na.rm = T), Mean_WT = mean(Water_T, na.rm = T), SD_WT = sd(Water_T, na.rm = T), Mean_AT = mean(Air_T, na.rm = T), SD_AT = sd(Air_T, na.rm = T))
+
+Means_long$Year <- as.numeric(Means_long$Year)
+
+Means_long[ ,2:7] <- round(Means_long[ ,2:7], 2)
+
+
+
+hydr_long_all_print <- with(Means_long, data.frame(Year = Year,
+  Salinity = paste(Mean_S, "±", SD_S),
+  Water_T = paste(Mean_WT, "±", SD_WT),
+  Air_T = paste(Mean_AT, "±", SD_AT))
+  )
+
+```
+
+
+
+Ежедневные метеонаблюдения были проведены в течение трех месяцев со 3 июня  по 21 августа `r Year` г. Температура воздуха оценивалась с помощью цифрового термометра, датчик которого располагался закрытом от солнечных лучей месте. В отличие от предыдущих лет в этом году цифровой логгер, регистрирующий температуру воздуха установлен не был.  Регистрация температуры воды осуществлялась на глубине 1 м с помощью электронного логгера, который был свешен с наплавного причала в герметичном сосуде. Помимо этого периодически производили измерение температуры воды с помощью ртутного термометра, который свешивали с  причала в том же месте, где был установлен логгер. 
+
+Логгер, установленный в воде, регистрировал температуру с интервалом 15 минут, но в дальнейшем из массива данных, записанных логгером, были извлечены измерения, проведенные для стандартных временных интервалов: 0.00, 6.00, 12.00 и 18.00 часов. Полный набор цифровых данных логгера, установленного в воде, приводится в файле "Water_Temperature_Logger_2025.xlsx", представленном в электронном репозитории Кандалакшского заповедника (см. соответствующую главу Летописи природы за 2025 год).  
+
+Отбор проб солености, по возможности, осуществлялся в те же стандартные часы. Взятие проб воды производилось на той же точке, в которой был размещен логгер, регистрирующий температуру воды. Проба бралась с глубины 1 м. Определение солености осуществлялось с помощью ручного рефрактометра, с точностью до 1 промилле. 
+
+Помимо этого, в часы метеонаблюдений производилась регистрация направления ветра. Для этого использовался флюгер расположенный на территории кордона "Ряжков". Ответственный за метеонаблюдения оценивал также состояние моря в соответствии со шкалой Бофорта. Визуальная оценка волнения проводилась на акватории, просматриваемой с наплавного причала. Данные по измеренным показателям приведены в таблице +.1.    
+
+
+
+Измерения температуры воды, проведенные с помощью логгера и ртутного и электронного термометра хорошо соответствуют друг другу (`r figRef("Temp")`). 
+
+
+
+
+```{r, fig.cap=figRef("Temp", "Динамика температуры воздуха (**A**), температуры воды (**B**) по данным логгера (мелкие точки) и по результатам измерения с помощью термометров (крупные точки) летом 2025 г. Линии демонстрируют непараметрическую сглаживающую функцию (аддитивная модель, GAM).  Dynamics of air temperature (**A**), water temperature (**B**) according to logger data (small dots) and measurement results using thermometers (large dots) in summer 2025. Lines demonstrate the non-parametric smoothing function (additive model, GAM).")}
+
+library(scales)
+
+Pl_Temp_W <- 
+  ggplot(hydr2, aes(x= as.Date(Date2), y = Water_T_logger)) +
+  geom_point(data = hydr2, aes(y = Water_T), fill = "gray", shape = 21, size = 4) +
+  geom_point() + 
+  geom_smooth(se = T, size = 1, color = "blue",  method = "gam") + 
+  xlab("Дата") + 
+  ylab("Температура воды")+
+  scale_x_date(date_breaks = "5 day", date_labels =  "%d %b") +
+  theme(axis.text.x = element_text(angle = 90))
+
+
+Pl_Temp_A <- 
+  ggplot(data = hydr2, aes(x= as.Date(Date2))) + 
+  geom_point(data = hydr2, aes(y = Air_T), fill = "gray", shape = 21, size = 4) +
+  geom_smooth(data = hydr2, aes(y = Air_T), se = T, size = 1, color = "blue",  method = "gam") + 
+  xlab("Дата") + 
+  ylab("Температура воздуха") +
+  scale_x_date(date_breaks = "5 day", date_labels =  "%d %b") +
+  theme(axis.text.x = element_text(angle = 90))
+
+
+
+plot_grid(Pl_Temp_A, Pl_Temp_W, ncol = 1, labels = "AUTO", label_size = 10, hjust = 0.1)
+
+```
+
+
+
+
+```{r, fig.cap=figRef("Sal", "Динамика солености в Южной губе o. Ряжкова  летом 2025 г. Линии демонстрируют непараметрическую сглаживающую функцию (аддитивная модель, GAM).  Dynamics of water salinity in Youzhnaya inlet in 2025. The lines show the nonparametric smoother (additive model, GAM)")}
+
+# Means <- hydr %>% group_by(Date_day) %>% summarise(Mean_S = mean(S, na.rm = T), Mean_WT = mean(Water_T, na.rm = T), Mean_AT = mean(Air_T, na.rm = T)) 
+# 
+# Means$Date_day_2 <- as.POSIXct(paste(Year, Means$Date_day), format = "%Y %d.%m" )
+
+
+Pl_sal <- 
+  ggplot(hydr2, aes(x= as.Date(Date2) , y = S)) + 
+  geom_point(size = 1) + 
+  # geom_line(data = Means, aes(x = Date_day_2,  y = Mean_S), color = "gray") + 
+  xlab("Дата") + 
+  ylab("Соленость") + 
+  geom_smooth(se = T, size = 1, color = "blue", method = "gam")+
+  scale_x_date(date_breaks = "5 day", date_labels =  "%d %b") +
+  theme(axis.text.x = element_text(angle = 90))
+ 
+
+Pl_sal
+
+```
+
+
+```{r}
+sal_max  <-
+  hydr2 %>% 
+  filter(S == max(S, na.rm = T)) 
+```
+
+
+
+
+Температура воды демонстрировала постепенный рост, типично достигая максимума во второй половине июля - начале августа. Соленость, между тем, демонстрировала нетипичный паттерн динамики (`r figRef("Sal")`). В этом году соленость демонстрировала постепенный рост от очень низких значений, отмеченных в начале июня, до самых высоких значений, отмеченных в текущий период наблюдений. Самая высокая соленость `r max(hydr2$S, na.rm = T)` промилле была отмечена `r paste(hydr2$Date[hydr2$S %in% max(hydr2$S, na.rm = T)])` (дата:час наблюдения). Минимальная соленость `r min(hydr2$S, na.rm = T)` была отмечена `r paste(hydr2$Date[hydr2$S %in% min(hydr2$S, na.rm = T)])`. После достижения указанного максимума соленость постепенно снижалась вплоть 10 августа, после чего вновь наметился подъем этого показателя. 
+
+
+
+```{r, fig.cap=figRef("Sal_Temp", "Связь солености и температуры воды в Южной губе o. Ряжкова  летом 2025 г.  Relationship of salinity and water temperature in the Youzhnaya Bay in the summer of 2025.")}
+
+
+Pl_sal_temp <-
+  ggplot(hydr2, aes(x = S, y = Water_T_logger)) +
+geom_point() +
+geom_smooth(method = "lm") +
+xlab("Соленость") +
+ylab("Температура воды")
+
+Pl_sal_temp
+
+```
+
+
+В этом году вновь отмечена значимая отрицательная корреляция между температурой воды и соленостью (`r figRef("Sal_Temp")`, r = `r round(cor(x = hydr2$Water_T_logger, y= hydr2$S, use = "pairwise.complete.obs" ), 2)`, p = `r round(cor.test(x = hydr2$Water_T_logger, y= hydr2$S, use = "pairwise.complete.obs" )$p.value, 3)`). Эта картина связи солености и температуры воды типична для наблюдаемой акватории, однако в прошлом (2024) году впервые за весь период наблюдений корреляции между соленостью и температурой выявлено не было. Важно отметить, что на рисунке, демонстрирующем связь солености и температуры воды (`r figRef("Sal_Temp")`), отчетливо выявляется группа точек в области малых значений солености и низких значений температуры.  Эти точки свидетельствуют о наличии в акватории холодной водной массы, которая имеет низкую соленость. Таких водных масс в прошлые годы не наблюдалось. Типичными для акватории были водные массы с низкой температурой, но высокой соленостью, и водные массы с  высокой температурой и низкой соленостью. Более детальный анализ структуры и динамики поверхностных водных масс рассматривается в отдельной главе данного тома Летописи природы.
+
+
+
+
+```{r, fig.cap=figRef("Temp_long", "Многолетняя динамика солености, температуры воды и воздуха в Южной губе. Горизонтальная пунктирная линия отражает средние многолетние значения. Линия тренда отражается аддитивной моделью (GAM). Long-term dynamics of water salinity, temperature of water and air in Youzhnaya inlet. The horizontal dashed line represents the multiyear average values. The trend line is reflected by the nonparametric additive smoother (GAM).")}
+
+library(patchwork)
+
+Pl_long_S <- 
+  ggplot(hydr_long_all, aes(x= as.Date(Date2), y = S)) + 
+  geom_point(color = "gray", size = 0.1) + 
+  geom_smooth(se = F, size = 1, color = "blue", method = "gam") +
+  scale_x_date(date_breaks = "1 year", date_labels =  "%Y", expand = c(0, 0)) + 
+  geom_hline(yintercept = mean(hydr_long_all$S, na.rm = T), linetype = 2, size = 1) +
+  labs(x = "Годы", y = "Соленость") +
+  theme(axis.text.x = element_text(angle = 90))
+
+
+Pl_long_WT <- 
+  ggplot(hydr_long_all, aes(x= as.Date(Date2), y = Water_T)) + 
+  geom_point(color = "gray", size = 0.1) + 
+  geom_smooth(se = F, size = 1, color = "blue", method = "gam") +
+  scale_x_date(date_breaks = "1 year", date_labels =  "%Y", expand = c(0, 0)) + 
+  geom_hline(yintercept = mean(hydr_long_all$Water_T, na.rm = T), linetype = 2, size = 1)+
+  labs(x = "Годы", y = "Температура воды") +
+  theme(axis.text.x = element_text(angle = 90))
+
+
+
+Pl_long_AT <- 
+  ggplot(hydr_long_all, aes(x= as.Date(Date2), y = Air_T)) + 
+  geom_point(color = "gray", size = 0.1) + 
+  geom_smooth(se = F, size = 1, color = "blue", method = "gam") +
+  scale_x_date(date_breaks = "1 year", date_labels =  "%Y", expand = c(0, 0)) +    
+  geom_hline(yintercept = mean(hydr_long_all$Air_T, na.rm = T), linetype = 2, size = 1)+
+  labs(x = "Годы", y = "Температура воздуха")+
+  theme(axis.text.x = element_text(angle = 90))
+
+
+(Pl_long_AT)  + (Pl_long_S / Pl_long_WT ) 
+
+
+```
+
+
+
+
+В `r Year` году средняя соленость воды была как и в несколько предыдущих лет, ниже  многолетнего среднего (`r figRef("Temp_long")`), а температура воды, как и в предыдущие три года, была выше многолетнего среднего. В целом, за последние шесть лет устойчиво поддерживается тенденция общего потепления температуры воздуха, на фоне чего происходит потепление и опреснение поверхностной водной массы Кандалакшского залива. 
+
+\pagebreak
+
+
+```{r}
+
+colname <- c("Дата и время", "Температура воздуха",  "Соленость", "Температура воды", "Температура воды (логгер)", "Направление ветра", "Волнение (баллы)")
+
+
+hydr_print %>% 
+  flextable() %>% 
+  fontsize(part = "all") %>% 
+   border_inner_h(border = std_border ) %>% 
+  border_inner_v(border = std_border ) %>% 
+  fontsize(size = 8, part = "all") %>% 
+  set_header_labels(values = colname) %>% 
+  colformat_double(j = 1,  big.mark = "", digits = 0) %>% 
+  set_caption("Таблица +.1  Температура воздуха и воды и соленость в Южной губе о. Ряжкова  летом 2025 г. Air and water temperature and salinity in the Youzhnaza inlet (Ryazhkov island) in 2025") 
+# %>% 
+#   autofit()
+
+
+# kable(hydr_print,  col.names = col_names)
+
+```
+
+
+
+\pagebreak
+
+
+
+```{r}
+
+colname <- c("Год", "Соленость", "Температура воды", "Температура воздуха")
+
+hydr_long_all_print %>%
+  flextable() %>%
+  fontsize(part = "all") %>%
+   border_inner_h(border = std_border ) %>%
+  border_inner_v(border = std_border ) %>%
+  fontsize(size = 10, part = "all") %>%
+  set_header_labels(values = colname) %>%
+  colformat_double(j = 1,  big.mark = "", digits = 0) %>%
+  set_caption("Таблица +.3  Средние (± SD) значения солености, температуры воды и воздуха в Южной губе о. Ряжкова  в разные годы. Mean (± SD) values of salinity, water and air temperature in the Youzhnaza inlet (Ryazhkov island) in different years.")  %>%
+   autofit()
+
+
+# kable(hydr_long_all_print, col.names = c("Годы", "Соленость", "Температура воды", "Температура воздуха"), align = "lccc" )
+```
+
