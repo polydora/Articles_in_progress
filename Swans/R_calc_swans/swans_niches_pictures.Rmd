@@ -1,0 +1,609 @@
+---
+title: ""
+author: ""
+output: 
+  word_document:
+    reference_docx: article_template.docx
+    fig_width: 6
+    fig_height: 6
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+  opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+
+
+```{r}
+library(readxl)
+library(dplyr)
+library(reshape2)
+library(mgcv)
+library(ggplot2)
+library(cowplot)
+library(gratia)
+
+
+
+```
+
+
+```{r}
+
+dat <- read_excel("Data/swans.xlsx")
+
+
+dat <-
+  dat %>% 
+  filter(Depth < 20)
+
+dat2 <- 
+dat %>% 
+  select(Ice, Depth,  Dist,  Year, Date, Site, C.olor, C.cygnus, C.bewickii) %>% 
+  melt(id.vars = c("Ice", "Depth",  "Dist",  "Year", "Date", "Site" ), variable.name = "Species", value.name = "N")
+
+
+dat2$Species <- factor(dat2$Species)
+dat2$Ice <- factor(dat2$Ice, labels = c("Ice_cover", "No_ice"))
+dat2$Site <- factor(dat2$Site)
+
+```
+
+
+
+## Вот так выглядит модель
+
+```{r echo=TRUE}
+library(mgcv)
+
+Mod <- gam(N ~ s(Year, by = Species, k = 5) +
+             s(Dist, Depth,  by = interaction(Species, Ice), k = 10) +
+             Species + Ice +
+             s(Site, bs = "re", k = length(unique(dat2$Site))),
+             data = dat2,
+             family = nb(),
+             method = "REML")
+```
+
+Вот так эту модель можно описать в тексте
+$$
+\begin{aligned}
+        N_i &\sim \text{Negative Binomial}(\mu_i, \theta) \\
+        \log(\mu_i) &= \beta_0 + f_1(\text{Year}_i) \cdot \mathbb{I}(\text{Species}_i) + f_2(\text{Dist}_i, \text{Depth}_i) \cdot \mathbb{I}(\text{Species}_i, \text{Ice}_i) + \\
+        &\quad + \beta_{\text{Species}} \cdot \text{Species}_i + \beta_{\text{Ice}} \cdot \text{Ice}_i + b_{\text{Site}_i} \\
+        b_{\text{Site}} &\sim \mathcal{N}(0, \sigma^2_{\text{Site}})
+    \end{aligned}
+$$
+
+* $N_i$ — численность (обилие) для $i$-го наблюдения;
+*  $\mu_i$ — условное математическое ожидание $N_i$;
+*  $\theta$ — параметр дисперсии отрицательного биномиального распределения;
+*  $\beta_0$ — общий свободный член (intercept);
+*  $f_1(\text{Year})$ — функция от года (Year), специфичная для каждого вида (Species);
+*  $\mathbb{I}(\text{Species}_i)$ — индикатор вида, позволяющий описывать многолетний тренд для каждого вида;
+*  $f_2(\text{Dist}, \text{Depth})$ — двумерная функция от расстояния (Dist) и глубины (Depth), специфичная для каждой комбинации вида (Species) и ледовой обстановки (Ice);
+*  $\mathbb{I}(\text{Species}_i, \text{Ice}_i)$ — индикатор взаимодействия вида и ледовой обстановки;
+*  $\beta_{\text{Species}}$ — параметрический коэффициент для вида (Species), отражающий фиксированный эффект вида;
+*  $\beta_{\text{Ice}}$ — параметрический коэффициент для фактора ледовой обстановки (Ice);
+*  $b_{\text{Site}}$ — случайный эффект фактора участка (Site), предполагающий, что наблюдения на одном участке коррелированы;
+*  $\sigma^2_{\text{Site}}$ — дисперсия случайных эффектов участка.
+
+
+
+Таблицу summary подобранной модели предлагаю поместить в электронное приложение
+
+```{r}
+library(broom)
+library(flextable)
+
+
+ft <- flextable(tidy(Mod))
+
+
+ft %>%
+  colformat_double(j = c(2, 3, 4), digits = 1) %>% 
+  colformat_double(j = 5, digits = 3) %>% 
+  set_header_labels(values = c("Smoother term", "edf", "ref.df", "F", "p-value" )) %>% 
+  set_caption("Таблица 1. Результаты подгонки обобщенной аддитивной модели  (GAMM) для оценки влияния факторов на пространственное распределение трех видов лебедей в ледовый и безледовый периоды.  Table 1. Fitting results of the generalized additive mixed model (GAMM) assessing the effects of environmental factors on the spatial distribution of three swan speciesduring ice-covered and ice-free periods")
+
+# summary(Mod)
+```
+
+
+
+## Визуализации
+
+```{r}
+theme_set(theme_bw() + theme(legend.position = "botom"))
+```
+
+
+Эти три картинки я предлагаю убрать в электронное приложение
+
+```{r}
+library(cowplot)
+
+# Извлекаем каждый график и модифицируем
+p1 <- draw(Mod, select = 1) + 
+  scale_x_continuous(breaks = function(x) floor(seq(min(x), max(x), length.out = 11))) +
+  theme(axis.text.x = element_text(angle = 90))
+
+p2 <- draw(Mod, select = 2) + 
+  scale_x_continuous(breaks = function(x) floor(seq(min(x), max(x), length.out = 11)))+
+  theme(axis.text.x = element_text(angle = 90))
+
+p3 <- draw(Mod, select = 3) + 
+  scale_x_continuous(breaks = function(x) floor(seq(min(x), max(x), length.out = 11)))+
+  theme(axis.text.x = element_text(angle = 90))
+
+# Объединяем
+plot_grid(p1, p2, p3, nrow =1)
+
+
+
+```
+
+
+### Разделение экологических ниш в градиенте Depth-Distance в безледный период
+
+
+
+```{r}
+sm <- smooth_estimates(Mod) 
+
+# "s(Dist,Depth):interaction(Species, Ice)C.olor.Ice_cover"    
+# "s(Dist,Depth):interaction(Species, Ice)C.cygnus.Ice_cover"  
+# "s(Dist,Depth):interaction(Species, Ice)C.bewickii.Ice_cover"
+# "s(Dist,Depth):interaction(Species, Ice)C.olor.No_ice"       
+# "s(Dist,Depth):interaction(Species, Ice)C.cygnus.No_ice"     
+# "s(Dist,Depth):interaction(Species, Ice)C.bewickii.No_ice" 
+
+```
+
+
+
+
+
+
+```{r}
+library(sp)
+library(raster)
+
+# Данные для конкретной комбинации
+points_data <- dat2[dat2$Species == "C.olor" & dat2$Ice == "No_ice", c("Dist", "Depth")]
+
+# Создаем растровую маску на основе расстояния до ближайшей точки
+smooth_data <- sm %>% 
+  filter(.smooth == "s(Dist,Depth):interaction(Species, Ice)C.olor.No_ice")
+
+# Преобразуем в SpatialPoints
+coordinates(points_data) <- ~Dist+Depth
+
+# Для каждой точки сетки вычисляем расстояние до ближайшей точки данных
+distances <- apply(smooth_data[, c("Dist", "Depth")], 1, function(point) {
+  min(sqrt((points_data$Dist - point["Dist"])^2 + (points_data$Depth - point["Depth"])^2))
+})
+
+# Включаем точки, которые находятся в пределах порогового расстояния
+threshold <- quantile(distances[distances > 0], 0.15) * 3  # например, удвоенное медианное расстояние
+smooth_data_filtered <- smooth_data[distances <= threshold, ]
+
+# График
+Pl_sp1 <-
+ggplot(smooth_data_filtered, aes(Dist, Depth)) +
+  geom_tile(aes(fill = .estimate)) +
+  geom_point(data = as.data.frame(points_data), size = 1, alpha = 0.5) +
+  geom_contour(aes(z = .estimate), color = "black", bins = 10) +
+  scale_fill_gradient2(low = "yellow", mid = "white", high = "maroon") +
+  coord_fixed() +
+  ggtitle("C.olor") +
+  labs(fill = "Partial effect") +
+  theme(panel.grid = element_blank(), panel.background = element_rect(fill = "gray90", color = NA))
+
+```
+
+
+```{r}
+smooth_data <- sm %>% 
+  filter(.smooth == "s(Dist,Depth):interaction(Species, Ice)C.cygnus.No_ice")
+
+# Для каждой точки сетки вычисляем расстояние до ближайшей точки данных
+distances <- apply(smooth_data[, c("Dist", "Depth")], 1, function(point) {
+  min(sqrt((points_data$Dist - point["Dist"])^2 + (points_data$Depth - point["Depth"])^2))
+})
+
+# Включаем точки, которые находятся в пределах порогового расстояния
+threshold <- quantile(distances[distances > 0], 0.15) * 3  # например, удвоенное медианное расстояние
+smooth_data_filtered <- smooth_data[distances <= threshold, ]
+
+# График
+Pl_sp2 <-
+ggplot(smooth_data_filtered, aes(Dist, Depth)) +
+  geom_tile(aes(fill = .estimate)) +
+  geom_point(data = as.data.frame(points_data), size = 1, alpha = 0.5) +
+  geom_contour(aes(z = .estimate), color = "black", bins = 10) +
+  scale_fill_gradient2(low = "yellow", mid = "white", high = "maroon") +
+  coord_fixed() +
+  ggtitle("C.cygnus") +
+  labs(fill = "Partial effect") +
+  theme(panel.grid = element_blank(), panel.background = element_rect(fill = "gray90", color = NA))
+
+```
+
+
+
+
+
+```{r}
+smooth_data <- sm %>% 
+  filter(.smooth == "s(Dist,Depth):interaction(Species, Ice)C.bewickii.No_ice")
+
+# Для каждой точки сетки вычисляем расстояние до ближайшей точки данных
+distances <- apply(smooth_data[, c("Dist", "Depth")], 1, function(point) {
+  min(sqrt((points_data$Dist - point["Dist"])^2 + (points_data$Depth - point["Depth"])^2))
+})
+
+# Включаем точки, которые находятся в пределах порогового расстояния
+threshold <- quantile(distances[distances > 0], 0.15) * 3  # например, удвоенное медианное расстояние
+smooth_data_filtered <- smooth_data[distances <= threshold, ]
+
+# График
+Pl_sp3 <-
+ggplot(smooth_data_filtered, aes(Dist, Depth)) +
+  geom_tile(aes(fill = .estimate)) +
+  geom_point(data = as.data.frame(points_data), size = 1, alpha = 0.5) +
+  geom_contour(aes(z = .estimate), color = "black", bins = 10) +
+  scale_fill_gradient2(low = "yellow", mid = "white", high = "maroon") +
+  coord_fixed() +
+  ggtitle("C.bewickii") +
+  labs(fill = "Partial effect") +
+  theme(panel.grid = element_blank(), panel.background = element_rect(fill = "gray90", color = NA))
+
+```
+
+
+
+
+```{r, fig.width=10, fig.cap="Распределение трех видов лебедей в гардиенте глубины и удаленности от берега. Чем краснее заливка, тем больше обилие."}
+
+
+plot_grid(Pl_sp1, Pl_sp2, Pl_sp3, nrow = 1)
+
+```
+
+
+
+
+
+```{r}
+
+Pl_sp1 <- 
+draw(Mod, select = 7) +
+guides(fill = "none") +
+  scale_fill_gradient2(low = "yellow", mid = "white", high = "red") +
+  ggtitle("C.olor", subtitle = NULL)
+
+
+Pl_sp2 <- 
+draw(Mod, select = 8) +
+guides(fill = "none") +
+scale_fill_gradient(low = "yellow", high = "red") +
+ggtitle("C.cygnus", subtitle = NULL)
+
+Pl_sp3 <- 
+draw(Mod, select = 9) +
+guides(fill = "none") +
+scale_fill_gradient(low = "yellow", high = "red") +
+ggtitle("C.bewickii", subtitle = NULL)
+
+
+
+```
+
+Это старая версия картинки. Надо подумать, какя лучше смотрится.
+
+```{r, fig.width=10, fig.cap="Распределение трех видов лебедей в гардиенте глубины и удаленности от берега. Чем краснее заливка, тем больше обилие."}
+
+
+plot_grid(Pl_sp1, Pl_sp2, Pl_sp3, nrow = 1)
+
+```
+
+
+### Разделение экологических ниш в градиенте Depth-Distance в ЛЕДОВЫЙ ПЕРИОД 
+
+
+
+
+
+```{r}
+library(sp)
+library(raster)
+
+# Данные для конкретной комбинации
+points_data <- dat2[dat2$Species == "C.olor" & dat2$Ice == "Ice_cover", c("Dist", "Depth")]
+
+# Создаем растровую маску на основе расстояния до ближайшей точки
+smooth_data <- sm %>% 
+  filter(.smooth == "s(Dist,Depth):interaction(Species, Ice)C.olor.Ice_cover")
+
+# Преобразуем в SpatialPoints
+coordinates(points_data) <- ~Dist+Depth
+
+# Для каждой точки сетки вычисляем расстояние до ближайшей точки данных
+distances <- apply(smooth_data[, c("Dist", "Depth")], 1, function(point) {
+  min(sqrt((points_data$Dist - point["Dist"])^2 + (points_data$Depth - point["Depth"])^2))
+})
+
+# Включаем точки, которые находятся в пределах порогового расстояния
+threshold <- quantile(distances[distances > 0], 0.2) * 3  # например, удвоенное медианное расстояние
+smooth_data_filtered <- smooth_data[distances <= threshold, ]
+
+# График
+Pl_sp1 <-
+ggplot(smooth_data_filtered, aes(Dist, Depth)) +
+  geom_tile(aes(fill = .estimate)) +
+  geom_point(data = as.data.frame(points_data), size = 1, alpha = 0.5) +
+  geom_contour(aes(z = .estimate), color = "black", bins = 10) +
+  scale_fill_gradient2(low = "yellow", mid = "white", high = "maroon") +
+  coord_fixed() +
+  ggtitle("C.olor") +
+  labs(fill = "Partial effect") +
+  theme(panel.grid = element_blank(), panel.background = element_rect(fill = "gray90", color = NA))
+
+```
+
+
+```{r}
+smooth_data <- sm %>% 
+  filter(.smooth == "s(Dist,Depth):interaction(Species, Ice)C.cygnus.Ice_cover")
+
+# Для каждой точки сетки вычисляем расстояние до ближайшей точки данных
+distances <- apply(smooth_data[, c("Dist", "Depth")], 1, function(point) {
+  min(sqrt((points_data$Dist - point["Dist"])^2 + (points_data$Depth - point["Depth"])^2))
+})
+
+# Включаем точки, которые находятся в пределах порогового расстояния
+threshold <- quantile(distances[distances > 0], 0.2) * 3  # например, удвоенное медианное расстояние
+smooth_data_filtered <- smooth_data[distances <= threshold, ]
+
+# График
+Pl_sp2 <-
+ggplot(smooth_data_filtered, aes(Dist, Depth)) +
+  geom_tile(aes(fill = .estimate)) +
+  geom_point(data = as.data.frame(points_data), size = 1, alpha = 0.5) +
+  geom_contour(aes(z = .estimate), color = "black", bins = 10) +
+  scale_fill_gradient2(low = "yellow", mid = "white", high = "maroon") +
+  coord_fixed() +
+  ggtitle("C.cygnus") +
+  labs(fill = "Partial effect") +
+  theme(panel.grid = element_blank(), panel.background = element_rect(fill = "gray90", color = NA))
+
+```
+
+
+
+
+
+```{r}
+smooth_data <- sm %>% 
+  filter(.smooth == "s(Dist,Depth):interaction(Species, Ice)C.bewickii.Ice_cover")
+
+# Для каждой точки сетки вычисляем расстояние до ближайшей точки данных
+distances <- apply(smooth_data[, c("Dist", "Depth")], 1, function(point) {
+  min(sqrt((points_data$Dist - point["Dist"])^2 + (points_data$Depth - point["Depth"])^2))
+})
+
+# Включаем точки, которые находятся в пределах порогового расстояния
+threshold <- quantile(distances[distances > 0], 0.2) * 3  # например, удвоенное медианное расстояние
+smooth_data_filtered <- smooth_data[distances <= threshold, ]
+
+# График
+Pl_sp3 <-
+ggplot(smooth_data_filtered, aes(Dist, Depth)) +
+  geom_tile(aes(fill = .estimate)) +
+  geom_point(data = as.data.frame(points_data), size = 1, alpha = 0.5) +
+  geom_contour(aes(z = .estimate), color = "black", bins = 10) +
+  scale_fill_gradient2(low = "yellow", mid = "white", high = "maroon") +
+  coord_fixed() +
+  ggtitle("C.bewickii") +
+  labs(fill = "Partial effect") +
+  theme(panel.grid = element_blank(), panel.background = element_rect(fill = "gray90", color = NA))
+
+```
+
+
+
+
+```{r, fig.width=10, fig.cap="Распределение трех видов лебедей в гардиенте глубины и удаленности от берега. Чем краснее заливка, тем больше обилие."}
+
+
+plot_grid(Pl_sp1, Pl_sp2, Pl_sp3, nrow = 1)
+
+```
+
+
+Опять же старая версия 
+
+```{r}
+Pl_sp1_ice <- 
+draw(Mod, select = 4) +
+guides(fill = "none") +
+scale_fill_gradient(low = "yellow", high = "red") +
+ggtitle("Sp1 в период схода льда", subtitle = NULL)
+
+
+Pl_sp2_ice <- 
+draw(Mod, select = 5) +
+guides(fill = "none") +
+scale_fill_gradient(low = "yellow", high = "red") +
+ggtitle("Sp2 в период схода льда", subtitle = NULL)
+
+Pl_sp3_ice <- 
+draw(Mod, select = 6) +
+guides(fill = "none") +
+scale_fill_gradient(low = "yellow", high = "red") +
+ggtitle("Sp3 в период схода льда", subtitle = NULL)
+
+
+
+```
+
+
+```{r, fig.width=10, fig.cap="Распределение трех видов лебедей в гардиенте глубины и удаленности от берега в период схода льда. Чем краснее заливка, тем больше обилие."}
+
+
+plot_grid(Pl_sp1_ice, Pl_sp2_ice, Pl_sp3_ice, nrow = 1)
+
+```
+
+
+
+
+<!-- ## Дополнения -->
+
+<!-- **1. можно ли показать, что кликун и тундровый лебедь в сборе корма строго ограничены изобатой 1,5 м (или около того).** -->
+
+
+<!-- Сергей, здесь можно показать вот такой совсем простой рисунок.  -->
+
+<!-- ```{r} -->
+<!-- dat <- read_excel("Data/swans.xlsx") -->
+
+<!-- dat <-  -->
+<!--   dat %>%  -->
+<!--   filter(complete.cases(.)) -->
+
+<!-- dat2 <-  -->
+<!-- dat %>%  -->
+<!--   select(Ice, Depth,  Dist,  Year, Date, Site, Sp1, Sp2, Sp3 ) %>%  -->
+<!--   melt(id.vars = c("Ice", "Depth",  "Dist",  "Year", "Date", "Site" ), variable.name = "Species", value.name = "N") -->
+
+
+<!-- dat2$Species <- factor(dat2$Species) -->
+<!-- dat2$Ice <- factor(dat2$Ice, labels = c("Ice_cover", "No_ice")) -->
+<!-- dat2$Site <- factor(dat2$Site) -->
+
+<!-- dat2 %>%  -->
+<!--   ggplot(aes(x = factor(Depth), y = log(N+1)) ) + -->
+<!--            geom_boxplot() + -->
+<!--   facet_grid(Species ~ Ice) + -->
+<!--   labs(x = "Depth (m)", y = "Abundance (log(N+1))") -->
+
+<!-- ``` -->
+
+
+<!-- **2. В части касающейся первого периода со льдом (где все сложно) все лебеди держались на двух кормовых биотопах — первых полыньях на самых мелководных участках у берега и на глубоководной акватории за линией припая. Можем ли показать, что тундровый лебедь и кликун были только на полыньях, а шипун — как на полыньях так и на глубокой воде за припаем? Это весьма важно.** -->
+
+
+<!-- ```{r} -->
+<!-- dat2 %>%  -->
+<!--   ggplot(aes(x = factor(Dist), y = log(N+1)) ) + -->
+<!--            geom_boxplot() + -->
+<!--   facet_grid(Species ~ Ice) + -->
+<!--   labs(x = "Distance from shore (km)", y = "Abundance (log(N+1))") -->
+
+<!-- ``` -->
+
+<!-- Не показывает ли эта картинка именно это? Здесь видно, что в ледовый период шипун в ненулевых количествах сидит везде. Ненулевые медианы численности (точнее логарфма численности) у кликуна приходятся на прибрежные участки.Те редкие встречи тундряного, которые были в ледовый период, были только в прибрежной части.  -->
+
+<!-- Возможно эту визуализацию можно улучшить, например, введя классификацию полыней. Тапа, "маленькая прибрежная полынья" "большая прибрежная полынья", "за пределами зоны припая". Или что-то подобное. Есть возможность такую колонку сделать в файле с первичкой.  -->
+
+<!-- ### Дополнение 2 -->
+
+<!-- Сергей! -->
+<!-- Предлагаю вот такую простую визуализацию, характеризующую распределение численностей видов по двум типам свободной воды в ледовый период. Это просто пай-чарты, отражающие соотношение средних численностей лебедей в двух типах свободной воды в период таяния льда. По мне так здесь все отчетливо видно.  -->
+
+
+
+
+```{r}
+dat_ice <- read_excel("Data/swans.xlsx", sheet = "Ice_period")
+
+
+dat_ice_long <- 
+melt(dat_ice, id.vars = c("ID", "Ice", "Feeding_place", "Depth", "Dist"       , "Year", "Date", "Site" ), variable.name = "Species", value.name = "Abund")
+
+# dat_ice_long %>% 
+#   group_by(Feeding_place, Species) %>% 
+#   summarise(Mean_abund = mean(Abund))
+
+
+```
+
+
+```{r}
+
+mean_data <- dat_ice_long %>%
+  group_by(Feeding_place, Species) %>%
+  summarise(Mean_abund = mean(Abund, na.rm = TRUE), .groups = "drop") %>%
+  group_by(Species) %>%
+  mutate(Proportion = Mean_abund / sum(Mean_abund))  # доля для секторной диаграммы
+
+
+# Создание палитры для Feeding_place
+feeding_place_colors <- c(
+  "Coastal shallow-water polynyas" = "#66c2a5",
+  "Remote deep-water areas near the fast ice" = "#fc8d62"
+)
+
+# Функция для создания диаграммы для одного вида
+plot_species_pie <- function(species_name) {
+  species_data <- mean_data %>%
+    filter(Species == species_name)
+  
+  ggplot(species_data, aes(x = "", y = Proportion, fill = Feeding_place)) +
+    geom_bar(stat = "identity", width = 1, color = "white") +
+    coord_polar("y", start = 0) +
+    scale_fill_manual(values = c("#66c2a5", "#fc8d62")) +
+    labs(title = paste(species_name),
+         fill = "Feeding place",
+         x = NULL, y = NULL) +
+    theme_minimal() +
+    theme(
+      axis.text = element_blank(),
+      panel.grid = element_blank(),
+      plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+      legend.position = "bottom",
+      legend.text = element_text(size = 10),
+      legend.title = element_text(size = 11, face = "bold")
+    ) 
+    # # Добавление процентов на диаграмму
+    # geom_text(aes(label = paste0(round(Proportion * 100, 1), "%")),
+    #           position = position_stack(vjust = 0.5),
+    #           color = "black", fontface = "bold", size = 5)
+}
+
+# Создание диаграмм для каждого вида
+plot_Sp1 <- plot_species_pie("C.olor")
+plot_Sp2 <- plot_species_pie("C.cygnus")
+plot_Sp3 <- plot_species_pie("C.bewickii")
+
+
+library(patchwork)
+
+combined_plots <- plot_Sp1 + plot_Sp2 + plot_Sp3 +
+  plot_layout(guides = "collect") &  # собираем все легенды в одну
+  theme(legend.position = "bottom")   # размещаем общую легенду снизу
+
+combined_plots
+```
+
+
+<!-- Но если важно как-то учесть еще и расстояние, то тут появится проблема, так как каждый из типов полыней очень жестко связан с глубиной и расстоянием до берега. То есть это практически одно и то же.     -->
+
+<!-- ```{r} -->
+<!-- dat_ice %>%  -->
+<!--   ggplot(aes(x = Feeding_place, y = Depth)) + -->
+<!--   geom_boxplot() -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- dat_ice %>%  -->
+<!--   ggplot(aes(x = Feeding_place, y = Dist)) + -->
+<!--   geom_boxplot() -->
+<!-- ``` -->
+
+

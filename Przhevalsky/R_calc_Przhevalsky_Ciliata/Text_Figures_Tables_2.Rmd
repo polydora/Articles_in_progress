@@ -224,7 +224,7 @@ permanova_dat <- adonis2(formula = dat2[,-c(1:4)] ~ Sex + Type + Origin, data = 
 
 ```
 
-```{r}
+```{r eval=FALSE}
 library(pairwiseAdonis)
 
 posthoc_origin <- pairwise.adonis2(
@@ -326,7 +326,7 @@ simper_results <-
 row.names(simper_results) <- NULL
 
 simper_results %>% 
-  filter(ava!=0 & avb !=0) ->
+  filter(!(ava==0 & avb ==0)) ->
   simper_results
   
 
