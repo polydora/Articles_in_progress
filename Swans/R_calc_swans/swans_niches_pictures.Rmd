@@ -301,7 +301,7 @@ ggtitle("C.bewickii", subtitle = NULL)
 
 ```
 
-Это старая версия картинки. Надо подумать, какя лучше смотрится.
+Это старая версия картинки. Надо подумать, какая лучше смотрится.
 
 ```{r, fig.width=10, fig.cap="Распределение трех видов лебедей в гардиенте глубины и удаленности от берега. Чем краснее заливка, тем больше обилие."}
 
@@ -461,62 +461,6 @@ plot_grid(Pl_sp1_ice, Pl_sp2_ice, Pl_sp3_ice, nrow = 1)
 
 
 
-<!-- ## Дополнения -->
-
-<!-- **1. можно ли показать, что кликун и тундровый лебедь в сборе корма строго ограничены изобатой 1,5 м (или около того).** -->
-
-
-<!-- Сергей, здесь можно показать вот такой совсем простой рисунок.  -->
-
-<!-- ```{r} -->
-<!-- dat <- read_excel("Data/swans.xlsx") -->
-
-<!-- dat <-  -->
-<!--   dat %>%  -->
-<!--   filter(complete.cases(.)) -->
-
-<!-- dat2 <-  -->
-<!-- dat %>%  -->
-<!--   select(Ice, Depth,  Dist,  Year, Date, Site, Sp1, Sp2, Sp3 ) %>%  -->
-<!--   melt(id.vars = c("Ice", "Depth",  "Dist",  "Year", "Date", "Site" ), variable.name = "Species", value.name = "N") -->
-
-
-<!-- dat2$Species <- factor(dat2$Species) -->
-<!-- dat2$Ice <- factor(dat2$Ice, labels = c("Ice_cover", "No_ice")) -->
-<!-- dat2$Site <- factor(dat2$Site) -->
-
-<!-- dat2 %>%  -->
-<!--   ggplot(aes(x = factor(Depth), y = log(N+1)) ) + -->
-<!--            geom_boxplot() + -->
-<!--   facet_grid(Species ~ Ice) + -->
-<!--   labs(x = "Depth (m)", y = "Abundance (log(N+1))") -->
-
-<!-- ``` -->
-
-
-<!-- **2. В части касающейся первого периода со льдом (где все сложно) все лебеди держались на двух кормовых биотопах — первых полыньях на самых мелководных участках у берега и на глубоководной акватории за линией припая. Можем ли показать, что тундровый лебедь и кликун были только на полыньях, а шипун — как на полыньях так и на глубокой воде за припаем? Это весьма важно.** -->
-
-
-<!-- ```{r} -->
-<!-- dat2 %>%  -->
-<!--   ggplot(aes(x = factor(Dist), y = log(N+1)) ) + -->
-<!--            geom_boxplot() + -->
-<!--   facet_grid(Species ~ Ice) + -->
-<!--   labs(x = "Distance from shore (km)", y = "Abundance (log(N+1))") -->
-
-<!-- ``` -->
-
-<!-- Не показывает ли эта картинка именно это? Здесь видно, что в ледовый период шипун в ненулевых количествах сидит везде. Ненулевые медианы численности (точнее логарфма численности) у кликуна приходятся на прибрежные участки.Те редкие встречи тундряного, которые были в ледовый период, были только в прибрежной части.  -->
-
-<!-- Возможно эту визуализацию можно улучшить, например, введя классификацию полыней. Тапа, "маленькая прибрежная полынья" "большая прибрежная полынья", "за пределами зоны припая". Или что-то подобное. Есть возможность такую колонку сделать в файле с первичкой.  -->
-
-<!-- ### Дополнение 2 -->
-
-<!-- Сергей! -->
-<!-- Предлагаю вот такую простую визуализацию, характеризующую распределение численностей видов по двум типам свободной воды в ледовый период. Это просто пай-чарты, отражающие соотношение средних численностей лебедей в двух типах свободной воды в период таяния льда. По мне так здесь все отчетливо видно.  -->
-
-
-
 
 ```{r}
 dat_ice <- read_excel("Data/swans.xlsx", sheet = "Ice_period")
@@ -591,19 +535,299 @@ combined_plots
 ```
 
 
-<!-- Но если важно как-то учесть еще и расстояние, то тут появится проблема, так как каждый из типов полыней очень жестко связан с глубиной и расстоянием до берега. То есть это практически одно и то же.     -->
+
+```{r}
+
+dat_cygnets <- read_excel("Data/swans.xlsx", sheet = "C.olor_Chicks")
+
+
+dat_cygnets <-
+  dat_cygnets %>% 
+  filter(Depth < 20)
+
+dat_cygnets2 <- 
+dat_cygnets %>% 
+  dplyr::select(Depth,  Dist,  Year, Site, Cygnets_Young, Cygnets_Old) %>% 
+  melt(id.vars = c("Depth",  "Dist",  "Year", "Site" ), variable.name = "Cygnets_Age", value.name = "N")
+
+
+dat_cygnets2$Cygnets_Age <- factor(dat_cygnets2$Cygnets_Age)
+dat_cygnets2$Site <- factor(dat_cygnets2$Site)
+
+
+
+
+
+```
+
+
+```{r}
+Mod_2 <- gam(N ~ s(Year, by = Cygnets_Age, k = 10) +
+             s(Dist, Depth,  by = Cygnets_Age, k = 10) +
+             Cygnets_Age +
+             s(Site, bs = "re", k = length(unique(dat2$Site))),
+             data = dat_cygnets2,
+             family = nb(),
+             method = "REML")
+```
+
+
 
 <!-- ```{r} -->
-<!-- dat_ice %>%  -->
-<!--   ggplot(aes(x = Feeding_place, y = Depth)) + -->
-<!--   geom_boxplot() -->
+<!-- library(DHARMa) -->
+<!-- simulateResiduals(Mod_2, plot = T) -->
 <!-- ``` -->
 
 
+
+
+
+
+
+```{r}
+sm <- smooth_estimates(Mod_2) 
+unique(sm$.smooth)
+```
+
+
+
+
+
+```{r}
+library(sp)
+library(raster)
+
+# Данные для конкретной комбинации
+points_data <- dat_cygnets2[dat_cygnets2$Cygnets_Age == "Cygnets_Young", c("Dist", "Depth")]
+
+# Создаем растровую маску на основе расстояния до ближайшей точки
+smooth_data <- sm %>% 
+  filter(.smooth == "s(Dist,Depth):Cygnets_AgeCygnets_Young")
+
+# Преобразуем в SpatialPoints
+coordinates(points_data) <- ~Dist+Depth
+
+# Для каждой точки сетки вычисляем расстояние до ближайшей точки данных
+distances <- apply(smooth_data[, c("Dist", "Depth")], 1, function(point) {
+  min(sqrt((points_data$Dist - point["Dist"])^2 + (points_data$Depth - point["Depth"])^2))
+})
+
+# Включаем точки, которые находятся в пределах порогового расстояния
+threshold <- quantile(distances[distances > 0], 0.15) * 3  # например, удвоенное медианное расстояние
+smooth_data_filtered <- smooth_data[distances <= threshold, ]
+
+# График
+Pl_Cygnets_Young <-
+ggplot(smooth_data_filtered, aes(Dist, Depth)) +
+  geom_tile(aes(fill = .estimate)) +
+  geom_point(data = as.data.frame(points_data), size = 1, alpha = 0.5) +
+  geom_contour(aes(z = .estimate), color = "black", bins = 10) +
+  scale_fill_gradient2(low = "yellow", mid = "white", high = "maroon") +
+  coord_fixed() +
+  ggtitle("Cygnets up to two weeks old") +
+  labs(fill = "Partial effect") +
+  theme(panel.grid = element_blank(), panel.background = element_rect(fill = "gray90", color = NA))
+
+```
+
+
+```{r}
+# Данные для конкретной комбинации
+points_data <- dat_cygnets2[dat_cygnets2$Cygnets_Age == "Cygnets_Old", c("Dist", "Depth")]
+
+# Создаем растровую маску на основе расстояния до ближайшей точки
+smooth_data <- sm %>% 
+  filter(.smooth == "s(Dist,Depth):Cygnets_AgeCygnets_Old")
+
+# Преобразуем в SpatialPoints
+coordinates(points_data) <- ~Dist+Depth
+
+# Для каждой точки сетки вычисляем расстояние до ближайшей точки данных
+distances <- apply(smooth_data[, c("Dist", "Depth")], 1, function(point) {
+  min(sqrt((points_data$Dist - point["Dist"])^2 + (points_data$Depth - point["Depth"])^2))
+})
+
+# Включаем точки, которые находятся в пределах порогового расстояния
+threshold <- quantile(distances[distances > 0], 0.15) * 3  # например, удвоенное медианное расстояние
+smooth_data_filtered <- smooth_data[distances <= threshold, ]
+
+# График
+Pl_Cygnets_Old <-
+ggplot(smooth_data_filtered, aes(Dist, Depth)) +
+  geom_tile(aes(fill = .estimate)) +
+  geom_point(data = as.data.frame(points_data), size = 1, alpha = 0.5) +
+  geom_contour(aes(z = .estimate), color = "black", bins = 10) +
+  scale_fill_gradient2(low = "yellow", mid = "white", high = "maroon") +
+  coord_fixed() +
+  ggtitle("Cygnets older two manth") +
+  labs(fill = "Partial effect") +
+  theme(panel.grid = element_blank(), panel.background = element_rect(fill = "gray90", color = NA))
+
+
+```
+
+
+```{r}
+plot_grid(Pl_Cygnets_Young, Pl_Cygnets_Old)
+```
+
+
+
+Это те же самые катринки но в другой модификации 
+
+```{r}
+draw(Mod_2, select = 3:4)
+```
+
+
+
+
+Вот Таблица summary подобранной модели, ее опять же предлагаю поместить в электронное приложение
+
+```{r}
+library(broom)
+library(flextable)
+
+
+ft <- flextable(tidy(Mod_2))
+
+
+ft %>%
+  colformat_double(j = c(2, 3, 4), digits = 1) %>% 
+  colformat_double(j = 5, digits = 3) %>% 
+  set_header_labels(values = c("Smoother term", "edf", "ref.df", "F", "p-value" )) %>% 
+  set_caption("Таблица 1. Результаты подгонки обобщенной аддитивной модели  (GAMM) для оценки влияния факторов на пространственное распределение выводков лебедя-шипуна")
+
+# summary(Mod)
+```
+
+
+
+
+# Модель пространственного распределения линяющийх особей лебедя-шипуна
+
+```{r}
+
+dat_molting <- read_excel("Data/swans.xlsx", sheet = "C.olor_Chicks")
+
+
+dat_molting <-
+  dat_molting %>% 
+  filter(Depth < 20)
+
+dat_molting2 <- 
+dat_molting %>% 
+  dplyr::select(Depth,  Dist,  Year, Site, Molting_Birds) %>% 
+  melt(id.vars = c("Depth",  "Dist",  "Year", "Site" ), variable.name = "Stage", value.name = "N")
+
+dat_molting2$Site <- factor(dat_molting2$Site)
+
+
+```
+
+
+
+```{r}
+
+Mod_3 <- gam(N ~ s(Year, k = 10) +
+             s(Dist, Depth, k = 10) +
+             s(Site, bs = "re", k = length(unique(dat2$Site))),
+             data = dat_molting2,
+             family = nb(),
+             method = "REML")
+```
+
+
+
 <!-- ```{r} -->
-<!-- dat_ice %>%  -->
-<!--   ggplot(aes(x = Feeding_place, y = Dist)) + -->
-<!--   geom_boxplot() -->
+<!-- library(DHARMa) -->
+<!-- simulateResiduals(Mod_2, plot = T) -->
 <!-- ``` -->
 
+
+
+
+
+
+
+```{r}
+sm <- smooth_estimates(Mod_3) 
+
+```
+
+
+
+
+
+```{r}
+library(sp)
+library(raster)
+
+# Данные для конкретной комбинации
+points_data <- dat_molting2[, c("Dist", "Depth")]
+
+# Создаем растровую маску на основе расстояния до ближайшей точки
+smooth_data <- sm %>% 
+  filter(.smooth == "s(Dist,Depth)")
+
+# Преобразуем в SpatialPoints
+coordinates(points_data) <- ~Dist+Depth
+
+# Для каждой точки сетки вычисляем расстояние до ближайшей точки данных
+distances <- apply(smooth_data[, c("Dist", "Depth")], 1, function(point) {
+  min(sqrt((points_data$Dist - point["Dist"])^2 + (points_data$Depth - point["Depth"])^2))
+})
+
+# Включаем точки, которые находятся в пределах порогового расстояния
+threshold <- quantile(distances[distances > 0], 0.15) * 3  # например, удвоенное медианное расстояние
+smooth_data_filtered <- smooth_data[distances <= threshold, ]
+
+# График
+Pl_Molting_Birds <-
+ggplot(smooth_data_filtered, aes(Dist, Depth)) +
+  geom_tile(aes(fill = .estimate)) +
+  geom_point(data = as.data.frame(points_data), size = 1, alpha = 0.5) +
+  geom_contour(aes(z = .estimate), color = "black", bins = 10) +
+  scale_fill_gradient2(low = "yellow", mid = "white", high = "maroon") +
+  coord_fixed() +
+  ggtitle("Molting Birds") +
+  labs(fill = "Partial effect") +
+  theme(panel.grid = element_blank(), panel.background = element_rect(fill = "gray90", color = NA))
+
+```
+
+
+```{r}
+Pl_Molting_Birds
+```
+
+
+
+Это та же катринка но в другой модификации 
+
+```{r}
+draw(Mod_3, select = 2)
+```
+
+
+
+
+Вот Таблица summary подобранной модели, ее опять же предлагаю поместить в электронное приложение
+
+```{r}
+library(broom)
+library(flextable)
+
+
+ft <- flextable(tidy(Mod_3))
+
+
+ft %>%
+  colformat_double(j = c(2, 3, 4), digits = 1) %>% 
+  colformat_double(j = 5, digits = 3) %>% 
+  set_header_labels(values = c("Smoother term", "edf", "ref.df", "F", "p-value" )) %>% 
+  set_caption("Таблица 1. Результаты подгонки обобщенной аддитивной модели  (GAMM) для оценки влияния факторов на пространственное распределение линяющих особей лебедя-шипуна")
+
+# summary(Mod)
+```
 
