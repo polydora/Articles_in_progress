@@ -94,7 +94,7 @@ theme_set(theme_bw())
 
 ```{r}
 # Читаем данные
-litter <- read_excel("data/ryazhkov_litter_all_years_2008_2023.xlsx", na = "NA")
+litter <- read_excel("data/ryazhkov_litter_all_years_2008_2025.xlsx", na = "NA")
 litter$N <- litter$N/60 + 67
 litter$E <- litter$E/60 + 32
 

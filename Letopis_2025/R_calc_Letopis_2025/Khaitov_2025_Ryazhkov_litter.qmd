@@ -1,0 +1,231 @@
+---
+title: "Учет обилия мусора на супралиторали о. Ряжкова в 2024-2025 гг."
+author: "В. М. Хайтов"
+format:
+  docx:
+    reference-doc: Letopis_template.docx
+crossref:
+  fig-title: "**Рисунок**"
+  tbl-title: "**Таблица**"
+  fig-prefix: "Рис."
+  tbl-prefix: "Табл."
+---
+
+
+
+::: {custom-style="Abstract"} 
+**Хайтов В. М. Учет обилия мусора на супралиторали о. Ряжкова в 2024-2025 гг.** // Толмачева Е. Л. (ред.) Летопись природы Кандалакшского заповедника за 2025 год (ежегодный отчет). Кандалакша. Т.1 (Летопись природы Кандалакшского заповедника, кн. ++)
+    
+Проведен количественный анализ обилия антропогенного мусора на побережье о. Ряжкова.
+    
+**Khaitov V.M. The assessment of litter on the Ryazhkov island shore-line in 2024-2025** // Tolmacheva E. L. (ed.)  The Chronicle of Nature by the Kandalaksha Reserve for 2016 (Annual report).  Kandalaksha. V.1. (The Chronicle of Nature by the Kandalaksha Reserve, Book N ++)
+    
+The results of quantitative analysis of litter presented on shore of Ryazhkov island are presented.
+:::
+
+
+
+
+
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, dpi=300)
+
+
+```
+
+
+
+```{r setup2, include=FALSE}
+
+
+library(reshape2)
+library(knitr)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(cowplot)
+library(flextable)
+library(officer)
+library(lubridate)
+library(ggmap)
+
+
+editor <- "Толмачева Е. Л."
+editor_eng <- "Tolmacheva E.L."
+
+Year <- 2023
+
+theme_set(theme_bw())
+```
+
+
+```{r}
+# Читаем данные
+litter <- read_excel("data/ryazhkov_litter_all_years_2008_2025.xlsx", na = "NA")
+litter$N <- litter$N/60 + 67
+litter$E <- litter$E/60 + 32
+
+lit_print <- litter
+
+ggRyazhkov <- read.table("data/ggRyazhkov.csv", header = T, sep = ";")
+
+load("data/Ryazh_map.RData")
+
+
+```
+
+Учет мусора на побережье о. Ряжков проводят волонтеры. Методика учета мусора в полосе штормовых выбросов детально описана в соответствующих главах летописи за предыдущие годы. Кратко методика сводится к следующемк. Учет мусора производился в полосе штормовых выбросов, но учитываются только те объекты, которые видны с поверхности, без нарушения естественного отложения выбросов. Единицей учета являются отдельные предметы или их части, представленные в выбросах, как единое целое. Учет идет на стандартных стометровых отрехках побережья. Координаты точки начала учета засекаются с помощью GPS-навигатора. Исходные данные по учету предметов антропогенного происхождения за 2024-2025 гг приведены в @tbl-litter-print. Данные по обилию мусора в 2008-2023 гг были приведены в Летописи природы за 2016, 2019 и 2023 гг. 
+Как показали анализы, проведенные в предыдущие годы, наиболее объективным показателем, отражающим обилие мусора, является количество пластиковых бутылок. В @tbl-botles приведены данные по суммарному количеству пластиковых бутылок и прочего антропогенного мусора на побережье о. Ряжкова. График (@fig-litter-dynam), отражающий межгодовые изменения общего количества пластиковых бутылок и прочих предметов, обнаруженных на побережье о. Ряжкова, при включении в анализ данных 2024-2025 гг демонстрирует слабую тенденцию к снижению количества объектов антропогенного мусора ни побережье о. Ряжкова. В пространственном распределении бутылок (@fig-botles-distribution) читается тенденция к отностельно большему количеству пластиковых бутылок на побережье салм (юольше всего на побережье Западной Ряжковой салмы).   
+
+
+```{r}
+#| label: tbl-litter-print
+#| tbl-cap: "Количество предметов антропогенного мусора, найденных на разных станциях на побережье о. Ряжкова в 2024-2025 гг. Number of antropogenic items found on the stations on Ryazhkov island shore in 2024-2025."
+
+
+litter$Total <- apply(litter[, -c(1:3)], 1, FUN = function(x) sum(x, na.rm= T))
+
+litter_print <- 
+  litter %>%
+  select(-Total) %>% 
+  filter(Year >= 2024)
+
+
+colname <- c("Год", "Широта", "Долгота", "Пластиковые предметы",	"Пластиковые бутылки", "Стекло",	"Полиэтилен",	"Резиновые предметы", "Бумага",	"Металл","Консервные банки",	"Предметы одежды",	"Пенопласт",	"Прочее")
+  
+  
+library(officer)
+std_border = fp_border(color="gray", width = 1)
+
+ft <- 
+  litter_print %>% 
+  flextable() %>% 
+  border_inner_h(border = std_border) %>% 
+  border_inner_v(border = std_border) %>% 
+  fontsize(size = 7, part = "all") %>% 
+  set_header_labels(values = colname) %>%
+  colformat_num(big.mark = "", decimal.mark = ",") 
+
+ft %>%
+ set_table_properties(layout = "autofit", width = 1, opts_word = list(repeat_headers = TRUE))  # Явно указываем, что заголовок должен повторяться
+
+# litter_print %>% 
+#  flextable() %>% 
+#  border_inner_h(border = std_border ) %>% 
+#   border_inner_v(border = std_border ) %>% 
+#   fontsize(size = 8, part = "all") %>% 
+#   set_header_labels(values = colname) %>%
+#   colformat_num(big.mark = "", decimal.mark = ",") 
+# %>%   
+#   autofit()
+
+```
+
+
+\pagebreak
+
+```{r}
+#| label: tbl-botles
+#| tbl-cap: "Общее количество единиц мусора и общее количество пластиковых бутылок, обнаруженных на побережье о. Ряжкова в разные годы. Total litter amount and number of  plastic botles found on the shore of Ryazhkov island in different years."
+
+
+sum_year_print <- 
+  litter %>% 
+  group_by(Year) %>% 
+  summarise(N_Botles = round(sum(Plastic_botles)), N_total = round(sum(Total) - round(sum(Plastic_botles))))
+
+# which(is.na(litter$Year))
+
+colname <- c("Год", "Количество пластиковых бутылок", "Общее количество единиц мусора (без бутылок)")
+
+sum_year_print %>% 
+flextable() %>% 
+ border_inner_h(border = std_border ) %>% 
+  border_inner_v(border = std_border ) %>% 
+  fontsize(size = 8, part = "all") %>% 
+  set_header_labels(values = colname) %>%
+colformat_num(big.mark = "", decimal.mark = ",") %>%  
+  autofit()
+```
+
+
+
+
+```{r}
+#| label: fig-litter-dynam
+#| fig-cap: "Общее количество единиц мусора и количество пластиковых бутылок, обнаруженных на побережье о. Ряжкова в разные годы (приведена линия тренда). Total litter amount and number of  plastic botles found on the shore of Ryazhkov island in different years (trend line is provided)"
+#| fig-height: 8
+
+
+# sum_year_print <- 
+#   sum_year_print %>%
+# filter(Year > 2015)
+
+litter %>% 
+ group_by(Year) %>% 
+summarise(Total = sum(Total)) %>% 
+ggplot(aes(x = Year, y = log(Total+1) )) + 
+  geom_point(size = 2) + 
+  labs(x = "Годы", y = "Количество \nединиц мусора \n(без учета пластиковых бутылок) (Log(N+1))") + 
+  geom_smooth(se = F, method = "gam") +  
+  scale_x_continuous(breaks=seq(min(sum_year_print$Year), max(sum_year_print$Year), 1))  +
+  scale_x_continuous(
+    breaks = seq(
+      from = 2009, 
+      to = 2025, 
+      by = 2
+    )
+  ) ->
+Pl_Total
+
+
+litter %>% 
+group_by(Year) %>% 
+summarise(Plastic_botles = sum(Plastic_botles)) %>% 
+ggplot(aes(x = Year, y = log(Plastic_botles+1) )) + 
+  geom_point(size = 2) + 
+  labs(x = "Годы", y = "Количество \n пластиковых \nбутылок (Log(N+1)))") + 
+  geom_smooth(se = F, method = "gam") +  
+  scale_x_continuous(breaks=seq(min(sum_year_print$Year), max(sum_year_print$Year), 1)) +
+  scale_x_continuous(
+    breaks = seq(
+      from = 2009, 
+      to = 2025, 
+      by = 2
+    )
+  )->
+Pl_Botles
+
+
+plot_grid(Pl_Total, Pl_Botles, ncol=1 )
+
+```
+
+\pagebreak
+
+
+```{r}
+#| label: fig-botles-distribution
+#| fig-cap: "Распределение пластиковых бутылок на побережье о. Ряжкова в 2024-2025 гг. Patten of plastic botles distribution on the shore of Ryazhkov island шт 2024-2025" 
+#| fig-align: "center"
+#| fig-dpi: 300
+#| fig-width: 9
+
+
+litter_2 <- 
+  litter %>% 
+  filter(Year %in% c(2024, 2025))
+
+
+ggmap(Ryazh_map, fullpage = F, darken=0, 
+      base_layer=ggplot(data=litter_2, aes(x=E, y=N, size = Plastic_botles))) +
+  geom_point(shape=21, fill="yellow") + 
+  facet_wrap(~Year, ncol = 4) + 
+  labs(size = "Количество пластиковых бутылок \nна отдельных участках", x="", y ="") + 
+  theme(axis.text = element_blank(), legend.position = "bottom", axis.ticks = element_blank())
+
+
+```
+

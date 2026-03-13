@@ -234,7 +234,7 @@ mutate(Group = case_when(Group == "Resampled" ~  "Resampled",
 points_local$Group <- factor(points_local$Group)
 
 Pl_map +
-  geom_point(data = points_local, aes(x = lon, y = lat, group = 1, fill = Group), shape = 21,  size = 3) +
+  geom_point(data = points_local, aes(x = lon, y = lat, group = 1, fill = Group), shape = 21,  size = 3, position = position_jitter(width = 0.01)) +
   scale_fill_manual(values =  c("white", "yellow", "red")) +
   theme_minimal() +
   guides(size = "none") +
@@ -244,7 +244,7 @@ Pl_map +
   annotate(geom = "text", x= 150.25, y = 59.5, label = "Sea of \nOkhotsk")
 ```
 
-At each site: projective cover of mussels using photos, 1-3 qualitative samples of big mussels (L>25 mm) for BTN diagnostics by flow cytometry and for reproductive state by gonad smears under microscope (data on gonads is missing for some samples), 2-3 quantitative samples for mussel demography (local abundance, size structure) and growth rate by year rings on shells. 
+At each site: projective cover of mussels using photos, 1-3 qualitative samples of big mussels (L>25 mm) for BTN diagnostics by flow cytometry and for reproductive state by gonad smears under microscope (data on gonads is missing for some samples), 3-4 quantitative samples for mussel demography (local abundance, size structure) and growth rate by year rings on shells (only for old mussels). 
 
 Sampling time: 05.07-14.07 2021 and 25.06-05.07 2023. Both years mussels in populations were in pre-spawning condition or in spawning condition (as expected for subarctic seas).
 
@@ -262,7 +262,7 @@ Pl_hist
 The prevalence of BTN1 in samples averages `r round(Prob_BTN1_total * 100, 2)`%, BTN2 – `r round(Prob_BTN2_total * 100, 2)`   %.
 
 
-```{r, fig.cap = "**Fig. 3. Prevalence of BTN1 and BTN2 along shore**", dpi = 600, fig.width= 8}
+```{r, fig.cap = "**Fig. 3. Prevalence of BTN1 and BTN2 in samples. Points with zero prevalence are not shown.**", dpi = 600, fig.width= 8}
 Pl_map_BTN
 ```
 
@@ -467,7 +467,7 @@ pca_scores_scam$Site_Year <- gsub(pattern = "20", replacement = "", x = pca_scor
 
 ## Mussel population structure
 
-```{r fig.cap="**Fig. 4. Ordination of population parameters in PCA axes.**"}
+```{r fig.cap="**Fig. 4. Ordination of population parameters (abundance of size classes, biomass and mussel cover) in PCA axes.**"}
 pca_scam_size_scores %>% 
   mutate(Param = row.names(.)) %>% 
   ggplot(aes(PC1, PC2)) +
@@ -578,16 +578,29 @@ merge(pca_scores_scam, df , all = T)
 
 ```{r}
 Sites_Year <- 
-pca_scores_scam %>% arrange(PC1) %>% pull(Site_Year) %>% unique() 
+pca_scores_scam %>%
+  arrange(PC1) %>% 
+  pull(Site_Year)%>% 
+  unique() 
+
+Sites_Year_labels <- 
+pca_scores_scam %>%
+  arrange(PC1) %>%
+  mutate(Site_Year_PC1 = paste(Site_Year, "(", round(PC1,1), ")", sep = "")) %>%
+  pull(Site_Year_PC1)%>% 
+  unique() 
+  
+
+
 
 size <-
 size %>%
-  mutate(Site_Year = paste(Site, "_", Year, sep = ""))
+  mutate(Site_Year = paste(Site,"_", Year, sep = ""))
 
 size$Site_Year <- gsub(pattern = "20", replacement = "", x = size$Site_Year) 
 
 
-size$Site_Year <- factor(size$Site_Year, levels = Sites_Year)
+size$Site_Year <- factor(size$Site_Year, levels = Sites_Year, labels = Sites_Year_labels)
 
 
 
@@ -598,10 +611,10 @@ size %>%
   facet_wrap(~Site_Year, scales = "free_y", dir = "v", ncol = 4) +
   theme_bw() +
   # theme(strip.text = element_blank()) +
-  labs(x = "Размерные классы (мм)", y = "Частота")
+  labs(x = "Size classes", y = "Count")
 ```
 
-```{r, fig.height=10, fig.cap="**Fig. 8. Population size structures, ordered by increasing PC1.**"}
+```{r, fig.height=10, fig.cap="**Fig. 8. Population size structures (PC1 values in brackets).**"}
 growth %>% 
   select(Site, Year, L) %>% 
   filter(complete.cases(.)) ->
@@ -655,8 +668,8 @@ cancer_21_23_predictors$Site <- factor(cancer_21_23_predictors$Site)
 Predictors were the next. 
 
 * `Fetch`, openness of the shore to the surf. Technically - unobstructed length of water surface (km) over which wind from a certain direction can blow.
-* `Dist_port` - distance from the harbor measured along the shoreline. 
-* `PC1` (see above)
+* `Dist_port`, distance from the harbor measured along the shoreline. 
+* `PC1` (see above).
 * `OGP`, overall growth performanse. OGP = log (L∞ ∗ K), where L∞ and K – parameters of the vonBertalanffy equation calculated from the sizes of the year rings on mussel shells. To estimate OGP for a site, a few dozen of biggest mussels were studied and individual OGP values were averaged.
 
 
@@ -761,7 +774,7 @@ prop_BTN_2_points %>%
             linewidth = 0.6,
             linetype = 1,
             arrow = arrow(angle = 15, type = "closed", ends = "first")) +
-  geom_point(data = prop_BTN_2_points %>% filter(Site %in% c("KHOL") & Lineage == "BTN1"), aes(color = as.factor(Year)), size = 3) +
+  geom_point(data = prop_BTN_2_points %>% filter(Site %in% c("KHOL") & Lineage == "BTN2"), aes(color = as.factor(Year)), size = 3) +
   geom_point(data = prop_BTN_2_points %>% filter(!Site %in% c("KHOL", "MAM", "MAR", "NUK-I", "UM", "VES") & Lineage == "BTN2")) +
   scale_color_viridis_d(name = "Year") +
   ggtitle("BTN2") +
@@ -821,14 +834,14 @@ prop_BTN_2_points %>%
 The prevalence of BTN1 shows a clear upward trend, while BTN2 does not show a clear pattern
 
 
-```{r, fig.cap="**Fig. 13. Prevalence of BTN depending on mussel growth rate (OGP) in populationse)**"}
+```{r, fig.cap="**Fig. 13. Prevalence of BTN depending on mussel growth rate (OGP) in populations.**"}
 
 prop_BTN_2_points %>%
   ggplot(aes(x = OGP, y = Prop_BTN)) +
   geom_point() +
   facet_wrap(~Lineage) +
   geom_smooth(method = "lm", se = F) +
-  labs(y = "BTN proportion (%)")
+  labs(y = "BTN prevalence (%)")
 
 ```
 
@@ -1109,15 +1122,21 @@ myt_ind_clean <- merge(myt_ind_clean, points)
 
 myt_ind_clean$BTN_Type <- factor(myt_ind_clean$BTN_Type, labels = c("BTN1", "BTN2", "Healthy"))
 
-myt_ind_clean$Gonad_quality <- factor(myt_ind_clean$Gonad_quality, labels = c("Gamets present", "No gamets"))
+myt_ind_clean$Gonad_quality <- factor(myt_ind_clean$Gonad_quality, labels = c("Gametes present", "No gametes"))
 
 ```
 
 
 
-```{r, fig.cap=" **Fig. 18. Frequency of individuals with different reproductive conditions among mussels infected with different BTN lineages, compared to healthy specimens.**",  fig.width=10, eval=TRUE}
+```{r, fig.cap=" **Fig. 18. Frequency of mussels with gametes in gonad smears and without gametes among infected with different BTN lineages, compared to healthy specimens.**",  fig.width=10, eval=TRUE}
 
 # At! размер картинки на слайдах этого типа регулируется fig.width=
+
+myt_ind_clean %>% 
+  group_by(Year, BTN_Type, Gonad_quality) %>%  
+  summarise(Frequency = n(), Prop_aneupl = median(Rate_of_aneuploid_cells), .groups = 'drop') ->
+  prop_aneupl
+
 
 myt_ind_clean %>%
   group_by(Year, BTN_Type, Gonad_quality) %>%  # Группируем по годам и типам BTN
@@ -1141,7 +1160,7 @@ In mussels infected with BTN, gametes were usually absent in gonad smears, indic
 
 ## The relationship between the frequency of “gamete-free” mussels and the BTN severity, assessed by the frequency of aneuploid (i.e., cancerous) cells in the haemolymph using flow cytometry.
 
-To investigate the effect of the rate of aneuploid hemocytes in haemolymph on reproductive status of mussels in terms of presence/absence of gametes, we fitted a generalized additive model (GAM). The model included a smooth term for the rate of aneuploid cells (s(Aneuploid_Proportion)), which was allowed to vary by BTN lineage (using the by = Lineage argument). BTN lineage was also included as a parametric factor. The model was fitted with a binomial family to account for the binary nature of the gonad outcome variable.
+To investigate the effect of the rate of aneuploid hemocytes in haemolymph on reproductive status of mussels in terms of presence/absence of gametes, we fitted a generalized additive model (GAM). The model included a smooth term for the rate of aneuploid cells (s(Aneuploid_Proportion)), which was allowed to vary by BTN lineage (using the by = Lineage argument). BTN lineage was also included as a parametric factor. The model was fitted with a binomial family to account for the binary nature of the gonad outcome variable. Data from 2021 and 2023 were pooled for the analysis.
 
 
 ```{r, echo=TRUE, eval=FALSE}
@@ -1158,7 +1177,7 @@ Mod_gonad <- gam(Gonad_Out ~ s(Aneuploid_Proportion, by = Lineage) +
 ```{r}
 
 myt_ind_clean %>%
-  mutate(Gonad_Out = ifelse(Gonad_quality == "No gamets", 1, 0)) %>%
+  mutate(Gonad_Out = ifelse(Gonad_quality == "No gametes", 1, 0)) %>%
   filter(BTN_Type != "Healthy") ->
   myt_ind_clean_not_healthy
 
@@ -1232,7 +1251,7 @@ sm %>%
   geom_line(color = "red", linewidth = 1)+
   # geom_hline(yintercept = 0, linetype = 2) +
   ggtitle("BTN1", subtitle = "") +
-  labs(x = "Proportion (%) of anneuploid cells", y = "Proportion of gamete-free specimens") +
+  labs(x = "Proportion (%) of aneuploid cells", y = "Proportion of gamete-free specimens") +
   # ylim(-5, 4)+
   # annotate(geom = "text", x = 25, y = 0.5, label = "Среднее значение")  +
   # theme_bw() +
@@ -1243,7 +1262,7 @@ Mean_aomalia_proportion <- mean(myt_ind_clean_not_healthy$Gonad_Out)
 
 myt_ind_clean %>%
   filter(Rate_of_aneuploid_cells == 0) %>%
-  mutate(Gonad_Out = ifelse(Gonad_quality == "No gamets", 1, 0)) %>%
+  mutate(Gonad_Out = ifelse(Gonad_quality == "No gametes", 1, 0)) %>%
   pull(Gonad_Out) %>%
   mean() ->
   Mean_anomalia_proportion_helthy
@@ -1258,7 +1277,7 @@ myt_ind_clean_not_healthy %>%
     Rate_of_aneuploid_cells >= 75  ~ "4"
   )) %>%
   group_by(Prop_aneupl_class) %>% 
-  summarise(Rate_of_aneuploid_cells = mean(Rate_of_aneuploid_cells), Prop_anomaly = mean(Gonad_quality == "No gamets"), n = n())
+  summarise(Rate_of_aneuploid_cells = mean(Rate_of_aneuploid_cells), Prop_anomaly = mean(Gonad_quality == "No gametes"), n = n())
   
 
 
@@ -1285,7 +1304,7 @@ sm %>%
   geom_line(color = "blue", linewidth = 1)+
   # geom_hline(yintercept = 0, linetype = 2) +
   ggtitle("BTN2", subtitle = "") +
-  labs(x = "Prooportion (%) of anneuploid cells", y = "Proportion of gamete-free specimens") +
+  labs(x = "Proportion (%) of aneuploid cells", y = "Proportion of gamete-free specimens") +
   # ylim(-5, 4)+
   # annotate(geom = "text", x = 25, y = 0.5, label = "Среднее значение")  +
   # theme_bw() +
@@ -1304,7 +1323,7 @@ myt_ind_clean_not_healthy %>%
     Rate_of_aneuploid_cells >= 75  ~ "4"
   )) %>%
   group_by(Prop_aneupl_class) %>% 
-  summarise(Rate_of_aneuploid_cells = mean(Rate_of_aneuploid_cells), Prop_anomaly = mean(Gonad_quality == "No gamets"), n = n())
+  summarise(Rate_of_aneuploid_cells = mean(Rate_of_aneuploid_cells), Prop_anomaly = mean(Gonad_quality == "No gametes"), n = n())
   
 
 
@@ -1320,7 +1339,7 @@ Pl_gonad_BTN2 +
 ```
 
 
-```{r, fig.width=15, fig.height=9, fig.cap="**Fig. 19.Dependence of gametogenic abnormalities on the proportion of aneuploid cells.**"}
+```{r, fig.width=15, fig.height=9, fig.cap="**Fig. 19.Dependence of reproductive states on the proportion of aneuploid cells.**"}
 plot_grid(Pl_gonad_BTN1, Pl_gonad_BTN2)
 
 # ggsave("BTN1_BTN2_gonad_Magadan.jpg", dpi=600)
@@ -1331,18 +1350,18 @@ As in the case of BTN1, in the case of BTN2, the probability of not finding game
 
 ```{r fig.cap="**Fig. 20. Distribution of aneuploid cell frequencies across different mussel groups.**"}
 myt_ind_clean_not_healthy %>% 
-  # filter(Gonad_quality == "No gamets") %>% 
+  # filter(Gonad_quality == "No gametes") %>% 
   ggplot(aes(x = Gonad_quality, y = Rate_of_aneuploid_cells)) +
   geom_violin(aes(fill = Lineage )) +
   geom_boxplot(width = 0.1) +
   scale_fill_manual(values = c("red", "blue")) +
   facet_wrap(~Lineage) +
-  labs(y = "Proportion of anneuploid cells") +
+  labs(y = "Proportion of anneuploid cells", x = "Reproductive state") +
   coord_flip()
 ```
 
 
-The figure above illustrates that the negative effect of the BTN2 lineage on gamete formation manifests at slightly earlier stages of disease progression than that of BTN1. 
+The figure above illustrates that the negative effect of the BTN2 lineage on reproductive state manifests at slightly earlier stages of disease progression than that of BTN1. 
 
 
 
