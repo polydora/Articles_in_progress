@@ -1,0 +1,478 @@
+---
+title: "Somateria mollissima escape distance"
+author: "V. Khaitov"
+date: ""
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+  opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+```{r}
+library(ggplot2)
+library(readxl)
+library(lubridate)
+library(mgcv) 
+library(gratia)
+library(dplyr)
+library(DHARMa)
+
+library(ggmap)
+
+
+```
+
+
+```{r}
+som <- read_excel("Data/all_nests.xlsx")
+
+som <- 
+  som %>% 
+  mutate(Year = year(Date))
+
+
+isl <- read_excel("Data/Острова_2005_2011_расстояния_коорд_кол_во_гнезд.xls")
+
+isl <- 
+  isl %>% 
+  select(-Region)
+
+
+library(reshape2)
+library(tidyr)
+
+melt(isl, id.vars =  c("Place", "Area",  "Dist_to_Mainland", "Dist_to_town", "Lon", "Lat")) %>% 
+  separate(variable, into = c("Nests", "Year"), sep = "nests_", remove = FALSE) %>%  
+  dcast(Place + Area + Dist_to_Mainland + Dist_to_town  +   Lon + Lat +  Year ~ Nests, value.var = "value") %>% 
+  rename(All_nests = all_, Destroyed_Nest = destroyed_) ->
+  isl
+
+isl %>% 
+  group_by(Place) %>% 
+  summarise(Area = mean(Area), 
+            Dist_to_Mainland = mean(Dist_to_Mainland), 
+            Dist_to_town = mean(Dist_to_town),
+            Lon = mean(Lon),
+            Lat = mean(Lat),
+            All_nests_mean = mean( (All_nests - Destroyed_Nest), na.rm = T),
+            Destroyed_Nest_mean = mean(Destroyed_Nest, na.rm = T)) ->
+  isl
+```
+
+
+```{r}  
+  
+som_isl <- merge(som, isl)
+
+
+som_isl$Place <- factor(som_isl$Place)
+som_isl$Region_2 <- factor(som_isl$Region_2)
+som_isl$Region_2 <- relevel(som_isl$Region_2, ref = "Not protected")
+
+som_isl$Region <- factor(som_isl$Region)
+
+
+
+som_isl$Log_Area <- log(som_isl$Area)
+som_isl$Log_Ed <- log(som_isl$Ed + 1)
+
+```
+
+
+### Фильтрация данных
+
+Итак, мы точно удаляем все гнезда, где больше 6 яиц. Аргументы в пользу этого меня пока не убеждают, но да ладно.
+
+Было: `r nrow(som_isl)` гнезда.
+
+```{r}
+som_isl <-
+  som_isl %>% 
+  filter(N_eggs <= 6)
+```
+
+Стало: `r nrow(som_isl)` гнезда.
+
+
+
+```{r}
+# Удаляем гнезда с неполными кладками
+
+n_not_finished <-
+  som_isl %>% 
+  filter((N_eggs <= 3 & Number_D  == 0 &  
+           ((A1 < 30 & A2 < 30 & A3 < 30) |
+            (A1 < 30 & A2 < 30 & is.na(A3))|
+            (A1 < 30 & is.na(A2) & is.na(A3))))) %>% 
+  nrow()
+
+
+```
+
+
+```{r}
+som_isl <- 
+  som_isl %>% 
+  mutate(Q = Ed * log10(Tinc_mean + 2))
+```
+
+
+```{r}
+som_isl <- 
+  som_isl %>% 
+  mutate(Q2 = ifelse(Q == 0, 0.00001, Q),
+         Q3 = Q2/max(Q2))
+
+som_isl <- 
+  som_isl %>% 
+  mutate(Nest_Density = All_nests_mean/Area, Destroy_Rate = Destroyed_Nest_mean/All_nests_mean)
+
+```
+
+
+```{r}
+
+
+ggKand_upper <- read.csv("data/ggKand_upper_2021.csv")
+
+
+Kand_upper_x <- c(min(som_isl$Lon) - 0.1, max(som_isl$Lon) + 0.1)
+Kand_upper_y <- c(min(som_isl$Lat) - 0.05, max(som_isl$Lat) + 0.01)
+
+
+
+Plot_Kand_upper <- 
+  ggplot(ggKand_upper, aes(x=Lon, y=Lat, group=group)) + 
+  geom_polygon(fill = "gray70", colour = "black") + 
+  coord_map(xlim = Kand_upper_x, ylim = Kand_upper_y) +
+  theme(panel.grid = element_blank(), panel.background = element_rect(fill = "white")) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+```
+
+
+
+
+```{r}
+
+Q1 <- quantile(som_isl$Q, probs = 0.25)
+
+som_isl %>% 
+  group_by(Place) %>% 
+  summarise(Prop_high_Q = 1 - mean(Q <= Q1),
+            Q = mean(Q),
+            Lon = mean(Lon),
+            Lat = mean(Lat)) %>% 
+  arrange(Q)->
+  df_mean_Q
+
+```
+
+
+
+
+Эта карта отражает распределение плотности гнезд, т.е. среднее за всеь период наблюдений количество гнезд деленое на площадь острова. Пока не учитывал, что плотность на о. Анисимове надо смотреть по мысу. Но это не должно сильно сказаться.
+
+```{r}
+Plot_Kand_upper +
+  geom_point(data = som_isl, aes(x = Lon, y = Lat, group = 1, fill = Nest_Density), size = 4, shape = 21) +
+  scale_fill_gradient(low = "yellow", high = "red")  +
+  ggtitle("Плотность гнезд")
+
+```
+
+Так выглядит карта распределения доли разоренных гнезд (среднее за весь период наблюдений число разоренныйх деленное на общее количество гнезд)
+
+```{r}
+Plot_Kand_upper +
+  geom_point(data = som_isl, aes(x = Lon, y = Lat, group = 1, fill = Destroy_Rate), size = 4, shape = 21) +
+  scale_fill_gradient(low = "yellow", high = "red")  +
+  ggtitle("Доля разоренных гнезд")
+
+```
+
+
+<!-- ```{r} -->
+<!-- Plot_Kand_upper + -->
+<!--   geom_point(data = df_mean_Q, aes(x = Lon, y = Lat, group = 1, fill = Prop_high_Q), size = 4, shape = 21) + -->
+<!--   scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = mean(median$Q))  + -->
+<!--   ggtitle("Доля гнезд с высокой осторожностью  (Q > Q1)") -->
+
+<!-- ``` -->
+
+
+В начале разговора о Q можно, действительно, дать рассказку о корреляции между FID и степенью насиженности яиц. Это будет иллюстрацией того, что эти две величины сильно взаимосвязаны. 
+
+
+```{r}
+
+som_isl_region_joined <-  som_isl 
+
+som_isl_region_joined$Region_3 <- som_isl_region_joined$Region_2 
+
+som_isl_region_joined$Region_3[som_isl_region_joined$Region_3 == "Not protected"] <- "Oleny arhipelag"
+  
+         # в Not protected нет варьирования по расстояниям до материака и до населенных пунктов!
+
+som_isl_region_joined$Region_3 <- factor(som_isl_region_joined$Region_3) 
+
+som_isl_region_joined$Density = som_isl_region_joined$All_nests/ som_isl_region_joined$Area 
+
+som_isl_region_joined$Destr_Prop = som_isl_region_joined$Destroyed_Nest/ som_isl_region_joined$All_nests 
+```
+
+
+
+
+```{r}
+Mod_FID <- bam(log(Ed + 1) ~  
+             s(Tinc_mean, bs = "cr", by = Region) +
+             s(Place, k = 87, bs = "re"),
+           family = gaussian(),
+           data = som_isl_region_joined)
+```
+
+```{r}
+# summary(Mod_FID)
+
+Mod_FID <- bam(log(Ed + 1) ~  
+             s(Tinc_mean, bs = "cr", by = Region) +
+             s(Place, k = 87, bs = "re"),
+           family = gaussian(),
+           data = som_isl_region_joined)
+
+draw(Mod_FID, grouped_by = T, select = 1:4, constant = coef(Mod_FID)[1], fun = function(x){exp(x) + 1}, caption = FALSE, ) + 
+  geom_hline(yintercept = (exp(coef(Mod_FID)[1]) + 1), linetype = 2) +
+  theme_bw() +
+  labs(x = "Время инкубации", y = "Дистанция слета") +
+  ggtitle("", subtitle = "")
+
+
+
+```
+
+
+Из полученной картинки видно,что во всех регионах наблюдается падение FID при увеличении периода насиживания, то есть снижение осторожности по мере увеличения продолжительности насиживания. Возможно именно на таких графиках АСК придумал использовать логарифмы периода инкубации (что-то от логарифма в этих графиках есть). 
+
+Отсюда, кстати, еще одно возможное объяснение межгодового паттерна Q, описанного ниже. Запросто может оказаться так, что время насиженности закономерно смещается год от года (потепление и т.п.). Вот, пожалуйста, так выглядит многолетняя тенденция в величине Tinc. 
+
+
+```{r}
+som_isl_region_joined %>% 
+  ggplot(aes(x = Year, y = Tinc_mean, group = Year)) +
+  geom_boxplot()
+```
+
+Это, конечно, не будет статистически значимой связью, но тенденция к смещению времени насиживания на более поздние сроки есть. Более поздние сроки - меньше осторожность, следовательно многолетние снижение Q, которое мы видим ниже. Это, кстати, еще один повод для критики Q, так как эта величина будет зависеть, во многом, от тог когда проводятся учеты. Если в какой-то год сместить учеты на неделю (например, потому что волонтеры так приехали), все значения Q поедут. Или другой пример - смещение сроков схода льда на более ранние периоды (а вроде  такое есть). приведет к смещению Q  в меньшую сторону.  
+
+
+
+
+
+
+В принципе, на сырых данных виден некоторый паттерн - самая высокая осторожность в районе Оленьего архипелага. 
+
+```{r}
+Plot_Kand_upper +
+  geom_point(data = df_mean_Q, aes(x = Lon, y = Lat, group = 1, fill = Q), size = 4, shape = 21) +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = mean(som_isl$Q))  +
+  ggtitle("Среднее значение Q")
+
+```
+
+
+Эта карта, конечно, отражает сильно усредненные данные. НО! а не может ли такого быть, что всегда, чисто лгистически, Олений архипелаг обрабатывают раньше, чем Лувеньгу и Северный архипелаг. Отсюда на Оленьем чуть более ранние сроки насиживания и, соответственно, чуть более высокие значения Q (см. выше). 
+
+Правда, на самом деле, Олений и Малый обрабатывают на несколько дней позднее.  
+
+```{r}
+library(lubridate)
+
+som_isl_region_joined <-
+som_isl_region_joined %>% 
+  mutate(DOY = yday(Date), )
+
+
+ som_isl_region_joined %>% 
+  ggplot(aes(x = Region, y = DOY)) +
+  geom_boxplot() +
+  labs(y = "День года, от 1 января")
+  
+
+```
+
+То есть Q должно на Оленьем арх. и Малом уменьшаться. Так что это как раз в пользу того, что на Оленьем, действительно, осторожность (Q) выше.
+
+
+
+А вот межгодовая вариация времени учетов точно есть. Она, конечно, не однозначна, но тоже важно. 
+
+
+```{r}
+ som_isl_region_joined %>% 
+  ggplot(aes(x = Year, y = DOY, group = Year)) +
+  geom_boxplot() +
+  labs(y = "День года, от 1 января")
+
+```
+
+Это как-то надо учитывать. Поэтому в модель придется вставлять еще и DOY (Day of Year). См. ниже.
+
+
+
+
+
+
+### Модель
+
+Беда в том, что координаты осторовов коллинеарны (зависимы) с предикторами, учитывающими расстояния до ближайшего материка и до ближайшего населенного пункта. То есть в модель можно включать ЛИБО эти расстояния, ЛИБО строить на основе модели карту. Я (пока) склонен включить все предикторы в модель и не строить карту. Можно привести карту с "сырыми" данными по Q (это та, что выше). 
+
+
+Плохо, конечно, но в качестве зависимой переменной буду использовать log(Q + 1). 
+NB! В качестве количества гнезд теперь берется кол-во неразоренных гнезд.
+
+
+<!-- ```{r} -->
+<!-- som_isl_region_joined %>%  -->
+<!--   ggplot(aes(x = Destroy_Rate, y = Q )) + -->
+<!--   geom_point() + -->
+<!--   geom_smooth(method = "lm") -->
+<!-- ``` -->
+
+
+```{r echo=TRUE}
+
+mod <- bam(log(Q +1) ~
+             s(Year, k = 6, bs = "cs") +
+             s(N_eggs, k = 4, bs = "cs") +
+             s(Log_Area, bs = "cs") +
+             s(Dist_to_Mainland, bs = "cs", k = 4) +
+             s(Dist_to_town, bs = "cs", k = 4)  +
+             s(All_nests_mean, bs = "cs", k = 4) +
+             s(Destroy_Rate, bs = "cs", k = 4) +
+             s(DOY, bs = "cs", k = 4) +
+             # te(Lon, Lat, bs = "tp") + Исулючаю моделирование пространственного паттерна, так как координаты сильно коллиенарны расстоянию до ближайшего населенного пункта
+             s(Place, k = 87, bs = "re"),
+           family = gaussian(),
+           data = som_isl_region_joined)
+
+```
+
+
+
+
+
+### Проверяем валидность модели 
+
+```{r}
+simulateResiduals(mod, plot = TRUE)
+```
+
+
+Не супер!
+
+
+#### summary от этой модели
+
+```{r}
+summary(mod)
+
+```
+
+Значимой связи с  долей разоренных гнезд не выявляется.
+И, к счаcтью, нет значимой связи с DOY!
+
+<!-- ```{r} -->
+<!-- library(car) -->
+
+<!-- foo <- lm(Q ~ Log_Area + Dist_to_Mainland + Dist_to_town + All_nests_mean + Destroy_Rate, data = som_isl_region_joined) -->
+<!-- vif(foo) -->
+<!-- ``` -->
+
+Смотрим на зависимости log(Q+1) от отдельных предикторов
+
+#### Многолетняя динамика
+
+
+```{r}
+  draw(mod, select = 1) + geom_hline(yintercept = 0, linetype = 2)
+```
+
+Здсь и далее пунктирная линия отражает среднее значение. Если partial effect выше пунктирной линии, то эффект предиктора положительный, если ниже - то отрицательный.
+
+####  Количество яиц
+
+```{r}
+draw(mod, select = 2)+ geom_hline(yintercept = 0, linetype = 2)
+
+```
+
+
+####  Размер острова
+
+
+```{r}
+draw(mod, select = 3) + geom_hline(yintercept = 0, linetype = 2)
+
+```
+
+
+####  Расстояние до материка
+
+
+```{r}
+draw(mod, select = 4)+ geom_hline(yintercept = 0, linetype = 2)
+
+```
+
+
+Не понимаю как трактовать это! НО! скорее, это надо рассматривать, как отсутствие значимой связи.
+
+####  Расстояние до ближайшего населеного пункта
+
+```{r}
+draw(mod, select = 5)+ geom_hline(yintercept = 0, linetype = 2)
+
+```
+
+Здесь надо думать! Осторожность низкая при малом расстоянии до населенных пунктов и большом расстоянии. Но достигает максимума при среднем расстоянии до ближайшего населенного пункта. Возможно, что постоянное пугание понижает осторожность, а также высокая удаленность от населенного пункта - это место где живут непуганые гаги. 
+
+
+####  Обилие гнезд
+
+
+```{r}
+draw(mod, select = 6) + geom_hline(yintercept = 0, linetype = 2)
+
+```
+
+Здесь тоже не все понятно. Осторожность более высокая при низком обилии гнезд. Это причина или следствие? А высокая осторожность при высоком обилии гнезд - может быть следствием взаимного вспугивания гаг, если их много сидит поблизости. 
+
+####  Уровень разорения
+
+
+```{r}
+draw(mod, select = 7) + geom_hline(yintercept = 0, linetype = 2)
+
+```
+
+
+Здесь, понятно, нет связи.
+
+
+####  День года
+
+
+```{r}
+draw(mod, select = 8) + geom_hline(yintercept = 0, linetype = 2)
+
+```
+
+
+Здесь, понятно, нет связи.
+
+
+

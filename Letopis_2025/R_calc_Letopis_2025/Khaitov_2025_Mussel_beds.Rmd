@@ -1,22 +1,34 @@
 ---
-title: "Размерная структура мидиевых банок летом 2024 года"
-author: "В. М. Хайтов, Е. О. Гаврилова"
-output: 
-      word_document:
-                reference_docx: Letopis_template.docx
-                fig_width: 6
-                fig_height: 6
-
- 
-abstract: |
-    **Хайтов В. М.,Гаврилова Е. О.  Размерная структура мидиевых банок летом 2024 ** // Толмачева Е. Л. (ред.) Летопись природы Кадалакшского заповедника за 2024 год (ежегодный отчет). Кандалакша. Т.1 (Летопись природы Кандалакшского заповедника, кн. ++)
-    
-    Рассматриваются данные по обилию и размерной структуре мидий  на шести мидиевых банках, расположенных в акватории Вороньей губы и в Лувеньгском архипелаге.   
-    
-    **Khaitov V.M., Gavrilova E. O. Size structure of mussel beds in summer 2024** // Tolmacheva E. L. (ed.)  The Chronicle of Nature by the Kandalaksha Reserve for 2024 (Annual report).  Kandalaksha. V.1. (The Chronicle of Nature by the Kandalaksha Reserve, Book N ++)
-     
-     The chapter considers the abundance and size structure of mussels  at 5 mussel beds situated in Voronia bay and in Luvenga archipelago.   
+title: "Размерная структура мидиевых банок летом 2025 года"
+author: "В. М. Хайтов"
+format:
+  docx:
+    reference-doc: Letopis_template.docx
+crossref:
+  fig-title: "**Рисунок**"
+  tbl-title: "**Таблица**"
+  fig-prefix: "Рис."
+  tbl-prefix: "Табл."
 ---
+
+
+
+::: {custom-style="Abstract"} 
+
+**Хайтов В. М. Размерная структура мидиевых банок летом 2025 года** // Толмачева Е. Л. (ред.) Летопись природы Кандалакшского заповедника за 2025 год (ежегодный отчет). Кандалакша. Т.1 (Летопись природы Кандалакшского заповедника, кн. ++)
+
+Рассматриваются данные по обилию и размерной структуре мидий  на шести мидиевых банках, расположенных в акватории Вороньей губы и в Лувеньгском архипелаге.   
+    
+**Khaitov V.M., Gavrilova E. O. Size structure of mussel beds in summer 2025** // Tolmacheva E. L. (ed.)  The Chronicle of Nature by the Kandalaksha Reserve for 2025 (Annual report).  Kandalaksha. V.1. (The Chronicle of Nature by the Kandalaksha Reserve, Book N ++)
+     
+The chapter considers the abundance and size structure of mussels  at 5 mussel beds situated in Voronia bay and in Luvenga archipelago.   
+
+:::
+
+
+
+
+
 
 ```{r setup, include=FALSE}
 
@@ -38,39 +50,7 @@ library(ggmap)
 editor <- "Толмачева Е. Л."
 editor_eng <- "Tolmacheva E.L."
 
-Year <- 2024
-
-# Функция, задающая нумерацию рисунков
-
-figRef <- local({
-    tag <- numeric()
-    created <- logical()
-    used <- logical()
-    function(label, caption, prefix = options("figcap.prefix"), 
-        sep = options("figcap.sep"), prefix.highlight = options("figcap.prefix.highlight")) {
-        i <- which(names(tag) == label)
-        if (length(i) == 0) {
-            i <- length(tag) + 1
-            tag <<- c(tag, i)
-            names(tag)[length(tag)] <<- label
-            used <<- c(used, FALSE)
-            names(used)[length(used)] <<- label
-            created <<- c(created, FALSE)
-            names(created)[length(created)] <<- label
-        }
-        if (!missing(caption)) {
-            created[label] <<- TRUE
-            paste0(prefix.highlight, prefix, " ", i, sep, prefix.highlight, 
-                " ", caption)
-        } else {
-            used[label] <<- TRUE
-            paste(prefix, tag[label])
-        }
-    }
-})
-
-options(figcap.prefix = "Рисунок", figcap.sep = ".", figcap.prefix.highlight = "**")
-
+Year <- 2025
 
 theme_set(theme_bw())
 
@@ -82,31 +62,31 @@ theme_set(theme_bw())
 # Читаем данные
 col_types <- c("numeric", "text", "text", "text", "numeric", "text", "guess"  )
 
-vor_size_1 <-read_excel("data/Mussel beds data base 96-24.xlsx", na = "NA", sheet = "Vor2, vor4, vor5 1996-2008" , col_types = col_types)
+vor_size_1 <-read_excel("data/Mussel beds data base 96-25.xlsx", na = "NA", sheet = "Vor2, vor4, vor5 1996-2008" , col_types = col_types)
 
-vor_size_2 <-read_excel("data/Mussel beds data base 96-24.xlsx", na = "NA", sheet = "Vor2, vor4, vor5 2009-2016" , col_types = col_types)
+vor_size_2 <-read_excel("data/Mussel beds data base 96-25.xlsx", na = "NA", sheet = "Vor2, vor4, vor5 2009-2016" , col_types = col_types)
 
-vor_size_3 <-read_excel("data/Mussel beds data base 96-24.xlsx", na = "NA", sheet = "Vor2, Vor4, Vor5 2017-2021" , col_types = col_types)
+vor_size_3 <-read_excel("data/Mussel beds data base 96-25.xlsx", na = "NA", sheet = "Vor2, Vor4, Vor5 2017-2021" , col_types = col_types)
 
-vor_size_4 <-read_excel("data/Mussel beds data base 96-24.xlsx", na = "NA", sheet = "vor2, vor4, vor5 2022", col_types = col_types )
+vor_size_4 <-read_excel("data/Mussel beds data base 96-25.xlsx", na = "NA", sheet = "vor2, vor4, vor5 2022", col_types = col_types )
 
-vor_size_5 <-read_excel("data/Mussel beds data base 96-24.xlsx", na = "NA", sheet = "vor2, vor3, vor4, vor5 2023-24" , col_types = col_types)
-
-
+vor_size_5 <-read_excel("data/Mussel beds data base 96-25.xlsx", na = "NA", sheet = "vor2, vor3, vor4, vor5 23-24-25" , col_types = col_types)
 
 
-luv_size_1 <- read_excel("data/Mussel beds data base 96-24.xlsx", na = "NA", sheet = "Korg, Mat 1997-2008" , col_types = col_types)
-
-luv_size_2 <- read_excel("data/Mussel beds data base 96-24.xlsx", na = "NA", sheet = "Korg, Mat 2009-2011" , col_types = col_types)
-
-luv_size_3 <- read_excel("data/Mussel beds data base 96-24.xlsx", na = "NA", sheet = "Korg, Mat 2012-2016" , col_types = col_types)
 
 
-luv_size_4 <- read_excel("data/Mussel beds data base 96-24.xlsx", na = "NA", sheet = "Korg, Mat, 2017-2021" , col_types = col_types)
+luv_size_1 <- read_excel("data/Mussel beds data base 96-25.xlsx", na = "NA", sheet = "Korg, Mat 1997-2008" , col_types = col_types)
 
-luv_size_5 <- read_excel("data/Mussel beds data base 96-24.xlsx", na = "NA", sheet = "Korg, Mat 2022" , col_types = col_types)
+luv_size_2 <- read_excel("data/Mussel beds data base 96-25.xlsx", na = "NA", sheet = "Korg, Mat 2009-2011" , col_types = col_types)
 
-luv_size_6 <- read_excel("data/Mussel beds data base 96-24.xlsx", na = "NA", sheet = "Korg, Mat 2023-24" , col_types = col_types)
+luv_size_3 <- read_excel("data/Mussel beds data base 96-25.xlsx", na = "NA", sheet = "Korg, Mat 2012-2016" , col_types = col_types)
+
+
+luv_size_4 <- read_excel("data/Mussel beds data base 96-25.xlsx", na = "NA", sheet = "Korg, Mat, 2017-2021" , col_types = col_types)
+
+luv_size_5 <- read_excel("data/Mussel beds data base 96-25.xlsx", na = "NA", sheet = "Korg, Mat 2022" , col_types = col_types)
+
+luv_size_6 <- read_excel("data/Mussel beds data base 96-25.xlsx", na = "NA", sheet = "Korg, Mat 2023-24-25" , col_types = col_types)
 
 
 
@@ -161,7 +141,7 @@ all_size_no_spat <- all_size %>% filter(L >= 1)
 
 В тексте использованы обозначения мидиевых банок, устоявшиеся в предыдущих изданиях «Летописи природы Кандалакшского заповедника». 
 
-Мидиевая банка *«Korg»* (67,110668 N;	32,642790 E, `r figRef("Korg")`) Расположена на корге в районе о-вов Малый и Большой Куртяжные (Лувеньгский архипелаг).
+Мидиевая банка *«Korg»* (67,110668 N;	32,642790 E, @fig-Korg) Расположена на корге в районе о-вов Малый и Большой Куртяжные (Лувеньгский архипелаг).
 
 
 ```{r, fig.cap=figRef("Korg", "Вид мидиевой банки *korg*. Здесь и далее съемка с квадрокоптера, пилотируемого Александрой Пилипенко. A quadcopter view of the mussel bed *korg*"), out.width=400}

@@ -1,5 +1,5 @@
 ---
-title: ""Характеристика популяции Semibalanus balanoides на литорали острова Ряжкова летом 2025 г.""
+title: "Характеристика популяции *Semibalanus balanoides* на литорали острова Ряжкова летом 2025 г."
 author: "В. М. Хайтов"
 format:
   docx:
@@ -89,20 +89,23 @@ bal_25 <-
 
 ## Методика учета балянусов 
 
-Описание поселений морских желудей производилось силами волонтеров. На четырех стандартных участках литорали  острова Ряжкова (Южная губа, Восточный берег, Северная губа и Западный берег) проводятся ежегодные описания популяции усоногих раков *Semibalanus balanoides*. На каждом из участков ежегодно выбирается случайным образом по несколько валунов. Координаты точек расположения валунов засекаются с помощью спутникового навигатора. Расположение точек сбора материала, обследованных  в `r Year` году приведено на  @Stone. Координаты обследованных в `r Year` г камней приведены в таблице +.1.
+Описание поселений морских желудей производилось силами волонтеров. На четырех стандартных участках литорали  острова Ряжкова (Южная губа, Восточный берег, Северная губа и Западный берег) проводятся ежегодные описания популяции усоногих раков *Semibalanus balanoides*. На каждом из участков ежегодно выбирается случайным образом по несколько валунов. Координаты точек расположения валунов засекаются с помощью спутникового навигатора. Расположение точек сбора материала, обследованных  в `r Year` году приведено на  @fig-Stones. Координаты обследованных в `r Year` г камней приведены в @tbl-Stones.
 
 
-Валуны, использованные в анализе, располагались не выше пояса фукоидов и имели в диаметре не менее 1 метра. Обилие балянусов подсчитывалось на двух сторонах валуна (обращенной к морю (“Sea”) и обращенной к суше (“Land”). На каждой стороне было заложено по три площадки 10х10 см, располагавшихся на высоте 30 см от поверхности грунта. Рамка, ограничивающая площадку, была разбита на 25 квадратов со стороной 2 см. В трех случайно выбранных квадратах было подсчитано обилие балянусов следующих классов: Живые сеголетки, Мертвые сеголетки, Живые особи возрастом 1+ и более (далее взрослые), Мертвые взрослые особи. Данные, по учетам балянусов в `r Year` году, приведены в таблице +.2. 
-
-
-
+Валуны, использованные в анализе, располагались не выше пояса фукоидов и имели в диаметре не менее 1 метра. Обилие балянусов подсчитывалось на двух сторонах валуна (обращенной к морю (“Sea”) и обращенной к суше (“Land”). На каждой стороне было заложено по три площадки 10х10 см, располагавшихся на высоте 30 см от поверхности грунта. Рамка, ограничивающая площадку, была разбита на 25 квадратов со стороной 2 см. В трех случайно выбранных квадратах было подсчитано обилие балянусов следующих классов: Живые сеголетки, Мертвые сеголетки, Живые особи возрастом 1+ и более (далее взрослые), Мертвые взрослые особи. Данные, по учетам балянусов в `r Year` году, приведены в @tbl-Data. 
 
 
 
 
-``` {r, fig.cap=figRef("Stone", "Расположение камней, на которых проводился учет балянусов, на побережье о. Ряжкова (2024 г.). Position of stones where barnacles were counted on the shore of Ryazhkov island in 2024"), , fig.hight= 4, fig.wdth = 4}
 
-ggmap(Ryazh_map,  base_layer=ggplot(data=bal_24, aes(x=E, y=N))) + 
+
+
+``` {r}
+#| label: fig-Stones
+#| fig-cap: "Расположение камней, на которых проводился учет балянусов, на побережье о. Ряжкова (2025 г.). Position of stones where barnacles were counted on the shore of Ryazhkov island in 2025"
+
+
+ggmap(Ryazh_map,  base_layer=ggplot(data=bal_25, aes(x=E, y=N))) + 
   geom_point(shape=21, fill="yellow", size = 4) + 
   theme(axis.text = element_blank(), axis.title = element_blank(), axis.ticks = element_blank()) 
 
@@ -118,20 +121,21 @@ bal_melt$Stage <- factor(bal_melt$Stage, labels = c("Живые сеголетк
 
 
 
-`r figRef("Abund24")` демонстрирует обилие разных стадий на разных точках в `r Year` г. Самое мощное пополнение в этом году происходило на Западном берегу, на втором месте были Северная и Южная губа. Меньше всего молоди осело, как и прежде,  на Восточном берегу.
+@fig-Abund демонстрирует обилие разных стадий на разных точках в `r Year` г. В этом году распределение обилия молоди по разным участкам побережья острова было более равномерным, чем в предыдущие годы.  
 
 
-<!-- Анализ многолетних тенденций изменения численности молоди балянусов (`r figRef("Abund_dynam")`) показал, что обилие осевшей молоди демонстрирует  -->
+<!-- Анализ многолетних тенденций изменения численности молоди балянусов показал, что обилие осевшей молоди демонстрирует  -->
 
 
 <!-- плотность поселения демонстрирует циклические колебания. Данные мониторинга гидрологических показателей, который проводится в Южной губе о. Ряжкова (см. отдельную главу Летописи), позволяют оценить связь солености с наблюдаемой динамикой пополнения поселений балянусов молодью. Однозначной связи между периодами всплеска обилия молоди и соленостью не выявляется. Однако видно, что всплески обилия молоди приходятся на годы с более высокой соленостью (а также в годы, которым предшествовала более высокая соленость).  -->
 
 
 
-```{r, fig.cap=figRef("Abund24", "Обилие сеголеток и взрослых балянусов (экз. на 4 кв.см.) в 2024 году. Abundance of juveniles and adult barnacles (ind per 4 sq. cm) in 2024."), fig.height=5}
+```{r}
+#| label: fig-Abund
+#| fig-cap: "Обилие сеголеток и взрослых балянусов (экз. на 4 кв.см.) в 2025 году. Abundance of juveniles and adult barnacles (ind per 4 sq. cm) in 2025."
 
-
-bal_melt2 <-  bal_melt %>% filter(Stage %in% c("Живые сеголетки", "Живые взрослые")) %>% filter(Year == 2024)
+bal_melt2 <-  bal_melt %>% filter(Stage %in% c("Живые сеголетки", "Живые взрослые")) %>% filter(Year == 2025)
 
 ggplot(bal_melt2, aes(x = Site, y =Abundance)) +
   geom_boxplot() +
@@ -153,35 +157,39 @@ ggplot(bal_melt2, aes(x = Site, y =Abundance)) +
 
 <!-- bal_melt$Stage <- factor(bal_melt$Stage, labels = c("Живые сеголетки", "Мертвые сеголетки", "Живые взрослые", "Мертвые взрослые")) -->
 
+
+<!--   bal_melt %>%  -->
+<!--   filter(Stage == "Живые сеголетки") %>% -->
+<!--     group_by(Year, Site, N_stone) %>%  -->
+<!--     summarise(Abund_mean = mean(Abundance)) %>%  -->
+<!--     group_by(Year, Site) %>%  -->
+<!--     summarise(Abund = mean(Abund_mean)) %>%  -->
+<!--     group_by(Year) %>%  -->
+<!--     summarise(Mean = mean(Abund), Sd = sd(Abund), CV = Sd/Mean) %>%  -->
+<!--     ggplot(aes(x = Year, y = CV)) + -->
+<!--     geom_line() + -->
+<!--     geom_smooth(se = F) -->
+
+
+
+
 <!-- Mean_Abundance <- mean(log(bal_melt$Abundance + 1), na.rm = T) -->
 
 <!-- hydr_long <- hydr_long %>% filter(Year >= min(bal$Year)) -->
 
 <!-- hydr_long$Year <- as.numeric(hydr_long$Year) -->
 
-<!-- bal_melt %>%  -->
+<!-- bal_melt %>% -->
 <!--   ggplot(aes(x = Year, y = log(Abundance+1))) + -->
 <!--   # geom_point(position = position_jitter(width = 0.1), size = 0.2) + -->
 <!--   # facet_grid(~Site) + -->
 <!--   geom_smooth(method = "gam", se = T, color = "red") + -->
 <!--   geom_hline(yintercept = Mean_Abundance, linetype = 1) + -->
-<!--   geom_smooth(data = hydr_long, aes(x = Year, y = S/20), method = "gam", linetype = 2, color = "blue") +  -->
+<!--   geom_smooth(data = hydr_long, aes(x = Year, y = S/20), method = "gam", linetype = 2, color = "blue") + -->
 <!--   scale_y_continuous(name = "Логарифм Обилия сеголеток", sec.axis = sec_axis(~. * 20, name="Соленость")) + -->
-<!--   scale_x_continuous(breaks=seq(min(bal$Year), max(bal$Year), 2)) +  -->
+<!--   scale_x_continuous(breaks=seq(min(bal$Year), max(bal$Year), 2)) + -->
 <!--   labs(x = "Годы", y = "Log Плотности поселения", fill = "", color = "") -->
 
-
-<!-- # bal %>%    -->
-<!-- #   mutate(Total_N = Juveniles_Alive) %>%  -->
-<!-- #   group_by(Site, Year) %>%  -->
-<!-- #   summarise(N_total = mean(Total_N, na.rm = T)) %>%  -->
-<!-- #   ggplot(., aes(x = Year, y = (N_total+1))) +  -->
-<!-- #   facet_wrap(~Site) + -->
-<!-- #   geom_line() + -->
-<!-- #   geom_point(shape = 21, fill= "black") +  -->
-<!-- #   labs(x = "Годы", y = "Плотность поселения (экз/4кв.см)", fill = "", color = "") +  -->
-<!-- #   theme(legend.position = "bottom") + -->
-<!-- #    scale_x_continuous(breaks=seq(min(bal$Year), max(bal$Year), 2)) -->
 
 <!-- ``` -->
 
@@ -190,13 +198,16 @@ ggplot(bal_melt2, aes(x = Site, y =Abundance)) +
 
 
 ```{r}
+#| label: tbl-Stones
+#| tbl-cap: "Координаты камней, на которых проводился учет балянусов в 2025 г. Coordinates of stones where barnacles were counted in 2025."
+
 ft <-
-bal_24 %>% 
+bal_25 %>% 
   group_by(Site, N_stone) %>% 
   summarise(Lat = mean(N), Long = mean(E)) %>% 
   flextable()
-
-ft <- set_caption(ft, "Таблица +.1. Координаты камней, на которых проводился учет балянусов в 2024 г. Coordinates of stones where barnacles were counted in 2024.")
+# 
+# ft <- set_caption(ft, "Таблица +.1. Координаты камней, на которых проводился учет балянусов в 2024 г. Coordinates of stones where barnacles were counted in 2024.")
 
 
 ft  %>%  
@@ -212,11 +223,13 @@ ft  %>%
 
 
 ```{r}
+#| label: tbl-Data
+#| tbl-cap: "Обилие сеголеток и взрослых балянусов  на побережье о. Ряжкова в 2025 г. (экз. на 4 кв.см.).  Abundance of barnacles juveniles adults on the shore of Ryazhkov island in 2025 (ind. per 4 sq. cm)"
 
 colname <- c("Сайт", "Камень","Направление", "Рамка", "Сеголетки живые", "Сеголетки мертвые", "Взрослые живые", "Взрослые мертвые")
 
 ft <- 
-bal_24 %>%  
+bal_25 %>%  
   dplyr::select(-Year, - N, -E, -Square ) %>% 
   flextable() 
 
@@ -226,7 +239,7 @@ ft <- colformat_double(ft, j = 1,  big.mark = "", digits = 0)
 
 ft <- set_header_labels(ft, values = colname)
 
-ft <- set_caption(ft, "Таблица +.2 Обилие сеголеток и взрослых балянусов  на побережье о. Ряжкова в 2024 г. (экз. на 4 кв.см.).  Abundance of barnacles juveniles adults on the shore of Ryazhkov island in 2024 (ind. per 4 sq. cm)")
+# ft <- set_caption(ft, "Таблица +.2 Обилие сеголеток и взрослых балянусов  на побережье о. Ряжкова в 2024 г. (экз. на 4 кв.см.).  Abundance of barnacles juveniles adults on the shore of Ryazhkov island in 2024 (ind. per 4 sq. cm)")
 
 # kable(bal_22, digits = c(0,0,0,0, 6,6,0,0,0,0), missing = "нет данных", style = "multiline",  split.tables = Inf, split.cells = 10, col.names = colname)
 
@@ -234,14 +247,17 @@ ft <- set_caption(ft, "Таблица +.2 Обилие сеголеток и в�
 library(officer)
 std_border = fp_border(color="gray", width = 1)
 
+ft <-
 ft %>% 
   border_inner_h(border = std_border ) %>% 
   border_inner_v(border = std_border ) %>% 
-  fontsize(size = 9, part = "all") %>% 
-  fontsize(size = 9, part =  'header')  
+  fontsize(size = 8, part = "all") %>% 
+  fontsize(size = 8, part =  'header')  
 # %>% 
 #   autofit(part = "all")
 
+
+ft
 
 ```
 
