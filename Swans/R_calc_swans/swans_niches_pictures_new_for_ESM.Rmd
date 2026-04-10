@@ -1,0 +1,253 @@
+---
+title: ""
+author: ""
+output: 
+  word_document:
+    reference_docx: article_template.docx
+    fig_width: 6
+    fig_height: 6
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+  opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+
+
+```{r}
+library(readxl)
+library(dplyr)
+library(reshape2)
+library(mgcv)
+library(ggplot2)
+library(cowplot)
+library(gratia)
+
+
+
+```
+
+
+```{r}
+
+dat <- read_excel("Data/swans.xlsx")
+
+
+dat <-
+  dat %>% 
+  filter(Depth < 20)
+
+dat2 <- 
+dat %>% 
+  select(Ice, Depth,  Dist,  Year, Date, Site, C.olor, C.cygnus, C.bewickii) %>% 
+  melt(id.vars = c("Ice", "Depth",  "Dist",  "Year", "Date", "Site" ), variable.name = "Species", value.name = "N")
+
+
+dat2$Species <- factor(dat2$Species)
+dat2$Ice <- factor(dat2$Ice, labels = c("Ice_cover", "No_ice"))
+dat2$Site <- factor(dat2$Site)
+
+```
+
+
+# Материалы для электронного приложения
+
+##  Модель, описывающая распределение численности особей трех видов лебедей в ледовый и безледные периоды года (модель GAMM1)
+
+
+
+```{r echo=F}
+Mod <- gam(N ~ s(Year, by = Species, k = 5) +
+             s(Dist, Depth,  by = interaction(Species, Ice), k = 10) +
+             Species + Ice +
+             s(Site, bs = "re", k = length(unique(dat2$Site))),
+             data = dat2,
+             family = nb(),
+             method = "REML")
+```
+
+
+
+```{r}
+library(broom)
+library(flextable)
+
+
+ft <- flextable(tidy(Mod))
+
+
+ft %>%
+  colformat_double(j = c(2, 3, 4), digits = 1) %>% 
+  colformat_double(j = 5, digits = 3) %>% 
+  set_header_labels(values = c("Smoother term", "edf", "ref.df", "F", "p-value" )) %>% 
+  set_caption("STable ++. Результаты подгонки обобщенной аддитивной модели  (Модель GAMM1) для оценки влияния факторов на пространственное распределение трех видов лебедей в ледовый и безледовый периоды.  Table 1. Fitting results of the generalized additive mixed model (Model GAMM1) assessing the effects of environmental factors on the spatial distribution of three swan speciesduring ice-covered and ice-free periods")
+
+# summary(Mod)
+```
+
+\pagebreak
+
+```{r}
+theme_set(theme_bw() + theme(legend.position = "botom"))
+```
+
+
+```{r}
+library(cowplot)
+
+# Извлекаем каждый график и модифицируем
+p1 <- draw(Mod, select = 1, caption = F, smooth_col = "blue") + 
+  scale_x_continuous(breaks = function(x) floor(seq(min(x), max(x), length.out = 11))) +
+  theme(axis.text.x = element_text(angle = 90)) +
+  ggtitle("C.olor", subtitle = NULL) +
+  geom_hline(yintercept = 0, linetype = 2)
+
+p2 <- draw(Mod, select = 2, caption = F, smooth_col = "blue") + 
+  scale_x_continuous(breaks = function(x) floor(seq(min(x), max(x), length.out = 11)))+
+  theme(axis.text.x = element_text(angle = 90)) +
+  ggtitle("C.cygnus", subtitle = NULL)+
+  geom_hline(yintercept = 0, linetype = 2)
+
+
+p3 <- draw(Mod, select = 3, caption = F, smooth_col = "blue") + 
+  scale_x_continuous(breaks = function(x) floor(seq(min(x), max(x), length.out = 11)))+
+  theme(axis.text.x = element_text(angle = 90))+
+  ggtitle("C.bewickii", subtitle = NULL)+
+  geom_hline(yintercept = 0, linetype = 2)
+
+
+
+```
+
+\pagebreak
+
+Может быть вовсе не приводить  эти графики? В модели динамика численности останется, а визуализацию можно и не делать, если это никак в тексте не упоминается. 
+
+```{r ,fig.cap="SFig.++. Многолетние изменения численности трех видов лебедей, описанные с помощью модели GAMM1. Горизонтальная пунктирная линия отражает частный эффект равный среднему значению численности вида. Long-term changes in the abundance of three swan species described using the GAMM1 model. The horizontal dashed line reflects the partial effect corresponding to the mean species abundance."}
+
+# Объединяем
+
+plot_grid(p1, p2, p3, nrow =3)
+
+
+```
+
+
+
+
+
+
+```{r}
+
+dat_cygnets <- read_excel("Data/swans.xlsx", sheet = "C.olor_Chicks")
+
+
+dat_cygnets <-
+  dat_cygnets %>%
+  filter(Depth < 20)
+
+dat_cygnets2 <-
+dat_cygnets %>%
+  dplyr::select(Depth,  Dist,  Year, Site, Cygnets_Young, Cygnets_Old) %>%
+  melt(id.vars = c("Depth",  "Dist",  "Year", "Site" ), variable.name = "Cygnets_Age", value.name = "N")
+
+
+dat_cygnets2$Cygnets_Age <- factor(dat_cygnets2$Cygnets_Age)
+dat_cygnets2$Site <- factor(dat_cygnets2$Site)
+
+
+
+
+
+```
+
+\pagebreak
+
+##  Модель, описывающая распределение численности выводков лебедя-шипуна (модель GAMM2)
+
+```{r}
+Mod_2 <- gam(N ~ s(Year, by = Cygnets_Age, k = 10) +
+             s(Dist, Depth,  by = Cygnets_Age, k = 10) +
+             Cygnets_Age +
+             s(Site, bs = "re", k = length(unique(dat2$Site))),
+             data = dat_cygnets2,
+             family = nb(),
+             method = "REML")
+```
+
+
+
+
+```{r}
+library(broom)
+library(flextable)
+
+
+ft <- flextable(tidy(Mod_2))
+
+
+ft %>%
+  colformat_double(j = c(2, 3, 4), digits = 1) %>% 
+  colformat_double(j = 5, digits = 3) %>% 
+  set_header_labels(values = c("Smoother term", "edf", "ref.df", "F", "p-value" )) %>% 
+  set_caption("STable ++. Результаты подгонки обобщенной аддитивной модели  (Модель GAMM2) для оценки влияния факторов на пространственное распределение выводков лебедя-шипуна. Results of fitting a generalized additive mixed model (Model GAMM2) to assess the influence of factors on the spatial distribution of mute swan broods.")
+
+# summary(Mod)
+```
+
+
+\pagebreak
+
+## Модель пространственного распределения линяющийх особей лебедя-шипуна (Модель GAMM3)
+
+```{r}
+
+dat_molting <- read_excel("Data/swans.xlsx", sheet = "C.olor_Chicks")
+
+
+dat_molting <-
+  dat_molting %>% 
+  filter(Depth < 20)
+
+dat_molting2 <- 
+dat_molting %>% 
+  dplyr::select(Depth,  Dist,  Year, Site, Molting_Birds) %>% 
+  melt(id.vars = c("Depth",  "Dist",  "Year", "Site" ), variable.name = "Stage", value.name = "N")
+
+dat_molting2$Site <- factor(dat_molting2$Site)
+
+
+```
+
+
+
+```{r}
+
+Mod_3 <- gam(N ~ s(Year, k = 10) +
+             s(Dist, Depth, k = 10) +
+             s(Site, bs = "re", k = length(unique(dat2$Site))),
+             data = dat_molting2,
+             family = nb(),
+             method = "REML")
+```
+
+
+
+```{r}
+library(broom)
+library(flextable)
+
+
+ft <- flextable(tidy(Mod_3))
+
+
+ft %>%
+  colformat_double(j = c(2, 3, 4), digits = 1) %>% 
+  colformat_double(j = 5, digits = 3) %>% 
+  set_header_labels(values = c("Smoother term", "edf", "ref.df", "F", "p-value" )) %>% 
+  set_caption("STable ++. Результаты подгонки обобщенной аддитивной модели  (Модель GAMM3), описывающей влияния факторов на пространственное распределение линяющих особей лебедя-шипуна. Results of fitting a generalized additive mixed model (GAMM3) describing the influence of factors on the spatial distribution of molting mute swans")
+
+# summary(Mod)
+```
+
