@@ -162,6 +162,15 @@ sm <- smooth_estimates(Mod)
 
 
 
+```{r}
+# color set
+
+color_high = "red"
+color_low = "yellow"
+
+```
+
+
 
 
 
@@ -189,17 +198,22 @@ threshold <- quantile(distances[distances > 0], 0.15) * 3  # например, �
 smooth_data_filtered <- smooth_data[distances <= threshold, ]
 
 # График
+
 Pl_sp1 <-
 ggplot(smooth_data_filtered, aes(Dist, Depth)) +
   geom_tile(aes(fill = .estimate)) +
   geom_point(data = as.data.frame(points_data), size = 1, alpha = 0.5) +
   geom_contour(aes(z = .estimate), color = "black", bins = 10) +
-  scale_fill_gradient2(low = "yellow", mid = "white", high = "maroon") +
+  scale_fill_gradient2(low = color_low, mid = "white", high =  color_high) +
   coord_fixed() +
   ggtitle("C.olor") +
   labs(fill = "Partial effect", x = NULL, y = NULL) +
-  theme(panel.grid = element_blank(), panel.background = element_rect(fill = "gray90", color = NA))
+  theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = "gray90", color = NA))
 
+  
+  
 ```
 
 
@@ -222,11 +236,13 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
   geom_tile(aes(fill = .estimate)) +
   geom_point(data = as.data.frame(points_data), size = 1, alpha = 0.5) +
   geom_contour(aes(z = .estimate), color = "black", bins = 10) +
-  scale_fill_gradient2(low = "yellow", mid = "white", high = "maroon") +
+  scale_fill_gradient2(low = color_low, mid = "white", high =  color_high) +
   coord_fixed() +
   ggtitle("C.cygnus") +
   labs(fill = "Partial effect", x = NULL, y = NULL) +
-  theme(panel.grid = element_blank(), panel.background = element_rect(fill = "gray90", color = NA))
+  theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = "gray90", color = NA))
 
 ```
 
@@ -249,15 +265,17 @@ smooth_data_filtered <- smooth_data[distances <= threshold, ]
 
 # График
 Pl_sp3 <-
-ggplot(smooth_data_filtered, aes(Dist, Depth)) +
+  ggplot(smooth_data_filtered, aes(Dist, Depth)) +
   geom_tile(aes(fill = .estimate)) +
   geom_point(data = as.data.frame(points_data), size = 1, alpha = 0.5) +
   geom_contour(aes(z = .estimate), color = "black", bins = 10) +
-  scale_fill_gradient2(low = "yellow", mid = "white", high = "maroon") +
+  scale_fill_gradient2(low = color_low, mid = "white", high =  color_high) +
   coord_fixed() +
   ggtitle("C.bewickii") +
   labs(fill = "Partial effect", x = NULL, y = NULL) +
-  theme(panel.grid = element_blank(), panel.background = element_rect(fill = "gray90", color = NA))
+  theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = "gray90", color = NA))
 
 ```
 
@@ -268,17 +286,19 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
 
 
 Pl_ice_free_period <-
-  plot_grid(Pl_sp1, Pl_sp2, Pl_sp3, nrow = 1)
+  plot_grid(Pl_sp1, Pl_sp2, Pl_sp3, ncol = 1)
 
 
 
-Pl_ice_free_period_labeled <- ggdraw(Pl_ice_free_period) +
-  # Подпись для оси X (внизу)
-  draw_label("", 
-             x = 0.5, y = 0.1, vjust = -8, size = 12) +
-  # Подпись для оси Y (слева)
-  draw_label("Depth class", 
-             x = 0.01, y = 0.5, angle = 90, vjust = 0.5, size = 12)
+# 
+# 
+# Pl_ice_free_period_labeled <- ggdraw(Pl_ice_free_period) +
+#   # Подпись для оси X (внизу)
+#   draw_label("", 
+#              x = 0.5, y = 0.1, vjust = -8, size = 12) +
+#   # Подпись для оси Y (слева)
+#   draw_label("Depth class", 
+#              x = 0.01, y = 0.5, angle = 90, vjust = 0.5, size = 12)
 
 # Отображаем результат
 # Pl_ice_free_period_labeled
@@ -357,7 +377,7 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
   geom_tile(aes(fill = .estimate)) +
   geom_point(data = as.data.frame(points_data), size = 1, alpha = 0.5) +
   geom_contour(aes(z = .estimate), color = "black", bins = 10) +
-  scale_fill_gradient2(low = "yellow", mid = "white", high = "maroon") +
+  scale_fill_gradient2(low = color_low, mid = "white", high = color_high) +
   coord_fixed() +
   ggtitle("C.olor") +
   labs(fill = "Partial effect", x = NULL, y = NULL) +
@@ -385,7 +405,7 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
   geom_tile(aes(fill = .estimate)) +
   geom_point(data = as.data.frame(points_data), size = 1, alpha = 0.5) +
   geom_contour(aes(z = .estimate), color = "black", bins = 10) +
-  scale_fill_gradient2(low = "yellow", mid = "white", high = "maroon") +
+  scale_fill_gradient2(low = color_low, mid = "white", high = color_high) +
   coord_fixed() +
   ggtitle("C.cygnus") +
   labs(fill = "Partial effect", x = NULL, y = NULL) +
@@ -416,7 +436,7 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
   geom_tile(aes(fill = .estimate)) +
   geom_point(data = as.data.frame(points_data), size = 1, alpha = 0.5) +
   geom_contour(aes(z = .estimate), color = "black", bins = 10) +
-  scale_fill_gradient2(low = "yellow", mid = "white", high = "maroon") +
+  scale_fill_gradient2(low = color_low, mid = "white", high = color_high) +
   coord_fixed() +
   ggtitle("C.bewickii") +
   labs(fill = "Partial effect", x = NULL, y = NULL) +
