@@ -555,8 +555,19 @@ combined_plots <- plot_Sp1 + plot_Sp2 + plot_Sp3 +
   plot_layout(guides = "collect") &  # собираем все легенды в одну
   theme(legend.position = "bottom")   # размещаем общую легенду снизу
 
-combined_plots
+ggsave(plot = combined_plots, filename = "Figures/Pay_chart.png", dpi = 600)
 ```
+
+
+
+```{r}
+include_graphics("Figures/Pay_chart.png")
+```
+
+
+
+
+
 
 
 
@@ -610,7 +621,7 @@ Mod_2 <- gam(N ~ s(Year, by = Cygnets_Age, k = 10) +
 
 ```{r}
 sm <- smooth_estimates(Mod_2) 
-unique(sm$.smooth)
+
 ```
 
 
@@ -656,6 +667,7 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
     legend.position = c(0.85, 0.26),
     legend.background = element_rect(fill = alpha("white", 0.5), color = "black"))
 
+ggsave(plot = Pl_Cygnets_Young, filename = "Figures/Pl_Cygnets_Young.png")
 ```
 
 
@@ -695,21 +707,26 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
     legend.position = c(0.85, 0.26),
     legend.background = element_rect(fill = alpha("white", 0.5), color = "black"))
 
+ggsave(plot = Pl_Cygnets_Old, filename = "Figures/Pl_Cygnets_Old.png")
+```
+
+```{r}
+combined_cygnets <- image_read(c(
+  "Figures/Pl_Cygnets_Young.png",
+  "Figures/Pl_Cygnets_Old.png")) %>%
+  image_trim() %>%  # убирает пустые поля вокруг каждого изображения
+  image_border("white", "0x10") %>%  # опционально: добавить небольшой отступ между ними
+  image_append(stack = FALSE) 
+
+# Сохранение
+image_write(combined_cygnets, "Figures/combined_Cygnets.png")
 
 ```
 
 
-```{r}
-Pl_cygnets <- plot_grid(Pl_Cygnets_Young, Pl_Cygnets_Old)
-
-ggsave(plot = Pl_cygnets, filename = "Figures/Pl_cygnets.png", dpi = 600)
-
-```
-
-
 
 ```{r}
-include_graphics("Figures/Pl_cygnets.png")
+include_graphics("Figures/combined_Cygnets.png")
 ```
 
 
@@ -808,11 +825,13 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
     legend.position = c(0.88, 0.2),
     legend.background = element_rect(fill = alpha("white", 0.5), color = "black"))
 
+ggsave(plot = Pl_Molting_Birds, filename = "Figures/Pl_Molting_Birds.png",  dpi = 600)
+
 ```
 
 
 ```{r}
-Pl_Molting_Birds
+include_graphics("Figures/Pl_Molting_Birds.png")
 ```
 
 
