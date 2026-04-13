@@ -210,9 +210,11 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
   labs(fill = "Partial effect", x = NULL, y = NULL) +
   theme(
     panel.grid = element_blank(),
-    panel.background = element_rect(fill = "gray90", color = NA))
+    panel.background = element_rect(fill = "gray90", color = NA),
+    legend.position = c(0.88, 0.18),
+    legend.background = element_rect(fill = alpha("white", 0.5), color = "black"))
 
-  
+  ggsave(plot = Pl_sp1, filename = "Figures/Pl_sp1_ice_free.png", dpi = 600)
   
 ```
 
@@ -240,10 +242,13 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
   coord_fixed() +
   ggtitle("C.cygnus") +
   labs(fill = "Partial effect", x = NULL, y = NULL) +
-  theme(
+ theme(
     panel.grid = element_blank(),
-    panel.background = element_rect(fill = "gray90", color = NA))
+    panel.background = element_rect(fill = "gray90", color = NA),
+    legend.position = c(0.88, 0.18),
+    legend.background = element_rect(fill = alpha("white", 0.5), color = "black"))
 
+  ggsave(plot = Pl_sp2, filename = "Figures/Pl_sp2_ice_free.png", dpi = 600)
 ```
 
 
@@ -273,9 +278,13 @@ Pl_sp3 <-
   coord_fixed() +
   ggtitle("C.bewickii") +
   labs(fill = "Partial effect", x = NULL, y = NULL) +
-  theme(
+ theme(
     panel.grid = element_blank(),
-    panel.background = element_rect(fill = "gray90", color = NA))
+    panel.background = element_rect(fill = "gray90", color = NA),
+    legend.position = c(0.88, 0.18),
+    legend.background = element_rect(fill = alpha("white", 0.5), color = "black"))
+
+  ggsave(plot = Pl_sp3, filename = "Figures/Pl_sp3_ice_free.png", dpi = 600)
 
 ```
 
@@ -284,66 +293,28 @@ Pl_sp3 <-
 
 ```{r}
 
+library(png)
 
-Pl_ice_free_period <-
-  plot_grid(Pl_sp1, Pl_sp2, Pl_sp3, ncol = 1)
+Pl_sp1 <- readPNG("Figures/Pl_sp1_ice_free.png")
+Pl_sp2 <- readPNG("Figures/Pl_sp2_ice_free.png")
+Pl_sp3 <- readPNG("Figures/Pl_sp3_ice_free.png")
 
+library(magick)
 
+# Чтение и соединение
+combined <- image_read(c(
+  "Figures/Pl_sp1_ice_free.png",
+  "Figures/Pl_sp2_ice_free.png",
+  "Figures/Pl_sp3_ice_free.png"
+)) %>%
+  image_append(stack = TRUE)  # stack = TRUE для вертикального соединения
 
-# 
-# 
-# Pl_ice_free_period_labeled <- ggdraw(Pl_ice_free_period) +
-#   # Подпись для оси X (внизу)
-#   draw_label("", 
-#              x = 0.5, y = 0.1, vjust = -8, size = 12) +
-#   # Подпись для оси Y (слева)
-#   draw_label("Depth class", 
-#              x = 0.01, y = 0.5, angle = 90, vjust = 0.5, size = 12)
-
-# Отображаем результат
-# Pl_ice_free_period_labeled
+# Сохранение
+image_write(combined, "Figures/combined_vertical_ice_free.png")
 
 
 
 ```
-
-
-
-
-
-<!-- ```{r} -->
-
-<!-- Pl_sp1 <-  -->
-<!-- draw(Mod, select = 7) + -->
-<!-- guides(fill = "none") + -->
-<!--   scale_fill_gradient2(low = "yellow", mid = "white", high = "red") + -->
-<!--   ggtitle("C.olor", subtitle = NULL) -->
-
-
-<!-- Pl_sp2 <-  -->
-<!-- draw(Mod, select = 8) + -->
-<!-- guides(fill = "none") + -->
-<!-- scale_fill_gradient(low = "yellow", high = "red") + -->
-<!-- ggtitle("C.cygnus", subtitle = NULL) -->
-
-<!-- Pl_sp3 <-  -->
-<!-- draw(Mod, select = 9) + -->
-<!-- guides(fill = "none") + -->
-<!-- scale_fill_gradient(low = "yellow", high = "red") + -->
-<!-- ggtitle("C.bewickii", subtitle = NULL) -->
-
-
-
-<!-- ``` -->
-
-<!-- Это старая версия картинки. Надо подумать, какая лучше смотрится. -->
-
-<!-- ```{r, fig.width=10, fig.cap="Распределение трех видов лебедей в гардиенте глубины и удаленности от берега. Чем краснее заливка, тем больше обилие."} -->
-
-
-<!-- plot_grid(Pl_sp1, Pl_sp2, Pl_sp3, nrow = 1) -->
-
-<!-- ``` -->
 
 
 
@@ -368,7 +339,7 @@ distances <- apply(smooth_data[, c("Dist", "Depth")], 1, function(point) {
 })
 
 # Включаем точки, которые находятся в пределах порогового расстояния
-threshold <- quantile(distances[distances > 0], 0.2) * 3  # например, удвоенное медианное расстояние
+threshold <- quantile(distances[distances > 0], 0.15) * 1.6  # например, удвоенное медианное расстояние
 smooth_data_filtered <- smooth_data[distances <= threshold, ]
 
 # График
@@ -381,7 +352,13 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
   coord_fixed() +
   ggtitle("C.olor") +
   labs(fill = "Partial effect", x = NULL, y = NULL) +
-  theme(panel.grid = element_blank(), panel.background = element_rect(fill = "gray90", color = NA))
+ theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = "gray90", color = NA),
+    legend.position = c(0.88, 0.18),
+    legend.background = element_rect(fill = alpha("white", 0.5), color = "black"))
+
+  ggsave(plot = Pl_sp1, filename = "Figures/Pl_sp1_ice_melting.png", dpi = 600)
 
 ```
 
@@ -396,7 +373,7 @@ distances <- apply(smooth_data[, c("Dist", "Depth")], 1, function(point) {
 })
 
 # Включаем точки, которые находятся в пределах порогового расстояния
-threshold <- quantile(distances[distances > 0], 0.2) * 3  # например, удвоенное медианное расстояние
+threshold <- quantile(distances[distances > 0], 0.15) * 1.6  # например, удвоенное медианное расстояние
 smooth_data_filtered <- smooth_data[distances <= threshold, ]
 
 # График
@@ -409,8 +386,13 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
   coord_fixed() +
   ggtitle("C.cygnus") +
   labs(fill = "Partial effect", x = NULL, y = NULL) +
-  theme(panel.grid = element_blank(), panel.background = element_rect(fill = "gray90", color = NA))
+ theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = "gray90", color = NA),
+    legend.position = c(0.88, 0.18),
+    legend.background = element_rect(fill = alpha("white", 0.5), color = "black"))
 
+  ggsave(plot = Pl_sp2, filename = "Figures/Pl_sp2_ice_melting.png", dpi = 600)
 ```
 
 
@@ -427,7 +409,7 @@ distances <- apply(smooth_data[, c("Dist", "Depth")], 1, function(point) {
 })
 
 # Включаем точки, которые находятся в пределах порогового расстояния
-threshold <- quantile(distances[distances > 0], 0.2) * 3  # например, удвоенное медианное расстояние
+threshold <- quantile(distances[distances > 0], 0.15) * 1.6  # например, удвоенное медианное расстояние
 smooth_data_filtered <- smooth_data[distances <= threshold, ]
 
 # График
@@ -440,8 +422,13 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
   coord_fixed() +
   ggtitle("C.bewickii") +
   labs(fill = "Partial effect", x = NULL, y = NULL) +
-  theme(panel.grid = element_blank(), panel.background = element_rect(fill = "gray90", color = NA))
+  theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = "gray90", color = NA),
+    legend.position = c(0.88, 0.18),
+    legend.background = element_rect(fill = alpha("white", 0.5), color = "black"))
 
+  ggsave(plot = Pl_sp3, filename = "Figures/Pl_sp3_ice_melting.png", dpi = 600)
 ```
 
 
@@ -449,66 +436,49 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
 
 ```{r}
 
+library(magick)
 
-Pl_ice_period <- plot_grid(Pl_sp1, Pl_sp2, Pl_sp3, nrow = 1)
+# Чтение и соединение
+combined_ice_melting <- image_read(c(
+  "Figures/Pl_sp1_ice_melting.png",
+  "Figures/Pl_sp2_ice_melting.png",
+  "Figures/Pl_sp3_ice_melting.png"
+)) %>%
+  image_append(stack = TRUE)  # stack = TRUE для вертикального соединения
+
+# Сохранение
+image_write(combined_ice_melting, "Figures/combined_ice_melting.png")
+
+```
 
 
-Pl_ice_period_labeled <- ggdraw(Pl_ice_period) +
-  # Подпись для оси X (внизу)
-  draw_label("Distance class", 
-             x = 0.5, y = 0.1, vjust = 0, size = 12) +
-  # Подпись для оси Y (слева)
-  draw_label("Depth class", 
-             x = 0.01, y = 0.5, angle = 90, vjust = 0.5, size = 12)
 
-# Отображаем результат
-# Pl_ice_period_labeled
+
+
+```{r}
+combined_two_periods <- image_read(c(
+  "Figures/combined_ice_melting.png",
+  "Figures/combined_vertical_ice_free.png")) %>%
+  image_trim() %>%  # убирает пустые поля вокруг каждого изображения
+  image_border("white", "0x10") %>%  # опционально: добавить небольшой отступ между ними
+  image_append(stack = FALSE) 
+
+# Сохранение
+image_write(combined_two_periods, "Figures/combined_two_periods.png")
 
 
 ```
 
 
-<!-- Опять же старая версия  -->
-
-<!-- ```{r} -->
-<!-- Pl_sp1_ice <-  -->
-<!-- draw(Mod, select = 4) + -->
-<!-- guides(fill = "none") + -->
-<!-- scale_fill_gradient(low = "yellow", high = "red") + -->
-<!-- ggtitle("Sp1 в период схода льда", subtitle = NULL) -->
-
-
-<!-- Pl_sp2_ice <-  -->
-<!-- draw(Mod, select = 5) + -->
-<!-- guides(fill = "none") + -->
-<!-- scale_fill_gradient(low = "yellow", high = "red") + -->
-<!-- ggtitle("Sp2 в период схода льда", subtitle = NULL) -->
-
-<!-- Pl_sp3_ice <-  -->
-<!-- draw(Mod, select = 6) + -->
-<!-- guides(fill = "none") + -->
-<!-- scale_fill_gradient(low = "yellow", high = "red") + -->
-<!-- ggtitle("Sp3 в период схода льда", subtitle = NULL) -->
 
 
 
-<!-- ``` -->
 
 
-<!-- ```{r, fig.width=10, fig.cap="Распределение трех видов лебедей в гардиенте глубины и удаленности от берега в период схода льда. Чем краснее заливка, тем больше обилие."} -->
+```{r, fig.cap="Рисунок +. Связь численности трех видов лебедей с глубиной и расстоянием от берега в безледный период A и в период таяния льда B в соответствии с Моделью GAMM1. Relationship between the abundance of three swan species and depth and distance from the shore during the ice-free period A and the ice-melting period B according to Model GAMM1."}
 
 
-<!-- plot_grid(Pl_sp1_ice, Pl_sp2_ice, Pl_sp3_ice, nrow = 1) -->
-
-<!-- ``` -->
-
-
-
-```{r, fig.cap="Рисунок +. Связь численности трех видов лебедей с глубиной и расстоянием от берега в безледный период (A) и в период таяния льда (B) в соответствии с Моделью GAMM1. Relationship between the abundance of three swan species and depth and distance from the shore during the ice-free period (A) and the ice-melting period (B) according to Model GAMM1. }
-library(patchwork)
-
-(Pl_ice_free_period_labeled / Pl_ice_period_labeled) +
-  plot_annotation(tag_levels = 'A')
+include_graphics("Figures/combined_two_periods.png")
 
 ```
 
@@ -676,11 +646,15 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
   geom_tile(aes(fill = .estimate)) +
   geom_point(data = as.data.frame(points_data), size = 1, alpha = 0.5) +
   geom_contour(aes(z = .estimate), color = "black", bins = 10) +
-  scale_fill_gradient2(low = "yellow", mid = "white", high = "maroon") +
+  scale_fill_gradient2(low = color_low, mid = "white", high = color_high) +
   coord_fixed() +
   ggtitle("Cygnets up to two weeks old") +
   labs(fill = "Partial effect") +
-  theme(panel.grid = element_blank(), panel.background = element_rect(fill = "gray90", color = NA))
+  theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = "gray90", color = NA),
+    legend.position = c(0.85, 0.26),
+    legend.background = element_rect(fill = alpha("white", 0.5), color = "black"))
 
 ```
 
@@ -711,50 +685,32 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
   geom_tile(aes(fill = .estimate)) +
   geom_point(data = as.data.frame(points_data), size = 1, alpha = 0.5) +
   geom_contour(aes(z = .estimate), color = "black", bins = 10) +
-  scale_fill_gradient2(low = "yellow", mid = "white", high = "maroon") +
+  scale_fill_gradient2(low = color_low, mid = "white", high = color_high) +
   coord_fixed() +
   ggtitle("Cygnets older two manth") +
   labs(fill = "Partial effect") +
-  theme(panel.grid = element_blank(), panel.background = element_rect(fill = "gray90", color = NA))
+  theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = "gray90", color = NA),
+    legend.position = c(0.85, 0.26),
+    legend.background = element_rect(fill = alpha("white", 0.5), color = "black"))
 
 
 ```
 
 
 ```{r}
-plot_grid(Pl_Cygnets_Young, Pl_Cygnets_Old)
+Pl_cygnets <- plot_grid(Pl_Cygnets_Young, Pl_Cygnets_Old)
+
+ggsave(plot = Pl_cygnets, filename = "Figures/Pl_cygnets.png", dpi = 600)
+
 ```
 
 
-
-Это те же самые катринки но в другой модификации 
 
 ```{r}
-draw(Mod_2, select = 3:4)
+include_graphics("Figures/Pl_cygnets.png")
 ```
-
-
-
-
-Вот Таблица summary подобранной модели, ее опять же предлагаю поместить в электронное приложение
-
-```{r}
-library(broom)
-library(flextable)
-
-
-ft <- flextable(tidy(Mod_2))
-
-
-ft %>%
-  colformat_double(j = c(2, 3, 4), digits = 1) %>% 
-  colformat_double(j = 5, digits = 3) %>% 
-  set_header_labels(values = c("Smoother term", "edf", "ref.df", "F", "p-value" )) %>% 
-  set_caption("Таблица 1. Результаты подгонки обобщенной аддитивной модели  (GAMM) для оценки влияния факторов на пространственное распределение выводков лебедя-шипуна")
-
-# summary(Mod)
-```
-
 
 
 
@@ -842,11 +798,15 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
   geom_tile(aes(fill = .estimate)) +
   geom_point(data = as.data.frame(points_data), size = 1, alpha = 0.5) +
   geom_contour(aes(z = .estimate), color = "black", bins = 10) +
-  scale_fill_gradient2(low = "yellow", mid = "white", high = "maroon") +
+  scale_fill_gradient2(low = color_low, mid = "white", high = color_high) +
   coord_fixed() +
-  ggtitle("Molting Birds") +
+  ggtitle("Molting C.olor") +
   labs(fill = "Partial effect") +
-  theme(panel.grid = element_blank(), panel.background = element_rect(fill = "gray90", color = NA))
+   theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = "gray90", color = NA),
+    legend.position = c(0.88, 0.2),
+    legend.background = element_rect(fill = alpha("white", 0.5), color = "black"))
 
 ```
 
@@ -855,33 +815,4 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
 Pl_Molting_Birds
 ```
 
-
-
-Это та же катринка но в другой модификации 
-
-```{r}
-draw(Mod_3, select = 2)
-```
-
-
-
-
-Вот Таблица summary подобранной модели, ее опять же предлагаю поместить в электронное приложение
-
-```{r}
-library(broom)
-library(flextable)
-
-
-ft <- flextable(tidy(Mod_3))
-
-
-ft %>%
-  colformat_double(j = c(2, 3, 4), digits = 1) %>% 
-  colformat_double(j = 5, digits = 3) %>% 
-  set_header_labels(values = c("Smoother term", "edf", "ref.df", "F", "p-value" )) %>% 
-  set_caption("Таблица 1. Результаты подгонки обобщенной аддитивной модели  (GAMM) для оценки влияния факторов на пространственное распределение линяющих особей лебедя-шипуна")
-
-# summary(Mod)
-```
 
