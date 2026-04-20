@@ -685,12 +685,14 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
   scale_fill_gradient2(low = color_low, mid = "white", high = color_high) +
   coord_fixed() +
   ggtitle("Cygnets up to two weeks old") +
-  labs(fill = "Partial effect") +
   theme(
     panel.grid = element_blank(),
     panel.background = element_rect(fill = "gray90", color = NA),
     legend.position = c(0.85, 0.26),
-    legend.background = element_rect(fill = alpha("white", 0.5), color = "black"))
+    legend.background = element_rect(fill = alpha("white", 0.5), color = "black"))  +
+  labs(fill = "Partial effect", x = "", y = "Depth")
+
+ggsave(plot = Pl_Cygnets_Young, filename = "Figures/Pl_Cygnets_Young.png")
 
 ```
 
@@ -724,21 +726,29 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
   scale_fill_gradient2(low = color_low, mid = "white", high = color_high) +
   coord_fixed() +
   ggtitle("Cygnets older two manth") +
-  labs(fill = "Partial effect") +
   theme(
     panel.grid = element_blank(),
     panel.background = element_rect(fill = "gray90", color = NA),
     legend.position = c(0.85, 0.26),
-    legend.background = element_rect(fill = alpha("white", 0.5), color = "black"))
+    legend.background = element_rect(fill = alpha("white", 0.5), color = "black")) +
+    labs(fill = "Partial effect", x = "Distance", y = "Depth")
 
-
+ggsave(plot = Pl_Cygnets_Old, filename = "Figures/Pl_Cygnets_Old.png")
 ```
 
 
 ```{r}
-Pl_cygnets <- plot_grid(Pl_Cygnets_Young, Pl_Cygnets_Old, nrow = 2)
 
-ggsave(plot = Pl_cygnets, filename = "Figures/Pl_cygnets.png", dpi = 600)
+
+combined_cygnets <- image_read(c(
+  "Figures/Pl_Cygnets_Young.png",
+  "Figures/Pl_Cygnets_Old.png")) %>%
+  image_trim() %>%  # убирает пустые поля вокруг каждого изображения
+  image_border("white", "0x10") %>%  # опционально: добавить небольшой отступ между ними
+  image_append(stack = TRUE) 
+
+# Сохранение
+image_write(combined_cygnets, "Figures/combined_Cygnets.png")
 
 ```
 
@@ -746,7 +756,7 @@ ggsave(plot = Pl_cygnets, filename = "Figures/Pl_cygnets.png", dpi = 600)
 
 ```{r, fig.cap = "Рисунок ++. Связь обилия выводков лебедя-шипуна с расстоянием от берега и глубиной в соответствии с моделью GAMM2.Relationship between the abundance of mute swan broods and distance from shore and depth according to the GAMM2 model." }
 
-include_graphics("Figures/Pl_cygnets.png")
+include_graphics("Figures/combined_Cygnets.png")
 
 ```
 
@@ -839,8 +849,8 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
   scale_fill_gradient2(low = color_low, mid = "white", high = color_high) +
   coord_fixed() +
   ggtitle("Molting C.olor") +
-  labs(fill = "Partial effect") +
-   theme(
+    labs(fill = "Partial effect", x = "Distance", y = "Depth") +   
+  theme(
     panel.grid = element_blank(),
     panel.background = element_rect(fill = "gray90", color = NA),
     legend.position = c(0.88, 0.2),
