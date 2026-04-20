@@ -168,6 +168,8 @@ sm <- smooth_estimates(Mod)
 color_high = "red"
 color_low = "yellow"
 
+theme_set(theme(axis.text = element_text(size = 20), plot.title = element_text(size = 20, hjust = 0), plot.subtitle = element_text(size = 20, face = "italic"), axis.title = element_text(size = 20)))
+
 ```
 
 
@@ -206,13 +208,18 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
   geom_contour(aes(z = .estimate), color = "black", bins = 10) +
   scale_fill_gradient2(low = color_low, mid = "white", high =  color_high) +
   coord_fixed() +
-  ggtitle("C.olor") +
+  ggtitle(label = "B", subtitle = "C.olor") +
   labs(fill = "Partial effect", x = NULL, y = NULL) +
   theme(
     panel.grid = element_blank(),
     panel.background = element_rect(fill = "gray90", color = NA),
-    legend.position = c(0.88, 0.18),
-    legend.background = element_rect(fill = alpha("white", 0.5), color = "black"))
+    legend.position = c(0.86, 0.21),
+    legend.background = element_rect(fill = alpha("white", 0.5), color = "black"),
+     legend.key.size = unit(0.5, "cm"),  # Размер ключей легенды
+    legend.key.width = unit(0.5, "cm"), # Ширина ключей
+    legend.text = element_text(size = 9), # Размер текста
+    legend.title = element_text(size = 10) # Размер заголовка
+    )
 
   ggsave(plot = Pl_sp1, filename = "Figures/Pl_sp1_ice_free.png", dpi = 600)
   
@@ -240,13 +247,18 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
   geom_contour(aes(z = .estimate), color = "black", bins = 10) +
   scale_fill_gradient2(low = color_low, mid = "white", high =  color_high) +
   coord_fixed() +
-  ggtitle("C.cygnus") +
+  ggtitle(label = " ", subtitle = "C.cygnus") +
   labs(fill = "Partial effect", x = NULL, y = NULL) +
  theme(
     panel.grid = element_blank(),
     panel.background = element_rect(fill = "gray90", color = NA),
-    legend.position = c(0.88, 0.18),
-    legend.background = element_rect(fill = alpha("white", 0.5), color = "black"))
+    legend.position = c(0.86, 0.21),
+    legend.background = element_rect(fill = alpha("white", 0.5), color = "black"),
+     legend.key.size = unit(0.5, "cm"),  # Размер ключей легенды
+    legend.key.width = unit(0.5, "cm"), # Ширина ключей
+    legend.text = element_text(size = 9), # Размер текста
+    legend.title = element_text(size = 10) # Размер заголовка
+    )
 
   ggsave(plot = Pl_sp2, filename = "Figures/Pl_sp2_ice_free.png", dpi = 600)
 ```
@@ -276,13 +288,18 @@ Pl_sp3 <-
   geom_contour(aes(z = .estimate), color = "black", bins = 10) +
   scale_fill_gradient2(low = color_low, mid = "white", high =  color_high) +
   coord_fixed() +
-  ggtitle("C.bewickii") +
-  labs(fill = "Partial effect", x = NULL, y = NULL) +
+  ggtitle(label = " ", subtitle = "C.bewickii") +
+  labs(fill = "Partial effect", x = "Distance", y = NULL) +
  theme(
     panel.grid = element_blank(),
     panel.background = element_rect(fill = "gray90", color = NA),
-    legend.position = c(0.88, 0.18),
-    legend.background = element_rect(fill = alpha("white", 0.5), color = "black"))
+    legend.position = c(0.86, 0.21),
+    legend.background = element_rect(fill = alpha("white", 0.5), color = "black"),
+     legend.key.size = unit(0.5, "cm"),  # Размер ключей легенды
+    legend.key.width = unit(0.5, "cm"), # Ширина ключей
+    legend.text = element_text(size = 9), # Размер текста
+    legend.title = element_text(size = 10) # Размер заголовка
+    )
 
   ggsave(plot = Pl_sp3, filename = "Figures/Pl_sp3_ice_free.png", dpi = 600)
 
@@ -350,13 +367,19 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
   geom_contour(aes(z = .estimate), color = "black", bins = 10) +
   scale_fill_gradient2(low = color_low, mid = "white", high = color_high) +
   coord_fixed() +
-  ggtitle("C.olor") +
-  labs(fill = "Partial effect", x = NULL, y = NULL) +
+  ggtitle(label = "A", subtitle ="C.olor") +
+  labs(fill = "Partial effect", x = NULL, y = "Depth") +
  theme(
     panel.grid = element_blank(),
     panel.background = element_rect(fill = "gray90", color = NA),
     legend.position = c(0.88, 0.18),
-    legend.background = element_rect(fill = alpha("white", 0.5), color = "black"))
+    legend.background = element_rect(fill = alpha("white", 0.5), color = "black"),
+     legend.key.size = unit(0.5, "cm"),  # Размер ключей легенды
+    legend.key.width = unit(0.5, "cm"), # Ширина ключей
+    legend.text = element_text(size = 9), # Размер текста
+    legend.title = element_text(size = 10) # Размер заголовка
+    )
+
 
   ggsave(plot = Pl_sp1, filename = "Figures/Pl_sp1_ice_melting.png", dpi = 600)
 
@@ -384,13 +407,18 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
   geom_contour(aes(z = .estimate), color = "black", bins = 10) +
   scale_fill_gradient2(low = color_low, mid = "white", high = color_high) +
   coord_fixed() +
-  ggtitle("C.cygnus") +
-  labs(fill = "Partial effect", x = NULL, y = NULL) +
+  ggtitle(label = " ", subtitle ="C.cygnus") +
+  labs(fill = "Partial effect", x = NULL, y = "Depth") +
  theme(
     panel.grid = element_blank(),
     panel.background = element_rect(fill = "gray90", color = NA),
     legend.position = c(0.88, 0.18),
-    legend.background = element_rect(fill = alpha("white", 0.5), color = "black"))
+    legend.background = element_rect(fill = alpha("white", 0.5), color = "black"),
+     legend.key.size = unit(0.5, "cm"),  # Размер ключей легенды
+    legend.key.width = unit(0.5, "cm"), # Ширина ключей
+    legend.text = element_text(size = 9), # Размер текста
+    legend.title = element_text(size = 10) # Размер заголовка
+    )
 
   ggsave(plot = Pl_sp2, filename = "Figures/Pl_sp2_ice_melting.png", dpi = 600)
 ```
@@ -420,13 +448,18 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
   geom_contour(aes(z = .estimate), color = "black", bins = 10) +
   scale_fill_gradient2(low = color_low, mid = "white", high = color_high) +
   coord_fixed() +
-  ggtitle("C.bewickii") +
-  labs(fill = "Partial effect", x = NULL, y = NULL) +
+  ggtitle(label = " ", subtitle ="C.bewickii") +
+  labs(fill = "Partial effect", x = "Distance", y = "Depth") +
   theme(
     panel.grid = element_blank(),
     panel.background = element_rect(fill = "gray90", color = NA),
     legend.position = c(0.88, 0.18),
-    legend.background = element_rect(fill = alpha("white", 0.5), color = "black"))
+    legend.background = element_rect(fill = alpha("white", 0.5), color = "black"),
+     legend.key.size = unit(0.5, "cm"),  # Размер ключей легенды
+    legend.key.width = unit(0.5, "cm"), # Ширина ключей
+    legend.text = element_text(size = 9), # Размер текста
+    legend.title = element_text(size = 10) # Размер заголовка
+    )
 
   ggsave(plot = Pl_sp3, filename = "Figures/Pl_sp3_ice_melting.png", dpi = 600)
 ```
@@ -475,7 +508,7 @@ image_write(combined_two_periods, "Figures/combined_two_periods.png")
 
 
 
-```{r, fig.cap="Рисунок +. Связь численности трех видов лебедей с глубиной и расстоянием от берега в безледный период A и в период таяния льда B в соответствии с Моделью GAMM1. Relationship between the abundance of three swan species and depth and distance from the shore during the ice-free period A and the ice-melting period B according to Model GAMM1."}
+```{r, fig.cap="Рисунок +. Связь численности трех видов лебедей с глубиной и расстоянием от берега в период таяния льда (A) и в безледный период (B) в соответствии с Моделью GAMM1. Частный эффект равный нулю соответствует среднему значению численности. Relationship between the abundance of three swan species and depth and distance from the shore during the ice-melting period (A) and the ice-free period  (B) according to Model GAMM1. A partial effect equal to zero corresponds to the mean abundance."}
 
 
 include_graphics("Figures/combined_two_periods.png")
@@ -555,9 +588,12 @@ combined_plots <- plot_Sp1 + plot_Sp2 + plot_Sp3 +
   plot_layout(guides = "collect") &  # собираем все легенды в одну
   theme(legend.position = "bottom")   # размещаем общую легенду снизу
 
-combined_plots
+
 ```
 
+```{r, fig.cap="Рисунок ++. Соотношение численности особей трех видов лебедей, держащихся в разных типах разводий в период таяния льда. The ratio of the abundance of three swan species staying in different types of ice openings during the ice melting period. "}
+combined_plots
+```
 
 
 ```{r}
@@ -610,7 +646,7 @@ Mod_2 <- gam(N ~ s(Year, by = Cygnets_Age, k = 10) +
 
 ```{r}
 sm <- smooth_estimates(Mod_2) 
-unique(sm$.smooth)
+# unique(sm$.smooth)
 ```
 
 
@@ -700,7 +736,7 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
 
 
 ```{r}
-Pl_cygnets <- plot_grid(Pl_Cygnets_Young, Pl_Cygnets_Old)
+Pl_cygnets <- plot_grid(Pl_Cygnets_Young, Pl_Cygnets_Old, nrow = 2)
 
 ggsave(plot = Pl_cygnets, filename = "Figures/Pl_cygnets.png", dpi = 600)
 
@@ -708,8 +744,10 @@ ggsave(plot = Pl_cygnets, filename = "Figures/Pl_cygnets.png", dpi = 600)
 
 
 
-```{r}
+```{r, fig.cap = "Рисунок ++. Связь обилия выводков лебедя-шипуна с расстоянием от берега и глубиной в соответствии с моделью GAMM2.Relationship between the abundance of mute swan broods and distance from shore and depth according to the GAMM2 model." }
+
 include_graphics("Figures/Pl_cygnets.png")
+
 ```
 
 
@@ -811,7 +849,8 @@ ggplot(smooth_data_filtered, aes(Dist, Depth)) +
 ```
 
 
-```{r}
+```{r, fig.cap="Рисунок ++.  Связь обилия линяющих особей лебедя-шипуна с расстоянием от берега и глубиной в соответствии с моделью GAMM3. Relationship between the abundance of molting mute swan individuals and distance from shore and depth according to the GAMM3 model."}
+
 Pl_Molting_Birds
 ```
 

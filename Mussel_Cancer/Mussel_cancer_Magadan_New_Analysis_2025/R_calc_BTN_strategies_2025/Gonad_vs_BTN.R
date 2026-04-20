@@ -152,35 +152,39 @@ newdata$conf_high <- upper_percentile
 
 Pl_gonad_btn <- 
 ggplot(newdata, aes(x = Aneuploidy_rate, y = predicted, color = BTN_class_1_or_2)) +
-  geom_line(size = 1.2) +
+  geom_line(linewidth = 2, color = "red") +
   geom_ribbon(aes(ymin = conf_low, ymax = conf_high, fill = BTN_class_1_or_2), 
-              alpha = 0.2, color = NA) +
+              alpha = 0.2, color = NA, fill = "red") +
   # Добавляем исходные точки данных
   geom_point(data = gon_btn, 
              aes(x = Aneuploidy_rate, 
                  y = Gonad_grid / (Gonad_grid + Tishue_grid),
                  color = BTN_class_1_or_2), 
-             size = 4) +
+             size = 4, color = "red") +
   labs(
-    title = "Binomial GLM with Bootstrap Confidence Intervals",
-    subtitle = paste("Based on", R, "bootstrap iterations (percentile method)"),
-    x = "Aneuploidy Rate",
-    y = "Gonad Proportion",
-    color = "BTN Class",
-    fill = "BTN Class"
+    # title = "Binomial GLM with Bootstrap Confidence Intervals",
+    # subtitle = paste("Based on", R, "bootstrap iterations (percentile method)"),
+    x = "",
+    y = "",
+    color = NULL,
+    fill = NULL
   ) +
+  guides(color = "none", fill = "none") +
   theme_bw() +
   theme(
     legend.position = "bottom",
     panel.grid.minor = element_blank(),
-    plot.title = element_text(size = 14, face = "bold")
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.text = element_text(size  = 15), 
+    strip.text = element_blank()
   ) +
   scale_y_continuous(limits = c(0, 1), 
                      labels = scales::percent_format(),
                      breaks = seq(0, 1, 0.2)) +
   scale_color_brewer(palette = "Set1") +
   scale_fill_brewer(palette = "Set1") +
-  xlim(0,100) 
+  xlim(0,100) +
+  facet_wrap(~BTN_class_1_or_2, ncol = 2)
 
 
 
@@ -241,5 +245,6 @@ normal_ci <- boot_ci$normal[2:3]       # 95% нормальный CI
 
 Pl_gonad_btn +
   annotate(x = 0, y = mean_value, geom = "point", color = "black", size = 5) +
-  annotate(x = 0, ymin = percentile_ci[1], ymax = percentile_ci[2], geom = "errorbar", width = 0.2)
-
+  annotate(x = 0, ymin = percentile_ci[1], ymax = percentile_ci[2], geom = "errorbar", width = 0.2) +
+  annotate(x = seq(0, 100, 10), ymin = percentile_ci[1], ymax = percentile_ci[2],
+           geom = "ribbon", alpha = 0.3, fill = "gray70") 

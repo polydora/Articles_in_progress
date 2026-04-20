@@ -96,6 +96,11 @@ cancer2 <-
 # Данные по разновидности BTN
 myt <- read_excel("Data/summary table_Magadan_itog.xlsx", sheet = "data")
 
+myt <- 
+  myt %>% 
+  filter_out(Site_code == "KHOL" & Sample %in% c("A", "B") )
+
+
 myt <-
 myt %>% 
   dplyr::select(-Site) %>% 
@@ -401,6 +406,13 @@ SCAM <-
 ```{r}
 growth <- read.table("Data/Mussel_growth_Magadan_2021_2023.csv", sep = ";", header = T, dec = ",")
 
+growth$OGP_site[growth$Site_code == "KHOL" & growth$Year == 2023] <- 1.065483
+
+growth <- 
+  growth %>% 
+  filter_out(Site_code == "KHOL" & Sample %in% c("A", "B"))
+
+
 growth <-
   growth %>% 
   dplyr::select(-Site) %>% 
@@ -410,6 +422,8 @@ ogp <-
   growth %>% 
   group_by(Site) %>% 
   summarise(OGP = mean(OGP_site))
+
+
 
 ```
 
@@ -936,11 +950,11 @@ Mod <- gam(cbind(N_cancer, N_helthy) ~
 <!-- library(DHARMa) -->
 
 
-<!-- sim_res <- simulateResiduals(fittedModel = Mod, plot = F, n = 2500, refit = FALSE) -->
+<!-- sim_res <- simulateResiduals(fittedModel = Mod, plot = T, n = 2500, refit = FALSE) -->
 
 <!-- # 2. Дополнительные тесты -->
 <!-- testResiduals(sim_res)  # Комплексная проверка -->
-<!-- #  -->
+<!-- # -->
 <!-- testDispersion(sim_res) -->
 
 
@@ -1068,7 +1082,6 @@ myt_ind$Sample <- paste(myt_ind$Site_code, myt_ind$Sample, sep = "_")
 
 myt_ind %<>%
   filter(!is.na(DN))
-
 
 myt_ind$DN <- factor(myt_ind$DN)
 myt_ind$Site_code <- factor(myt_ind$Site_code)
