@@ -302,6 +302,8 @@ site_cover %>%
 
 High_factor <- (Cover_factor[1])
 Low_factor <- (Cover_factor[2])
+
+
 ```
 
 
@@ -401,6 +403,13 @@ SCAM <-
   arrange(Year)
 
 ```
+
+
+
+```{r}
+cover_range <- rea 
+```
+
 
 
 ```{r}
