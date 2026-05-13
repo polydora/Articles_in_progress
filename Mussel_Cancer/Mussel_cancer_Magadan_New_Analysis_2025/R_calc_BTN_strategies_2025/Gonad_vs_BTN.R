@@ -76,6 +76,7 @@ mod <- glm(cbind(Gonad_grid,Tishue_grid) ~ BTN_class_1_or_2*Aneuploidy_rate, dat
 
 
 
+
 # ============================================================
 # МЕТОД 1: Бутстреп с использованием boot::boot
 # ============================================================
@@ -198,8 +199,6 @@ gon_healthy <-
 
 
 
-gon 
-
 gon_healthy <-
   gon_healthy %>% 
   filter(ID_ENG %in% c("KAR_V30", "KAR_B21", "KAR_B4", "JEM_V24", "MAM_A24", "HOL_D8", "SV_V23", "SV_V17", "NUK_V23"))
@@ -243,8 +242,15 @@ percentile_ci <- boot_ci$percent[4:5]  # 95% перцентильный CI
 basic_ci <- boot_ci$basic[4:5]         # 95% basic CI
 normal_ci <- boot_ci$normal[2:3]       # 95% нормальный CI
 
+
+Pl_gonad_btn_with_healthy <- 
 Pl_gonad_btn +
   annotate(x = 0, y = mean_value, geom = "point", color = "black", size = 5) +
   annotate(x = 0, ymin = percentile_ci[1], ymax = percentile_ci[2], geom = "errorbar", width = 0.2) +
   annotate(x = seq(0, 100, 10), ymin = percentile_ci[1], ymax = percentile_ci[2],
            geom = "ribbon", alpha = 0.3, fill = "gray70") 
+
+
+
+Pl_gonad_btn_with_healthy +
+  labs(x = "Proportion of anneuploid cells", y = "Acinus size")

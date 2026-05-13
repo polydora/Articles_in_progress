@@ -89,6 +89,8 @@ cancer2 <-
   summarise(N_processed = sum(N_Processed), N_cancer = sum(BTN)) %>% 
   filter(Year == 2023)
 
+
+
 ```
 
 
@@ -109,6 +111,8 @@ myt %>%
 
 myt %<>%
   mutate(BTN2 = BTN2.1 + BTN2.2)
+
+
 
 myt_23 <- 
   myt %>% 
@@ -203,12 +207,35 @@ myt %>%
 myt %<>%
   mutate(BTN2 = BTN2.1 + BTN2.2)
 
+# Суммарные описания сайтов
+
+# myt %>% 
+#   group_by(Site_code, Year) %>% 
+#   summarise(BTN1 = sum(BTN1), BTN2 = sum(BTN2), Total_N = sum(N)) %>% 
+#   filter(BTN1 == 0 & BTN2 == 0) 
+# 
+# 
+# Prob_BTN1_total <- sum(myt$BTN1)/sum(myt$N)
+# Prob_BTN2_total <- sum(myt$BTN2)/sum(myt$N)
+# 
+# 
+# myt %>% 
+#   group_by(Site_code, Year) %>% 
+#   summarise(BTN1 = sum(BTN1), BTN2 = sum(BTN2), Total_N = sum(N)) %>% 
+#   mutate(Prop_BTN1 = BTN1/Total_N, Prop_BTN2 = BTN2/Total_N) %>% 
+#   arrange(desc(Prop_BTN1))
+# 
+# myt %>% 
+#   group_by(Site_code, Year) %>% 
+#   summarise(BTN1 = sum(BTN1), BTN2 = sum(BTN2), Total_N = sum(N)) %>% 
+#   mutate(Prop_BTN1 = BTN1/Total_N, Prop_BTN2 = BTN2/Total_N) %>% 
+#   arrange(desc(Prop_BTN2))
+# 
+
 myt_23 <- 
   myt %>% 
   filter(Year == 2023)
 
-Prob_BTN1_total <- sum(myt$BTN1)/sum(myt$N)
-Prob_BTN2_total <- sum(myt$BTN2)/sum(myt$N)
 
 
 myt_23 %<>%
@@ -344,6 +371,8 @@ scam [ ,3:ncol(scam)] <-
 LW <- read_excel("Data/Magadan_2021_mussel_L_W.xlsx")
 LW$W <- as.numeric(gsub(pattern = ",", replacement = ".", x = LW$W))
 
+# unique(LW$Sample)
+
 mod_W <- lm(W ~ I(L^3) - 1, data = LW)
 
 LW$Predicted <- predict(mod_W)
@@ -407,19 +436,57 @@ SCAM <-
 
 
 ```{r}
-cover_range <- rea 
+# Альтернативная оуенка покрытия мидий
+
+cover_score <- read_excel("data/проективное покрытие в баллах.xlsx")
+
+cover_score <-
+  cover_score %>% 
+  select(-c(Comments, Scale1, Scale2))
+
+
+SCAM <- merge(SCAM, cover_score) 
+
+SCAM <- 
+  SCAM %>% 
+  select(-Mean_Cover)
+
+
 ```
 
 
 
 ```{r}
+
 growth <- read.table("Data/Mussel_growth_Magadan_2021_2023.csv", sep = ";", header = T, dec = ",")
 
+growth_1 <- read_excel("Data/Mussel_growth_Magadan_2021_2023.xlsx", na = "NA")
+
+
+str(growth_1)
+
+growth <- 
+  growth %>% 
+  filter_out(Site_code == "PLO")
+
+growth_1 <- 
+  growth_1 %>% 
+  filter_out(Site_code == "PLO")
+
+
 growth$OGP_site[growth$Site_code == "KHOL" & growth$Year == 2023] <- 1.065483
+
+growth_1$OGP_site[growth_1$Site_code == "KHOL" & growth_1$Year == 2023] <- 1.065483
+
 
 growth <- 
   growth %>% 
   filter_out(Site_code == "KHOL" & Sample %in% c("A", "B"))
+
+growth_1 <- 
+  growth_1 %>% 
+  filter_out(Site_code == "KHOL" & Sample %in% c("A", "B"))
+
 
 
 growth <-
@@ -427,12 +494,49 @@ growth <-
   dplyr::select(-Site) %>% 
   rename(Site = Site_code) 
 
+growth_1 <-
+  growth_1 %>% 
+  dplyr::select(-Site) %>% 
+  rename(Site = Site_code) 
+
+
+
 ogp <- 
   growth %>% 
   group_by(Site) %>% 
   summarise(OGP = mean(OGP_site))
 
 
+ogp_1 <- 
+  growth_1 %>% 
+  group_by(Site) %>% 
+  summarise(OGP = mean(OGP_site))
+
+
+# cbind(ogp, ogp_1) 
+
+
+# # Обобщенные описания изученных моллюсков
+# 
+# nrow(growth)
+# range(growth$L, na.rm = T)
+# median(growth$L, na.rm = T)
+# 
+# growth %>%
+#   filter(BTN_genotype %in% c("BTN2.1", "BTN1", "BTN2.2")) %>%
+#   nrow()
+# 
+# growth %>%
+#   filter(BTN_genotype %in% c("BTN2.1", "BTN1", "BTN2.2")) %>%
+#   select(L) %>%
+#   range(na.rm = T)
+# 
+# growth %>%
+#   filter(BTN_genotype %in% c("BTN2.1", "BTN1", "BTN2.2")) %>%
+#   select(L) %>%
+#   pull(L) %>%
+#   median(na.rm = T)
+# 
 
 ```
 
@@ -457,7 +561,7 @@ ogp <-
 
 # plot(pca_scam)
 
-pca_scam <- rda(decostand(SCAM[ , -c(1, 3)], method = "standardize" ))
+pca_scam <- rda(decostand(SCAM[ , -c(1, 2)], method = "standardize" ))
 
 
 
@@ -466,6 +570,8 @@ pca_scam <- rda(decostand(SCAM[ , -c(1, 3)], method = "standardize" ))
 # sum_pca_scam_1 <- summary(pca_scam_1)
 
 sum_pca_scam <- summary(pca_scam)
+
+# str(sum_pca_scam)
 
 
 pca_scam_size_scores <- as.data.frame(scores(pca_scam)$species)
@@ -479,7 +585,7 @@ pca_scam_scores$N_Large = SCAM$L8 + SCAM$L13 + SCAM$L18 + SCAM$L18 + SCAM$L23 + 
 
 pca_scam_scores$N_Total <- SCAM$L3 + SCAM$L8 + SCAM$L13 + SCAM$L18 + SCAM$L23 + SCAM$L28 + SCAM$L33 + SCAM$L38 + SCAM$L43 + SCAM$L48 + SCAM$L53 + SCAM$L58
 
-pca_scores_scam <- data.frame(Year = SCAM$Year, Site = SCAM$Site,  Biomass = SCAM$Biomass, Mean_Cover = SCAM$Mean_Cover, pca_scam_scores)
+pca_scores_scam <- data.frame(Year = SCAM$Year, Site = SCAM$Site,  Biomass = SCAM$Biomass, Cover = SCAM$Cover_score, pca_scam_scores)
 
 
 pca_scores_scam <-
@@ -490,9 +596,12 @@ pca_scores_scam$Site_Year <- gsub(pattern = "20", replacement = "", x = pca_scor
 
 ```
 
+
+
 ## Mussel population structure
 
 ```{r fig.cap="**Fig. 4. Ordination of population parameters (abundance of size classes, biomass and mussel cover) in PCA axes.**"}
+
 pca_scam_size_scores %>% 
   mutate(Param = row.names(.)) %>% 
   ggplot(aes(PC1, PC2)) +
@@ -536,6 +645,12 @@ pca_scores_scam %>%
   geom_vline(xintercept = 0)
 
 ```
+
+PC1 explains `r round(sum_pca_scam$cont$importance[2,1]*100, 1)`
+
+PC2 explains `r round(sum_pca_scam$cont$importance[2,2]*100, 1)`
+
+
 
 In the analysis, L3-L58 is the abundance of mussel size classes in quantitative samples at each sampling site. (At each site 2-3 samples were taken for mussel size structure analysis). Biomass is the biomass at the entire site, taking into account the cover of mussels.  
 
@@ -583,9 +698,18 @@ Thus PC1 partly reflects the temporal changes in mussel population structure: be
 
 ```{r fig.cap="**Fig. 7. PC1 values for resampled sites in 2021 and 2023.**"}
 pca_scores_scam %>% 
-  filter(Site %in% c("KHOL","MAM", "MAR", "NUK-I", "UM", "VES")) %>% 
-  ggplot(aes(x = Year, y = PC1, group = Year)) +
-  geom_boxplot()
+  # filter(Site %in% c("KHOL","MAM", "MAR", "NUK-I", "UM", "VES")) %>% 
+  ggplot(aes(x = factor(Year), y = PC1, group = factor(Year) )) +
+  geom_boxplot() +
+  labs(x = "Year", y ="PC1") ->
+  Pl_PC1_year
+
+
+Pl_PC1_year +
+  geom_point(data = pca_scores_scam %>% filter(Site %in% c("KHOL","MAM", "MAR", "NUK-I", "UM", "VES")), color = "red", size = 4) + 
+  geom_line(data = pca_scores_scam %>% filter(Site %in% c("KHOL","MAM", "MAR", "NUK-I", "UM", "VES")), 
+            aes(group = Site),  # та же группировка
+            color = "gray", linewidth = 1, linetype = 2, alpha = 0.5)
 
 ```
 
@@ -719,6 +843,18 @@ prop_BTN_2_points <-
 ```
 
 
+Correlation between lineages prevalence
+
+```{r}
+library(tidyr)
+prop_BTN_2_points %>% 
+  select(Site, Year, Lineage, Prop_BTN) %>%
+  pivot_wider(names_from = Lineage, 
+              values_from = Prop_BTN) ->
+  df_cor
+
+# cor.test(df_cor$BTN1, df_cor$BTN2, method = "spearman")
+```
 
 
 
@@ -813,8 +949,7 @@ prop_BTN_2_points %>%
 
 
 
-prop_BTN_2_points %>% 
-  
+
 
 
 ```{r fig.cap = "**Fig. 9. Dependence of BTN prevalence on population structure.**"}
@@ -905,6 +1040,7 @@ Mod <- gam(cbind(N_cancer, N_helthy) ~
              s((Dist_Port), by = Lineage,  bs = "cs", k = 5) + 
              s((fetch), by = Lineage,  bs = "cs", k = 5) +  
              s((PC1), by = Lineage,  bs = "cs", k = 5) + 
+             s((PC2), by = Lineage,  bs = "cs", k = 5) + 
              s((OGP), by = Lineage, bs = "cs", k = 5) +  
              Lineage +  
              s(Year, Site, bs = "re"),  
@@ -1060,14 +1196,14 @@ plot_grid(Pl_BTN1_PC1, Pl_BTN2_PC1)
 
 ```{r}
 Pl_BTN1_OGP <- 
-draw(Mod, residuals = T, select = 7)+ 
+draw(Mod, residuals = T, select = 9)+ 
   geom_hline(yintercept = 0, linetype = 2)
 ```
 
 
 ```{r}
 Pl_BTN2_OGP <- 
-draw(Mod, residuals = T, select = 8)+ 
+draw(Mod, residuals = T, select = 10)+ 
   geom_hline(yintercept = 0, linetype = 2)
 ```
 
@@ -1167,16 +1303,25 @@ myt_ind_clean %>%
   prop_aneupl
 
 
+
+# myt_ind_clean %>%
+#   group_by( BTN_Type, Gonad_quality) %>%  # Группируем по годам и типам BTN
+#   summarise(Frequency = n(), .groups = 'drop') %>%  # Считаем количество наблюдений
+#   group_by( BTN_Type) %>%  # Группируем для вычисления долей
+#   mutate(Frequency = Frequency / sum(Frequency)) %>% 
+#   dcast(BTN_Type ~ Gonad_quality  )
+
+
 myt_ind_clean %>%
-  group_by(Year, BTN_Type, Gonad_quality) %>%  # Группируем по годам и типам BTN
+  group_by(BTN_Type, Gonad_quality) %>%  # Группируем по годам и типам BTN
   summarise(Frequency = n(), .groups = 'drop') %>%  # Считаем количество наблюдений
-  group_by(Year, BTN_Type) %>%  # Группируем для вычисления долей
+  group_by(BTN_Type) %>%  # Группируем для вычисления долей
   mutate(Frequency = Frequency / sum(Frequency)) %>%  # Преобразуем в доли
   ggplot(aes(x = "", y = Frequency, fill = Gonad_quality)) +
   geom_bar(stat = "identity", width = 1, color = "black") +
   coord_polar("y", start = 0) +
   theme_void() +
-  facet_grid(Year ~ BTN_Type) + # Разделяем на подграфики по годам и типам BTN
+  facet_wrap( ~ BTN_Type) + # Разделяем на подграфики по годам и типам BTN
   scale_fill_manual(values = c("green", "red")) +
   labs(fill = "") +
   theme(strip.text = element_text(size = 18))
@@ -1526,7 +1671,9 @@ Pl_Staus_initial <-
   # facet_wrap(~ Gonad_quality) +
   scale_fill_manual(values = c("red", "blue", "green")) +
   labs(x = "", y = "Last year's relative \ngrowth increment") +
-   guides(fill = "none")
+   guides(fill = "none") +
+  geom_point(position = position_jitter(width = 0.08), color = "gray", alpha = 0.5)
+  
 
 ```
 

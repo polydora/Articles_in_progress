@@ -1,0 +1,386 @@
+---
+title: "Somateria mollissima escape distance in Kem' region"
+author: "V. Khaitov"
+date: ""
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+  opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+```{r}
+library(ggplot2)
+library(readxl)
+library(lubridate)
+library(mgcv) 
+library(gratia)
+library(dplyr)
+library(DHARMa)
+library(flextable)
+library(tidyr)
+library(cowplot)
+
+
+library(ggmap)
+
+
+```
+
+
+```{r}
+som <- read_excel("Data/all_nests_Kem.xlsx")
+
+som <- 
+  som %>% 
+  mutate(Year = year(Date))
+
+
+som %>% 
+  group_by(Year, Nest_ID) %>% 
+  summarise(Visits = n()) ->
+  n_visits
+
+
+
+# Отбираем только те гнезда, которые описаны в первый раз (отброшены гнезда при повторном осмотре)
+som_filtered <- som %>%
+  group_by(Year, Nest_ID) %>%
+  arrange(Date, .by_group = TRUE) %>%
+  slice(1) %>%
+  ungroup()
+
+# Оставляем только те гнезда, где стандартные значения в переменной Cover
+som_filtered <-
+som_filtered %>% 
+  filter(Cover %in% c("з", "о", "п"))
+
+# Убираем гнезда с большим количеством яиц (смешанные кладки)
+som_filtered <-
+  som_filtered %>% 
+  filter(N_eggs <= 6)
+
+
+som_filtered$Area <- "Kem"
+
+
+```
+
+
+```{r}
+
+# Расчет величины Q
+som_filtered <- 
+  som_filtered %>% 
+  mutate(Q = Ed * log10(Incubation_time + 2))
+
+```
+
+
+
+```{r}
+som_Kand <- read_excel("Data/all_nests.xlsx")
+
+som_Kand <- 
+  som_Kand %>% 
+  mutate(Year = year(Date))
+
+som_Kand <-
+  som_Kand %>% 
+  filter(N_eggs <= 6)
+
+som_Kand <- 
+  som_Kand %>% 
+  mutate(Q = Ed * log10(Tinc_mean + 2))
+
+som_Kand$Area <- "Kandalaksha"
+
+
+```
+
+
+## Сравнение индекса осторожности в Кеми и в Кандалаше
+
+
+
+```{r}
+df_Kem <- 
+  som_filtered %>% 
+  select(Area, Q)
+
+df_Kand <- 
+  som_Kand %>% 
+  select(Area, Q)
+
+
+df_Kem_Kand <- 
+  rbind(df_Kem, df_Kand)
+
+
+df_Kem_Kand %>% 
+  ggplot(aes(x = Area, y = Q )) +
+  geom_violin() +
+  geom_boxplot(width = 0.2, fill = "white", alpha = 0.5) +
+  stat_summary(fun = median, geom = "point", color = "red", size = 3)
+
+```
+
+
+
+Видно, что в Кеми чуть более высокая медиана значения Q. Пи этом различия статстически значимые 
+
+```{r}
+
+
+test_result <- wilcox.test(Q ~ Area, data = df_Kem_Kand)
+
+# Создаем таблицу с результатами
+results_table <- data.frame(
+  Параметр = c("W статистика", "p-value", "Метод"),
+  Значение = c(
+    round(test_result$statistic, 2),
+    format(test_result$p.value, scientific = FALSE, digits = 4),
+    test_result$method
+  )
+)
+
+# Оформляем как flextable
+ft <- flextable(results_table) %>%
+  theme_vanilla() %>%
+  fontsize(size = 11, part = "all") %>%
+  bold(part = "header") %>%
+  align(align = "center", part = "all") %>%
+  set_caption("Результаты теста Манна-Уитни для сравнения групп")
+
+ft
+```
+
+Таким образом, в окрестностях Кеми, где нагрузка сбора пуха высокая, осторожность выше, чем в окрестностях Кандалакши.
+
+
+## Сравннение осторожности при первичном и вторичном посещении гнезд в окрестностях Кеми
+
+
+
+```{r}
+merge(som, n_visits) %>% 
+  filter(Visits == 2) ->
+  som_double_checked
+
+som_double_checked <-
+  som_double_checked %>% 
+  mutate(Q = Ed * log10(Incubation_time + 2))
+
+
+som_double_checked %>%
+  group_by(Year, Nest_ID) %>%
+  arrange(Date, .by_group = TRUE) %>%
+  slice(1) %>%
+  ungroup() %>% 
+  mutate(Visit = "First") ->
+  first_visit
+
+# nrow(first_visit)
+
+som_double_checked %>%
+  group_by(Year, Nest_ID) %>%
+  arrange(Date, .by_group = TRUE) %>%
+  slice(2) %>%
+  ungroup() %>% 
+  mutate(Visit = "Second") ->
+  second_visit
+
+# nrow(second_visit)
+
+df_first_second <- 
+  rbind(first_visit, second_visit)
+
+Pl_incub_time <-
+df_first_second %>% 
+  ggplot(aes(x = Visit, y = Incubation_time)) +
+  geom_boxplot()
+
+Pl_Ed <-
+df_first_second %>% 
+  ggplot(aes(x = Visit, y = Ed)) +
+  geom_boxplot()
+
+Pl_Q <-
+df_first_second %>% 
+  ggplot(aes(x = Visit, y = Q)) +
+  geom_boxplot()
+
+
+
+
+```
+
+```{r}
+plot_grid(Pl_Ed, Pl_incub_time, Pl_Q, nrow = 1)
+```
+
+
+
+
+
+
+```{r}
+
+df_second <-
+  second_visit %>% 
+  select(Nest_ID, Q) %>% 
+  rename(Q2 = Q)
+
+merge(first_visit, df_second, all.x = T) %>% 
+  select( Nest_ID, Year, Region, Place, Q, Q2) %>% 
+  filter(complete.cases(.)) ->
+df_first_second_2  
+
+
+```
+
+
+```{r}
+test_result <- t.test(df_first_second_2$Q, df_first_second_2$Q2, paired = T)
+
+
+# test_result <- wilcox.test(Q ~ Visit, data = df_first_second)
+
+results_table <- data.frame(
+  Параметр = c("t-статистика", 
+               "df (степени свободы)", 
+               "p-value", 
+               "Средняя разница",
+               "95% ДИ нижняя граница",
+               "95% ДИ верхняя граница",
+               "Метод"),
+  Значение = c(
+    round(test_result$statistic, 3),
+    round(test_result$parameter, 2),
+    format(test_result$p.value, scientific = FALSE, digits = 4),
+    round(test_result$estimate, 3),
+    round(test_result$conf.int[1], 3),
+    round(test_result$conf.int[2], 3),
+    test_result$method
+  )
+)
+
+# Оформляем как flextable
+ft <- flextable(results_table) %>%
+  theme_vanilla() %>%
+  fontsize(size = 11, part = "all") %>%
+  bold(part = "header") %>%
+  align(align = "left", part = "all") %>%
+  set_caption("Результаты парного t-теста")
+
+ft %>% 
+  autofit()
+
+```
+
+
+
+Итого, значимых различий в значениях Q у гнезд при первом и втором посещении не выявляется. То есть либо они не начинают бояться сильнее, либо индекс Q недостаточно чувствителен. Однако! Судя по тому, что средняя разница отрицательная, есть намек на то, что при повторном посещении Q становится чуть выше. То есть осторожность незначительно повышается. 
+
+
+Если посмотреть по отдельным островам, то будет видно, что на островах Гага, Горелая Плоская, Горелая Северная, Тервонец Южный при повторном посещении Q становится чуть больше (довольно много точек выше линии Y=X). 
+
+
+```{r}
+df_first_second_2 %>% 
+  ggplot(aes(x = Q, y = Q2)) +
+  geom_point() +
+  geom_abline() +
+  labs(x = "Q for the first visit", y = "Q for the second visit") + 
+  facet_wrap(~Place)
+```
+
+
+## Пространственное распределение Q
+
+```{r}
+
+library(sf) #Это теперь основной пакет для ГИС!
+
+# Read the shapefile
+karel_shape <- st_read("Maps/Karelia_new/data/coastlines.gpkg",  quiet = TRUE)
+
+# karel_shape <- st_read("Maps/Karelia/boundary-polygon-land-lvl4.shp")
+
+# arkhangel_shape <- st_read("Maps/Arkhangelskaya_obl/data/boundary-polygon-land-lvl2.gpkg")
+
+
+kem_points <- read_excel("Data/Онежский. Острова_координаты.xlsx")
+
+Lon_limits <- c(min(kem_points$Lon), max(kem_points$Lon))
+Lat_limits <- c(min(kem_points$Lat), max(kem_points$Lat))
+
+
+karel_shape_cropped <- st_crop(karel_shape, 
+                               xmin = 30, 
+                               xmax = 39, 
+                               ymin = 64, 
+                               ymax = 66)
+
+
+
+Pl_Kem_area <-
+  ggplot(data = karel_shape_cropped) +
+  geom_sf(fill = "lightgreen", color = "black") +
+  theme_bw() 
+
+
+```
+
+
+```{r}
+som_filtered %>% 
+  group_by(Place) %>% 
+  summarise(Q = mean(Q, na.rm = T)) ->
+df_mean_Q
+
+kem_points <-
+  kem_points %>% 
+  mutate(Place = Island)
+
+som_filtered_isl <-
+merge(df_mean_Q, kem_points, all.x = T)
+
+```
+
+
+
+
+```{r}
+Pl_all_islands <- 
+Pl_Kem_area +
+  geom_point(data = som_filtered_isl, aes(x = Lon, y = Lat, fill = Q), shape = 21, size = 3) +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = mean(som_filtered_isl$Q))
+
+
+Pl_nearest_islands <-
+Pl_Kem_area +
+  geom_point(data = som_filtered_isl, aes(x = Lon, y = Lat, fill = Q), shape = 21, size = 3) +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = mean(som_filtered_isl$Q)) +
+  xlim(34.5, 35.5) +
+  ylim(64.95, 65.1) +
+  annotate(geom = "point", shape = 21, size = 4, fill = "green", x = 34.5793, y =  64.9555)
+
+```
+
+Вот так это выглядит если смотреть на все острова. В принципе, есть намек на то, что ближе к Кеми гаги более осторожные.
+
+```{r}
+Pl_all_islands
+```
+
+
+
+А это ближайшие к Кеми острова.
+
+```{r}
+Pl_nearest_islands
+```
+
+Пока я вижу пять-шесть островов, где гаги более осторжные и они не самые близкие к Кеми. 
