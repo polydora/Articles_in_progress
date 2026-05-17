@@ -207,6 +207,11 @@ myt %>%
 myt %<>%
   mutate(BTN2 = BTN2.1 + BTN2.2)
 
+myt <-
+myt %>% 
+  filter_out(Year == 2023 & Site_code == "KHOL" & Sample %in% c("A", "B"))
+
+
 # Суммарные описания сайтов
 
 # myt %>% 
@@ -431,6 +436,10 @@ SCAM <-
   select(-c(Cover_Type)) %>%
   arrange(Year)
 
+df %>% 
+  arrange(Biomass) %>% 
+  pull(Biomass) %>% 
+  mean()
 ```
 
 
@@ -457,6 +466,9 @@ SCAM <-
 
 
 ```{r}
+
+# Здесь какая-то загадочная история. Если считать модель по данным из Mussel_growth_Magadan_2021_2023.xlsx, то связь с OGP становится не значимой, но если брать данные из файла, который является репликой экселевского файла, то все ОК, связь значима. 
+
 
 growth <- read.table("Data/Mussel_growth_Magadan_2021_2023.csv", sep = ";", header = T, dec = ",")
 
@@ -790,6 +802,8 @@ Pl_size_stricture +
 
 
 ```{r}
+
+
 myt %>% 
   select(Site_code,  Year,  N, BTN1, BTN2) %>%
   group_by(Site_code, Year) %>% 
@@ -798,6 +812,10 @@ myt %>%
   mutate(N_helthy = N - N_cancer) %>% 
   rename(Site = Site_code) ->
   cancer_21_23
+
+cancer_21_23 %>% 
+  arrange(Year)
+
 
 df <- merge(cancer_21_23, points)
 
@@ -1048,6 +1066,8 @@ Mod <- gam(cbind(N_cancer, N_helthy) ~
            method = "REML", 
            data = cancer_21_23_predictors )
 
+# cancer_21_23_predictors %>% 
+#   filter(Year == 2023) 
 
 # summary(Mod)
 
@@ -1087,6 +1107,11 @@ Mod <- gam(cbind(N_cancer, N_helthy) ~
 
 ```
 
+```{r}
+cancer_21_23_predictors %>% 
+  group_by(Year, Lineage) %>% 
+  summarise(N = sum(N))
+```
 
 
 <!-- ### Проверка валидности модели -->
