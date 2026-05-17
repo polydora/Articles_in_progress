@@ -3,74 +3,70 @@ library(sf)
 library(rnaturalearth)
 library(rnaturalearthdata)
 library(ggplot2)
+library(ggmap)
+library(cowplot)
 
 # Карта дальнего востока
 
-Full_x <- c(3, 50)
-Full_y <- c(55, 72)
-
-# Скачиваем береговую линию мира с низким разрешением (аналог gshhs_l.b)
-# scale = "large" для высокого разрешения, "medium" для среднего, "small" для низкого [citation:6]
-coastline <- ne_coastline(scale = "medium", returnclass = "sf")
-
-land <- ne_countries(scale = "medium", returnclass = "sf")
+Full_x <- c(141.5, -126.4)
+Full_y <- c(45.6, 71.8)
 
 
 
-# Обрезаем по нужной области (аналог xlim/ylim в getRgshhsMap)
-coastline_clipped <- st_crop(coastline, xmin = Full_x[1], xmax = Full_x[2], 
-                             ymin = Full_y[1], ymax = Full_y[2])
+library(ggplot2)
+library(sf)
+library(dplyr)
 
+# Загружаем данные из пакета maps (более детальные с mapdata)
+library(maps)
+library(mapdata)
 
-# Обрезаем по нужной области
-land_clipped <- st_crop(land, xmin = Full_x[1], xmax = Full_x[2], 
-                        ymin = Full_y[1], ymax = Full_y[2])
+# Получаем данные мира
+world_map <- map_data("world2Hires")  # world2Hires имеет долготы 0-360
+# или используем world2 (менее детальный)
 
-
-
-
-ggplot() +
-  geom_sf(data = land_clipped, fill = "lightgray", color = "black") +
-  # geom_sf(data = coastline_clipped, fill = "lightgray", color = "black") +
-  coord_sf(xlim = Full_x, ylim = Full_y, expand = FALSE) +
-  theme_bw()
-
+# Фильтруем по нужным континентам/регионам
+asia_namerica <- world_map  %>%
+  filter(region %in% c("USA", "Canada", "USSR", "China", "Japan", "North Korea", "South Korea","Alaska"))
 
 
 
+# Создаем карту
+Pl_map_large_scale <-
+  ggplot() +
+  geom_polygon(data = asia_namerica, 
+               aes(x = long, y = lat, group = group),
+               fill = "gray90", color = "gray30", size = 0.2) +
+  coord_fixed(xlim = c(145, 225),  # 60°E до 240°E (что соответствует 120°W)
+              ylim = c(45, 71.8),
+              ratio = 2) +
+  theme_map() +
+  theme(panel.grid.major = element_line(color = "gray80", size = 0.2),
+        panel.background = element_rect(fill = "white", color = NA),
+        panel.border = element_rect(fill = NA, color = "black", size = 0.5),
+        panel.grid = element_blank())
 
-# Это вся карта мира в высоком разрешении. ЧИТАЕТ ДОЛГО!
-gshhs_f_shp <- "Maps/GSHHS_f_L1.shp"
-coastline_full <- st_read(gshhs_f_shp)
-
-
-
-
-
-
-
-
-# Обрезаем по нужной области
-Full_x <- c(3, 50)
-Full_y <- c(55, 72)
-
-
-Small_x <- c(3, 50)
-Small_y <- c(55, 72)
+ggsave(filename = "figures/Map_large_no_grids.png", plot = Pl_map_large_scale, dpi = 600)
 
 
 
-Этот код читает shp файлы. Аt! для чтения нужно, чтобы в той же папке лежали .dbf, 
-coastline_clipped <- st_crop(coastline_full, 
-                             xmin = Full_x[1], xmax = Full_x[2],
-                             ymin = Full_y[1], ymax = Full_y[2])
-
-
-ggplot() +
-  geom_sf(data = coastline_clipped, fill = "lightgray", color = "black") +
-  coord_sf(xlim = Full_x, ylim = Full_y, expand = FALSE) +
-  theme_bw()
 
 
 
+######## Карта Магаданской области ################
+
+load("Data/gg_Magadan_large.RData")
+
+Magadan <- data.frame(long = 150 + 48/60, lat = 59 + 34/60)
+
+Pl_map <- 
+  ggplot(gg_Magadan_large, aes(x = long, y = lat, group = group)) + 
+  geom_polygon(fill = "gray80", color = "gray50") + 
+  coord_map(xlim = c(150., 151.52), ylim = c(59.4, 59.8) ) +
+  theme(plot.margin = unit(c(0, 0, 0, 0), "cm")) +
+  theme_map() 
+
+ggsave(filename = "figures/Magadan.png", plot = Pl_map, dpi = 600)
+
+ggsave(filename = "figures/Magadan.svg", plot = Pl_map, dpi = 600)
 
