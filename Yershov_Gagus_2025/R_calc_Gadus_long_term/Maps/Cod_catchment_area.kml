@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document id="1lQOlim6HqgPzUwZK_C6F_NPwMBx2GEv-">
+	<name>Карта без названия</name>
+	<gx:CascadingStyle kml:id="__managed_style_0DEA4274B33FA50A5EAF">
+		<Style>
+			<IconStyle>
+				<scale>1.2</scale>
+				<Icon>
+					<href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+				</Icon>
+				<hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels"/>
+			</IconStyle>
+			<LabelStyle>
+			</LabelStyle>
+			<LineStyle>
+				<color>ff2dc0fb</color>
+				<width>6</width>
+			</LineStyle>
+			<PolyStyle>
+				<color>40ffffff</color>
+			</PolyStyle>
+			<BalloonStyle>
+			</BalloonStyle>
+		</Style>
+	</gx:CascadingStyle>
+	<gx:CascadingStyle kml:id="__managed_style_15CE0C87DE3FA50A5EAE">
+		<Style>
+			<IconStyle>
+				<Icon>
+					<href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+				</Icon>
+				<hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels"/>
+			</IconStyle>
+			<LabelStyle>
+			</LabelStyle>
+			<LineStyle>
+				<color>ff2dc0fb</color>
+				<width>4</width>
+			</LineStyle>
+			<PolyStyle>
+				<color>40ffffff</color>
+			</PolyStyle>
+			<BalloonStyle>
+			</BalloonStyle>
+		</Style>
+	</gx:CascadingStyle>
+	<StyleMap id="__managed_style_09926607363FA50A5EAE">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#__managed_style_15CE0C87DE3FA50A5EAE</styleUrl>
+		</Pair>
+		<Pair>
+			<key>highlight</key>
+			<styleUrl>#__managed_style_0DEA4274B33FA50A5EAF</styleUrl>
+		</Pair>
+	</StyleMap>
+	<Placemark id="0675A237653FA3ABFE2F">
+		<name>Зона ловли трески Ершовым</name>
+		<LookAt>
+			<longitude>33.63325659263342</longitude>
+			<latitude>66.33429000168299</latitude>
+			<altitude>-0.7563257608851037</altitude>
+			<heading>-1.055879237703284</heading>
+			<tilt>1.912117626260054</tilt>
+			<gx:fovy>30</gx:fovy>
+			<range>3844.651601550287</range>
+			<altitudeMode>absolute</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_09926607363FA50A5EAE</styleUrl>
+		<Polygon>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						33.66229352826731,66.3334421985754,0 33.66196930616257,66.33388321755309,0 33.65875324335774,66.3341779788482,0 33.65671898650384,66.33460040778873,0 33.6547553226919,66.33512914907614,0 33.65203045790008,66.33548838790826,0 33.64980590374126,66.33581913069715,0 33.6468430591317,66.33534995230957,0 33.64578978213464,66.33533447313698,0 33.64494824716127,66.33566970557844,0 33.64401035699105,66.33582937984578,0 33.643325168239,66.3360944967356,0 33.64170411645437,66.33641469842195,0 33.6407776984282,66.33663758406891,0 33.6398220484291,66.33688066267391,0 33.63911798213889,66.33708059044812,0 33.63862932580322,66.33715326889315,0 33.63794042473619,66.33714496790827,0 33.63707871240585,66.33690595321117,0 33.63722496194509,66.33655468639456,0 33.63715825101513,66.33624489485463,0 33.63677523590412,66.33596363236404,0 33.63618690717027,66.33573698723069,0 33.63521115025161,66.33570789014861,0 33.63437203610098,66.33557957794245,0 33.63339437801412,66.3356761171177,0 33.63251150793572,66.33584937123497,0 33.63086637625011,66.33622483274853,0 33.62990684859177,66.33647980306586,0 33.62879812992701,66.33672051267324,0 33.62731942903114,66.33699184628625,0 33.62632999771927,66.33716949124161,0 33.62535254751582,66.33730460106941,0 33.62433031929888,66.33733488326348,0 33.62354447127016,66.33674438809784,0 33.62308596506162,66.33647907594136,0 33.62219340473759,66.33613492588054,0 33.62137133821991,66.33583475085206,0 33.61998998191866,66.33542966881731,0 33.61699818753291,66.33490394119536,0 33.61524224358005,66.33440862556283,0 33.61546406366946,66.33386798868285,0 33.63950633068611,66.33395692375797,0 33.66229352826731,66.3334421985754,0 
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+	</Placemark>
+</Document>
+</kml>

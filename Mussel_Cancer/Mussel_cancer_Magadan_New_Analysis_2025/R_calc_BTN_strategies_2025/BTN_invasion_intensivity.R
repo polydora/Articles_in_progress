@@ -293,68 +293,58 @@ Pl_size_stricture +
 ##########
 
 
-myt %>% 
-  group_by(Site_code, Year) %>% 
-  summarise(N = length(N), BTN1 = sum(Lineage == "BTN1", na.rm = T), BTN2 = sum(Lineage == "BTN2", na.rm = T)) %>% 
-  melt(., id.vars = c( "Site_code",  "Year", "N"), variable.name = "Lineage", value.name = "N_cancer") %>% 
-  mutate(N_helthy = N - N_cancer) %>% 
-  rename(Site = Site_code) ->
-  cancer_21_23
-
-cancer_21_23 %>% 
-  arrange(Year)
-
-
-df <- merge(cancer_21_23, points)
+myt %>%
+  filter_out(is.na(Lineage)) ->
+  df_infected_mussels
+  
+  
+merge(df_infected_mussels, points) ->
+  df_infected_mussels
+  
+merge(df_infected_mussels, pca_scores_scam) ->
+  df_infected_mussels
 
 
-df2 <-merge(df, pca_scores_scam)
-
-cancer_21_23_predictors <- merge(df2, ogp)
-
-cancer_21_23_predictors$Year <- factor(cancer_21_23_predictors$Year)
-
-cancer_21_23_predictors$Site <- factor(cancer_21_23_predictors$Site) 
+merge(df_infected_mussels, ogp) ->
+  df_infected_mussels
 
 
-cancer %>% 
-  group_by(Site, Year) %>% 
-  summarise(Lat = mean(Lat), Lon = mean(Lon), N_total = sum(N), BTN1 = sum(BTN1), BTN2 = sum(BTN2)) %>% 
-  mutate(BTN1 = BTN1/N_total*100, BTN2 = BTN2/N_total*100) %>% 
-  dplyr::select(Site,Year, Lat, Lon, BTN1, BTN2)  %>% 
-  melt(., id.vars = c("Site", "Year", "Lat", "Lon"), value.name = "Prop_BTN", variable.name = "Lineage" ) ->
-  prop_BTN_2
+df_infected_mussels %>% 
+  mutate(Fi_Prop_Aneuploid = 2*asin(sqrt(Rate_of_aneuploid_cells/100))*180/pi) %>% 
+  filter_out(is.na(Fi_Prop_Aneuploid)) ->
+  df_infected_mussels
 
+df_infected_mussels$Lineage <- factor(df_infected_mussels$Lineage)
+  
 
-prop_BTN_2_points <- 
-  merge(prop_BTN_2, cancer_21_23_predictors)
-
-
-library(tidyr)
-prop_BTN_2_points %>% 
-  select(Site, Year, Lineage, Prop_BTN) %>%
-  pivot_wider(names_from = Lineage, 
-              values_from = Prop_BTN) ->
-  df_cor
-
-# cor.test(df_cor$BTN1, df_cor$BTN2, method = "spearman")
-```
+mod_intens <- gam(Fi_Prop_Aneuploid ~ 
+                    s((Dist_Port), by = Lineage,  bs = "cs", k = 5) + 
+                    s((fetch), by = Lineage,  bs = "cs", k = 5) +  
+                    s((PC1), by = Lineage,  bs = "cs", k = 5) + 
+                    s((PC2), by = Lineage,  bs = "cs", k = 5) + 
+                    s((OGP), by = Lineage, bs = "cs", k = 5) +  
+                    Lineage +  
+                    s(Year, Site, bs = "re"),  
+                  family = "gaussian", 
+                  method = "REML", 
+                  data = df_infected_mussels ) 
 
 
 
+mod_intens <- gam(Fi_Prop_Aneuploid ~ 
+                    s((Dist_Port), by = Lineage,  bs = "cs", k = 5) + 
+                    s((fetch), by = Lineage,  bs = "cs", k = 5) +  
+                    s((PC1), by = Lineage,  bs = "cs", k = 5) + 
+                    s((PC2), by = Lineage,  bs = "cs", k = 5) + 
+                    s((OGP), by = Lineage, bs = "cs", k = 5) +  
+                    Lineage,  
+                  family = "gaussian", 
+                  method = "REML", 
+                  data = df_infected_mussels ) 
 
 
+summary(mod_intens)
+
+# Никаких значимых связей интенсивности заражения и изученных предикторов не наййдено 
 
 
-
-Mod <- gam(cbind(N_cancer, N_helthy) ~ 
-             s((Dist_Port), by = Lineage,  bs = "cs", k = 5) + 
-             s((fetch), by = Lineage,  bs = "cs", k = 5) +  
-             s((PC1), by = Lineage,  bs = "cs", k = 5) + 
-             s((PC2), by = Lineage,  bs = "cs", k = 5) + 
-             s((OGP), by = Lineage, bs = "cs", k = 5) +  
-             Lineage +  
-             s(Year, Site, bs = "re"),  
-           family = "binomial", 
-           method = "REML", 
-           data = cancer_21_23_predictors )

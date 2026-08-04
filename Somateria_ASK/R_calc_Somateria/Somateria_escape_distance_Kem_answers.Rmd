@@ -1,0 +1,847 @@
+---
+title: "Somateria mollissima escape distance in Kem' region"
+author: "V. Khaitov"
+date: ""
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+  opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+```{r}
+library(ggplot2)
+library(readxl)
+library(lubridate)
+library(mgcv) 
+library(gratia)
+library(dplyr)
+library(DHARMa)
+library(flextable)
+library(tidyr)
+library(cowplot)
+
+
+library(ggmap)
+
+
+```
+
+
+```{r}
+som <- read_excel("Data/all_nests_Kem.xlsx")
+
+
+
+som <- 
+  som %>% 
+  mutate(Year = year(Date))
+
+
+som %>% 
+  group_by(Year, Nest_ID) %>% 
+  summarise(Visits = n()) ->
+  n_visits
+
+
+
+# Отбираем только те гнезда, которые описаны в первый раз (отброшены гнезда при повторном осмотре)
+som_filtered <- som %>%
+  group_by(Year, Nest_ID) %>%
+  arrange(Date, .by_group = TRUE) %>%
+  slice(1) %>%
+  ungroup()
+
+# Оставляем только те гнезда, где стандартные значения в переменной Cover
+som_filtered <-
+som_filtered %>% 
+  filter(Cover %in% c("з", "о", "п"))
+
+# Убираем гнезда с большим количеством яиц (смешанные кладки)
+som_filtered <-
+  som_filtered %>% 
+  filter(N_eggs <= 6)
+
+
+som_filtered$Area <- "Kem"
+
+
+```
+
+
+```{r}
+
+# Расчет величины Q
+som_filtered <- 
+  som_filtered %>% 
+  mutate(Q = Ed * log10(Incubation_time + 2))
+
+```
+
+
+
+```{r}
+som_Kand <- read_excel("Data/all_nests.xlsx")
+
+som_Kand <- 
+  som_Kand %>% 
+  mutate(Year = year(Date))
+
+som_Kand <-
+  som_Kand %>% 
+  filter(N_eggs <= 6)
+
+som_Kand <- 
+  som_Kand %>% 
+  mutate(Q = Ed * log10(Tinc_mean + 2))
+
+som_Kand$Area <- "Kandalaksha"
+
+
+```
+
+
+## Сравнение индекса осторожности в Кеми и в Кандалаше
+
+
+
+```{r}
+df_Kem <- 
+  som_filtered %>% 
+  select(Area, Q)
+
+df_Kand <- 
+  som_Kand %>% 
+  select(Area, Q)
+
+
+df_Kem_Kand <- 
+  rbind(df_Kem, df_Kand)
+
+
+df_Kem_Kand %>% 
+  ggplot(aes(x = Area, y = Q )) +
+  geom_violin() +
+  geom_boxplot(width = 0.2, fill = "white", alpha = 0.5) +
+  stat_summary(fun = median, geom = "point", color = "red", size = 3)
+
+```
+
+
+
+Видно, что в Кеми чуть более высокая медиана значения Q. Пи этом различия статстически значимые 
+
+```{r}
+
+
+test_result <- wilcox.test(Q ~ Area, data = df_Kem_Kand)
+
+# Создаем таблицу с результатами
+results_table <- data.frame(
+  Параметр = c("W статистика", "p-value", "Метод"),
+  Значение = c(
+    round(test_result$statistic, 2),
+    format(test_result$p.value, scientific = FALSE, digits = 4),
+    test_result$method
+  )
+)
+
+# Оформляем как flextable
+ft <- flextable(results_table) %>%
+  theme_vanilla() %>%
+  fontsize(size = 11, part = "all") %>%
+  bold(part = "header") %>%
+  align(align = "center", part = "all") %>%
+  set_caption("Результаты теста Манна-Уитни для сравнения групп")
+
+ft
+```
+
+Таким образом, в окрестностях Кеми, где нагрузка сбора пуха высокая, осторожность выше, чем в окрестностях Кандалакши.
+
+
+## Сравннение осторожности при первичном и вторичном посещении гнезд в окрестностях Кеми
+
+
+
+```{r}
+merge(som, n_visits) %>% 
+  filter(Visits == 2) ->
+  som_double_checked
+
+
+som_double_checked <-
+  som_double_checked %>% 
+  mutate(Q = Ed * log10(Incubation_time + 2))
+
+
+som_double_checked %>%
+  group_by(Year, Nest_ID) %>%
+  arrange(Date, .by_group = TRUE) %>%
+  slice(1) %>%
+  ungroup() %>% 
+  mutate(Visit = "First") ->
+  first_visit
+
+# nrow(first_visit)
+
+som_double_checked %>%
+  group_by(Year, Nest_ID) %>%
+  arrange(Date, .by_group = TRUE) %>%
+  slice(2) %>%
+  ungroup() %>% 
+  mutate(Visit = "Second") ->
+  second_visit
+
+# nrow(second_visit)
+
+df_first_second <- 
+  rbind(first_visit, second_visit)
+
+Pl_incub_time <-
+df_first_second %>% 
+  ggplot(aes(x = Visit, y = Incubation_time)) +
+  geom_boxplot()
+
+Pl_Ed <-
+df_first_second %>% 
+  ggplot(aes(x = Visit, y = Ed)) +
+  geom_boxplot()
+
+Pl_Q <-
+df_first_second %>% 
+  ggplot(aes(x = Visit, y = Q)) +
+  geom_boxplot()
+
+
+
+
+```
+
+```{r}
+plot_grid(Pl_Ed, Pl_incub_time, Pl_Q, nrow = 1)
+```
+
+
+
+
+
+
+```{r}
+
+df_second <-
+  second_visit %>% 
+  select(Nest_ID, Q) %>% 
+  rename(Q2 = Q)
+
+merge(first_visit, df_second, all.x = T) %>% 
+  select( Nest_ID, Year, Region, Place, Q, Q2) %>% 
+  filter(complete.cases(.)) ->
+df_first_second_2  
+
+
+```
+
+
+```{r}
+test_result <- t.test(df_first_second_2$Q, df_first_second_2$Q2, paired = T)
+
+
+# test_result <- wilcox.test(Q ~ Visit, data = df_first_second)
+
+results_table <- data.frame(
+  Параметр = c("t-статистика", 
+               "df (степени свободы)", 
+               "p-value", 
+               "Средняя разница",
+               "95% ДИ нижняя граница",
+               "95% ДИ верхняя граница",
+               "Метод"),
+  Значение = c(
+    round(test_result$statistic, 3),
+    round(test_result$parameter, 2),
+    format(test_result$p.value, scientific = FALSE, digits = 4),
+    round(test_result$estimate, 3),
+    round(test_result$conf.int[1], 3),
+    round(test_result$conf.int[2], 3),
+    test_result$method
+  )
+)
+
+# Оформляем как flextable
+ft <- flextable(results_table) %>%
+  theme_vanilla() %>%
+  fontsize(size = 11, part = "all") %>%
+  bold(part = "header") %>%
+  align(align = "left", part = "all") %>%
+  set_caption("Результаты парного t-теста")
+
+ft %>% 
+  autofit()
+
+```
+
+
+Теперь различия статсистически значимы! 
+Судя по тому, что средняя разница отрицательная, при повторном посещении Q становится выше. То есть осторожность значимо повышается. 
+
+
+Если посмотреть по отдельным островам, то будет видно, что на островах Гага, Горелая Плоская, Горелая Северная, Тервонец Южный при повторном посещении Q становится чуть больше (довольно много точек выше линии Y=X). 
+
+
+```{r}
+df_first_second_2 %>% 
+  ggplot(aes(x = Q, y = Q2)) +
+  geom_point() +
+  geom_abline() +
+  labs(x = "Q for the first visit", y = "Q for the second visit") + 
+  facet_wrap(~Place)
+```
+
+
+## Пространственное распределение Q
+
+```{r}
+
+library(sf) #Это теперь основной пакет для ГИС!
+
+# Read the shapefile
+karel_shape <- st_read("d:/Data_LMBE/Maps/Karelia_new/data/coastlines.gpkg",  quiet = TRUE)
+
+# karel_shape <- st_read("Maps/Karelia/boundary-polygon-land-lvl4.shp")
+
+# arkhangel_shape <- st_read("Maps/Arkhangelskaya_obl/data/boundary-polygon-land-lvl2.gpkg")
+
+
+kem_points <- read_excel("Data/Онежский. Острова_координаты.xlsx")
+
+Lon_limits <- c(min(kem_points$Lon), max(kem_points$Lon))
+Lat_limits <- c(min(kem_points$Lat), max(kem_points$Lat))
+
+
+karel_shape_cropped <- st_crop(karel_shape, 
+                               xmin = 30, 
+                               xmax = 39, 
+                               ymin = 64, 
+                               ymax = 66)
+
+
+
+Pl_Kem_area <-
+  ggplot(data = karel_shape_cropped) +
+  geom_sf(fill = "lightgreen", color = "black") +
+  theme_bw() 
+
+
+```
+
+
+```{r}
+som_filtered %>% 
+  group_by(Place) %>% 
+  summarise(Q = mean(Q, na.rm = T)) ->
+df_mean_Q
+
+kem_points <-
+  kem_points %>% 
+  mutate(Place = Island)
+
+som_filtered_isl <-
+merge(df_mean_Q, kem_points, all.x = T)
+
+```
+
+
+
+
+```{r}
+Pl_all_islands <- 
+Pl_Kem_area +
+  geom_point(data = som_filtered_isl, aes(x = Lon, y = Lat, fill = Q), shape = 21, size = 3) +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = mean(som_filtered_isl$Q))
+
+
+Pl_nearest_islands <-
+Pl_Kem_area +
+  geom_point(data = som_filtered_isl, aes(x = Lon, y = Lat, fill = Q), shape = 21, size = 3) +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = mean(som_filtered_isl$Q)) +
+  xlim(34.5, 35.5) +
+  ylim(64.95, 65.1) +
+  annotate(geom = "point", shape = 21, size = 4, fill = "green", x = 34.5793, y =  64.9555)
+
+```
+
+Вот так это выглядит если смотреть на все острова. В принципе, есть намек на то, что ближе к Кеми гаги более осторожные.
+
+```{r}
+Pl_all_islands
+```
+
+
+
+А это ближайшие к Кеми острова.
+
+```{r}
+Pl_nearest_islands
+```
+
+Пока я вижу пять-шесть островов, где гаги более осторжные и они не самые близкие к Кеми. 
+
+
+
+## Ответы на вопросы
+
+
+**1. Зависимость дистанции слета от длительности инкубации.** 
+
+*Есть по данным АСК 80-х и 2000-х гг., нет по Кеми - сделать.*
+
+По первичным данным получается вот такая картинка
+
+
+
+```{r}
+
+som_Kand %>% 
+  select(Tinc_mean, Ed) %>% 
+  rename(Incubation_time = Tinc_mean) %>% 
+  mutate(Region = "Кандалакша") ->
+  df_Kand_Ed_Inc_Time
+
+som_filtered %>% 
+  select(Incubation_time, Ed) %>% 
+  mutate(Region = "Кемь") ->
+  df_Kem_Ed_Inc_Time
+  
+
+rbind(df_Kem_Ed_Inc_Time, df_Kand_Ed_Inc_Time) %>% 
+  ggplot(aes(x = Incubation_time, y = Ed, color = Region)) +
+  geom_point() +
+  geom_smooth()
+
+
+```
+
+
+Зависимость в Кемском материале явно есть, но она совсем не такая как в Кандалакше! Даже модель можно не строить, видно, что форма зависимостей совершенно разная. При этом в Кандалакше гаги явно менее осторожные почти во все время насиживания.  
+
+Это, либо разные методики, либо реально в Кеми они более осторожные. Кроме того,  явной логарифимческой зависимости, которая хоть как-то проглядывается в Кандалакше, в Кеми нет. Это еще один камень в сторону Q, куда АСК вставил логарифм, по-моему, чисто волюнтаристски. На фоне этого результата будет трудно обосновать, что логарифм был использован правильно.  
+
+
+Более того, если взять только данные по Кеми (Построил модель), то и здесь зависимсость будет довольно сильно варьировать. На выборках из региона "Юг" вообще нет связи с продолжительностью инкубации (см. summary от модели). 
+
+```{r}
+som_filtered$Region <- factor(som_filtered$Region)
+som_filtered$Place <- factor(som_filtered$Place)
+
+Mod_Ed_Incubation_Time <- bam(log(Ed +1) ~ s(Incubation_time, by = Region, bs = "cs", k = 5) + Region +  s(Place, bs = "re"), data = som_filtered) 
+
+# appraise(Mod_Ed_Incubation_Time)
+
+summary(Mod_Ed_Incubation_Time)
+
+
+
+```
+
+
+
+```{r}
+draw(Mod_Ed_Incubation_Time, grouped_by = T, select = 1:3) +
+  theme_bw() +
+  labs(y = "Ed (Partial effect)")
+
+```
+
+Не знаю, что там на "Юге", но там гаги менее осторожные на первых этапах инкубации. 
+
+
+Далее, наблюдается и разная зависимость Ed от Incubation_Time и при разной степени открыторсти-закрытости гнезда.
+
+```{r}
+som_filtered$Cover <- factor(som_filtered$Cover)
+
+Mod_Ed_Incubation_Time_2 <- gam(log(Ed +1) ~ s(Incubation_time, by = Cover, bs = "cs", k = 5) + Cover + s(Place, bs = "re"), data = som_filtered) 
+
+# appraise(Mod_Ed_Incubation_Time_2)
+
+summary(Mod_Ed_Incubation_Time_2)
+
+```
+
+
+```{r}
+draw(Mod_Ed_Incubation_Time_2, grouped_by = T, select = 1:3) +
+  theme_bw() +
+  labs(y = "Ed (Partial effect)")
+
+```
+
+
+
+У гнезд, маркированных "з" (закрытые ?) осторожность на первых этапах инкубации ниже, чем у "о" (Открытые?) и "п" (это какие?). В этом, похоже, есть какая-то правда. НО! Это означает, что Q вообще не может быть универсальным показателем, который работает в разных регионах.   
+
+
+
+
+
+**2. Зависимость значения Q от частоты и опасности контактов с человеком (от района гнездования).**
+
+*Есть по данным АСК 80-х и 2000-х гг., по Кеми сделано за 24 и 25 гг., добавить данные за 20 г.*
+
+Здесь будут карты с первичкой.
+
+
+**3. Значение Q и Qd.** 
+
+*Есть по данным АСК 80-х, сделать по кемским данным.*
+
+```{r}
+
+som_two_visits <- read_excel("Data/all_nests_Kem_два_визита.xlsx", na = "NA")
+
+som_two_visits <- 
+  som_two_visits %>% 
+  mutate(Q = Ed * log10(Incubation_time + 2), Year = year(Date))
+
+# unique(som_two_visits$Year)
+
+
+som_two_visits <-
+  som_two_visits %>% 
+  filter_out(Year == 2020)
+
+# table(som_two_visits$Year, som_two_visits$Nest_ID)
+
+som_two_visits %>% 
+  filter(Visit == 2) %>% 
+  select(Nest_ID, Year, Destroy) ->
+  second_visit_2
+
+som_two_visits %>% 
+  filter(Visit == 1) %>% 
+  select(-Destroy) ->
+  first_visit_2
+
+merge(second_visit_2, first_visit_2, by = c("Year", "Nest_ID"))  ->
+  two_visits_destroy
+
+
+
+```
+
+Итак, выловил блох каких смог. НО! Полной уверенности в том, что все правильно нет. Поэтому прверьте **внимательно**.  Ниже таблица с перечнем тех гнезд, на которых изучена связь вероятности разорения с Q.
+
+
+
+
+<!-- ```{r} -->
+
+<!-- two_visits_destroy %>% -->
+<!--   filter_out(is.na(Q)) %>% -->
+<!--   filter_out(is.na(Destroy)) %>%  -->
+<!--   select(Year, Nest_ID) %>%  -->
+<!--   kable() -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- two_visits_destroy %>% -->
+<!--   filter_out(is.na(Q)) %>% -->
+<!--   filter_out(is.na(Destroy)) %>%  -->
+<!--   ggplot(aes(x = factor(Destroy), y = Q)) + -->
+<!--   geom_boxplot() + -->
+<!--   facet_wrap(~Year) -->
+<!-- ``` -->
+
+
+```{r}
+Mod_destroy <- glm(Destroy ~ Q, data = two_visits_destroy, family = "binomial")
+
+summary(Mod_destroy)
+```
+
+
+Удивительно, но зависимость статистически значимая. Эта зависимость описывается следующим уравнением:
+
+
+$$
+P_{Destroy} = \frac{e^{-1.9 + 0.03Q}}{1+e^{-1.9 + 0.03Q}}
+$$
+
+Вот график полученной модели
+
+
+
+```{r}
+n_bins <- 5  # количество интервалов
+
+
+two_visits_destroy <- two_visits_destroy %>%
+  mutate(Q_bin = cut(Q, breaks = n_bins))
+
+observed_data <- two_visits_destroy %>%
+  group_by(Q_bin) %>%
+  summarise(
+    Q_mid = mean(Q, na.rm = TRUE),
+    Q_min = min(Q, na.rm = TRUE), 
+    Q_max = max(Q, na.rm = TRUE),
+    n_total = n(),                
+    n_destroy = sum(Destroy == 1, na.rm = TRUE),      
+    observed_prob = n_destroy / n_total,              
+    se = sqrt(observed_prob * (1 - observed_prob) / n_total)  
+  ) %>%
+  filter(n_total > 0)  
+
+
+Q_range <- seq(min(two_visits_destroy$Q, na.rm = TRUE), 
+               max(two_visits_destroy$Q, na.rm = TRUE), 
+               length.out = 200)
+
+pred_data <- data.frame(Q = Q_range)
+
+pred_data$predicted_prob <- predict(Mod_destroy, 
+                                    newdata = pred_data, 
+                                    type = "link")
+
+
+
+X = model.matrix(~Q, data = pred_data)
+
+pred_data$SE <- sqrt(diag(X %*% vcov(Mod_destroy) %*% t(X)))
+
+logit_back <- function(logits) {
+   return(1 / (1 + exp(-logits)))
+}
+
+
+pred_data <- 
+  pred_data %>% 
+  mutate(CI_low = predicted_prob - 1.96*SE, CI_up = predicted_prob + 1.96*SE) %>% 
+  mutate(Pi_predicted = logit_back(predicted_prob), Pi_CI_low = logit_back(CI_low), Pi_CI_up = logit_back(CI_up) )
+
+
+Pl_model <-
+ pred_data %>% 
+  ggplot() +
+  geom_line(aes(x = Q, y = Pi_predicted), 
+            color = "blue", 
+            size = 1.2) +
+  geom_ribbon(aes(x = Q, 
+                  ymin = Pi_CI_low,
+                  ymax = Pi_CI_up),
+              alpha = 0.7, 
+              fill = "lightblue") +
+  geom_point(data = observed_data,
+             aes(x = Q_mid, 
+                 y = observed_prob),
+             color = "darkred") +
+  geom_errorbar(data = observed_data,
+                aes(x = Q_mid,
+                    ymin = observed_prob - 1.96 * se,
+                    ymax = observed_prob + 1.96 * se),
+                width = diff(range(observed_data$Q_mid)) / (n_bins * 3),
+                color = "darkred",
+                alpha = 0.5) +
+    scale_y_continuous(labels = scales::percent, 
+                     limits = c(0, 1),
+                     name = "Вероятность разорения (%)") +
+   theme_bw()
+
+Pl_model
+```
+
+
+Форма зависимости, в целом, похожа на то, что у АСК. То есть у более осторожных самок смертность кладок выше. (По-моему, не логично, но у АСК так же).
+
+Важное отличие от АСК - размах варьирования Q в Кеми сильно больше. 
+
+
+**4. Расчет вероятности гибели кладки (расчетные и эмпирические показатели).**
+
+*Есть по данным АСК 80-х, сделать по кемским данным.*
+
+Вот так выглядит связь вероятности гибели, Q и Времени инкубации, согласно полученной модели. 
+
+
+```{r}
+mod_params <-
+  expand.grid(Incubation_time = seq(0, 25, 0.1), Ed = seq(round(min(two_visits_destroy$Ed, na.rm = T)), round(max(two_visits_destroy$Ed, na.rm = T)), 5))
+  
+mod_params <- 
+mod_params %>% 
+  mutate(Q = (Ed * log10(Incubation_time + 2)),
+         P = (1/(1+exp(1.9 - 0.03*Q))*100) )
+# %>% 
+#   arrange(Incubation_time, Q)
+
+
+mod_params <- 
+  unique(mod_params)
+
+mod_params %>% 
+  ggplot(aes(x = Q, y = Incubation_time, color = P, group = Incubation_time)) +
+  geom_line() +
+    scale_color_gradient(low = "yellow", high = "red") + theme_bw()
+
+
+
+```
+
+
+Честно говоря, рисунок, аналогичный приведенному у АСК (там где Qd) я не могу придумать как сделать. 
+
+Но форма связи этих трех величин похожая.
+
+
+Что касается Qd, то 100% вероятности гибели эта модель не может предсказать в принципе (она логистическая, т.е. вероятность = 1 не может быть). Если взять веротяность равную 0.99 (99%), то тогда, после несложных вычислений, Qd = 217. Странное и нереалистичное число.
+
+
+
+
+
+
+
+
+
+**5. Адаптация к антропогенному беспокойству.**
+
+*Изменение осторожности по годам.*
+
+*Есть по данным АСК 2005-11 гг., сделать по Кеми.*
+
+По Кеми у меня пока всего три года. Вот что мы видим.
+
+```{r}
+Mod_Q_Year <- lm(log(Q+1) ~ factor(Year), data = som_filtered)
+
+anova(Mod_Q_Year)
+```
+
+Значимые межгодовые изменения в Кеми вроде как есть. НО! К этим результатам надо относиться с высокой степенью скепсиса. Прежде всего потому, что распределение Q очень асимметрично и приходится в качестве зависимой переменной использовать log(Q+1). То есть здесь уже двойное (!) логарифмирование Ed.
+
+
+На картинке можно что-то увидеть: медианы, красные точки, в 2022 г. чуть выше общей за все годы медианы (горизонтальная линия), а в 2025 - чуть ниже. Но при таком размахе варьирования все различия  сильно скрадываются. 
+
+
+```{r}
+
+som_filtered %>% 
+  group_by(Year) %>% 
+  summarise(Median_Q = median(log(Q +1), na.rm = T)) ->
+  df_median_Q
+
+som_filtered %>% 
+  ggplot(aes(x = Year, y = log(Q+1), group = Year)) +
+  geom_violin() + 
+  geom_point(data = df_median_Q, aes(y = Median_Q),  color = "red") +
+  geom_hline(yintercept = median(log(som_filtered$Q +1), na.rm = T))
+```
+
+
+
+
+**6. Зависимость осторожности (Q) от количества яиц**
+
+*Есть по данным АСК 2000-х, сделать по Кеми.*
+
+
+
+```{r}
+som_filtered %>% 
+  ggplot(aes(x = N_eggs, y = log(Q + 1))) +
+  geom_point() +
+  geom_smooth(method = "lm")
+```
+
+
+Да, уже на первичных данных видна отрицательная корреляция.
+
+
+Вот более аккуратная оценка в статистической модели.
+
+```{r}
+Mod_Q_N_eggs <- gam(log(Q +1) ~ s(N_eggs, bs = "cs", k = 5, by = Region) + Region +s(Place, bs = "re"), data = som_filtered)
+
+summary(Mod_Q_N_eggs)
+```
+
+Опять же все по-разному на разных регионах. Значимая связь только в регионе "Кемь". Да и там тоже связь какая-то не монотонная.
+
+```{r}
+draw(Mod_Q_N_eggs, grouped_by = T, select = 1:3)
+```
+
+**7. Для Кеми сравнить Q на островах, где проводили и не проводили сбор пуха**
+
+*Для островов в целом или для отдельных гнезд? (у каждого гнезда отмечено п(пух) - значит, его не собирали, или с(сено) - значит, пух собирали.*
+
+
+Вот это выглядит так для гнезд при ПЕРВОМ осмотре.
+
+```{r}
+som_filtered %>%
+  filter_out(is.na(Fluff_collection)) %>% 
+  ggplot(aes(x = Fluff_collection, y = log(Q+1) )) +
+  geom_violin() +
+  geom_boxplot()
+  
+
+```
+
+Сильных различий не вижу. Ну... Есть маленько более высокое значение Q для тех кто с сеном. Однако формальный тест на различия их, все-таки, выявляет.
+
+
+```{r}
+test_result <- wilcox.test(Q ~ Fluff_collection, data = som_filtered)
+
+test_result
+```
+
+Так что есть статистически значимые различия. Там, где вместо пуха лежит сено, гаги более осторожные. 
+
+**8. Посмотреть индивидуальную вариативность:**
+
+*каков разброс значений Q внутри одной популяции, насколько сильно различаются «смелые» и «осторожные» особи, по кандалакшским и кемским данным*
+
+
+Вот переделанная картинка для сравнения Кандалакши и Кеми
+
+```{r}
+
+df_Kem_Kand %>% 
+  ggplot(aes(x = Q, fill = Area)) +
+  geom_histogram() +
+  scale_fill_manual(values = c("gray60", "gray10"))
+
+```
+
+
+Вот еще один вариант этой картинки, но более информативный.
+
+```{r}
+
+df_Kem_Kand %>% 
+  ggplot(aes(x = Q, fill = Area)) +
+  geom_density(alpha = 0.5) +
+  scale_fill_manual(values = c("blue", "gray60"))
+
+```
+
+
+Здесь, кстати, хорошо видно, что оба распределения очень похожи: пики в одних и тех же местах. Однако правый хвост в распределниии в Кеми сильно длиннее. Последнее говорит о большей осторожности кемских гаг.
+
+
+
+Если сжать правый хвост путем логарифмирования, то будет видно, что "подпики" менее осторожных гаг (левые пики) имеют более высокую частоту (density).
+
+
+```{r}
+
+df_Kem_Kand %>% 
+  ggplot(aes(x = log(Q + 1), fill = Area)) +
+  geom_density(alpha = 0.5) +
+  scale_fill_manual(values = c("blue", "gray60"))
+
+```

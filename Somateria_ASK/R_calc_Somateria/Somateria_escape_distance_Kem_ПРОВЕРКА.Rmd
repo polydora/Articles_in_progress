@@ -1,0 +1,79 @@
+---
+title: "Somateria mollissima escape distance in Kem' region"
+author: "V. Khaitov"
+date: ""
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+  opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+```{r}
+library(ggplot2)
+library(readxl)
+library(lubridate)
+library(mgcv) 
+library(gratia)
+library(dplyr)
+library(DHARMa)
+library(flextable)
+library(tidyr)
+library(cowplot)
+
+
+library(ggmap)
+
+
+```
+
+
+**3. Значение Q и Qd.** 
+
+*Есть по данным АСК 80-х, сделать по кемским данным.*
+
+```{r}
+
+som_double_checked_2 <- read_excel("Data/два визита_24_25.xlsx", na = "NA")
+
+som_double_checked_2 %>% 
+  mutate(Year = year(Date)) ->
+  som_double_checked_2
+
+som_double_checked_2 %>%
+  filter(Visit == 1) ->
+first_visit
+
+first_visit <-
+  first_visit %>% 
+  select(-Destroy)
+
+som_double_checked_2 %>%
+  filter(Visit == 2) ->
+second_visit
+
+
+```
+
+
+```{r}
+second_visit %>% 
+  select(Nest_ID, Year, Destroy) ->
+  df_second
+```
+
+```{r}
+two_wisits <-
+merge(first_visit, df_second, by = c("Nest_ID", "Year")) 
+
+```
+
+```{r}
+df_second %>% 
+  mutate(First_letter = substr(Nest_ID, 1, 1)) %>%
+  group_by(Year) %>% 
+  count(First_letter) ->
+  foo
+```
+

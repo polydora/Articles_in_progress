@@ -198,6 +198,12 @@ points_local %>%
 # Данные по разновидности BTN
 myt <- read_excel("Data/summary table_Magadan_itog.xlsx", sheet = "data")
 
+
+myt <- 
+  myt %>% 
+  filter_out(Site_code == "KHOL" & Sample %in% c("A", "B") )
+
+
 myt <-
 myt %>% 
   dplyr::select(-Site) %>% 
@@ -212,17 +218,40 @@ myt %>%
   filter_out(Year == 2023 & Site_code == "KHOL" & Sample %in% c("A", "B"))
 
 
+
 # Суммарные описания сайтов
 
-# myt %>% 
-#   group_by(Site_code, Year) %>% 
-#   summarise(BTN1 = sum(BTN1), BTN2 = sum(BTN2), Total_N = sum(N)) %>% 
-#   filter(BTN1 == 0 & BTN2 == 0) 
-# 
-# 
-# Prob_BTN1_total <- sum(myt$BTN1)/sum(myt$N)
-# Prob_BTN2_total <- sum(myt$BTN2)/sum(myt$N)
-# 
+myt %>%
+  group_by(Site_code, Year) %>%
+  summarise(Total_N = sum(N), BTN1 = sum(BTN1)/Total_N * 100, BTN2 = sum(BTN2) / Total_N *100) %>%
+  filter(BTN1 != 0 & BTN2 != 0) %>% 
+  arrange(BTN2)
+
+
+
+
+myt %>%
+  group_by(Site_code, Year) %>%
+  summarise(Total_N = sum(N), BTN1 = sum(BTN1)/Total_N, BTN2 = sum(BTN2) / Total_N) %>%
+  arrange(BTN2) -> 
+  df_summary_site
+
+nrow(df_summary_site)
+
+  cor.test(df_summary_site$BTN1, df_summary_site$BTN2, method = "spearman")
+
+
+
+myt %>%
+  summarise(Total_N = sum(N), BTN1 = sum(BTN1)/Total_N * 100, BTN2 = sum(BTN2) / Total_N *100) 
+
+N_mussel_processed <- sum(myt$N)
+
+N_mussel_infected <- sum(myt$BTN1) + sum(myt$BTN2)
+
+Prob_BTN1_total <- sum(myt$BTN1)/sum(myt$N)
+Prob_BTN2_total <- sum(myt$BTN2)/sum(myt$N)
+
 # 
 # myt %>% 
 #   group_by(Site_code, Year) %>% 
@@ -467,62 +496,49 @@ SCAM <-
 
 ```{r}
 
-# Здесь какая-то загадочная история. Если считать модель по данным из Mussel_growth_Magadan_2021_2023.xlsx, то связь с OGP становится не значимой, но если брать данные из файла, который является репликой экселевского файла, то все ОК, связь значима. 
+# OGP берем из файла ЕДИНСТВЕННЫЙ ФАЙЛ 20.07.2026_OGP_recalculated.xlsx, гдепеременная OGP_site_2 вычислена после переизмерений всех моллюсков, а также после исключения из вычислений OGP больных моллюсков. В расчетах учтены моллюски с возрастом не менее 2 лет и не более 10 лет (!!!).  Все вычисления лежат в коде "OGP_vs_Increment.R". То есть OGP_site_2 говорит о потенциях роста у здоровых моллюсков.  
 
 
-growth <- read.table("Data/Mussel_growth_Magadan_2021_2023.csv", sep = ";", header = T, dec = ",")
 
-growth_1 <- read_excel("Data/Mussel_growth_Magadan_2021_2023.xlsx", na = "NA")
+growth <- read_excel("Data/ЕДИНСТВЕННЫЙ ФАЙЛ 20.07.2026_OGP_recalculated.xlsx", na = "NA")
 
 
-str(growth_1)
 
 growth <- 
   growth %>% 
   filter_out(Site_code == "PLO")
 
-growth_1 <- 
-  growth_1 %>% 
-  filter_out(Site_code == "PLO")
 
-
-growth$OGP_site[growth$Site_code == "KHOL" & growth$Year == 2023] <- 1.065483
-
-growth_1$OGP_site[growth_1$Site_code == "KHOL" & growth_1$Year == 2023] <- 1.065483
-
-
+# growth$OGP_site[growth$Site_code == "KHOL" & growth$Year == 2023] <- 1.065483
+# 
+# growth_1$OGP_site[growth_1$Site_code == "KHOL" & growth_1$Year == 2023] <- 1.065483
+# 
+ 
 growth <- 
   growth %>% 
   filter_out(Site_code == "KHOL" & Sample %in% c("A", "B"))
 
-growth_1 <- 
-  growth_1 %>% 
-  filter_out(Site_code == "KHOL" & Sample %in% c("A", "B"))
+# growth_1 <- 
+#   growth_1 %>% 
+#   filter_out(Site_code == "KHOL" & Sample %in% c("A", "B"))
 
 
 
 growth <-
   growth %>% 
-  dplyr::select(-Site) %>% 
   rename(Site = Site_code) 
-
-growth_1 <-
-  growth_1 %>% 
-  dplyr::select(-Site) %>% 
-  rename(Site = Site_code) 
-
 
 
 ogp <- 
   growth %>% 
   group_by(Site) %>% 
-  summarise(OGP = mean(OGP_site))
+  summarise(OGP = mean(OGP_site_2)) #At! Это уже проверенные данные
 
 
-ogp_1 <- 
-  growth_1 %>% 
-  group_by(Site) %>% 
-  summarise(OGP = mean(OGP_site))
+# ogp_1 <- 
+#   growth_1 %>% 
+#   group_by(Site) %>% 
+#   summarise(OGP = mean(OGP_site))
 
 
 # cbind(ogp, ogp_1) 
@@ -813,8 +829,8 @@ myt %>%
   rename(Site = Site_code) ->
   cancer_21_23
 
-cancer_21_23 %>% 
-  arrange(Year)
+# cancer_21_23 %>% 
+#   arrange(Year)
 
 
 df <- merge(cancer_21_23, points)
@@ -1056,31 +1072,42 @@ Both lineages show a positive association with mussel growth rate.
 ```{r}
 Mod <- gam(cbind(N_cancer, N_helthy) ~ 
              s((Dist_Port), by = Lineage,  bs = "cs", k = 5) + 
-             s((fetch), by = Lineage,  bs = "cs", k = 5) +  
+             s(log(fetch), by = Lineage,  bs = "cs", k = 5) +  
              s((PC1), by = Lineage,  bs = "cs", k = 5) + 
-             s((PC2), by = Lineage,  bs = "cs", k = 5) + 
-             s((OGP), by = Lineage, bs = "cs", k = 5) +  
+             s((PC2), by = Lineage,  bs = "cs", k = 5) +
+             s((OGP), by = Lineage, bs = "cs", k = 5) +
              Lineage +  
              s(Year, Site, bs = "re"),  
            family = "binomial", 
            method = "REML", 
            data = cancer_21_23_predictors )
 
-# cancer_21_23_predictors %>% 
-#   filter(Year == 2023) 
+
+Mod_no_re <- gam(cbind(N_cancer, N_helthy) ~ 
+             s((Dist_Port), by = Lineage,  bs = "cs", k = 5) + 
+             s(log(fetch), by = Lineage,  bs = "cs", k = 5) +  
+             s((PC1), by = Lineage,  bs = "cs", k = 5) + 
+             s((PC2), by = Lineage,  bs = "cs", k = 5) +
+             s((OGP), by = Lineage, bs = "cs", k = 5) +
+             Lineage ,  
+           family = "binomial", 
+           method = "REML", 
+           data = cancer_21_23_predictors )
+
+
+
+
+# AIC(Mod, Mod_no_re)
+
+# draw(Mod)
+
+# draw(Mod_no_re)
+
+
 
 # summary(Mod)
 
-
-# Mod_no_re <- gam(cbind(N_cancer, N_helthy) ~ 
-#              s((Dist_Port), by = Lineage,  bs = "tp", k = 5) + 
-#              s((fetch), by = Lineage,  bs = "tp", k = 5) +  
-#              s((PC1), by = Lineage,  bs = "tp", k = 5) + 
-#              s((OGP), by = Lineage, bs = "tp", k = 5) +  
-#              Lineage + Year,  
-#            family = "binomial", 
-#            method = "REML", 
-#            data = cancer_21_23_predictors )
+# summary(Mod_no_re)
 
 
 
@@ -1096,8 +1123,9 @@ Generalized Additive Mixed Model (GAMs) was fitted using the 'mgcv' package in R
 ```{r, echo=TRUE, eval=FALSE}
 Mod <- gam(cbind(N_cancer, N_helthy) ~ 
              s((Dist_Port), by = Lineage,  bs = "cs", k = 5) + 
-             s((fetch), by = Lineage,  bs = "cs", k = 5) +  
-             s((PC1), by = Lineage,  bs = "cs", k = 5) + 
+             s(log(fetch), by = Lineage,  bs = "cs", k = 5) +  
+             s((PC1), by = Lineage,  bs = "cs", k = 5) +
+             s((PC2), by = Lineage,  bs = "cs", k = 5) +
              s((OGP), by = Lineage, bs = "cs", k = 5) +  
              Lineage +  
              s(Year, Site, bs = "re"),  
@@ -1105,12 +1133,6 @@ Mod <- gam(cbind(N_cancer, N_helthy) ~
            method = "REML", 
            data = cancer_21_23_predictors )
 
-```
-
-```{r}
-cancer_21_23_predictors %>% 
-  group_by(Year, Lineage) %>% 
-  summarise(N = sum(N))
 ```
 
 
@@ -1154,7 +1176,7 @@ ft %>%
 
 ```
 
-Significant associations were found for BTN1 with distance to port, Fetch, and PC1, while no significant patterns were found for BTN2. In terms of growth rates, BTN2 was significantly associated with OGP (p=0.02), while the association for BTN1 was marginally significant (p=0.06).
+Significant associations were found for BTN1 with distance to port, Fetch, and PC1, while no significant patterns were found for BTN2. In terms of growth rates, BTN2 was significantly associated with OGP (p=0.007), while the association for BTN1 was not significant.
 
 
 
@@ -1238,44 +1260,88 @@ plot_grid(Pl_BTN1_OGP, Pl_BTN2_OGP)
 ```
 
 
+
+
+
+
 # Effects of BTN infection on reproductive function and growth of the host
+
 
 
 ```{r}
 # Данные по индивидуальным характристикам мидий
-myt_ind <- read_excel("Data/Mussel_growth_Magadan_2021_2023.xlsx", na = "NA")
+myt_ind <- read_excel("Data/ЕДИНСТВЕННЫЙ ФАЙЛ 20.07.2026_OGP_recalculated.xlsx", na = "NA")
+
+
+# nrow(myt_ind)
+
+# range(myt_ind$L)
+
+# median(myt_ind$L)
+
+
+# myt_ind %>% 
+  # filter(!is.na(BTN_genotype)) %>% 
+  # nrow()
+
+# myt_ind %>% 
+#   filter(!is.na(BTN_genotype)) %>% 
+#   pull(L) %>% 
+#   median()
+
+
+myt_ind <-
+myt_ind %>%
+  mutate(BTN_Type = case_when(BTN_genotype == "BTN2.2" ~ "BTN2",
+                         BTN_genotype == "BTN2.1" ~ "BTN2",
+                         BTN_genotype == "BTN1" ~ "BTN1",
+                         BTN_genotype == "BTN1_Am" ~ "BTN1",
+                         BTN_genotype == "BTN1/BTN2.1" ~ "BTN2",
+                         BTN_genotype == "BTN2.1/BTN1" ~ "BTN2", 
+                         BTN_genotype == "BTN2.2/BTN1" ~ "BTN2",
+                         is.na(BTN_genotype) ~ "Healthy"))
+
+
+myt_ind$BTN_Type <- factor(myt_ind$BTN_Type)
+
+myt_ind <-
+myt_ind %>%
+  mutate(Gonad_quality = case_when(Sex == "male" ~ "Developed",
+                                   Sex == "female" ~ "Developed",
+                                   Sex == "no gametes" ~ "No"))
+
+
+
 
 myt_ind$Sample <- paste(myt_ind$Site_code, myt_ind$Sample, sep = "_")
+myt_ind$Site_code <- factor(myt_ind$Site_code)
 
 
-# Удаляем идий, которые были испольованы для анализа роста, но не анализировались с для определения BTN
 
-myt_ind %<>%
-  filter(!is.na(DN))
+
+# Удаляем идий, которые были испольованы для анализа роста, но не анализировались с для цитометрии или иного определения налияия DN
+
+myt_ind %>%
+  filter(!is.na(DN)) ->
+  myt_ind
 
 myt_ind$DN <- factor(myt_ind$DN)
 myt_ind$Site_code <- factor(myt_ind$Site_code)
 myt_ind$Sample <- factor(myt_ind$Sample)
 myt_ind$Rate_of_aneuploid_cells <- as.numeric(myt_ind$Rate_of_aneuploid_cells)
 
-myt_ind %<>%
-  mutate(Prop_Increment = Increment/L) %>%
-  mutate(BTN_Type = case_when(BTN_genotype == "BTN1" ~ "BTN1",
-                              BTN_genotype %in% c("BTN2.1", "BTN2.2") ~ "BTN2",
-                              BTN_genotype == "healthy" ~ "healthy"))
-
-myt_ind$BTN_Type <- factor(myt_ind$BTN_Type)
-
-
-myt_ind %<>%
-  mutate(Gonad_quality = case_when(Sex == "male" ~ "Developed",
-                                   Sex == "female" ~ "Developed",
-                                   Sex == "no gametes" ~ "No"))
 
 
 myt_ind <-
   myt_ind %>%
   filter(!is.na(BTN_Type))
+
+myt_ind %>% 
+  filter(BTN_Type == "Healthy") %>% 
+  group_by(Site_code, Year) %>% 
+  summarise(N = n()) %>% 
+  pull(N) %>% 
+  range()
 
 
 
@@ -1286,15 +1352,24 @@ myt_ind <-
 #   facet_grid(Sex ~ Year)
 
 
+```
 
 
+
+
+
+## Effects of BTN infection on gonad quality
+
+
+
+```{r}
+# Удаляем тех, у кого не смотрели мазки гонад
 myt_ind_clean <-
   myt_ind %>%
-  filter(!is.na(BTN_Type)) %>%
   filter(Sex != "hermaphrodite") %>%
   filter(!is.na(Sex))
 
-myt_ind_clean$Fi_Increment <- 2*asin(sqrt(myt_ind_clean$Prop_Increment)) * 180/pi
+# myt_ind_clean$Fi_Increment <- 2*asin(sqrt(myt_ind_clean$Prop_Increment)) * 180/pi
 
 points <- read_excel("Data/Magadan_2021_2023_ecology_cleaned.xlsx", sheet = "Points  characteristic 2021-23", na = "NA")
 
@@ -1363,6 +1438,7 @@ To investigate the effect of the rate of aneuploid hemocytes in haemolymph on re
 
 
 ```{r, echo=TRUE, eval=FALSE}
+
 Mod_gonad <- gam(Gonad_Out ~ s(Aneuploid_Proportion, by = Lineage) + 
                    Lineage , 
                  family = "binomial",  
@@ -1450,7 +1526,7 @@ sm %>%
   geom_line(color = "red", linewidth = 1)+
   # geom_hline(yintercept = 0, linetype = 2) +
   ggtitle("BTN1", subtitle = "") +
-  labs(x = "Proportion (%) of aneuploid cells", y = "Proportion of gamete-free specimens") +
+  labs(x = "Proportion (%) of aneuploid cells", y = "Frequency of gamete-free specimens") +
   # ylim(-5, 4)+
   # annotate(geom = "text", x = 25, y = 0.5, label = "Среднее значение")  +
   # theme_bw() +
@@ -1503,7 +1579,7 @@ sm %>%
   geom_line(color = "blue", linewidth = 1)+
   # geom_hline(yintercept = 0, linetype = 2) +
   ggtitle("BTN2", subtitle = "") +
-  labs(x = "Proportion (%) of aneuploid cells", y = "Proportion of gamete-free specimens") +
+  labs(x = "Proportion (%) of aneuploid cells", y = "Frequency of gamete-free specimens") +
   # ylim(-5, 4)+
   # annotate(geom = "text", x = 25, y = 0.5, label = "Среднее значение")  +
   # theme_bw() +
@@ -1564,6 +1640,251 @@ The figure above illustrates that the negative effect of the BTN2 lineage on rep
 
 
 
+## Analyzis of acini size
+
+
+```{r}
+
+gon <- read_excel("Data/gonads_histology_weibel.xlsx")
+
+gon <-
+gon %>% 
+  rename(BTN_Type = BTN_class_1_or_2)
+
+
+gon$BTN_Type <- factor(gon$BTN_Type)
+
+
+gon_btn <- 
+  gon %>% 
+  filter_out(BTN_Type == "no")
+  
+gon_healthy <- 
+  gon %>% 
+  filter(BTN_Type == "no")
+
+  
+
+
+library(boot)  # для бутстрепа
+
+mod_gon <- glm(cbind(Gonad_grid,Tishue_grid) ~ BTN_Type*Aneuploidy_rate, data = gon_btn, family = "binomial")
+
+
+
+# ============================================================
+# МЕТОД 1: Бутстреп с использованием boot::boot
+# ============================================================
+
+# Функция для извлечения предсказанных значений из модели
+predict_function <- function(data, indices, newdata_grid) {
+  # Создаем бутстреп-выборку
+  boot_data <- data[indices, ]
+  
+  # Подгоняем модель на бутстреп-выборке
+  boot_mod <- tryCatch({
+    glm(cbind(Gonad_grid, Tishue_grid) ~ BTN_Type * Aneuploidy_rate,
+        data = boot_data,
+        family = "binomial")
+  }, error = function(e) return(NULL))
+  
+  # Если модель не сходится, возвращаем NA
+  if (is.null(boot_mod)) return(rep(NA, nrow(newdata_grid)))
+  
+  # Предсказываем значения для новой сетки данных
+  pred <- predict(boot_mod, newdata = newdata_grid, type = "response")
+  return(pred)
+}
+
+# Подготовка данных для предсказаний
+# Определяем уникальные значения BTN_class_1_or_2
+btn_levels <- unique(gon_btn$BTN_Type)
+
+# Создаем сетку для Aneuploidy_rate
+aneu_grid <- seq(min(gon_btn$Aneuploidy_rate, na.rm = TRUE), 
+                 max(gon_btn$Aneuploidy_rate, na.rm = TRUE), 
+                 length.out = 50)
+
+# Создаем dataframe для всех комбинаций
+newdata <- expand.grid(
+  Aneuploidy_rate = aneu_grid,
+  BTN_Type = btn_levels
+)
+
+# Количество бутстреп-итераций
+R <- 1000  # Можно увеличить до 2000-5000 для более точных интервалов
+
+# Запускаем бутстреп
+set.seed(123456)  # для воспроизводимости
+boot_results <- boot(data = gon_btn, 
+                     statistic = predict_function, 
+                     R = R,
+                     newdata_grid = newdata)
+
+# Извлекаем бутстреп-предсказания
+boot_predictions <- boot_results$t
+
+# Рассчитываем доверительные интервалы (процентильный метод)
+conf_level <- 0.95
+alpha <- 1 - conf_level
+
+lower_percentile <- apply(boot_predictions, 2, function(x) quantile(x, probs = alpha/2, na.rm = TRUE))
+upper_percentile <- apply(boot_predictions, 2, function(x) quantile(x, probs = 1 - alpha/2, na.rm = TRUE))
+
+# Также получаем средние предсказания из исходной модели
+newdata$predicted <- predict(mod_gon, newdata = newdata, type = "response")
+
+# Добавляем доверительные интервалы
+newdata$conf_low <- lower_percentile
+newdata$conf_high <- upper_percentile
+
+# ============================================================
+# ВИЗУАЛИЗАЦИЯ
+# ============================================================
+
+
+
+Pl_gonad_btn <- 
+ggplot(newdata, aes(x = Aneuploidy_rate, y = predicted, color = BTN_Type)) +
+  geom_line(linewidth = 2) +
+  geom_ribbon(aes(ymin = conf_low, ymax = conf_high, fill = BTN_Type), 
+              alpha = 0.2, color = NA, fill = "gray40") +
+  # Добавляем исходные точки данных
+  geom_point(data = gon_btn, 
+             aes(x = Aneuploidy_rate, 
+                 y = Gonad_grid / (Gonad_grid + Tishue_grid),
+                 color = BTN_Type), 
+             size = 4) +
+  labs(
+    # title = "Binomial GLM with Bootstrap Confidence Intervals",
+    # subtitle = paste("Based on", R, "bootstrap iterations (percentile method)"),
+    x = "",
+    y = "",
+    color = NULL,
+    fill = NULL
+  ) +
+  guides(color = "none", fill = "none") +
+  theme_bw() +
+  theme(
+    legend.position = "bottom",
+    panel.grid.minor = element_blank(),
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.text = element_text(size  = 15)) +
+  scale_y_continuous(limits = c(0, 1), 
+                     labels = scales::percent_format(),
+                     breaks = seq(0, 1, 0.2)) +
+  scale_color_manual(values = c("red", "blue")) +
+  scale_fill_brewer(palette = "Set1") +
+  xlim(0,100) +
+  facet_wrap(~BTN_Type, ncol = 2)
+
+
+
+
+
+set.seed(123456)  # для воспроизводимости
+
+gon_healthy <- 
+  gon %>% 
+  filter(BTN_Type == "no")
+
+
+
+gon_healthy <-
+  gon_healthy %>% 
+  filter(ID_ENG %in% c("KAR_V30", "KAR_B21", "KAR_B4", "JEM_V24", "MAM_A24", "HOL_D8", "SV_V23", "SV_V17", "NUK_V23"))
+
+
+# gon %>% 
+#   ggplot(aes(x = Sex_2, y = Gonad_prop)) +
+#   geom_boxplot() + 
+#   facet_wrap(~BTN_class_1_or_2)
+# 
+# gon$Gonad_prop
+# 
+# names(gon)
+
+# library(betareg)
+# mod <- gam( Gonad_prop ~ Sex_2*BTN_class_1_or_2, data = gon %>% filter(Sex_2 %in% c("м", "ж")), family = "betar")
+# summary(mod)
+# 
+# library(car)
+# anova(mod)
+
+
+
+# Функция для вычисления статистики (среднего)
+mean_fun <- function(data, indices) {
+  d <- data[indices]
+  return(mean(d, na.rm = TRUE))
+}
+
+# Выполняем бутстреп
+boot_results <- boot(data = gon_healthy$Gonad_prop, 
+                     statistic = mean_fun, 
+                     R = 1000)  # 1000 бутстреп-выборок
+
+# Получаем доверительные интервалы
+boot_ci <- boot.ci(boot_results, type = c("perc", "basic", "norm"))
+
+
+# Извлекаем результаты
+mean_value <- mean(gon_healthy$Gonad_prop, na.rm = TRUE)
+percentile_ci <- boot_ci$percent[4:5]  # 95% перцентильный CI
+basic_ci <- boot_ci$basic[4:5]         # 95% basic CI
+normal_ci <- boot_ci$normal[2:3]       # 95% нормальный CI
+
+
+Pl_gonad_btn_with_healthy <- 
+Pl_gonad_btn +
+  annotate(x = 0, y = mean_value, geom = "point", color = "black", size = 5) +
+  annotate(x = 0, ymin = percentile_ci[1], ymax = percentile_ci[2], geom = "errorbar", width = 0.2) +
+  annotate(x = seq(0, 100, 10), ymin = percentile_ci[1], ymax = percentile_ci[2],
+           geom = "ribbon", alpha = 0.3, fill = "gray70") 
+
+
+
+
+```
+
+
+
+```{r}
+Pl_gonad_btn_with_healthy +
+  labs(x = "Proportion of anneuploid cells (%)", y = "Relative acini size")
+
+```
+
+
+
+```{r}
+
+mod_gon_summaty <- tidy(mod_gon)
+
+ft <- flextable(mod_gon_summaty)
+
+ft <-
+  ft %>%
+  colformat_double(j = 2, digits = 3) %>%
+  colformat_double(j = 3, digits = 4) %>%
+  colformat_double(j = 4, digits = 1) %>%
+  colformat_double(j = 5, digits = 4) %>%
+  # bg(i = c(1), bg = "yellow", part = "body") %>%
+  set_header_labels(statistic = "Chi.sq Statistic",
+                    term = "Model term") %>%
+  set_caption(caption = "GAM parameters")
+
+ft %>%
+  # Увеличиваем размер таблицы для заполнения слайда
+  fontsize(size = 14, part = "all") %>%
+  height_all(height = 0.4) %>%
+  width(width = 2.5) %>%
+  autofit()
+```
+
+
+
+Было выявлено значимое взаимодействие предикторов, что говори о разной связи между относительным размером ацинусов и степенью развития болезни у двуз линий BTN. На первых этапах заболевания BTN1 относительный размер ацинусов еще близок к таковому у здоровых моллюсков. Значительные отличия наблюдаются только при доле анеуплоидных клеток более 25%. У BTN2уже с первых этапов развития болезни относительный размер ацинусов значительно меньше, чем у здоровых особей. 
 
 
 ## Effect of BTN on mollusk growth
@@ -1577,12 +1898,60 @@ To examine the effect of BTN on the shell growth through the last growth season,
 
 
 
+```{r}
+
+
+# Данные по индивидуальным характристикам мидий
+myt_ind <- read_excel("Data/ЕДИНСТВЕННЫЙ ФАЙЛ 20.07.2026_OGP_recalculated.xlsx", na = "NA")
+
+
+myt_ind <-
+myt_ind %>%
+  mutate(BTN_Type = case_when(BTN_genotype == "BTN2.2" ~ "BTN2",
+                         BTN_genotype == "BTN2.1" ~ "BTN2",
+                         BTN_genotype == "BTN1" ~ "BTN1",
+                         BTN_genotype == "BTN1_Am" ~ "BTN1",
+                         BTN_genotype == "BTN1/BTN2.1" ~ "BTN2",
+                         BTN_genotype == "BTN2.1/BTN1" ~ "BTN2", 
+                         BTN_genotype == "BTN2.2/BTN1" ~ "BTN2",
+                         is.na(BTN_genotype) ~ "Healthy"))
+
+
+myt_ind$BTN_Type <- factor(myt_ind$BTN_Type)
+
+
+
+
+
+
+
+# Определяем границы варьирования размеров больных мидий
+
+myt_ind %>% 
+  filter(BTN_Type != "Healthy") %>% 
+  pull(L) %>% 
+  range() ->
+  BTN_L_range
+
+
+# Отфильтровываем мидий, у которых размеры укладываются в размеры больных мидий
+
+myt_ind_size_filtered <- 
+  myt_ind %>% 
+  filter(L <= BTN_L_range[2] & L >= BTN_L_range[1]) 
+
+
+
+
+myt_ind_size_filtered$BTN_Type <- factor(myt_ind_size_filtered$BTN_Type, levels = c("Healthy", "BTN1", "BTN2"))
+
+```
+
+
+
+
 ```{r, echo=TRUE, eval=FALSE}
-Mod_prop_incr_btn <- gam(Fi_Increment ~ BTN_Type + 
-                           s(Last_ring, bs = "cr", by = BTN_Type)  + 
-                           s(Sample, bs = "re"), 
-                         family = "gaussian", 
-                         data = myt_ind_clean, method = "REML")
+Mod_prop_incr_btn <- gam(Fi_Increment ~ s(OGP, by = BTN_Type) + s(Last_ring, by = BTN_Type) + BTN_Type + s(Site_code, bs = "re"), data = myt_ind_size_filtered)
 
 ```
 
@@ -1592,10 +1961,19 @@ The dependent variable Fi_Increment is $\varphi$-transposed relative growth (RL)
 
 
 ```{r}
-Mod_prop_incr_btn <- gam(Fi_Increment ~ BTN_Type + s(Last_ring, bs = "cr", by = BTN_Type)  + s(Sample, bs = "re"), family = "gaussian", data = myt_ind_clean, method = "REML")
+
+myt_ind_size_filtered$Site_code <- factor(myt_ind_size_filtered$Site_code)
+
+Mod_prop_incr_btn <- gam(Fi_Increment ~ s(OGP, by = BTN_Type) + s(Last_ring, by = BTN_Type) + BTN_Type + s(Site_code, bs = "re"), data = myt_ind_size_filtered)
+
+
 
 # summary(Mod_prop_incr_btn)
 mod_sum3 <- tidy(Mod_prop_incr_btn, parametric = T)
+
+mod_sum4 <- tidy(Mod_prop_incr_btn, parametric = F)
+
+
 
 ```
 
@@ -1620,6 +1998,27 @@ ft %>%
 ```
 
 
+```{r}
+ft <- flextable(mod_sum4)
+
+ft <-
+  ft %>%
+  colformat_double(j = 2:4, digits = 2) %>%
+  colformat_double(j = 5, digits = 4) %>%
+  set_header_labels(statistic = "F",
+                    term = "Model term") %>%
+  set_caption(caption = "")
+
+ft %>%
+  # Увеличиваем размер таблицы для заполнения слайда
+  fontsize(size = 14, part = "all") %>%
+  height_all(height = 0.4) %>%
+  width(width = 2.5) %>%
+  autofit()
+```
+
+
+
 
 <!-- ```{r} -->
 <!-- Pl_Last_ring <- -->
@@ -1637,11 +2036,11 @@ ft %>%
 
 ```{r}
 
-My_data <- data.frame(BTN_Type = levels(myt_ind_clean$BTN_Type), Last_ring = mean(myt_ind_clean$Last_ring))
+My_data <- data.frame(BTN_Type = levels(myt_ind_size_filtered$BTN_Type), Last_ring = mean(myt_ind_size_filtered$Last_ring), OGP = mean(myt_ind_size_filtered$OGP))
 
 
 
-Predicted <- predict(Mod_prop_incr_btn, newdata = My_data, exclude = "s(Sample)", newdata.guaranteed=TRUE, se.fit = TRUE)
+Predicted <- predict(Mod_prop_incr_btn, newdata = My_data, exclude = "s(Site_code)", newdata.guaranteed=TRUE, se.fit = TRUE)
 
 My_data$Fit <- Predicted$fit
 My_data$SE <- Predicted$se.fit
@@ -1655,7 +2054,7 @@ My_data$lwr <- Fi_back(My_data$Fit - 1.96*My_data$SE)
 
 library(itsadug)
 
-# wald_gam(Mod_prop_incr_btn)
+wald_gam(Mod_prop_incr_btn)
 
 
 
@@ -1668,16 +2067,19 @@ as.data.frame(ggpredict(Mod_prop_incr_btn, terms = "BTN_Type", typical = "weight
 
 library(ggsignif)
 
+
+My_data$BTN_Type <- factor(My_data$BTN_Type, levels = c("Healthy", "BTN2", "BTN1"))
+
 Pl_Status <-
   ggplot(My_data, aes(x = BTN_Type, y = P_incr)) +
   geom_col(aes(fill = BTN_Type), color = "black") +
-  scale_fill_manual(values = c("red", "blue", "green")) +
+  scale_fill_manual(values = c("green", "blue", "red")) +
   geom_errorbar(aes(ymin = lwr, ymax = upr), width = 0.2, color = "black") +
   labs(x = "", y = "Partial effect") +
   geom_signif(comparisons = list(
       c("BTN1", "BTN2"),
       c("BTN2", "Healthy")),
-      annotations = c("W = 6.5, p = 0.011", "W = 7.5, p = 0.006")
+      annotations = c("W = 23.6, p <0.001", "W = 19.1, p < 0.001")
       )  +
   # theme_bw()+
   theme(axis.text.x = element_text(size = 15)) +
@@ -1689,16 +2091,41 @@ Pl_Status <-
 
 ```{r}
 
+myt_ind_size_filtered$BTN_Type <- factor(myt_ind_size_filtered$BTN_Type, levels = c("Healthy", "BTN2", "BTN1"))
+
 Pl_Staus_initial <-
-  ggplot(data = myt_ind_clean, aes(x = BTN_Type, y = Prop_Increment)) +
-  geom_violin(aes(fill = BTN_Type)) +
-  # geom_boxplot(aes(group = BTN_Type)) +
+  ggplot(data = myt_ind_size_filtered, aes(x = BTN_Type, y = Prop_Increment)) +
+  # geom_violin(aes(fill = BTN_Type)) +
+  geom_boxplot(aes(group = BTN_Type, fill = BTN_Type), outliers = F) +
   # facet_wrap(~ Gonad_quality) +
-  scale_fill_manual(values = c("red", "blue", "green")) +
+  scale_fill_manual(values = c( "green", "blue", "red")) +
   labs(x = "", y = "Last year's relative \ngrowth increment") +
    guides(fill = "none") +
   geom_point(position = position_jitter(width = 0.08), color = "gray", alpha = 0.5)
   
+
+
+# Pl_L_initial <-
+#   ggplot(data = myt_ind_size_filtered, aes(x = BTN_Type, y = L)) +
+#   geom_violin(aes(fill = BTN_Type)) +
+#   # geom_boxplot(aes(group = BTN_Type)) +
+#   # facet_wrap(~ Gonad_quality) +
+#   scale_fill_manual(values = c( "green", "blue", "red")) +
+#   labs(x = "", y = "Shell length") +
+#    guides(fill = "none") +
+#   geom_point(position = position_jitter(width = 0.08), color = "gray", alpha = 0.5)
+
+
+
+Pl_OGP_initial <-
+  ggplot(data = myt_ind_size_filtered, aes(x = BTN_Type, y = OGP)) +
+  geom_boxplot(aes(fill = BTN_Type, group = BTN_Type), outliers = F) +
+  # geom_boxplot(aes(group = BTN_Type)) +
+  # facet_wrap(~ Gonad_quality) +
+  scale_fill_manual(values = c( "green", "blue", "red")) +
+  labs(x = "", y = "Individual OGP") +
+   guides(fill = "none") +
+  geom_point(position = position_jitter(width = 0.08), color = "gray", alpha = 0.5)
 
 ```
 
@@ -1713,7 +2140,15 @@ Pl_Staus_initial <-
 
 ```{r, fig.width=15, fig.height=9, fig.cap="**Fig. 22. Relative growth increment over the last year in mollusks infected with BTN1 and BTN2 and in healthy individuals. A. Kernel density plots showing the distribution of raw values of RL. B. Model predictions adjusted for covariates. Whiskers indicate the 95% confidence interval. Wald test statistics are shown above the whiskers.**"}
 
-plot_grid(Pl_Staus_initial, Pl_Status,  labels = c("A", "B"))
+plot_grid(Pl_Staus_initial, Pl_OGP_initial,  Pl_Status,  labels = c("A", "B", "C"))
+
+
+library(patchwork)
+
+(Pl_OGP_initial + Pl_Staus_initial) / 
+  (Pl_Status ) +
+  plot_annotation(tag_levels = "A") &
+  theme(plot.tag = element_text(face = "bold"))
 
 # ggsave("BTN1_BTN2_growth_Magadan.jpg", dpi=600)
 ```

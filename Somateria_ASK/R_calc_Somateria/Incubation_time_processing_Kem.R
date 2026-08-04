@@ -10,12 +10,14 @@ library(readODS)
 library(reshape2)
 library(tidyr)
 
-som <- read_excel("Data/all_nests_Kem_2024_2025.xlsx", na = "NA")
+# som <- read_excel("Data/all_nests_Kem_2020_2024_2025.xlsx", na = "NA")
+
+som <- read_excel("Data/два визита_24_25.xlsx", na = "NA")
 
 
 som %>% 
-  select(Nest_ID, Date, Region, Place, N_eggs, N_chicks, N_sheets,  Ed, Cr, Cover, fluff_collection, Destroy, A1, D1, A2, D2, A3, D3, Suspended, Pipping, Pipping_External, Hatching, Chicks) %>% 
-  melt(., id.vars = c("Nest_ID", "Date", "Region", "Place", "N_eggs", "N_chicks", "N_sheets",  "Ed", "Cr", "Cover", "fluff_collection", "Destroy"), variable.name = "Indicator", value.name = "Value") %>% 
+  select(Nest_ID, Date, Region, Place, N_eggs, N_chicks, N_sheets,  Ed, Cr, Cover, fluff_collection, Destroy, A1, D1, A2, D2, A3, D3, Suspended, Pipping, Pipping_External, Hatching, Chicks, Destroy, Visit) %>% 
+  melt(., id.vars = c("Nest_ID", "Date", "Region", "Place", "N_eggs", "N_chicks", "N_sheets",  "Ed", "Cr", "Cover", "fluff_collection", "Destroy", "Visit"), variable.name = "Indicator", value.name = "Value") %>% 
   arrange(Date, Nest_ID)  -> 
   som_long
 
@@ -28,8 +30,9 @@ som_long <-
          ) %>% 
   select(-Indicator) %>% 
   rename(Indicator = Indicator2)  %>% 
-  filter_out(is.na(Value)) %>% 
-  filter_out(Value == 0)
+  filter_out(is.na(Value)) 
+# %>% 
+#   filter_out(Value == 0)
 
 
 
@@ -112,12 +115,14 @@ som_long_2 %>%
             Suspended  = sum(Indicator == "Suspended"),
             Pipping = sum(Indicator == "Pipping"),
             Pipping_External = sum(Indicator == "Pipping_External"),
-            Chicks = sum(Indicator == "Chicks")
+            Chicks = sum(Indicator == "Chicks"),
+            Destroy = mean(Destroy),
+            Visit = mean(Visit)
             ) ->
 nest_param
 
 
 library(writexl)
 
-write_xlsx(x = nest_param, path = "Data/all_nests_Kem.xlsx", )
+write_xlsx(x = nest_param, path = "Data/all_nests_Kem_два_визита.xlsx", )
 
