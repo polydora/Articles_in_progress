@@ -529,11 +529,22 @@ growth <-
   rename(Site = Site_code) 
 
 
-ogp <- 
-  growth %>% 
-  group_by(Site) %>% 
-  summarise(OGP = mean(OGP_site_2)) #At! Это уже проверенные данные
+# ogp <-
+#   growth %>%
+#   group_by(Site) %>%
+#   summarise(OGP = mean(OGP_site_2)) #At! Это уже проверенные данные
 
+
+ogp <-
+  growth %>%
+  group_by(Site) %>%
+  summarise(OGP = mean(OGP)) #At! По просьбе ПП OGP_site будем считать как среднее значение индивидуального OGP
+
+
+# ogp %>% 
+#   ggplot(aes(OGP, OGP_Julia))+
+#   geom_point() +
+#   geom_abline()
 
 # ogp_1 <- 
 #   growth_1 %>% 
@@ -1066,7 +1077,11 @@ Both lineages show a positive association with mussel growth rate.
 
 # Modelling the dependencies of BTN prevalences on predictors 
 
+To evaluate the association between multiple environmental and genomic predictors and the binary outcome of cell health status, we employed a Generalized Additive Mixed Model (GAMM) with a binomial error distribution and a logit link function. The response variable was specified as a two-column matrix of success–failure counts, representing the number of cancerous (N_cancer) and healthy (N_healthy) cells observed per sampling unit.
 
+The fixed-effect structure included the categorical variable Lineage as a parametric term. For each continuous predictor, we fitted separate smooth spline functions for each level of Lineage using the by variable syntax, allowing the shape of the relationship to vary across cell lineages. All smooth terms were constructed using cubic regression splines with shrinkage (bs = "cs") and a basis dimension of k = 5, which provides sufficient flexibility to capture nonlinear patterns while limiting excessive complexity. The continuous predictors examined were Dist_Port, log-transformed fetch, the first two principal components (PC1 and PC2), OGP, and Salinity. To account for unmeasured temporal and spatial heterogeneity, we included random intercepts for Year and Site, specified as independent random effect smooths (bs = "re").
+
+Model parameters were estimated using Restricted Maximum Likelihood (method = "REML") to obtain unbiased estimates of the variance components. To prevent overfitting and facilitate automatic predictor selection, we activated the double-penalty option (select = TRUE), which applies an additional shrinkage penalty capable of removing an entire smooth term from the model when its contribution is negligible. Furthermore, the smoothness selection was adjusted by setting the penalty multiplier to gamma = 2. This value was empirically determined during model tuning as the one that minimized the Bayesian Information Criterion (BIC), thereby ensuring a parsimonious final model with appropriately smoothed functional relationships. All analyses were performed using the mgcv package in R (version X.X) on the dataset cancer_21_23_predictors.
 
 
 ```{r}
@@ -1076,26 +1091,16 @@ Mod <- gam(cbind(N_cancer, N_helthy) ~
              s((PC1), by = Lineage,  bs = "cs", k = 5) + 
              s((PC2), by = Lineage,  bs = "cs", k = 5) +
              s((OGP), by = Lineage, bs = "cs", k = 5) +
+             s((Salinity), by = Lineage, bs = "cs", k = 5) +
              Lineage +  
              s(Year, Site, bs = "re"),  
            family = "binomial", 
            method = "REML", 
+           select = TRUE,
+           gamma = 2, #Этому значению соответствует минимальный BIC
            data = cancer_21_23_predictors )
 
-
-Mod_no_re <- gam(cbind(N_cancer, N_helthy) ~ 
-             s((Dist_Port), by = Lineage,  bs = "cs", k = 5) + 
-             s(log(fetch), by = Lineage,  bs = "cs", k = 5) +  
-             s((PC1), by = Lineage,  bs = "cs", k = 5) + 
-             s((PC2), by = Lineage,  bs = "cs", k = 5) +
-             s((OGP), by = Lineage, bs = "cs", k = 5) +
-             Lineage ,  
-           family = "binomial", 
-           method = "REML", 
-           data = cancer_21_23_predictors )
-
-
-
+# summary(Mod)
 
 # AIC(Mod, Mod_no_re)
 
@@ -1105,7 +1110,7 @@ Mod_no_re <- gam(cbind(N_cancer, N_helthy) ~
 
 
 
-# summary(Mod)
+
 
 # summary(Mod_no_re)
 
@@ -1121,22 +1126,29 @@ Generalized Additive Mixed Model (GAMs) was fitted using the 'mgcv' package in R
 
 
 ```{r, echo=TRUE, eval=FALSE}
+
 Mod <- gam(cbind(N_cancer, N_helthy) ~ 
              s((Dist_Port), by = Lineage,  bs = "cs", k = 5) + 
              s(log(fetch), by = Lineage,  bs = "cs", k = 5) +  
-             s((PC1), by = Lineage,  bs = "cs", k = 5) +
+             s((PC1), by = Lineage,  bs = "cs", k = 5) + 
              s((PC2), by = Lineage,  bs = "cs", k = 5) +
-             s((OGP), by = Lineage, bs = "cs", k = 5) +  
+             s((OGP), by = Lineage, bs = "cs", k = 5) +
+             s((Salinity), by = Lineage, bs = "cs", k = 5) +
              Lineage +  
              s(Year, Site, bs = "re"),  
            family = "binomial", 
            method = "REML", 
+           select = TRUE,
+           gamma = 2, #Этому значению соответствует минимальный BIC
            data = cancer_21_23_predictors )
+
+summary(Mod)
 
 ```
 
 
 <!-- ### Проверка валидности модели -->
+
 
 <!-- ```{r} -->
 <!-- library(DHARMa) -->
@@ -1336,12 +1348,12 @@ myt_ind <-
   myt_ind %>%
   filter(!is.na(BTN_Type))
 
-myt_ind %>% 
-  filter(BTN_Type == "Healthy") %>% 
-  group_by(Site_code, Year) %>% 
-  summarise(N = n()) %>% 
-  pull(N) %>% 
-  range()
+# myt_ind %>% 
+#   filter(BTN_Type == "Healthy") %>% 
+#   group_by(Site_code, Year) %>% 
+#   summarise(N = n()) %>% 
+#   pull(N) %>% 
+#   range()
 
 
 
@@ -1835,12 +1847,17 @@ basic_ci <- boot_ci$basic[4:5]         # 95% basic CI
 normal_ci <- boot_ci$normal[2:3]       # 95% нормальный CI
 
 
+
+library(ggstar)
+
 Pl_gonad_btn_with_healthy <- 
 Pl_gonad_btn +
-  annotate(x = 0, y = mean_value, geom = "point", color = "black", size = 5) +
+  annotate(geom = "star", x = 0, y = mean_value, 
+           size = 5, fill = "black", color = "black") +
   annotate(x = 0, ymin = percentile_ci[1], ymax = percentile_ci[2], geom = "errorbar", width = 0.2) +
   annotate(x = seq(0, 100, 10), ymin = percentile_ci[1], ymax = percentile_ci[2],
-           geom = "ribbon", alpha = 0.3, fill = "gray70") 
+           geom = "ribbon", alpha = 0.3, fill = "gray70") +
+  labs(y = "Proportion of germinal tissue", x = "Proportion of aneuploid cells (%)")
 
 
 
@@ -1850,18 +1867,16 @@ Pl_gonad_btn +
 
 
 ```{r}
-Pl_gonad_btn_with_healthy +
-  labs(x = "Proportion of anneuploid cells (%)", y = "Relative acini size")
-
+Pl_gonad_btn_with_healthy 
 ```
 
 
 
 ```{r}
 
-mod_gon_summaty <- tidy(mod_gon)
+mod_gon_summary <- tidy(mod_gon)
 
-ft <- flextable(mod_gon_summaty)
+ft <- flextable(mod_gon_summary)
 
 ft <-
   ft %>%
@@ -2155,4 +2170,85 @@ library(patchwork)
 
 
 Unlike BTN1, BTN2 infection stimulates mussels growth, considerably.
+
+
+## Addition model for dependence relative growth on proportion of anneuploid cells
+
+
+```{r}
+
+myt_ind_size_filtered %>% 
+  filter(Rate_of_aneuploid_cells >0) ->
+  myt_ind_size_filtered_not_healthy
+
+myt_ind_size_filtered_not_healthy$BTN_Type <- factor(myt_ind_size_filtered_not_healthy$BTN_Type)
+
+
+
+
+Mod_prop_incr_btn_aneuploid_rate <- 
+  gam(Fi_Increment ~   
+        s(OGP, by = BTN_Type) + 
+        s(Last_ring, by = BTN_Type) +
+        s(Rate_of_aneuploid_cells,  by = BTN_Type) +
+        BTN_Type + 
+        s(Site_code, bs = "re"),
+      method = "REML",
+      select = TRUE,
+      gamma = 0.5,
+      data = myt_ind_size_filtered_not_healthy)
+
+summary(Mod_prop_incr_btn_aneuploid_rate)
+
+draw(Mod_prop_incr_btn_aneuploid_rate, select = 5:6, residuals = T,scales = "fixed" )
+```
+
+
+```{r}
+myt_ind_size_filtered_not_healthy %>% 
+  mutate(Rel_Increment = Fi_back(Fi_Increment)) %>% 
+  ggplot(aes(x = Rate_of_aneuploid_cells, y = Rel_Increment, color = BTN_Type)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  scale_color_manual(values = c("blue", "red")) +
+  labs(x = "Rate of aneuploid cells", y = "Relatove increment", title = "Raw Data")
+
+```
+
+
+There ia no dependency of relative increment on Rate of anneuploid cells
+
+## Addition analysis of dependencies between biotic parameters of mussels settlementa and environmental predictors
+
+```{r}
+prop_BTN_2_points %>% 
+  filter(Lineage == "BTN2") %>% 
+  select(Biomass, Cover, OGP, L13, L13,  L18, L23,  L28, L3, L33, L38, L43, L48, L53, L58, L8) ->
+  mussel_biotic_parameters
+
+
+prop_BTN_2_points %>% 
+  filter(Lineage == "BTN2") %>% 
+  select(Year, Salinity, Dist_Port, fetch) ->
+  external_predictors
+
+
+external_predictors$Year <- factor(external_predictors$Year)
+
+
+mod_cca <- cca(mussel_biotic_parameters ~ Year + Salinity + Dist_Port + fetch, data = external_predictors)
+
+
+anova(mod_cca, permutations = 9999)
+
+anova(mod_cca, by = "axis", permutations = 9999)
+
+plot(mod_cca, display = c("cn", "species"))
+
+
+anova(mod_cca, by = "margin")
+
+
+```
+
 
