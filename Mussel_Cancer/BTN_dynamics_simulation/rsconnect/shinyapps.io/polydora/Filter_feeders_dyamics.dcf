@@ -1,0 +1,12 @@
+name: Filter_feeders_dyamics
+title: Filter_feeders_dyamics
+username:
+account: polydora
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1812799
+bundleId: 2801170
+url: https://polydora.shinyapps.io/Filter_feeders_dyamics/
+when: 1581694536.43171
+asMultiple: FALSE
+asStatic: FALSE
