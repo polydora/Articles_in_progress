@@ -159,9 +159,9 @@ stopCluster(cl)
 lm_results_long <- results_list
 lm_results_long$trend.cat <- 'all data'
 
-hist(lm_results_long$DW)
-hist(lm_results_long$DW_p.val....DW_test.p.value)
-mean(lm_results_long$DW_p.val....DW_test.p.value <= 0.05)
+
+
+
 
 # 4.3. Resampling restricted to the greening points
 

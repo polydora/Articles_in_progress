@@ -12,6 +12,9 @@ library(doParallel) # Parallel backend for foreach
 library(doRNG) # Reproducible random number streams in parallel loops
 library(vegan) # Community ecology and multivariate analysis
 
+library(astrochron)
+
+
 # 2. Parameters   -----------
 
 # setwd('/media/sergey/Data/Science/Kamtshatka/spruce/Article1_2025/RScripts/Vadim') # Set working directory
@@ -173,4 +176,251 @@ lm_results_long |>
 # Ну... где-то повляются такие сочетания данных, когда H_0 отвергаем довольно часто. В некоторых случаях почти до 20%. Это плохо, конечно. Самые ненадежные показатели в этом смысле - SWI_py, Prec_summer_py,Tsummer_py, Prec_winter_gy. 
 
 
+
+library(astrochron)
+
+
+# surrogateCor over all points, irrespective of the NDVI trend category
+
+x <- ndvi
+y <- clim
+
+df <- merge(x, y, by = "Year", all.x = TRUE) %>%
+  filter(complete.cases(.))
+
+df |>
+  group_by(Year) |>
+  summarise(
+    across(
+      c(names(df)[-c(1,2)]),   # <- сюда впишите нужные колонки
+      list(mean = ~mean(.x, na.rm = TRUE))
+    )
+  ) ->
+  df_means
+
+names(df_means) <- gsub("_mean", "", names(df_means))
+
+
+surrogateCor(df_means$ndvi.max, df_means$CMIsummer_py) 
+# В нашем анализе связь не установлена
+
+surrogateCor(df_means$ndvi.max, df_means$CMIsummer) 
+# В нашем анализе связь есть, этим методом связь не выявляется!
+
+surrogateCor(df_means$ndvi.max, df_means$Prec_winter_py) 
+# В нашем анализе связь не установлена
+
+surrogateCor(df_means$ndvi.max, df_means$Prec_winter_gy) 
+# В нашем анализе связь не установлена
+
+surrogateCor(df_means$ndvi.max, df_means$Prec_summer_py) 
+# В нашем анализе связь есть и здесь выявляется!!
+
+surrogateCor(df_means$ndvi.max, df_means$Prec_summer_gy) 
+# В нашем анализе связь не установлена
+
+surrogateCor(df_means$ndvi.max, df_means$SWI_py) 
+# В нашем анализе связь есть и здесь выявляется!!
+
+surrogateCor(df_means$ndvi.max, df_means$SWI_gy) 
+# В нашем анализе связь есть и здесь выявляется!!
+
+surrogateCor(df_means$ndvi.max, df_means$Tsummer_py) 
+# В нашем анализе связь есть и здесь выявляется!!
+
+surrogateCor(df_means$ndvi.max, df_means$Tsummer) 
+# В нашем анализе связь есть и здесь выявляется!!
+
+surrogateCor(df_means$ndvi.max, df_means$Mean_Tavg_py) 
+# В нашем анализе связь не установлена
+
+surrogateCor(df_means$ndvi.max, df_means$Mean_Tavg_gy) 
+# В нашем анализе связь есть, этим методом связь не выявляется!
+
+
+
+
+
+
+# surrogateCor restricted to the greening points
+
+Site_green <- 
+  ndvi_trend |> 
+  filter(trend.cat == "greening")
+
+df |>
+  filter(Plot %in% Site_green$sample.id) |>
+  group_by(Year) |>
+  summarise(
+    across(
+      c(names(df)[-c(1,2)]),   # <- сюда впишите нужные колонки
+      list(mean = ~mean(.x, na.rm = TRUE))
+    )
+  ) ->
+  df_means
+
+names(df_means) <- gsub("_mean", "", names(df_means))
+
+
+surrogateCor(df_means$ndvi.max, df_means$CMIsummer_py) 
+# В нашем анализе связь не установлена
+
+surrogateCor(df_means$ndvi.max, df_means$CMIsummer) 
+# В нашем анализе связь есть, этим методом связь также выявляется!
+
+surrogateCor(df_means$ndvi.max, df_means$Prec_winter_py) 
+# В нашем анализе связь не установлена
+
+surrogateCor(df_means$ndvi.max, df_means$Prec_winter_gy) 
+# В нашем анализе связь есть, но здесь Marginal significance
+
+surrogateCor(df_means$ndvi.max, df_means$Prec_summer_py) 
+# В нашем анализе связь есть и здесь выявляется!!
+
+surrogateCor(df_means$ndvi.max, df_means$Prec_summer_gy) 
+# В нашем анализе связь не установлена
+
+surrogateCor(df_means$ndvi.max, df_means$SWI_py) 
+# В нашем анализе связь есть и здесь выявляется!!
+
+surrogateCor(df_means$ndvi.max, df_means$SWI_gy) 
+# В нашем анализе связь есть и здесь выявляется!!
+
+surrogateCor(df_means$ndvi.max, df_means$Tsummer_py) 
+# В нашем анализе связь есть и здесь выявляется!!
+
+surrogateCor(df_means$ndvi.max, df_means$Tsummer) 
+# В нашем анализе связь есть и здесь выявляется!!
+
+surrogateCor(df_means$ndvi.max, df_means$Mean_Tavg_py) 
+# В нашем анализе связь есть, но здесь Marginal significance
+
+
+surrogateCor(df_means$ndvi.max, df_means$Mean_Tavg_gy) 
+# В нашем анализе связь есть и здесь выявляется!!
+
+
+
+# surrogateCor restricted to the browning points
+
+
+Site_browning <- 
+  ndvi_trend |> 
+  filter(trend.cat == "browning")
+
+df |>
+  filter(Plot %in% Site_browning$sample.id) |>
+  group_by(Year) |>
+  summarise(
+    across(
+      c(names(df)[-c(1,2)]),   # <- сюда впишите нужные колонки
+      list(mean = ~mean(.x, na.rm = TRUE))
+    )
+  ) ->
+  df_means
+
+names(df_means) <- gsub("_mean", "", names(df_means))
+
+
+surrogateCor(df_means$ndvi.max, df_means$CMIsummer_py) 
+# В нашем анализе связь не установлена
+
+surrogateCor(df_means$ndvi.max, df_means$CMIsummer) 
+# В нашем анализе связь не установлена
+
+surrogateCor(df_means$ndvi.max, df_means$Prec_winter_py) 
+# В нашем анализе связь есть, и этим методом связь установлена
+
+surrogateCor(df_means$ndvi.max, df_means$Prec_winter_gy) 
+# В нашем анализе связь не установлена
+
+surrogateCor(df_means$ndvi.max, df_means$Prec_summer_py) 
+# В нашем анализе связь есть и здесь выявляется!!
+
+surrogateCor(df_means$ndvi.max, df_means$Prec_summer_gy) 
+# В нашем анализе связь не установлена
+
+surrogateCor(df_means$ndvi.max, df_means$SWI_py) 
+# В нашем анализе связь не установлена
+
+surrogateCor(df_means$ndvi.max, df_means$SWI_gy) 
+# В нашем анализе связь не установлена
+
+
+surrogateCor(df_means$ndvi.max, df_means$Tsummer_py) 
+# В нашем анализе связь не установлена
+
+surrogateCor(df_means$ndvi.max, df_means$Tsummer) 
+# В нашем анализе связь не установлена
+
+surrogateCor(df_means$ndvi.max, df_means$Mean_Tavg_py) 
+# В нашем анализе связь не установлена
+
+
+surrogateCor(df_means$ndvi.max, df_means$Mean_Tavg_gy) 
+# В нашем анализе связь не установлена
+
+
+
+
+
+
+# surrogateCor restricted to the no_trend points
+
+
+Site_no_trend <- 
+  ndvi_trend |> 
+  filter(trend.cat == "no_trend")
+
+df |>
+  filter(Plot %in% Site_no_trend$sample.id) |>
+  group_by(Year) |>
+  summarise(
+    across(
+      c(names(df)[-c(1,2)]),   # <- сюда впишите нужные колонки
+      list(mean = ~mean(.x, na.rm = TRUE))
+    )
+  ) ->
+  df_means
+
+names(df_means) <- gsub("_mean", "", names(df_means))
+
+
+surrogateCor(df_means$ndvi.max, df_means$CMIsummer_py) 
+# В нашем анализе связь не установлена
+
+surrogateCor(df_means$ndvi.max, df_means$CMIsummer) 
+# В нашем анализе связь есть, но в этом методе Marginal signif
+
+surrogateCor(df_means$ndvi.max, df_means$Prec_winter_py) 
+# В нашем анализе связь не установлена
+
+surrogateCor(df_means$ndvi.max, df_means$Prec_winter_gy) 
+# В нашем анализе связь не установлена
+
+surrogateCor(df_means$ndvi.max, df_means$Prec_summer_py) 
+# В нашем анализе связь есть и здесь выявляется!!
+
+surrogateCor(df_means$ndvi.max, df_means$Prec_summer_gy) 
+# В нашем анализе связь не установлена
+
+surrogateCor(df_means$ndvi.max, df_means$SWI_py) 
+# И в нашем анализе и в этом связь есть
+
+surrogateCor(df_means$ndvi.max, df_means$SWI_gy) 
+# И в нашем анализе и в этом связь есть
+
+
+surrogateCor(df_means$ndvi.max, df_means$Tsummer_py) 
+# И в нашем анализе и в этом связь есть
+
+surrogateCor(df_means$ndvi.max, df_means$Tsummer) 
+# В нашем анализе связь есть, но в этом методе Marginal signif
+
+surrogateCor(df_means$ndvi.max, df_means$Mean_Tavg_py) 
+# В нашем анализе связь не установлена
+
+
+surrogateCor(df_means$ndvi.max, df_means$Mean_Tavg_gy) 
+# В нашем анализе связь установлена, а этим методом не выявляется
 
