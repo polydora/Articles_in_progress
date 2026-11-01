@@ -132,8 +132,13 @@ results_list <- foreach(k = seq_along(clim_metric),
                               colnames(df) <- c("Year", "Plot", "ndvi.max", "clim_param")
                               mod <- lm(scale(ndvi.max) ~ scale(clim_param), data = df) # Both variables are standardized, so the slope is a standardized coefficient
                               
+
+                              
+########## Получаем симулированные остатки с помощью DHARMa ##################                               
 res <- DHARMa::simulateResiduals(mod)
 res_agr <- DHARMa::recalculateResiduals(res, group = df$Year)
+
+#Тест Дарбин-Уотсона на автокорреляцию с лагом 1
 DW_test <- DHARMa::testTemporalAutocorrelation(res_agr, time = unique(df$Year))
                               
 
@@ -142,11 +147,12 @@ DW_test <- DHARMa::testTemporalAutocorrelation(res_agr, time = unique(df$Year))
                                 clim_param = param_name,
                                 coef = coef(mod)[2],
                                 R2 = summary(mod)$adj.r.squared,
-                                DW = DW_test$statistic,
-                                DW_p.val <- DW_test$p.value,
+                                DW = DW_test$statistic,  #Сама статистикка DW-test
+                                DW_p.val <- DW_test$p.value, # p-value от нее
                                 stringsAsFactors = FALSE
                               )
                               i <- i + 1
+                              
                             }
                           }
                           do.call(rbind, param_results)
@@ -159,9 +165,22 @@ stopCluster(cl)
 lm_results_long <- results_list
 lm_results_long$trend.cat <- 'all data'
 
-hist(lm_results_long$DW)
-hist(lm_results_long$DW_p.val....DW_test.p.value)
-mean(lm_results_long$DW_p.val....DW_test.p.value <= 0.05)
+
+
+lm_results_long |> 
+  ggplot(aes(x = DW)) +
+  geom_histogram()+
+  geom_vline(xintercept = c(1.5, 2.5)) +
+  facet_wrap(~clim_param)
+
+# Надо, конечно, смотреть на большем количестве циклов, но в ряде случаев сигнал автокорреляции первого порядка, все-таки, есть.
+
+
+lm_results_long |> 
+  group_by(clim_param) |> 
+  summarise(H0_rejecting_freq = mean(DW_p.val....DW_test.p.value < 0.05))
+
+
 
 # 4.3. Resampling restricted to the greening points
 
