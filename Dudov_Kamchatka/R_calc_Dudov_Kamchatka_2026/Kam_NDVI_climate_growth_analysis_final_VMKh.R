@@ -78,6 +78,13 @@ ndvi_local <-
 
 ndvi_local <- ndvi_local %>% mutate(Plot = as.numeric(Plot)) %>% mutate(Year = as.integer(Year)) # Convert the join keys to the types used in the tree-ring data (numeric Plot, integer Year)
 
+
+
+
+
+
+
+
 # 4. NDVI response to climate -----------
 # Monte Carlo analysis of the relationship between spruce forest NDVI and each climate variable across the study area.
 # Question addressed: does forest NDVI respond to interannual climate variation at the landscape scale?
