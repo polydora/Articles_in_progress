@@ -26,24 +26,24 @@ library(vegan) # Community ecology and multivariate analysis
 
 # 2. Parameters   -----------
 
-# setwd('/media/sergey/Data/Science/Kamtshatka/spruce/Article1_2025/RScripts/Vadim') # Set working directory
+setwd('/media/sergey/Data/Science/Kamtshatka/spruce/Article1_2025/RScripts/Vadim') # Set working directory
 
-fig.dir <- "figures_final/" # Output directory for figures and result tables
+fig.dir <- "/media/sergey/Data/Science/Kamtshatka/spruce/Article1_2025/figures_final/" # Output directory for figures and result tables
 
 # 3. Load and prepare data   -----------
 
 # 3.1. Load climate data
 # Annual climate variables; the analysis is restricted to the period covered by the NDVI time series (2000-2023)
 
-clim <- read_excel("Clim_upd_2.xlsx")
+clim <- read_excel("/media/sergey/Data/Science/Kamtshatka/spruce/clim/Clim_upd_3.xlsx")
 clim$Year <- as.numeric(clim$Year)
 clim <- clim %>% filter(Year > 1999 & Year < 2024)
 
 # 3.2. Load dendrochronological data
 # Sheet 1 - basal area increment (BAI), sheet 2 - ring width index (RWI); data are in long format by Species, Plot and Year
 
-trees_BAI <- read_excel("RWI_BAI_ed-2.xlsx", sheet = 1)
-trees_RWI <- read_excel("RWI_BAI_ed-2.xlsx", sheet = 2)
+trees_BAI <- read_excel("/media/sergey/Data/Science/Kamtshatka/spruce/Article1_2025/RScripts/Vadim/RWI_BAI_ed.xlsx", sheet = 1)
+trees_RWI <- read_excel("/media/sergey/Data/Science/Kamtshatka/spruce/Article1_2025/RScripts/Vadim/RWI_BAI_ed.xlsx", sheet = 2)
 trees_BAI <- trees_BAI %>% mutate(Plot = as.numeric(Plot)) |> rename(BAI_Value = Value) |> mutate(BAI_Value = as.numeric(BAI_Value)) # Convert plot identifiers to numeric and rename the value column
 trees_RWI <- trees_RWI %>% mutate(Plot = as.numeric(Plot)) |> rename(RWI_Value = Value) # Convert plot identifiers to numeric and rename the value column
 
@@ -51,7 +51,7 @@ trees_RWI <- trees_RWI %>% mutate(Plot = as.numeric(Plot)) |> rename(RWI_Value =
 # Only the annual maximum NDVI (ndvi.max) is used as the vegetation index in this study
 
 ndvi <-
-  read.csv("picea.gsdt.ndvi_random_points.csv", sep = ";") %>%
+  read.csv("/media/sergey/Data/Science/Kamtshatka/spruce/Article1_2025/RScripts/Vadim/random_points/picea.gsdt.ndvi_random_points.csv") %>%
   select(sample.id, year, ndvi.max) %>%
   rename(Year = year) %>%
   filter(Year > 1999 & Year < 2024) %>%
@@ -60,20 +60,19 @@ ndvi <-
 # 3.4. Load NDVI trend categories of the random points (greening / browning / no trend, 2000-2023)
 
 ndvi_trend <-
-  read.csv("trend_ndvi_2000_2023.csv", sep = ",") %>%
+  read.csv("/media/sergey/Data/Science/Kamtshatka/spruce/Article1_2025/RScripts/Vadim/random_points/trend_ndvi_2000_2023.csv") %>%
   select(sample.id, trend.cat)
 
 # 3.5. Load NDVI time series extracted for the sample plots with tree-ring data
 
-ndvi.local.path <- "picea.gsdt.ndvi_sample_plots.csv" # Path to the NDVI time series of the sample plots
+ndvi.local.path <- "/media/sergey/Data/Science/Kamtshatka/spruce/Article1_2025/RScripts/Vadim/pheno_sample_plots/picea.gsdt.ndvi_sample_plots.csv" # Path to the NDVI time series of the sample plots
 ndvi_local <-
-  read.csv(ndvi.local.path, sep = ";") %>%
+  read.csv(ndvi.local.path) %>%
   select(sample.id, year, ndvi.max) %>%
   rename(Year = year) %>%
   filter(Year > 1999 & Year < 2024) %>%
   mutate(Plot = gsub(pattern = "S_", replacement = "", x = sample.id)) %>%
   select(-sample.id)
-
 ndvi_local <- ndvi_local %>% mutate(Plot = as.numeric(Plot)) %>% mutate(Year = as.integer(Year)) # Convert the join keys to the types used in the tree-ring data (numeric Plot, integer Year)
 
 # 4. NDVI response to climate -----------
@@ -84,11 +83,9 @@ ndvi_local <- ndvi_local %>% mutate(Plot = as.numeric(Plot)) %>% mutate(Year = a
 
 # 4.1. Resampling parameters
 
-library(DHARMa)
-
 set.seed(12345)
 
-resample_n <- 100 # Number of Monte Carlo iterations per climate variable
+resample_n <- 1000 # Number of Monte Carlo iterations per climate variable
 
 year_num <- round(length(unique(ndvi$Year)) * 0.75) # Each model is fitted on 75% of the available years
 site_num <- round(length(unique(ndvi$Plot)) * 0.25) # Each model is fitted on 25% of the available points
@@ -128,19 +125,12 @@ results_list <- foreach(k = seq_along(clim_metric),
                             if (nrow(df) >= 2) {
                               colnames(df) <- c("Year", "Plot", "ndvi.max", "clim_param")
                               mod <- lm(scale(ndvi.max) ~ scale(clim_param), data = df) # Both variables are standardized, so the slope is a standardized coefficient
-                              
-res <- DHARMa::simulateResiduals(mod)
-res_agr <- DHARMa::recalculateResiduals(res, group = df$Year)
-DW_test <- DHARMa::testTemporalAutocorrelation(res_agr, time = unique(df$Year))
-
 
                               param_results[[length(param_results) + 1]] <- data.frame(
                                 N = i,
                                 clim_param = param_name,
                                 coef = coef(mod)[2],
                                 R2 = summary(mod)$adj.r.squared,
-                                DW = DW_test$statistic,
-                                DW_p.val <- DW_test$p.value,
                                 stringsAsFactors = FALSE
                               )
                               i <- i + 1

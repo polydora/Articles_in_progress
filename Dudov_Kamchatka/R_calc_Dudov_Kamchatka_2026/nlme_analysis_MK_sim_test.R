@@ -9,8 +9,6 @@ library(doRNG)
 library(ggdist)     # stat_halfeye, stat_interval
 library(patchwork)
 library(readxl)
-
-
 # 2. Parameters   -----------
 
 # setwd('/media/sergey/Data/Science/Kamtshatka/spruce/Article1_2025/RScripts/Vadim') # Set working directory
@@ -30,12 +28,13 @@ clim <- clim %>% filter(Year > 1999 & Year < 2024)
 # Only the annual maximum NDVI (ndvi.max) is used as the vegetation index in this study
 
 ndvi <-
-  read.csv("picea.gsdt.ndvi.csv", sep = ",") %>%
+  read.csv("random points/picea.gsdt.ndvi.csv", sep = ";") %>%
   select(sample.id, year, ndvi.max) %>%
   rename(Year = year) %>%
   filter(Year > 1999 & Year < 2024) %>%
   rename(Plot = sample.id)
 
+# names(ndvi)
 
 set.seed(12345)
 resample_n <- 1000
@@ -99,7 +98,7 @@ one_iter <- function(param_name) {
   if (nrow(d_year) < min_years) return(NULL)
   
   m <- tryCatch(
-    gls(scale(ndvi_anom) ~ scale(clim_param) + scale(Year),
+    gls(scale(ndvi_anom) ~ scale(clim_param), # убрал  + scale(Year)
         data = d_year,
         correlation = corCAR1(form = ~ Year),   # корректно при пропусках лет
         method = "ML"),
@@ -131,6 +130,7 @@ results_gls_test <- foreach(
 ) %dorng% {
   bind_rows(lapply(seq_len(resample_n), function(i) one_iter(clim_metric[k])))
 }
+
 stopCluster(cl)
 
 ##### Пробуем визуализировать #######################
@@ -149,7 +149,7 @@ summ <- df %>%
   summarise(
     med     = median(coef),
     p_sig   = mean(p < 0.05),
-    p_pos   = mean(coef > 0),
+    p_pos   = mean((coef > 0)), # добавил abs(), так как коэффициенты могут быть отрицательными
     lb_bad  = mean(lb_p < 0.05),
     any_sig = mean(any_sig),
     sw_bad  = mean(sw_p < 0.05),
